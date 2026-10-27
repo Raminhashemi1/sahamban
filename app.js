@@ -1,0 +1,225 @@
+'use strict';
+const $ = id => document.getElementById(id);
+const n = id => Number($(id).value);
+const fmt = value => new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(value);
+$('calculate').addEventListener('click',()=>{
+ const [capital,risk,entry,stop,target,budget]=['capital','risk','entry','stop','target','budget'].map(n);
+ if(![capital,risk,entry,stop,target,budget].every(Number.isFinite)||capital<=0||risk<=0||risk>100||entry<=0||stop<0||stop>=entry||target<=entry||budget<=0){$('calcResult').textContent='مقادیر معتبر وارد کنید: حد ضرر کمتر از قیمت ورود و حد سود بیشتر از آن باشد.';return;}
+ const allowed=capital*risk/100, qty=Math.max(0,Math.floor(Math.min(allowed/(entry-stop),Math.min(budget,capital)/entry)));
+ const loss=qty*(entry-stop),gain=qty*(target-entry);
+ $('calcResult').textContent=`سقف خرید محاسباتی: ${fmt(qty)} سهم | ارزش خرید: ${fmt(qty*entry)} تومان | زیان نظری تا حد ضرر: ${fmt(loss)} تومان | سود نظری تا حد سود: ${fmt(gain)} تومان | نسبت سود به زیان: ${fmt((target-entry)/(entry-stop))}`;
+});
+function speak(s){try{if('speechSynthesis' in window){speechSynthesis.cancel();let a=new SpeechSynthesisUtterance(s);a.lang='fa-IR';a.rate=.95;speechSynthesis.speak(a);}}catch(e){}}
+$('speech').addEventListener('click',()=>speak('آزمایش هشدار صوتی سهام بان'));
+$('check').addEventListener('click',()=>{
+ const symbol=$('symbol').value.trim().slice(0,35)||'سهم',price=n('price'),stop=n('aStop'),target=n('aTarget'),el=$('alerts');
+ el.replaceChildren();if(![price,stop,target].every(Number.isFinite)||price<0||stop<0||target<=stop){el.textContent='قیمت‌ها را معتبر وارد کنید و حد سود را بیشتر از حد ضرر بگذارید.';return;}
+ const message=price<=stop?`هشدار حد ضرر: قیمت ${symbol} به ${fmt(price)} تومان رسیده است.`:price>=target?`هشدار حد سود: قیمت ${symbol} به ${fmt(price)} تومان رسیده است.`:`برای ${symbol} در قیمت ${fmt(price)} تومان، حد سود یا ضرر فعال نشده است.`;
+ const p=document.createElement('div');p.className=price<=stop||price>=target?'alarm':'result';p.textContent=message;el.appendChild(p);if(price<=stop||price>=target)speak(message);
+});
+const fields=['symbol','aStop','aTarget'];
+$('save').addEventListener('click',()=>{const obj={};for(const id of fields)obj[id]=$(id).value;localStorage.setItem('sahamban-v1',JSON.stringify(obj));$('alerts').textContent='تنظیمات هشدار روی همین دستگاه ذخیره شد.';});
+try{const saved=JSON.parse(localStorage.getItem('sahamban-v1')||'null');if(saved)for(const id of fields)if(typeof saved[id]==='string')$(id).value=saved[id];}catch(e){}
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+
+// تحلیل محلی تاریخچه؛ هیچ درخواست شبکه‌ای انجام نمی‌شود.
+function parsePrices(raw){
+ const lines=raw.replace(/^\uFEFF/,'').trim().split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(!lines.length)throw Error('داده‌ای وارد نشده است.');
+ const sep=lines[0].includes(';')?';':lines[0].includes('\t')?'\t':',';
+ const cells=x=>x.split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
+ const header=cells(lines[0]);
+ const normalized=header.map(v=>v.toLowerCase().replace(/[_\s-]/g,''));
+ let col=normalized.findIndex(v=>['close','closingprice','adjclose','قیمتپایانی','پایانی'].includes(v));
+ let start=col>=0?1:0;
+ if(col<0){if(header.length>1)throw Error('برای CSV چندستونی، ستون close یا قیمت پایانی لازم است.');col=0;}
+ const values=[];
+ for(let i=start;i<lines.length;i++){
+  const cell=cells(lines[i])[col]; if(cell===undefined||!cell.trim())continue;
+  const digits=cell.replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const value=Number(digits.replace(/٬/g,'').replace(/,/g,''));
+  if(!Number.isFinite(value)||value<=0)throw Error(`قیمت نامعتبر در سطر ${i+1}`);
+  values.push(value);
+ }
+ if(values.length<15)throw Error('برای RSI حداقل ۱۵ قیمت پایانی معتبر لازم است.');
+ if(values.length>20000)throw Error('حداکثر ۲۰ هزار قیمت در هر تحلیل مجاز است.');
+ return values;
+}
+function sma(a,n){return a.length>=n?a.slice(-n).reduce((s,v)=>s+v,0)/n:null;}
+function rsi(a,n=14){if(a.length<n+1)return null;let gain=0,loss=0;
+ for(let i=1;i<=n;i++){let d=a[i]-a[i-1];gain+=Math.max(d,0);loss+=Math.max(-d,0);}
+ gain/=n;loss/=n;
+ for(let i=n+1;i<a.length;i++){let d=a[i]-a[i-1];gain=(gain*(n-1)+Math.max(d,0))/n;loss=(loss*(n-1)+Math.max(-d,0))/n;}
+ return loss===0?(gain===0?50:100):100-100/(1+gain/loss);
+}
+function chart(a){let last=a.slice(-150), min=Math.min(...last),max=Math.max(...last),range=max-min||1;
+ let points=last.map((v,i)=>`${(i*680/Math.max(1,last.length-1)).toFixed(1)},${(155-(v-min)/range*135).toFixed(1)}`).join(' ');
+ $('priceChart').innerHTML=`<svg viewBox="0 0 700 190" width="100%" aria-hidden="true" style="background:#0a1a2f;border-radius:12px;margin-top:12px"><line x1="10" y1="165" x2="690" y2="165" stroke="#49627a"/><polyline transform="translate(10 0)" points="${points}" fill="none" stroke="#35c7aa" stroke-width="2.5" stroke-linejoin="round"/><text x="12" y="185" font-size="14" fill="#c6d8e5">${fmt(min)} تا ${fmt(max)} — آخرین ${last.length} رکورد</text></svg>`;
+}
+function analyze(a){let last=a.at(-1),m20=sma(a,20),m50=sma(a,50),r=rsi(a),chg=(last/a[0]-1)*100;
+ let observations=[];
+ if(m20!==null)observations.push(last>m20?'قیمت بالاتر از میانگین ۲۰ دوره است.':last<m20?'قیمت پایین‌تر از میانگین ۲۰ دوره است.':'قیمت برابر میانگین ۲۰ دوره است.');
+ if(m50!==null&&m20!==null)observations.push(m20>m50?'میانگین ۲۰ دوره بالاتر از ۵۰ دوره است.':'میانگین ۲۰ دوره بالاتر از ۵۰ دوره نیست.');
+ observations.push(r>70?'RSI بالای ۷۰ است؛ امکان اشباع خرید مطرح می‌شود.':r<30?'RSI زیر ۳۰ است؛ امکان اشباع فروش مطرح می‌شود.':'RSI بین ۳۰ و ۷۰ است.');
+ $('analysisResult').textContent=`تعداد رکورد: ${fmt(a.length)} | آخرین قیمت: ${fmt(last)} | تغییر کل بازه: ${fmt(chg)}٪ | SMA20: ${m20===null?'داده ناکافی':fmt(m20)} | SMA50: ${m50===null?'داده ناکافی':fmt(m50)} | RSI14: ${fmt(r)}. ${observations.join(' ')} این مشاهدات به‌تنهایی سیگنال معامله نیستند.`;
+ chart(a);
+}
+$('analyze').addEventListener('click',()=>{try{analyze(parsePrices($('historyText').value));}catch(e){$('analysisResult').textContent=e.message;$('priceChart').replaceChildren();}});
+$('historyFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;if(f.size>1024*1024){$('analysisResult').textContent='حجم فایل باید کمتر از یک مگابایت باشد.';return;}try{$('historyText').value=await f.text();analyze(parsePrices($('historyText').value));}catch(err){$('analysisResult').textContent=err.message;}});
+$('demo').addEventListener('click',()=>{let a=Array.from({length:90},(_,i)=>Math.round(1000+i*2+45*Math.sin(i*.24)));$('historyText').value=a.join('\n');analyze(a);});
+
+
+// گزارش محلی ریسک سبد؛ بدون ارسال داده به اینترنت و بدون ذخیره سبد.
+let latestPortfolioReport=null;
+function portfolioNumber(v,line){
+ const digits=String(v).trim().replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٬/g,'');
+ const val=Number(digits);
+ if(digits===''||!Number.isFinite(val))throw Error('عدد نامعتبر در سطر '+line);
+ return val;
+}
+function parsePortfolio(raw){
+ const lines=raw.trim().split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ if(!lines.length)throw Error('دست‌کم یک سهم وارد کنید.');
+ if(lines.length>100)throw Error('حداکثر ۱۰۰ سهم پشتیبانی می‌شود.');
+ const names=new Set();
+ return lines.map((line,i)=>{
+   const cols=line.split(/[,،;\t]/).map(s=>s.trim());
+   if(cols.length!==6)throw Error(`در سطر ${i+1} باید دقیقاً ۶ مقدار باشد.`);
+   const symbol=cols[0];
+   if(!symbol||symbol.length>35||names.has(symbol))throw Error(`نام نماد خالی، تکراری یا نامعتبر در سطر ${i+1}`);
+   names.add(symbol);
+   const [qty,buy,current,stop,target]=cols.slice(1).map(v=>portfolioNumber(v,i+1));
+   if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(v=>v<=0)||stop>=current||target<=current)throw Error(`مقادیر نامعتبر در سطر ${i+1}: تعداد باید عدد صحیح مثبت، حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از آن باشد.`);
+   return {symbol,qty,buy,current,stop,target,value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*(current-stop),upside:qty*(target-current)};
+ });
+}
+function reportPortfolio(){
+ const summary=$('portfolioSummary'),details=$('portfolioDetails');
+ try{
+  const positions=parsePortfolio($('portfolioData').value);
+  const baseText=$('portfolioCapital').value.trim();
+  const capital=baseText===''?null:portfolioNumber(baseText,'سرمایه');
+  const riskCap=portfolioNumber($('portfolioRiskCap').value,'سقف ریسک');
+  if((capital!==null&&capital<=0)||riskCap<=0||riskCap>100)throw Error('سرمایه مبنا باید مثبت و درصد سقف زیان بین صفر و ۱۰۰ باشد.');
+  const sum=k=>positions.reduce((a,x)=>a+x[k],0),value=sum('value'),cost=sum('cost'),pnl=sum('pnl'),atRisk=sum('atRisk'),upside=sum('upside');
+  if(![value,cost,pnl,atRisk,upside].every(Number.isFinite))throw Error('اعداد بیش از حد بزرگ هستند.');
+  const strongest=positions.reduce((a,b)=>a.value>b.value?a:b);
+  const concentrated=strongest.value/value*100;
+  const riskPercent=capital===null?null:atRisk/capital*100;
+  const outside=capital!==null&&value>capital;
+  const exceeds=riskPercent!==null&&riskPercent>riskCap;
+  summary.textContent=`تعداد نماد: ${fmt(positions.length)} | ارزش روز سبد: ${fmt(value)} تومان | بهای خرید: ${fmt(cost)} تومان | سود/زیان تحقق‌نیافته: ${fmt(pnl)} تومان (${fmt(cost?100*pnl/cost:0)}٪) | زیان نظری از قیمت جاری تا حد ضرر: ${fmt(atRisk)} تومان${riskPercent===null?'':` (${fmt(riskPercent)}٪ سرمایه مبنا)`} | سود نظری تا اهداف: ${fmt(upside)} تومان | بیشترین تمرکز: ${strongest.symbol}، ${fmt(concentrated)}٪ ارزش سبد.${exceeds?' هشدار: زیان نظری سبد بیشتر از سقف تعیین‌شده است.':''}${outside?' هشدار: ارزش روز سهام از سرمایه مبنای ثبت‌شده بیشتر است؛ این الزاماً خطا نیست و ممکن است به دلیل سود یا تأمین مالی باشد.':''} این اعداد بدون کارمزد و لغزش هستند.`;
+  const table=document.createElement('table');table.style.cssText='width:100%;min-width:610px;border-collapse:collapse;font-size:13px;text-align:right';
+  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (تومان)','سود/زیان (تومان)','زیان تا حد ضرر','سهم از سبد'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
+  positions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
+  details.replaceChildren(table);latestPortfolioReport={positions,capital,riskCap,value,cost,pnl,atRisk,upside};
+ }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;}
+}
+$('portfolioAnalyze').addEventListener('click',reportPortfolio);
+$('portfolioClear').addEventListener('click',()=>{$('portfolioData').value='';$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
+$('portfolioExport').addEventListener('click',()=>{
+ if(!latestPortfolioReport){$('portfolioSummary').textContent='ابتدا گزارش سبد را محاسبه کنید.';return;}
+ const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman'];
+ const rows=latestPortfolioReport.positions.map(x=>[x.symbol,x.qty,x.buy,x.current,x.stop,x.target,x.value,x.pnl,x.atRisk,x.upside].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+ const blob=new Blob(['\uFEFF'+[header.join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'});
+ const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='sahamban_portfolio_report.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+
+
+// ارتباط آزمایشی با داده بازار؛ عدم موفقیت هرگز به معنای قیمت روز نیست.
+const TSE_BASE='https://cdn.tsetmc.com/api';
+function tseStatus(msg){$('marketStatus').textContent=msg;}
+async function tseFetch(path){
+ const ctrl=new AbortController();const timeout=setTimeout(()=>ctrl.abort(),12000);
+ try{
+  const res=await fetch(TSE_BASE+path,{signal:ctrl.signal,cache:'no-store',headers:{'Accept':'application/json'}});
+  if(!res.ok)throw Error('پاسخ HTTP '+res.status);
+  const type=res.headers.get('content-type')||'';
+  if(!type.includes('json'))throw Error('پاسخ غیر JSON یا صفحه مسدودسازی');
+  return await res.json();
+ }finally{clearTimeout(timeout);}
+}
+$('marketSearch').addEventListener('click',async()=>{
+ const name=$('marketSymbol').value.trim();const select=$('marketMatches');
+ select.replaceChildren();$('marketCode').value='';
+ if(!name||name.length>50){tseStatus('نام نماد معتبر، حداکثر ۵۰ نویسه، وارد کنید.');return;}
+ tseStatus('در حال درخواست جست‌وجوی نماد؛ نتیجه هنوز تأیید نشده است...');
+ try{
+  const data=await tseFetch('/Instrument/GetInstrumentSearch/'+encodeURIComponent(name));
+  const records=data.instrumentSearch;
+  if(!Array.isArray(records)||!records.length)throw Error('هیچ نمادی بازگردانده نشد؛ ممکن است منبع محدود باشد.');
+  let count=0;
+  for(const x of records.slice(0,70)){
+    const code=String(x.insCode??'');if(!/^\d{8,25}$/.test(code))continue;
+    const option=document.createElement('option');option.value=code;
+    option.textContent=(x.lVal18AFC||x.lVal30||'نماد')+' — '+(x.lVal30||'')+' — '+code;
+    select.appendChild(option);count++;
+  }
+  if(!count)throw Error('نتایج دارای شناسه معتبر نبودند.');
+  $('marketCode').value=select.value;
+  tseStatus(count+' نتیجه دریافت شد. یک نماد انتخاب کنید، سپس تاریخچه را بارگیری کنید. دریافت در '+new Date().toLocaleString('fa-IR')+' (زمان دستگاه)؛ این زمان، زمان آخرین معامله نیست.');
+ }catch(e){tseStatus('جست‌وجو ناموفق: '+e.message+'. می‌توانید از فایل CSV آفلاین استفاده کنید.');}
+});
+$('marketMatches').addEventListener('change',()=>{$('marketCode').value=$('marketMatches').value;});
+$('marketHistory').addEventListener('click',async()=>{
+ const code=$('marketCode').value.trim();if(!/^\d{8,25}$/.test(code)){tseStatus('ابتدا شناسه معتبر نماد را از جست‌وجو انتخاب یا وارد کنید.');return;}
+ tseStatus('در حال درخواست داده تاریخی از منبع؛ هنوز داده‌ای دریافت نشده است...');
+ try{
+  const data=await tseFetch('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0');
+  const rows=data.closingPriceDaily;
+  if(!Array.isArray(rows)||rows.length<15)throw Error('تاریخچه کافی دریافت نشد.');
+  const normalized=rows.map(x=>({date:Number(x.dEven),price:Number(x.pClosing)})).filter(x=>Number.isFinite(x.date)&&Number.isFinite(x.price)&&x.price>0).sort((a,b)=>a.date-b.date);
+  if(normalized.length<15)throw Error('کمتر از ۱۵ قیمت معتبر در پاسخ وجود دارد.');
+  const last=normalized.at(-1);let stamp=String(last.date);
+  if(!/^\d{8}$/.test(stamp))stamp='نامشخص';
+  const prices=normalized.map(x=>x.price);
+  $('historyText').value=prices.join('\n');
+  analyze(prices);
+  tseStatus('تاریخچه '+normalized.length+' رکورد دریافت شد. آخرین تاریخ معامله ثبت‌شده در پاسخ: '+stamp+' (میلادی YYYYMMDD). آخرین قیمت پایانی: '+fmt(last.price)+' ریال. زمان دریافت: '+new Date().toLocaleString('fa-IR')+' (دستگاه). این قیمت، قیمت لحظه‌ای نیست.');
+ }catch(e){tseStatus('تاریخچه دریافت نشد: '+e.message+'. داده قدیمی به‌عنوان قیمت روز نشان داده نمی‌شود؛ از CSV آفلاین استفاده کنید.');}
+});
+
+
+// نسخه ۵: دریافت دستی قیمت پایانی مرجع و ارزیابی حدهای ریالی؛ بدون پایش پس‌زمینه.
+let quoteInFlight=false;
+$('marketQuote').addEventListener('click',async()=>{
+ const output=$('quoteStatus');output.textContent='در حال درخواست تازه؛ نتیجه قبلی معتبر نیست.';
+ const code=$('marketCode').value.trim();
+ const stopText=$('liveStop').value.trim(),targetText=$('liveTarget').value.trim();
+ const stop=Number(stopText),target=Number(targetText);
+ if(!/^\d{8,25}$/.test(code)){output.textContent='ابتدا نماد و شناسه معتبر آن را انتخاب کنید.';return;}
+ if(!stopText||!targetText||!Number.isFinite(stop)||!Number.isFinite(target)||stop<=0||target<=stop){output.textContent='حد پایین و بالا را به ریال وارد کنید؛ حد بالا باید بیشتر باشد.';return;}
+ if(quoteInFlight){output.textContent='درخواست قبلی هنوز به پایان نرسیده است.';return;}
+ quoteInFlight=true;$('marketQuote').disabled=true;
+ try{
+  const result=await tseFetch('/ClosingPrice/GetClosingPriceInfo/'+code);
+  const info=result.closingPriceInfo;
+  if(!info||typeof info!=='object')throw Error('ساختار پاسخ قیمت شناسایی نشد');
+  const price=Number(info.pClosing??info.pc);
+  if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر دریافت نشد');
+  const rawDate=info.dEven??info.date??info.lastDate;
+  const dateString=String(rawDate??'نامشخص');
+  const dateInfo=/^\d{8}$/.test(dateString)?dateString+' میلادی':'نامشخص';
+  const label=$('marketSymbol').value.trim()||'نماد انتخابی';
+  const state=price<=stop?'عبور از حد پایین':price>=target?'عبور از حد بالا':'بدون عبور از حدود';
+  const message=`${label}؛ قیمت پایانی گزارش‌شده ${fmt(price)} ریال؛ تاریخ بازار: ${dateInfo}؛ نتیجه: ${state}. زمان دریافت روی دستگاه: ${new Date().toLocaleString('fa-IR')}. این قیمت لزوماً لحظه‌ای نیست.`;
+  output.textContent=message;
+  if(price<=stop||price>=target){output.classList.add('alarm');speak(`هشدار سهام بان. ${label}. ${state}. قیمت پایانی ${fmt(price)} ریال.`);try{navigator.vibrate?.([150,90,150]);}catch(e){}}
+  else output.classList.remove('alarm');
+ }catch(e){output.classList.remove('alarm');output.textContent='دریافت قیمت ناموفق: '+(e.name==='AbortError'?'مهلت اتصال به پایان رسید':e.message)+'. هیچ هشدار معتبری صادر نشد؛ ممکن است دسترسی شبکه یا CORS محدود باشد.';}
+ finally{quoteInFlight=false;$('marketQuote').disabled=false;}
+});
+
+
+// نسخه شش: بررسی دستی چند نماد؛ هیچ پایش خودکار یا زمان‌بندی در پس‌زمینه ندارد.
+const WATCH_KEY='sahamban-watchlist-v6';
+let watchlist=[];let watchBusy=false;
+try { const value=JSON.parse(localStorage.getItem(WATCH_KEY)||'[]');if(Array.isArray(value))watchlist=value.filter(x=>/^[0-9]{8,25}$/.test(String(x.code))&&typeof x.name==='string'&&Number.isFinite(x.stop)&&Number.isFinite(x.target)&&x.stop>0&&x.target>x.stop).slice(0,20); }catch(e){}
+function watchSave(){try{localStorage.setItem(WATCH_KEY,JSON.stringify(watchlist));}catch(e){$('watchStatus').textContent='ذخیره فهرست در مرورگر ممکن نشد.';}}
+function watchRender(){const node=$('watchTable');node.replaceChildren();if(!watchlist.length){node.textContent='هنوز نمادی ثبت نشده است.';return;}
+ for(const [i,x] of watchlist.entries()){const row=document.createElement('div');row.style='padding:8px 0;border-bottom:1px solid #33516b';const label=document.createElement('span');label.textContent=`${x.name} | ${x.code} | پایین: ${fmt(x.stop)} ریال | بالا: ${fmt(x.target)} ریال `;row.appendChild(label);const btn=document.createElement('button');btn.className='secondary';btn.textContent='حذف';btn.setAttribute('aria-label','حذف '+x.name);btn.addEventListener('click',()=>{if(watchBusy)return;watchlist.splice(i,1);watchSave();watchRender();});row.appendChild(btn);const res=document.createElement('div');res.id='watch-result-'+i;res.className='muted';res.textContent='هنوز بررسی نشده است.';row.appendChild(res);node.appendChild(row);}}
+$('watchFromSelected').addEventListener('click',()=>{$('watchName').value=$('marketSymbol').value.trim();$('watchCode').value=$('marketCode').value.trim();$('watchStop').value=$('liveStop').value;$('watchTarget').value=$('liveTarget').value;});
+$('watchAdd').addEventListener('click',()=>{if(watchBusy)return;const name=$('watchName').value.trim().slice(0,35),code=$('watchCode').value.trim(),stop=Number($('watchStop').value),target=Number($('watchTarget').value);if(!name||!/^[0-9]{8,25}$/.test(code)||!Number.isFinite(stop)||!Number.isFinite(target)||stop<=0||target<=stop){$('watchStatus').textContent='نام، شناسه ۸ تا ۲۵ رقمی و دو حد معتبر به ریال وارد کنید.';return;}if(watchlist.some(x=>x.code===code)){$('watchStatus').textContent='این شناسه قبلاً ثبت شده است؛ برای تغییر، مورد قبلی را حذف کنید.';return;}if(watchlist.length>=20){$('watchStatus').textContent='حداکثر ۲۰ نماد در این نسخه پشتیبانی می‌شود.';return;}watchlist.push({name,code,stop,target});watchSave();watchRender();$('watchStatus').textContent='نماد ثبت شد. برای بررسی قیمت باید دکمه «بررسی همه» را بزنید.';});
+$('watchCheck').addEventListener('click',async()=>{if(watchBusy||!watchlist.length)return;watchBusy=true;$('watchCheck').disabled=true;$('watchAdd').disabled=true;watchRender();let triggered=0,failed=0;const checkedAt=new Date().toLocaleString('fa-IR');$('watchStatus').textContent='در حال دریافت جداگانه قیمت نمادها؛ نتیجه پیشین معتبر نیست.';
+ try{for(const [i,x] of watchlist.entries()){const row=$('watch-result-'+i);row.textContent='در حال دریافت قیمت...';try{const data=await tseFetch('/ClosingPrice/GetClosingPriceInfo/'+x.code);const info=data.closingPriceInfo;const price=Number(info?.pClosing??info?.pc);if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر وجود ندارد');const date=String(info?.dEven??'');const marketDate=/^\d{8}$/.test(date)?date:'نامشخص';const signal=price<=x.stop?'عبور از حد پایین':price>=x.target?'عبور از حد بالا':'در محدوده تعریف‌شده';row.textContent=`قیمت پایانی: ${fmt(price)} ریال | تاریخ بازار: ${marketDate} | ${signal}`;if(price<=x.stop||price>=x.target){triggered++;row.classList.add('alarm');speak(`هشدار سهام بان. ${x.name}. ${signal}.`);}}catch(e){failed++;row.textContent='دریافت ناموفق؛ داده معتبر جدید موجود نیست: '+(e.name==='AbortError'?'اتمام مهلت درخواست':e.message);}} $('watchStatus').textContent=`بررسی دستی در ${checkedAt} (زمان دستگاه) پایان یافت. ${triggered} نماد به حدود رسید؛ ${failed} درخواست ناموفق. نتیجه لحظه‌ای نیست و اعلان پس‌زمینه وجود ندارد.`;}finally{watchBusy=false;$('watchCheck').disabled=false;$('watchAdd').disabled=false;}});
+watchRender();
