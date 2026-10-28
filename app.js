@@ -127,6 +127,27 @@ function reportPortfolio(){
   details.replaceChildren(table);latestPortfolioReport={positions,capital,riskCap,value,cost,pnl,atRisk,upside};
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;}
 }
+const portfolioDemo='فولاد,1000,500,540,470,650\nخودرو,2000,280,260,235,320';
+$('pfAdd').addEventListener('click',()=>{
+ const status=$('pfStatus');
+ try{
+  const symbol=$('pfSymbol').value.trim();
+  if(!symbol||symbol.length>35||/[,،;\t\r\n]/.test(symbol))throw Error('نام نماد معتبر و بدون کاما وارد کنید.');
+  const ids=['pfQty','pfBuy','pfCurrent','pfStop','pfTarget'];
+  const numbers=ids.map(id=>portfolioNumber($(id).value,'فرم افزودن سهم'));
+  const [qty,buy,current,stop,target]=numbers;
+  if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=current||target<=current)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از قیمت فعلی باشد.');
+  const input=$('portfolioData');const raw=input.value.trim();
+  const lines=(raw===portfolioDemo?[]:raw?raw.split(/\r?\n/).filter(Boolean):[]);
+  const index=lines.findIndex(line=>line.split(/[,،;\t]/)[0].trim()===symbol);
+  const newLine=[symbol,...numbers].join(',');
+  if(index>=0)lines[index]=newLine;
+  else{if(lines.length>=100)throw Error('حداکثر ۱۰۰ نماد قابل ثبت است.');lines.push(newLine);}
+  input.value=lines.join('\n');
+  status.textContent=(index>=0?'اطلاعات نماد به‌روزرسانی شد.':'نماد به سبد اضافه شد.')+' گزارش جدید در پایین محاسبه شد. قیمت‌ها دستی هستند، نه زنده.';
+  reportPortfolio();
+ }catch(e){status.textContent='خطا: '+e.message;}
+});
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
 $('portfolioClear').addEventListener('click',()=>{$('portfolioData').value='';$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 $('portfolioExport').addEventListener('click',()=>{
