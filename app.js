@@ -78,7 +78,7 @@ $('demo').addEventListener('click',()=>{let a=Array.from({length:90},(_,i)=>Math
 // گزارش محلی ریسک سبد؛ بدون ارسال داده به اینترنت و بدون ذخیره سبد.
 let latestPortfolioReport=null;
 function portfolioNumber(v,line){
- const digits=String(v).trim().replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٬/g,'');
+ const digits=String(v).trim().replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٬/g,'').replace(/٫/g,'.');
  const val=Number(digits);
  if(digits===''||!Number.isFinite(val))throw Error('عدد نامعتبر در سطر '+line);
  return val;
