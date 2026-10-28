@@ -140,6 +140,8 @@ function reportPortfolio(){
 }
 const portfolioDemo='فولاد,1000,500,540,470,650\nخودرو,2000,280,260,235,320';
 let portfolioEditingSymbol=null;
+let portfolioPendingDelete=null;
+function resetPortfolioDelete(){portfolioPendingDelete=null;const b=$('pfDelete');b.textContent='حذف سهم انتخابی از سبد';}
 function portfolioRowsForEditing(){
  const raw=$('portfolioData').value.trim();
  if(!raw)return [];
@@ -155,6 +157,7 @@ function refreshPortfolioChoices(preferred=''){
  else portfolioEditingSymbol=null;
 }
 $('pfEdit').addEventListener('click',()=>{
+ resetPortfolioDelete();
  try{
   const symbol=$('pfExisting').value;
   if(!symbol)throw Error('ابتدا نماد را از فهرست انتخاب کنید.');
@@ -171,7 +174,9 @@ $('pfDelete').addEventListener('click',()=>{
   if(!symbol)throw Error('ابتدا نماد را انتخاب کنید.');
   const rows=portfolioRowsForEditing();
   if(!rows.some(x=>x.symbol===symbol))throw Error('نماد در سبد پیدا نشد.');
+  if(portfolioPendingDelete!==symbol){portfolioPendingDelete=symbol;$('pfDelete').textContent='تأیید حذف '+symbol;$('pfStatus').textContent='برای حذف '+symbol+' یک بار دیگر همین دکمه را بزنید. هنوز چیزی حذف نشده است.';return;}
   const remaining=rows.filter(x=>x.symbol!==symbol);
+  resetPortfolioDelete();
   if(portfolioEditingSymbol===symbol)portfolioEditingSymbol=null;
   $('portfolioData').value=remaining.map(x=>[x.symbol,x.qty,x.buy,x.current,x.stop,x.target].join(',')).join('\n');
   refreshPortfolioChoices();
@@ -179,10 +184,11 @@ $('pfDelete').addEventListener('click',()=>{
   $('pfStatus').textContent='نماد '+symbol+' از سبد فعلی حذف شد. نسخه ذخیره‌شده روی گوشی تغییر نکرد.';
  }catch(e){$('pfStatus').textContent='حذف انجام نشد: '+e.message;}
 });
-$('portfolioData').addEventListener('input',()=>{portfolioEditingSymbol=null;refreshPortfolioChoices();});
-$('pfExisting').addEventListener('change',()=>{portfolioEditingSymbol=null;});
+$('portfolioData').addEventListener('input',()=>{portfolioEditingSymbol=null;resetPortfolioDelete();refreshPortfolioChoices();});
+$('pfExisting').addEventListener('change',()=>{portfolioEditingSymbol=null;resetPortfolioDelete();});
 refreshPortfolioChoices();
 $('pfAdd').addEventListener('click',()=>{
+ resetPortfolioDelete();
  const status=$('pfStatus');
  try{
   const symbol=$('pfSymbol').value.trim();
@@ -237,6 +243,7 @@ $('portfolioSave').addEventListener('click',()=>{
  }catch(e){portfolioStoreNotice('ذخیره انجام نشد: '+e.message);}
 });
 $('portfolioLoad').addEventListener('click',()=>{
+ resetPortfolioDelete();
  try{
   const record=portfolioSavedState();
   portfolioEditingSymbol=null;
@@ -257,7 +264,7 @@ $('portfolioForget').addEventListener('click',()=>{
  }catch(e){portfolioStoreNotice('حذف نسخه ذخیره‌شده ممکن نشد: '+e.message);}
 });
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
-$('portfolioClear').addEventListener('click',()=>{portfolioEditingSymbol=null;$('portfolioData').value='';refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
+$('portfolioClear').addEventListener('click',()=>{resetPortfolioDelete();portfolioEditingSymbol=null;$('portfolioData').value='';refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 $('portfolioExport').addEventListener('click',()=>{
  if(!latestPortfolioReport){$('portfolioSummary').textContent='ابتدا گزارش سبد را محاسبه کنید.';return;}
  const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman'];
