@@ -33,7 +33,7 @@ async function main(){
     'فولاد,100,2500,3000\\nوملل,1842,6975,2282\\nوملل,1842,0,1000\\n', 'utf8')});
   await page.locator('#brokerMapping').waitFor({state:'visible'});
   await page.locator('#brokerPreview').click();
-  assert.match(await page.locator('#brokerReviewStatus').innerText(),/3 ردیف|۳ ردیف/);
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/۳ ردیف/);
   assert.equal(await page.locator('#brokerApply').isDisabled(),false);
   await page.locator('#brokerApply').click();
   const importedCSV=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
@@ -41,7 +41,7 @@ async function main(){
   assert.equal(importedCSV.holdings[0].buy,2500);
   assert.equal(importedCSV.holdings[1].symbol,'وملل');
   assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
-  console.log('PASS: generic CSV mapping, toman conversion, duplicate and zero-price exclusion, no portfolio overwrite');
+  console.log('PASS: generic CSV mapping, rial prices, duplicate and zero-price exclusion, no portfolio overwrite');
 
   // Generate a minimal compressed XLSX in-memory; no personal brokerage file in test artifacts.
   function zip(files){
@@ -67,7 +67,7 @@ async function main(){
   await page.locator('#brokerFile').setInputFiles({name:'sample.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:xlsx});
   await page.locator('#brokerMapping').waitFor({state:'visible'});
   await page.locator('#brokerPreview').click();
-  assert.match(await page.locator('#brokerReviewStatus').innerText(),/1 ردیف|۱ ردیف/);
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/۱ ردیف/);
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('#brokerApply').click();
   const importedExcel=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
@@ -82,7 +82,7 @@ async function main(){
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const recordedBefore=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   await page.locator('#portfolioAnalyze').click();
-  assert.match(await page.locator('#portfolioSummary').innerText(),/1.?060.?000|۱.?۰۶۰.?۰۰۰|ارزش روز سبد/u);
+  assert.match(await page.locator('#portfolioSummary').innerText(),/ارزش روز سبد/u);
   console.log('PASS: portfolio report renders in Chromium');
 
   await page.locator('#portfolioData').fill('آلفا,10,100,120,90,180');
@@ -144,7 +144,7 @@ async function main(){
   });
   await page.getByText('فایل پذیرفته نشد:',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.locator('#portfolioBackupApply').isDisabled(),true);
-  assert.equal(await page.locator('#portfolioData').inputValue(),backup.data);
+  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
   console.log('PASS: invalid JSON backup rejected without changing current holdings');
 
   // Matching the built-in example must never silently discard those holdings.
