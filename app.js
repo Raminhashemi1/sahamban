@@ -222,11 +222,24 @@ $('marketQuote').addEventListener('click',async()=>{
   const price=Number(info.pClosing??info.pc);
   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر دریافت نشد');
   const freshness=marketDateCheck(info.dEven??info.date??info.lastDate);
+  let verification={ok:false,note:'تأیید قیمت با تاریخچه انجام نشد؛ هشدار صوتی غیرفعال است.'};
+  try{
+   const history=await tseFetch('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0');
+   const rows=history.closingPriceDaily;
+   if(!Array.isArray(rows)||!rows.length)throw Error('تاریخچه قابل بررسی موجود نیست');
+   const normalized=rows.map(x=>({date:String(x.dEven??''),price:Number(x.pClosing)})).filter(x=>/^\d{8}$/.test(x.date)&&Number.isFinite(x.price)&&x.price>0).sort((a,b)=>a.date.localeCompare(b.date));
+   if(!normalized.length)throw Error('تاریخ و قیمت معتبر در تاریخچه نبود');
+   const last=normalized.at(-1),quoteDate=String(info.dEven??info.date??info.lastDate??'');
+   const diff=Math.abs(last.price-price)/last.price*100;
+   if(quoteDate!==last.date)verification={ok:false,note:'تاریخ دو منبع یکسان نیست: قیمت تکی '+quoteDate+' و آخرین تاریخچه '+last.date+'؛ هشدار صوتی تا رفع اختلاف غیرفعال است.'};
+   else if(diff>0.01)verification={ok:false,note:'اختلاف قیمت در یک تاریخ! قیمت تکی '+fmt(price)+' و تاریخچه '+fmt(last.price)+' ریال (اختلاف '+fmt(diff)+'٪)؛ هشدار صوتی غیرفعال است.'};
+   else verification={ok:true,note:'قیمت و تاریخ با آخرین رکورد تاریخچه همان نماد تطبیق داده شد.'};
+  }catch(err){verification={ok:false,note:'تطبیق با تاریخچه ناموفق: '+(err.name==='AbortError'?'مهلت درخواست تمام شد':err.message)+'؛ هشدار صوتی غیرفعال است.'};}
   const label=$('marketSymbol').value.trim()||'نماد انتخابی';
   const state=price<=stop?'عبور از حد پایین':price>=target?'عبور از حد بالا':'بدون عبور از حدود';
-  const message=`${label}؛ قیمت پایانی گزارش‌شده ${fmt(price)} ریال؛ ${freshness.text}؛ نتیجه مقایسه: ${state}. ${freshness.ok?'تاریخ داده برای هشدار دستی در بازه مجاز است.':'هشدار صوتی به دلیل نامعتبر یا قدیمی بودن تاریخ غیرفعال است.'} زمان دریافت روی دستگاه: ${new Date().toLocaleString('fa-IR')}. این قیمت لحظه‌ای نیست.`;
+  const message=`${label}؛ قیمت پایانی گزارش‌شده ${fmt(price)} ریال؛ ${freshness.text}؛ نتیجه مقایسه: ${state}. ${freshness.ok?'تاریخ داده در بازه هفت روزه است.':'هشدار صوتی به دلیل تاریخ نامعتبر یا قدیمی غیرفعال است.'} ${verification.note} زمان دریافت روی دستگاه: ${new Date().toLocaleString('fa-IR')}. این قیمت لحظه‌ای نیست.`;
   output.textContent=message;
-  if(freshness.ok&&(price<=stop||price>=target)){output.classList.add('alarm');speak(`هشدار سهام بان. ${label}. ${state}. قیمت پایانی ${fmt(price)} ریال.`);try{navigator.vibrate?.([150,90,150]);}catch(e){}}
+  if(freshness.ok&&verification.ok&&(price<=stop||price>=target)){output.classList.add('alarm');speak(`هشدار سهام بان. ${label}. ${state}. قیمت پایانی ${fmt(price)} ریال.`);try{navigator.vibrate?.([150,90,150]);}catch(e){}}
   else output.classList.remove('alarm');
  }catch(e){output.classList.remove('alarm');output.textContent='دریافت قیمت ناموفق: '+(e.name==='AbortError'?'مهلت اتصال به پایان رسید':e.message)+'. هیچ هشدار معتبری صادر نشد؛ ممکن است دسترسی شبکه یا CORS محدود باشد.';}
  finally{quoteInFlight=false;$('marketQuote').disabled=false;}
