@@ -231,7 +231,16 @@ $('marketQuote').addEventListener('click',async()=>{
    if(!normalized.length)throw Error('تاریخ و قیمت معتبر در تاریخچه نبود');
    const last=normalized.at(-1),quoteDate=String(info.dEven??info.date??info.lastDate??'');
    const diff=Math.abs(last.price-price)/last.price*100;
-   if(quoteDate!==last.date)verification={ok:false,note:'تاریخ دو منبع یکسان نیست: قیمت تکی '+quoteDate+' و آخرین تاریخچه '+last.date+'؛ هشدار صوتی تا رفع اختلاف غیرفعال است.'};
+   if(quoteDate!==last.date){
+    const q=marketDateCheck(quoteDate),h=marketDateCheck(last.date);
+    const qMs=Date.parse(quoteDate.slice(0,4)+'-'+quoteDate.slice(4,6)+'-'+quoteDate.slice(6,8)+'T00:00:00Z');
+    const hMs=Date.parse(last.date.slice(0,4)+'-'+last.date.slice(4,6)+'-'+last.date.slice(6,8)+'T00:00:00Z');
+    const lag=q.ok&&hMs&&Number.isFinite(qMs)&&Number.isFinite(hMs)?Math.round((qMs-hMs)/86400000):null;
+    if(lag===1)verification={ok:false,note:'قیمت تکی مربوط به یک روز بعد از آخرین رکورد تاریخچه است ('+quoteDate+' در برابر '+last.date+'). احتمال تأخیر در انتشار تاریخچه وجود دارد، اما قطعی نیست. دکمه «بررسی دوباره» را بعداً بزنید. هشدار صوتی غیرفعال است.'};
+    else if(lag!==null&&lag>1)verification={ok:false,note:'قیمت تکی '+fmt(lag)+' روز جدیدتر از تاریخچه است ('+quoteDate+' در برابر '+last.date+'). نیاز به بررسی مجدد؛ هشدار صوتی غیرفعال است.'};
+    else if(lag!==null&&lag<0)verification={ok:false,note:'رکورد تاریخچه از تاریخ قیمت تکی جدیدتر است ('+last.date+' در برابر '+quoteDate+'). قیمت تکی ممکن است قدیمی باشد؛ هشدار صوتی غیرفعال است.'};
+    else verification={ok:false,note:'تاریخ دو پاسخ سازگار نیست یا نامعتبر است ('+quoteDate+' در برابر '+last.date+'). هشدار صوتی غیرفعال است.'};
+   }
    else if(diff>0.01)verification={ok:false,note:'اختلاف قیمت در یک تاریخ! قیمت تکی '+fmt(price)+' و تاریخچه '+fmt(last.price)+' ریال (اختلاف '+fmt(diff)+'٪)؛ هشدار صوتی غیرفعال است.'};
    else verification={ok:true,note:'قیمت و تاریخ با آخرین رکورد تاریخچه همان نماد تطبیق داده شد.'};
   }catch(err){verification={ok:false,note:'تطبیق با تاریخچه ناموفق: '+(err.name==='AbortError'?'مهلت درخواست تمام شد':err.message)+'؛ هشدار صوتی غیرفعال است.'};}
