@@ -99,6 +99,7 @@ function parsePortfolio(raw){
    return {symbol,qty,buy,current,stop,target,value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*(current-stop),upside:qty*(target-current)};
  });
 }
+function portfolioRewardRisk(upside,risk){return risk>0&&Number.isFinite(upside/risk)?upside/risk:null;}
 function reportPortfolio(){
  const summary=$('portfolioSummary'),details=$('portfolioDetails');
  try{
@@ -118,6 +119,8 @@ function reportPortfolio(){
   const topGainer=positions.filter(x=>x.pnl>0).sort((a,b)=>b.pnl-a.pnl)[0]??null;
   const topLoser=positions.filter(x=>x.pnl<0).sort((a,b)=>a.pnl-b.pnl)[0]??null;
   const largestRisk=positions.reduce((a,b)=>a.atRisk>=b.atRisk?a:b);
+  const rewardRisk=portfolioRewardRisk(upside,atRisk);
+  const lowRewardRisk=positions.filter(x=>{const ratio=portfolioRewardRisk(x.upside,x.atRisk);return ratio!==null&&ratio<1;});
   const strongest=positions.reduce((a,b)=>a.value>b.value?a:b);
   const concentrated=strongest.value/value*100;
   const overConcentrated=positions.map(x=>({...x,weight:100*x.value/value})).filter(x=>x.weight>concentrationCap);
@@ -131,9 +134,10 @@ function reportPortfolio(){
   summary.textContent+=overConcentrated.length?` | هشدار تمرکز: ${fmt(overConcentrated.length)} نماد بیش از سقف ${fmt(concentrationCap)}٪ هستند: ${overConcentrated.map(x=>x.symbol+' ('+fmt(x.weight)+'٪)').join('، ')}. این شاخص فقط تمرکز را نشان می‌دهد و توصیه خرید یا فروش نیست.`:` | تمرکز سبد: هیچ نمادی بالاتر از سقف ${fmt(concentrationCap)}٪ نیست.`;
   summary.textContent+=` | سهم‌های سودده: ${fmt(grossGains)} تومان سود ناخالصِ تحقق‌نیافته${topGainer?`؛ بیشترین سود: ${topGainer.symbol} (${fmt(topGainer.pnl)} تومان)`:'؛ هیچ سهم سوددهی ثبت نشده'} | سهم‌های زیان‌ده: ${fmt(grossLosses)} تومان زیان ناخالصِ تحقق‌نیافته${topLoser?`؛ بیشترین زیان: ${topLoser.symbol} (${fmt(-topLoser.pnl)} تومان)`:'؛ هیچ سهم زیان‌دهی ثبت نشده'}. سهم هر نماد از سودها یا زیان‌ها جداگانه محاسبه می‌شود، نه از سود خالص سبد.`;
   summary.textContent+=` | بیشترین سهم از ریسک حد ضرر: ${largestRisk.symbol} با ${fmt(largestRisk.atRisk)} تومان${atRisk>0?` (${fmt(largestRisk.atRisk/atRisk*100)}٪ ریسک نظری کل سبد)`:' (ریسک نظری صفر)'}. این شاخص با سهم از ارزش سبد متفاوت است.`;
+  summary.textContent+=` | نسبت سود نظری تا هدف به زیان نظری تا حد ضرر: ${rewardRisk===null?'نامشخص':fmt(rewardRisk)+' به ۱'}. ${lowRewardRisk.length?fmt(lowRewardRisk.length)+' نماد نسبت کمتر از ۱ دارند: '+lowRewardRisk.map(x=>x.symbol).join('، ')+'.':'هیچ نمادی نسبت کمتر از ۱ ندارد.'} این نسبت صرفاً فاصله قیمت‌ها را مقایسه می‌کند و احتمال رسیدن به هدف یا حد ضرر را لحاظ نمی‌کند.`;
   summary.textContent+=` | آزمون افت فرضی ${fmt(stress)}٪ همه نمادها: کاهش ارزش ${fmt(stressLoss)} تومان${stressOnCapital}؛ ارزش سبد پس از افت ${fmt(stressValue)} تومان. این صرفاً یک سناریوی ریاضی است، نه پیش‌بینی بازار.`;
   const table=document.createElement('table');table.style.cssText='width:100%;min-width:610px;border-collapse:collapse;font-size:13px;text-align:right';
-  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (تومان)','سود/زیان (تومان)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
+  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (تومان)','سود/زیان (تومان)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها','نسبت سود به ریسک'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
   const sortMode=$('portfolioSort').value;
   const sortFields={risk:'atRisk',value:'value',loss:'pnl',gain:'pnl'};
   const displayPositions=positions.slice();
@@ -141,7 +145,7 @@ function reportPortfolio(){
    const field=sortFields[sortMode],direction=sortMode==='loss'?1:-1;
    displayPositions.sort((a,b)=>direction*(a[field]-b[field]));
   }
-  displayPositions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'+(100*x.value/value>concentrationCap?' — بیش از سقف':''),atRisk>0?fmt(100*x.atRisk/atRisk)+'٪':'۰٪',x.pnl>0?(grossGains>0?fmt(100*x.pnl/grossGains)+'٪ از سودها':'—'):x.pnl<0?(grossLosses>0?fmt(100*(-x.pnl)/grossLosses)+'٪ از زیان‌ها':'—'):'بدون سود و زیان'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
+  displayPositions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'+(100*x.value/value>concentrationCap?' — بیش از سقف':''),atRisk>0?fmt(100*x.atRisk/atRisk)+'٪':'۰٪',x.pnl>0?(grossGains>0?fmt(100*x.pnl/grossGains)+'٪ از سودها':'—'):x.pnl<0?(grossLosses>0?fmt(100*(-x.pnl)/grossLosses)+'٪ از زیان‌ها':'—') :'بدون سود و زیان',portfolioRewardRisk(x.upside,x.atRisk)===null?'نامشخص':fmt(portfolioRewardRisk(x.upside,x.atRisk))+' به ۱'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
   details.replaceChildren(table);latestPortfolioReport={positions,capital,riskCap,value,cost,pnl,atRisk,upside,concentrationCap};
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;}
 }
