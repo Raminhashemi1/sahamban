@@ -140,6 +140,18 @@ $('portfolioExport').addEventListener('click',()=>{
 
 // ارتباط آزمایشی با داده بازار؛ عدم موفقیت هرگز به معنای قیمت روز نیست.
 const TSE_BASE='https://cdn.tsetmc.com/api';
+function marketDateCheck(raw){
+ const value=String(raw??'').trim();
+ if(!/^\d{8}$/.test(value))return {ok:false,text:'تاریخ بازار نامشخص است'};
+ const year=Number(value.slice(0,4)),month=Number(value.slice(4,6)),day=Number(value.slice(6,8));
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return {ok:false,text:'تاریخ بازار نامعتبر است'};
+ const today=new Date(),todayUTC=Date.UTC(today.getFullYear(),today.getMonth(),today.getDate());
+ const age=Math.round((todayUTC-date.getTime())/86400000);
+ if(age<0)return {ok:false,text:'تاریخ بازار در آینده است'};
+ if(age>7)return {ok:false,text:'داده قدیمی است ('+fmt(age)+' روز پیش)'};
+ return {ok:true,text:'تاریخ بازار: '+value+' میلادی؛ فاصله تقویمی: '+fmt(age)+' روز'};
+}
 function tseStatus(msg){$('marketStatus').textContent=msg;}
 async function tseFetch(path){
  const ctrl=new AbortController();const timeout=setTimeout(()=>ctrl.abort(),12000);
@@ -209,14 +221,12 @@ $('marketQuote').addEventListener('click',async()=>{
   if(!info||typeof info!=='object')throw Error('ساختار پاسخ قیمت شناسایی نشد');
   const price=Number(info.pClosing??info.pc);
   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر دریافت نشد');
-  const rawDate=info.dEven??info.date??info.lastDate;
-  const dateString=String(rawDate??'نامشخص');
-  const dateInfo=/^\d{8}$/.test(dateString)?dateString+' میلادی':'نامشخص';
+  const freshness=marketDateCheck(info.dEven??info.date??info.lastDate);
   const label=$('marketSymbol').value.trim()||'نماد انتخابی';
   const state=price<=stop?'عبور از حد پایین':price>=target?'عبور از حد بالا':'بدون عبور از حدود';
-  const message=`${label}؛ قیمت پایانی گزارش‌شده ${fmt(price)} ریال؛ تاریخ بازار: ${dateInfo}؛ نتیجه: ${state}. زمان دریافت روی دستگاه: ${new Date().toLocaleString('fa-IR')}. این قیمت لزوماً لحظه‌ای نیست.`;
+  const message=`${label}؛ قیمت پایانی گزارش‌شده ${fmt(price)} ریال؛ ${freshness.text}؛ نتیجه مقایسه: ${state}. ${freshness.ok?'تاریخ داده برای هشدار دستی در بازه مجاز است.':'هشدار صوتی به دلیل نامعتبر یا قدیمی بودن تاریخ غیرفعال است.'} زمان دریافت روی دستگاه: ${new Date().toLocaleString('fa-IR')}. این قیمت لحظه‌ای نیست.`;
   output.textContent=message;
-  if(price<=stop||price>=target){output.classList.add('alarm');speak(`هشدار سهام بان. ${label}. ${state}. قیمت پایانی ${fmt(price)} ریال.`);try{navigator.vibrate?.([150,90,150]);}catch(e){}}
+  if(freshness.ok&&(price<=stop||price>=target)){output.classList.add('alarm');speak(`هشدار سهام بان. ${label}. ${state}. قیمت پایانی ${fmt(price)} ریال.`);try{navigator.vibrate?.([150,90,150]);}catch(e){}}
   else output.classList.remove('alarm');
  }catch(e){output.classList.remove('alarm');output.textContent='دریافت قیمت ناموفق: '+(e.name==='AbortError'?'مهلت اتصال به پایان رسید':e.message)+'. هیچ هشدار معتبری صادر نشد؛ ممکن است دسترسی شبکه یا CORS محدود باشد.';}
  finally{quoteInFlight=false;$('marketQuote').disabled=false;}
@@ -233,5 +243,5 @@ function watchRender(){const node=$('watchTable');node.replaceChildren();if(!wat
 $('watchFromSelected').addEventListener('click',()=>{$('watchName').value=$('marketSymbol').value.trim();$('watchCode').value=$('marketCode').value.trim();$('watchStop').value=$('liveStop').value;$('watchTarget').value=$('liveTarget').value;});
 $('watchAdd').addEventListener('click',()=>{if(watchBusy)return;const name=$('watchName').value.trim().slice(0,35),code=$('watchCode').value.trim(),stop=Number($('watchStop').value),target=Number($('watchTarget').value);if(!name||!/^[0-9]{8,25}$/.test(code)||!Number.isFinite(stop)||!Number.isFinite(target)||stop<=0||target<=stop){$('watchStatus').textContent='نام، شناسه ۸ تا ۲۵ رقمی و دو حد معتبر به ریال وارد کنید.';return;}if(watchlist.some(x=>x.code===code)){$('watchStatus').textContent='این شناسه قبلاً ثبت شده است؛ برای تغییر، مورد قبلی را حذف کنید.';return;}if(watchlist.length>=20){$('watchStatus').textContent='حداکثر ۲۰ نماد در این نسخه پشتیبانی می‌شود.';return;}watchlist.push({name,code,stop,target});watchSave();watchRender();$('watchStatus').textContent='نماد ثبت شد. برای بررسی قیمت باید دکمه «بررسی همه» را بزنید.';});
 $('watchCheck').addEventListener('click',async()=>{if(watchBusy||!watchlist.length)return;watchBusy=true;$('watchCheck').disabled=true;$('watchAdd').disabled=true;watchRender();let triggered=0,failed=0;const checkedAt=new Date().toLocaleString('fa-IR');$('watchStatus').textContent='در حال دریافت جداگانه قیمت نمادها؛ نتیجه پیشین معتبر نیست.';
- try{for(const [i,x] of watchlist.entries()){const row=$('watch-result-'+i);row.textContent='در حال دریافت قیمت...';try{const data=await tseFetch('/ClosingPrice/GetClosingPriceInfo/'+x.code);const info=data.closingPriceInfo;const price=Number(info?.pClosing??info?.pc);if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر وجود ندارد');const date=String(info?.dEven??'');const marketDate=/^\d{8}$/.test(date)?date:'نامشخص';const signal=price<=x.stop?'عبور از حد پایین':price>=x.target?'عبور از حد بالا':'در محدوده تعریف‌شده';row.textContent=`قیمت پایانی: ${fmt(price)} ریال | تاریخ بازار: ${marketDate} | ${signal}`;if(price<=x.stop||price>=x.target){triggered++;row.classList.add('alarm');speak(`هشدار سهام بان. ${x.name}. ${signal}.`);}}catch(e){failed++;row.textContent='دریافت ناموفق؛ داده معتبر جدید موجود نیست: '+(e.name==='AbortError'?'اتمام مهلت درخواست':e.message);}} $('watchStatus').textContent=`بررسی دستی در ${checkedAt} (زمان دستگاه) پایان یافت. ${triggered} نماد به حدود رسید؛ ${failed} درخواست ناموفق. نتیجه لحظه‌ای نیست و اعلان پس‌زمینه وجود ندارد.`;}finally{watchBusy=false;$('watchCheck').disabled=false;$('watchAdd').disabled=false;}});
+ try{for(const [i,x] of watchlist.entries()){const row=$('watch-result-'+i);row.textContent='در حال دریافت قیمت...';try{const data=await tseFetch('/ClosingPrice/GetClosingPriceInfo/'+x.code);const info=data.closingPriceInfo;const price=Number(info?.pClosing??info?.pc);if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر وجود ندارد');const freshness=marketDateCheck(info?.dEven??info?.date??info?.lastDate);const signal=price<=x.stop?'عبور از حد پایین':price>=x.target?'عبور از حد بالا':'در محدوده تعریف‌شده';row.textContent=`قیمت پایانی: ${fmt(price)} ریال | ${freshness.text} | ${signal}${freshness.ok?'':' | هشدار صوتی غیرفعال (تاریخ نامعتبر یا قدیمی)'}`;if(freshness.ok&&(price<=x.stop||price>=x.target)){triggered++;row.classList.add('alarm');speak(`هشدار سهام بان. ${x.name}. ${signal}.`);}}catch(e){failed++;row.textContent='دریافت ناموفق؛ داده معتبر جدید موجود نیست: '+(e.name==='AbortError'?'اتمام مهلت درخواست':e.message);}} $('watchStatus').textContent=`بررسی دستی در ${checkedAt} (زمان دستگاه) پایان یافت. ${triggered} نماد به حدود رسید؛ ${failed} درخواست ناموفق. نتیجه لحظه‌ای نیست و اعلان پس‌زمینه وجود ندارد.`;}finally{watchBusy=false;$('watchCheck').disabled=false;$('watchAdd').disabled=false;}});
 watchRender();
