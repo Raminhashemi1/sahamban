@@ -139,6 +139,7 @@ function reportPortfolio(){
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;}
 }
 const portfolioDemo='فولاد,1000,500,540,470,650\nخودرو,2000,280,260,235,320';
+let portfolioEditingSymbol=null;
 function portfolioRowsForEditing(){
  const raw=$('portfolioData').value.trim();
  if(!raw)return [];
@@ -151,6 +152,7 @@ function refreshPortfolioChoices(preferred=''){
  const first=document.createElement('option');first.value='';first.textContent='یک نماد انتخاب کنید';menu.appendChild(first);
  try{for(const p of portfolioRowsForEditing()){const opt=document.createElement('option');opt.value=p.symbol;opt.textContent=p.symbol;menu.appendChild(opt);}}catch(e){$('pfStatus').textContent='اطلاعات سبد نامعتبر است؛ ابتدا سطرها را اصلاح کنید: '+e.message;}
  if([...menu.options].some(x=>x.value===current))menu.value=current;
+ else portfolioEditingSymbol=null;
 }
 $('pfEdit').addEventListener('click',()=>{
  try{
@@ -158,6 +160,7 @@ $('pfEdit').addEventListener('click',()=>{
   if(!symbol)throw Error('ابتدا نماد را از فهرست انتخاب کنید.');
   const p=portfolioRowsForEditing().find(x=>x.symbol===symbol);
   if(!p)throw Error('نماد انتخاب‌شده دیگر در سبد نیست.');
+  portfolioEditingSymbol=p.symbol;
   for(const [id,value] of [['pfSymbol',p.symbol],['pfQty',p.qty],['pfBuy',p.buy],['pfCurrent',p.current],['pfStop',p.stop],['pfTarget',p.target]])$(id).value=value;
   $('pfStatus').textContent='اطلاعات '+symbol+' در فرم قرار گرفت. پس از اصلاح، «افزودن / به‌روزرسانی سهم» را بزنید.';
  }catch(e){$('pfStatus').textContent='ویرایش ممکن نشد: '+e.message;}
@@ -169,13 +172,15 @@ $('pfDelete').addEventListener('click',()=>{
   const rows=portfolioRowsForEditing();
   if(!rows.some(x=>x.symbol===symbol))throw Error('نماد در سبد پیدا نشد.');
   const remaining=rows.filter(x=>x.symbol!==symbol);
+  if(portfolioEditingSymbol===symbol)portfolioEditingSymbol=null;
   $('portfolioData').value=remaining.map(x=>[x.symbol,x.qty,x.buy,x.current,x.stop,x.target].join(',')).join('\n');
   refreshPortfolioChoices();
   if(remaining.length){reportPortfolio();}else{$('portfolioSummary').textContent='سبد خالی شد. برای محاسبه گزارش، سهم جدید اضافه کنید.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;}
   $('pfStatus').textContent='نماد '+symbol+' از سبد فعلی حذف شد. نسخه ذخیره‌شده روی گوشی تغییر نکرد.';
  }catch(e){$('pfStatus').textContent='حذف انجام نشد: '+e.message;}
 });
-$('portfolioData').addEventListener('input',()=>refreshPortfolioChoices());
+$('portfolioData').addEventListener('input',()=>{portfolioEditingSymbol=null;refreshPortfolioChoices();});
+$('pfExisting').addEventListener('change',()=>{portfolioEditingSymbol=null;});
 refreshPortfolioChoices();
 $('pfAdd').addEventListener('click',()=>{
  const status=$('pfStatus');
@@ -188,11 +193,19 @@ $('pfAdd').addEventListener('click',()=>{
   if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=current||target<=current)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از قیمت فعلی باشد.');
   const input=$('portfolioData');const raw=input.value.trim();
   const lines=(raw===portfolioDemo?[]:raw?raw.split(/\r?\n/).filter(Boolean):[]);
-  const index=lines.findIndex(line=>line.split(/[,،;\t]/)[0].trim()===symbol);
+  const symbols=lines.map(line=>line.split(/[,،;\t]/)[0].trim());
+  const editingIndex=portfolioEditingSymbol?symbols.indexOf(portfolioEditingSymbol):-1;
+  if(portfolioEditingSymbol&&editingIndex<0)throw Error('سهم انتخاب‌شده برای ویرایش دیگر در سبد موجود نیست. دوباره انتخاب کنید.');
+  const duplicateIndex=symbols.indexOf(symbol);
+  if(editingIndex>=0&&duplicateIndex>=0&&duplicateIndex!==editingIndex)throw Error('نماد جدید از قبل در سبد وجود دارد؛ نام دیگری انتخاب کنید.');
+  const index=editingIndex>=0?editingIndex:duplicateIndex;
   const newLine=[symbol,...numbers].join(',');
-  if(index>=0)lines[index]=newLine;
-  else{if(lines.length>=100)throw Error('حداکثر ۱۰۰ نماد قابل ثبت است.');lines.push(newLine);}
-  input.value=lines.join('\n');
+  const nextLines=lines.slice();
+  if(index>=0)nextLines[index]=newLine;
+  else{if(nextLines.length>=100)throw Error('حداکثر ۱۰۰ نماد قابل ثبت است.');nextLines.push(newLine);}
+  parsePortfolio(nextLines.join('\n'));
+  input.value=nextLines.join('\n');
+  portfolioEditingSymbol=null;
   status.textContent=(index>=0?'اطلاعات نماد به‌روزرسانی شد.':'نماد به سبد اضافه شد.')+' گزارش جدید در پایین محاسبه شد. قیمت‌ها دستی هستند، نه زنده.';
   reportPortfolio();
   refreshPortfolioChoices(symbol);
@@ -226,6 +239,7 @@ $('portfolioSave').addEventListener('click',()=>{
 $('portfolioLoad').addEventListener('click',()=>{
  try{
   const record=portfolioSavedState();
+  portfolioEditingSymbol=null;
   $('portfolioData').value=record.data;
   $('portfolioCapital').value=record.capital;
   $('portfolioRiskCap').value=record.riskCap;
@@ -243,7 +257,7 @@ $('portfolioForget').addEventListener('click',()=>{
  }catch(e){portfolioStoreNotice('حذف نسخه ذخیره‌شده ممکن نشد: '+e.message);}
 });
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
-$('portfolioClear').addEventListener('click',()=>{$('portfolioData').value='';refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
+$('portfolioClear').addEventListener('click',()=>{portfolioEditingSymbol=null;$('portfolioData').value='';refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 $('portfolioExport').addEventListener('click',()=>{
  if(!latestPortfolioReport){$('portfolioSummary').textContent='ابتدا گزارش سبد را محاسبه کنید.';return;}
  const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman'];
