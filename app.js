@@ -303,6 +303,51 @@ $('portfolioForget').addEventListener('click',()=>{
 });
 for(const id of ['portfolioCapital','portfolioRiskCap','portfolioStress','portfolioConcentration'])$(''+id).addEventListener('input',refreshPortfolioSaveState);
 refreshPortfolioSaveState();
+let pendingPortfolioBackup=null;
+function validatePortfolioBackup(record){
+ if(!record||record.version!==1||typeof record.data!=='string'||record.data.length>25000)throw Error('ساختار فایل پشتیبان معتبر نیست.');
+ parsePortfolio(record.data);
+ for(const key of ['capital','riskCap','stress'])if(typeof record[key]!=='string'||record[key].length>60)throw Error('فیلدهای فایل کامل نیستند.');
+ const concentration=record.concentration??'30';
+ if(typeof concentration!=='string'||concentration.length>60)throw Error('سقف تمرکز فایل معتبر نیست.');
+ if(record.capital&&portfolioNumber(record.capital,'سرمایه')<=0)throw Error('سرمایه مبنا نامعتبر است.');
+ const risk=portfolioNumber(record.riskCap,'سقف ریسک'),stress=portfolioNumber(record.stress,'افت فرضی'),cap=portfolioNumber(concentration,'تمرکز');
+ if(risk<=0||risk>100||stress<0||stress>100||cap<1||cap>100)throw Error('تنظیمات ریسک یا تمرکز فایل معتبر نیستند.');
+ return {data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration};
+}
+$('portfolioBackup').addEventListener('click',()=>{
+ try{
+  const snapshot=portfolioSnapshot();
+  const valid=validatePortfolioBackup({version:1,...snapshot});
+  const blob=new Blob([JSON.stringify({format:'sahamban-portfolio',version:1,...valid,exportedAt:new Date().toISOString()},null,2)],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='sahamban-portfolio-backup.json';
+  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  $('portfolioBackupStatus').textContent='فایل پشتیبان از سبد فعلی آماده دانلود شد. آن را در جای امن نگه دارید.';
+ }catch(e){$('portfolioBackupStatus').textContent='پشتیبان‌گیری انجام نشد: '+e.message;}
+});
+$('portfolioBackupFile').addEventListener('change',async()=>{
+ pendingPortfolioBackup=null;$('portfolioBackupApply').disabled=true;
+ const file=$('portfolioBackupFile').files?.[0];
+ if(!file)return;
+ if(file.size>30000){$('portfolioBackupStatus').textContent='حجم فایل نباید بیشتر از ۳۰ کیلوبایت باشد.';return;}
+ try{
+  const record=JSON.parse(await file.text());
+  if(record.format!=='sahamban-portfolio')throw Error('این فایل متعلق به نسخه پشتیبان سبد سهام‌بان نیست.');
+  pendingPortfolioBackup=validatePortfolioBackup(record);
+  $('portfolioBackupApply').disabled=false;
+  $('portfolioBackupStatus').textContent='فایل معتبر است؛ '+parsePortfolio(pendingPortfolioBackup.data).length+' نماد پیدا شد. فقط با «تأیید بازیابی فایل» اطلاعات فعلی صفحه جایگزین می‌شوند. نسخه ذخیره‌شده مرورگر تغییر نمی‌کند.';
+ }catch(e){$('portfolioBackupStatus').textContent='فایل پذیرفته نشد: '+e.message;}
+});
+$('portfolioBackupApply').addEventListener('click',()=>{
+ if(!pendingPortfolioBackup){$('portfolioBackupStatus').textContent='ابتدا یک فایل معتبر انتخاب کنید.';return;}
+ const record=pendingPortfolioBackup;
+ pendingPortfolioBackup=null;$('portfolioBackupApply').disabled=true;$('portfolioBackupFile').value='';
+ resetPortfolioDelete();portfolioEditingSymbol=null;portfolioLastDeletion=null;portfolioUndoAvailability();
+ for(const [id,key] of [['portfolioData','data'],['portfolioCapital','capital'],['portfolioRiskCap','riskCap'],['portfolioStress','stress'],['portfolioConcentration','concentration']])$(id).value=record[key];
+ refreshPortfolioChoices();reportPortfolio();refreshPortfolioSaveState();
+ $('portfolioBackupStatus').textContent='اطلاعات فایل روی صفحه بازیابی شد. برای نگه‌داشتن آنها در مرورگر، دکمه «ذخیره سبد روی گوشی» را بزنید.';
+});
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
 $('portfolioClear').addEventListener('click',()=>{resetPortfolioDelete();portfolioEditingSymbol=null;portfolioLastDeletion=null;portfolioUndoAvailability();$('portfolioData').value='';refreshPortfolioSaveState();refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 $('portfolioExport').addEventListener('click',()=>{
