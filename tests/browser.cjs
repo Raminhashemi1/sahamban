@@ -73,6 +73,7 @@ async function main(){
   const previousDate=new Date(currentDate);previousDate.setDate(previousDate.getDate()-1);
   const yesterday=[previousDate.getFullYear(),String(previousDate.getMonth()+1).padStart(2,'0'),String(previousDate.getDate()).padStart(2,'0')].join('');
   let sameDate=false;
+  await page.evaluate(()=>{window.__sahambanTestSpeechCalls=0;window.speak=()=>{window.__sahambanTestSpeechCalls++;};});
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/**',async route=>{
    const endpoint=route.request().url();
    let body;
@@ -88,6 +89,7 @@ async function main(){
   await page.locator('#marketQuote').click();
   await assert.doesNotReject(async()=>{await page.getByText('وضعیت اعتبار: در انتظار تطبیق',{exact:false}).waitFor({timeout:10000});});
   assert.equal(await page.locator('#quoteStatus').evaluate(el=>el.classList.contains('alarm')),false);
+  assert.equal(await page.evaluate(()=>window.__sahambanTestSpeechCalls),0);
   console.log('PASS: mismatch between daily quote and history blocks market alarm');
 
   sameDate=true;
@@ -95,7 +97,13 @@ async function main(){
   await page.locator('#marketQuote').click();
   await page.getByText('وضعیت اعتبار: تأییدشده',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.locator('#quoteStatus').evaluate(el=>el.classList.contains('alarm')),false);
+  assert.equal(await page.evaluate(()=>window.__sahambanTestSpeechCalls),0);
   console.log('PASS: matching market quote and history confirm validity without out-of-range alarm');
+  await page.locator('#liveTarget').fill('2050'); // valid closing price 2100 crosses upper limit
+  await page.locator('#marketQuote').click();
+  await page.locator('#quoteStatus.alarm').waitFor({timeout:10000});
+  assert.equal(await page.evaluate(()=>window.__sahambanTestSpeechCalls),1);
+  console.log('PASS: verified quote crossing upper limit triggers exactly one speech alert');
 
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
