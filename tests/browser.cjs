@@ -26,6 +26,9 @@ async function main(){
   page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
+  // Simulate an existing user recording; portfolio actions must never overwrite it.
+  await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
+  const recordedBefore=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   await page.locator('#portfolioAnalyze').click();
   assert.match(await page.locator('#portfolioSummary').innerText(),/1.?060.?000|۱.?۰۶۰.?۰۰۰|ارزش روز سبد/u);
   console.log('PASS: portfolio report renders in Chromium');
@@ -140,6 +143,9 @@ async function main(){
   await page.locator('#quoteStatus.alarm').waitFor({timeout:10000});
   assert.equal(await page.evaluate(()=>window.__sahambanTestSpeechCalls),1);
   console.log('PASS: verified quote crossing upper limit triggers exactly one speech alert');
+
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),recordedBefore);
+  console.log('PASS: portfolio, backup and market checks preserve recorded user voice');
 
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
