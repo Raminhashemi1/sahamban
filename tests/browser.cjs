@@ -73,21 +73,23 @@ async function main(){
   let sameDate=false;
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/**',async route=>{
    const endpoint=route.request().url();
-   const body=endpoint.includes('GetClosingPriceDailyList')
-    ?{closingPriceDaily:[{dEven:sameDate?Number(date):Number(yesterday),pClosing:2100}]}
-    :{closingPriceInfo:{dEven:Number(date),pClosing:2100}};
+   let body;
+   if(endpoint.includes('GetClosingPriceDailyList'))body={closingPriceDaily:[{dEven:sameDate?Number(date):Number(yesterday),pClosing:2100}]};
+   else if(endpoint.includes('GetClosingPriceInfo'))body={closingPriceInfo:{dEven:Number(date),pClosing:2100}};
+   else throw Error('Unexpected market API route: '+endpoint);
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
   });
   await page.locator('#marketCode').fill('46348559193224090');
   await page.locator('#marketSymbol').fill('فولاد');
   await page.locator('#liveStop').fill('2000');
-  await page.locator('#liveTarget').fill('2300');
+  await page.locator('#liveTarget').fill('2050'); // price crosses upper threshold, but history is mismatched
   await page.locator('#marketQuote').click();
   await assert.doesNotReject(async()=>{await page.getByText('وضعیت اعتبار: در انتظار تطبیق',{exact:false}).waitFor({timeout:10000});});
   assert.equal(await page.locator('#quoteStatus').evaluate(el=>el.classList.contains('alarm')),false);
   console.log('PASS: mismatch between daily quote and history blocks market alarm');
 
   sameDate=true;
+  await page.locator('#liveTarget').fill('2300'); // no crossing when history is valid
   await page.locator('#marketQuote').click();
   await page.getByText('وضعیت اعتبار: تأییدشده',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.locator('#quoteStatus').evaluate(el=>el.classList.contains('alarm')),false);
