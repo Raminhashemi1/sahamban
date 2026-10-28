@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
+const os=require('node:os');
 const {chromium}=require('playwright');
 
 async function main(){
@@ -18,9 +19,10 @@ async function main(){
   });
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- const browser=await chromium.launch({headless:true});
+ let browser;
  let page;
  try{
+  browser=await chromium.launch({headless:true});
   page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
@@ -97,6 +99,15 @@ async function main(){
 
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
- }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+ }catch(error){
+  try{
+   const output=process.env.GITHUB_WORKSPACE?path.join(process.env.GITHUB_WORKSPACE,'test-artifacts'):path.join(os.tmpdir(),'sahamban-browser-artifacts');
+   fs.mkdirSync(output,{recursive:true});
+   if(page){await page.screenshot({path:path.join(output,'browser-failure.png'),fullPage:true,timeout:5000}).catch(()=>{});fs.writeFileSync(path.join(output,'browser-page.txt'),(await page.locator('body').innerText().catch(()=>'' )).slice(0,20000));}
+   fs.writeFileSync(path.join(output,'error.txt'),String(error.stack||error));
+   console.error('Browser failure evidence: '+output);
+  }catch(e){console.error('Could not save browser artifacts:',e.message);}
+  throw error;
+ }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
