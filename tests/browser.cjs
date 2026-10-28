@@ -65,6 +65,34 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),before);
   console.log('PASS: on-device save, unsaved warning, restore');
 
+  // Mock market responses: no request is sent to the real exchange.
+  const currentDate=new Date();
+  const date=[currentDate.getFullYear(),String(currentDate.getMonth()+1).padStart(2,'0'),String(currentDate.getDate()).padStart(2,'0')].join('');
+  const previousDate=new Date(currentDate);previousDate.setDate(previousDate.getDate()-1);
+  const yesterday=[previousDate.getFullYear(),String(previousDate.getMonth()+1).padStart(2,'0'),String(previousDate.getDate()).padStart(2,'0')].join('');
+  let sameDate=false;
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/**',async route=>{
+   const endpoint=route.request().url();
+   const body=endpoint.includes('GetClosingPriceDailyList')
+    ?{closingPriceDaily:[{dEven:sameDate?Number(date):Number(yesterday),pClosing:2100}]}
+    :{closingPriceInfo:{dEven:Number(date),pClosing:2100}};
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
+  });
+  await page.locator('#marketCode').fill('46348559193224090');
+  await page.locator('#marketSymbol').fill('فولاد');
+  await page.locator('#liveStop').fill('2000');
+  await page.locator('#liveTarget').fill('2300');
+  await page.locator('#marketQuote').click();
+  await assert.doesNotReject(async()=>{await page.getByText('وضعیت اعتبار: در انتظار تطبیق',{exact:false}).waitFor({timeout:10000});});
+  assert.equal(await page.locator('#quoteStatus').evaluate(el=>el.classList.contains('alarm')),false);
+  console.log('PASS: mismatch between daily quote and history blocks market alarm');
+
+  sameDate=true;
+  await page.locator('#marketQuote').click();
+  await page.getByText('وضعیت اعتبار: تأییدشده',{exact:false}).waitFor({timeout:10000});
+  assert.equal(await page.locator('#quoteStatus').evaluate(el=>el.classList.contains('alarm')),false);
+  console.log('PASS: matching market quote and history confirm validity without out-of-range alarm');
+
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
