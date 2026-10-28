@@ -101,7 +101,9 @@ function parsePortfolio(raw){
    names.add(symbol);
    const [qty,buy,current,stop,target]=cols.slice(1).map(v=>portfolioNumber(v,i+1));
    if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(v=>v<=0)||stop>=current||target<=current)throw Error(`مقادیر نامعتبر در سطر ${i+1}: تعداد باید عدد صحیح مثبت، حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از آن باشد.`);
-   return {symbol,qty,buy,current,stop,target,value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*(current-stop),upside:qty*(target-current)};
+   const computed={value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*(current-stop),upside:qty*(target-current)};
+   if(!Object.values(computed).every(Number.isFinite))throw Error(`مقادیر بسیار بزرگ و محاسبه‌ناپذیر در سطر ${i+1}.`);
+   return {symbol,qty,buy,current,stop,target,...computed};
  });
 }
 function portfolioRewardRisk(upside,risk){return risk>0&&Number.isFinite(upside/risk)?upside/risk:null;}
@@ -272,12 +274,7 @@ function portfolioStoreNotice(message){$('portfolioStoreStatus').textContent=mes
 function portfolioSavedState(){
  const raw=localStorage.getItem(PORTFOLIO_STORAGE_KEY);
  if(!raw)throw Error('هیچ نسخه ذخیره‌شده‌ای در این مرورگر وجود ندارد.');
- const record=JSON.parse(raw);
- if(record.version!==1||typeof record.data!=='string'||record.data.length>25000||!record.data.trim())throw Error('اطلاعات ذخیره‌شده معتبر نیست.');
- parsePortfolio(record.data);
- for(const field of ['capital','riskCap','stress'])if(typeof record[field]!=='string'||record[field].length>60)throw Error('ساختار ذخیره‌شده معتبر نیست.');
- if(record.concentration!==undefined&&(typeof record.concentration!=='string'||record.concentration.length>60||portfolioNumber(record.concentration,'تمرکز')<1||portfolioNumber(record.concentration,'تمرکز')>100))throw Error('سقف تمرکز ذخیره‌شده نامعتبر است.');
- return record;
+ return validatePortfolioBackup(JSON.parse(raw));
 }
 $('portfolioSave').addEventListener('click',()=>{
  try{
@@ -349,11 +346,12 @@ $('portfolioBackupFile').addEventListener('change',async()=>{
  if(file.size>30000){$('portfolioBackupStatus').textContent='حجم فایل نباید بیشتر از ۳۰ کیلوبایت باشد.';return;}
  try{
   const record=JSON.parse(await file.text());
+  if($('portfolioBackupFile').files?.[0]!==file)return;
   if(record.format!=='sahamban-portfolio')throw Error('این فایل متعلق به نسخه پشتیبان سبد سهام‌بان نیست.');
   pendingPortfolioBackup=validatePortfolioBackup(record);
   $('portfolioBackupApply').disabled=false;
   $('portfolioBackupStatus').textContent='فایل معتبر است؛ '+parsePortfolio(pendingPortfolioBackup.data).length+' نماد پیدا شد. فقط با «تأیید بازیابی فایل» اطلاعات فعلی صفحه جایگزین می‌شوند. نسخه ذخیره‌شده مرورگر تغییر نمی‌کند.';
- }catch(e){$('portfolioBackupStatus').textContent='فایل پذیرفته نشد: '+e.message;}
+ }catch(e){if($('portfolioBackupFile').files?.[0]===file)$('portfolioBackupStatus').textContent='فایل پذیرفته نشد: '+e.message;}
 });
 $('portfolioBackupApply').addEventListener('click',()=>{
  if(!pendingPortfolioBackup){$('portfolioBackupStatus').textContent='ابتدا یک فایل معتبر انتخاب کنید.';return;}
