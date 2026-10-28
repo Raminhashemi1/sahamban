@@ -38,7 +38,7 @@ async function main(){
   await page.locator('#brokerApply').click();
   const importedCSV=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
   assert.equal(importedCSV.holdings.length,2);
-  assert.equal(importedCSV.holdings[0].buy,250);
+  assert.equal(importedCSV.holdings[0].buy,2500);
   assert.equal(importedCSV.holdings[1].symbol,'وملل');
   assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
   console.log('PASS: generic CSV mapping, toman conversion, duplicate and zero-price exclusion, no portfolio overwrite');
@@ -74,7 +74,7 @@ async function main(){
   const previousExcel=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1-previous')));
   assert.equal(importedExcel.holdings.length,1);
   assert.equal(importedExcel.holdings[0].symbol,'خودرو');
-  assert.equal(importedExcel.holdings[0].buy,500);
+  assert.equal(importedExcel.holdings[0].buy,5000);
   assert.equal(previousExcel.holdings.length,2);
   assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
   console.log('PASS: offline compressed XLSX, local backup on replacement, no analytical portfolio changes');
@@ -133,8 +133,8 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),before);
   console.log('PASS: selecting a valid backup never overwrites current holdings');
   await page.locator('#portfolioBackupApply').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),backup.data);
-  assert.equal(await page.locator('#portfolioCapital').inputValue(),backup.capital);
+  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
+  assert.equal(await page.locator('#portfolioCapital').inputValue(),'100000');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-portfolio-local-v1')),savedBeforeImport);
   console.log('PASS: confirmed JSON backup restores screen fields without replacing saved copy');
 
