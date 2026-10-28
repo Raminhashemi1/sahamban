@@ -235,7 +235,7 @@ $('pfAdd').addEventListener('click',()=>{
   const [qty,buy,current,stop,target]=numbers;
   if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=current||target<=current)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از قیمت فعلی باشد.');
   const input=$('portfolioData');const raw=input.value.trim();
-  const lines=(raw===portfolioDemo&&!portfolioEditingSymbol?[]:raw?raw.split(/\r?\n/).filter(Boolean):[]);
+  const lines=raw?raw.split(/\r?\n/).filter(Boolean):[];
   const symbols=lines.map(line=>line.split(/[,،;\t]/)[0].trim());
   const editingIndex=portfolioEditingSymbol?symbols.indexOf(portfolioEditingSymbol):-1;
   if(portfolioEditingSymbol&&editingIndex<0)throw Error('سهم انتخاب‌شده برای ویرایش دیگر در سبد موجود نیست. دوباره انتخاب کنید.');
