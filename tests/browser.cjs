@@ -67,6 +67,31 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),before);
   console.log('PASS: on-device save, unsaved warning, restore');
 
+  // Import is deliberately a two-step operation; the stored copy must remain untouched.
+  const backup={format:'sahamban-portfolio',version:1,data:'گاما,7,100,120,90,170',capital:'10000',riskCap:'5',stress:'10',concentration:'40'};
+  const savedBeforeImport=await page.evaluate(()=>localStorage.getItem('sahamban-portfolio-local-v1'));
+  await page.locator('#portfolioBackupFile').setInputFiles({
+   name:'valid-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))
+  });
+  await page.locator('#portfolioBackupApply').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!document.getElementById('portfolioBackupApply').disabled);
+  assert.equal(await page.locator('#portfolioData').inputValue(),before);
+  console.log('PASS: selecting a valid backup never overwrites current holdings');
+  await page.locator('#portfolioBackupApply').click();
+  assert.equal(await page.locator('#portfolioData').inputValue(),backup.data);
+  assert.equal(await page.locator('#portfolioCapital').inputValue(),backup.capital);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-portfolio-local-v1')),savedBeforeImport);
+  console.log('PASS: confirmed JSON backup restores screen fields without replacing saved copy');
+
+  await page.locator('#portfolioBackupFile').setInputFiles({
+   name:'corrupted-backup.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify({...backup,riskCap:'150',data:'نامعتبر,0,100,120,90,170'}))
+  });
+  await page.getByText('فایل پذیرفته نشد:',{exact:false}).waitFor({timeout:10000});
+  assert.equal(await page.locator('#portfolioBackupApply').isDisabled(),true);
+  assert.equal(await page.locator('#portfolioData').inputValue(),backup.data);
+  console.log('PASS: invalid JSON backup rejected without changing current holdings');
+
   // Mock market responses: no request is sent to the real exchange.
   const currentDate=new Date();
   const date=[currentDate.getFullYear(),String(currentDate.getMonth()+1).padStart(2,'0'),String(currentDate.getDate()).padStart(2,'0')].join('');
