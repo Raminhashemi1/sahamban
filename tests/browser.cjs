@@ -26,6 +26,8 @@ async function main(){
   page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
+  await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
+  const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   // Broker imports are staged independently and never overwrite the analytical portfolio.
   const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
   await page.locator('#brokerFile').setInputFiles({name:'brokers.csv',mimeType:'text/csv',buffer:Buffer.from(
@@ -77,6 +79,7 @@ async function main(){
   assert.equal(importedExcel.holdings[0].buy,5000);
   assert.equal(previousExcel.holdings.length,2);
   assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),voiceBeforeBrokerImport);
   console.log('PASS: offline compressed XLSX, local backup on replacement, no analytical portfolio changes');
   // Simulate an existing user recording; portfolio actions must never overwrite it.
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
