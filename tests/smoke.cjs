@@ -17,7 +17,7 @@ function extract(name){
  return tail.slice(0,next+3);
 }
 const context=vm.createContext({fmt:n=>String(n),Intl,Date});
-vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marketDateCheck','portfolioCsvCell','validatePortfolioBackup'].map(extract).join('\n'),context);
+vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marketDateCheck','portfolioCsvCell','validatePortfolioBackup','refreshPortfolioSaveState'].map(extract).join('\n'),context);
 test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);});
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
@@ -67,6 +67,19 @@ test('Backup validation blocks corrupted or dangerous settings',()=>{
 });
 test('Portfolio rejects excessive arithmetic',()=>{
  assert.throws(()=>context.parsePortfolio('الف,9007199254740991,1e300,1e300,1e299,1e301'));
+});
+test('Saved status rejects corrupted local portfolio',()=>{
+ const record={version:1,data:'فولاد,1000,500,540,470,650',capital:'1000000',riskCap:'5',stress:'10',concentration:'30'};
+ const status={textContent:''};
+ context.$=()=>status;
+ context.PORTFOLIO_STORAGE_KEY='sahamban-portfolio-local-v1';
+ context.portfolioSnapshot=()=>({data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration:record.concentration});
+ context.localStorage={getItem:()=>JSON.stringify({...record,concentration:'-5'})};
+ context.refreshPortfolioSaveState();
+ assert.match(status.textContent,/مشخص نیست/);
+ context.localStorage={getItem:()=>JSON.stringify(record)};
+ context.refreshPortfolioSaveState();
+ assert.match(status.textContent,/ذخیره شده‌اند/);
 });
 test('Own cache cleanup never targets other apps',()=>assert.ok(sw.includes("k.startsWith('sahamban-static-')&&k!==CACHE")));
 console.log('SUCCESS: '+count+' smoke checks');
