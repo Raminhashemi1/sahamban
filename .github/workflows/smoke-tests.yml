@@ -17,6 +17,7 @@ jobs:
           node-version: '22'
       - run: node tests/smoke.cjs
       - run: node tests/sw-offline.cjs
+      - run: node tests/market-validation.cjs
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
