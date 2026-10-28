@@ -206,6 +206,7 @@ $('marketHistory').addEventListener('click',async()=>{
 
 // نسخه ۵: دریافت دستی قیمت پایانی مرجع و ارزیابی حدهای ریالی؛ بدون پایش پس‌زمینه.
 let quoteInFlight=false;
+$('marketRetry').addEventListener('click',()=>{if(quoteInFlight){$('quoteStatus').textContent='درخواست قبلی هنوز در حال اجراست.';return;}$('marketQuote').click();});
 $('marketQuote').addEventListener('click',async()=>{
  const output=$('quoteStatus');output.textContent='در حال درخواست تازه؛ نتیجه قبلی معتبر نیست.';
  const code=$('marketCode').value.trim();
