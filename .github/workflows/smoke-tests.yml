@@ -32,7 +32,7 @@ jobs:
       - run: node tests/browser.cjs
       - name: Save Chromium failure evidence
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: sahamban-chromium-failure
           path: test-artifacts/
