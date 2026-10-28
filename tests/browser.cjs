@@ -92,6 +92,17 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),backup.data);
   console.log('PASS: invalid JSON backup rejected without changing current holdings');
 
+  // Matching the built-in example must never silently discard those holdings.
+  await page.locator('#portfolioData').fill('فولاد,1000,500,540,470,650\nخودرو,2000,280,260,235,320');
+  await page.locator('#pfSymbol').fill('آزمایش');
+  for(const [id,value] of Object.entries({pfQty:'5',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'130'}))await page.locator('#'+id).fill(value);
+  await page.locator('#pfAdd').click();
+  const retainedRows=await page.locator('#portfolioData').inputValue();
+  assert.match(retainedRows,/فولاد,1000,500,540,470,650/);
+  assert.match(retainedRows,/خودرو,2000,280,260,235,320/);
+  assert.match(retainedRows,/آزمایش,5,100,110,90,130/);
+  console.log('PASS: adding a holding never silently removes example-shaped existing positions');
+
   // Mock market responses: no request is sent to the real exchange.
   const currentDate=new Date();
   const date=[currentDate.getFullYear(),String(currentDate.getMonth()+1).padStart(2,'0'),String(currentDate.getDate()).padStart(2,'0')].join('');
