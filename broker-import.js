@@ -71,10 +71,10 @@ function previewRows(){
  const body=el('brokerRows');body.replaceChildren();
  for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,p.issue||'آماده']);body.append(tr);}
  const invalid=preview.filter(x=>x.issue).length;
- el('brokerReviewStatus').textContent=preview.length+' ردیف پیدا شد؛ '+invalid+' ردیف نیازمند بررسی است. '+(invalid?'تا رفع موردهای تکراری یا نامعتبر، ذخیره انجام نمی‌شود.':'قیمت‌ها به تومان نمایش داده شده‌اند.');
- el('brokerApply').disabled=invalid>0;
+ el('brokerReviewStatus').textContent=preview.length+' ردیف پیدا شد؛ '+invalid+' ردیف تکراری یا نامعتبر از ذخیره کنار گذاشته می‌شود. '+(invalid?'فقط ردیف‌های سالم را پس از بررسی تأیید کنید؛ ردیف‌های کنارگذاشته‌شده در همین جدول مشخص‌اند.':'قیمت‌ها به تومان نمایش داده شده‌اند.');
+ el('brokerApply').disabled=preview.every(x=>x.issue);
  el('brokerRisk').disabled=true;
- el('brokerReview').hidden=false;ready=invalid===0;
+ el('brokerReview').hidden=false;ready=preview.some(x=>!x.issue);
 }
 el('brokerFile').addEventListener('change',async()=>{
  ready=false;preview=[];el('brokerReview').hidden=true;el('brokerMapping').hidden=true;
@@ -99,11 +99,11 @@ el('brokerFile').addEventListener('change',async()=>{
 });
 el('brokerPreview').addEventListener('click',()=>{try{previewRows();status('پیش‌نمایش آماده است؛ هنوز چیزی ذخیره نشده.')}catch(e){ready=false;el('brokerReview').hidden=true;status(e.message)}});
 el('brokerApply').addEventListener('click',()=>{
- if(!ready||preview.some(p=>p.issue)){status('ابتدا خطاهای پیش‌نمایش را اصلاح کنید.');return;}
- const holdings=preview.map(({symbol,quantity,buy,current})=>({symbol,quantity,buy,current}));
+ if(!ready){status('هیچ ردیف سالمی برای ذخیره وجود ندارد.');return;}
+ const holdings=preview.filter(p=>!p.issue).map(({symbol,quantity,buy,current})=>({symbol,quantity,buy,current}));
  try{
   localStorage.setItem(STORAGE,JSON.stringify({version:1,created:new Date().toISOString(),holdings}));
-  status(holdings.length+' سهم در بخش دارایی‌های واردشده روی این دستگاه ذخیره شد. سبد تحلیل ریسک و صدای هشدار دست‌نخورده‌اند.');
+  preview=holdings.map(p=>({...p,issue:''}));status(holdings.length+' سهم سالم در بخش دارایی‌های واردشده ذخیره شد. ردیف‌های تکراری یا نامعتبر ذخیره نشدند؛ سبد تحلیل ریسک و صدای هشدار دست‌نخورده‌اند.');
   el('brokerRisk').disabled=false;
  }catch(e){status('ذخیره محلی انجام نشد: '+e.message);}
 });
