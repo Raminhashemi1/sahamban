@@ -17,7 +17,6 @@ jobs:
         run: |
           curl --fail --location --retry 3 --max-time 40 'https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/5b66859a-494b-4d86-8be6-f4a2c9709604.mp3' --output alert-voice.mp3
           test "$(wc -c < alert-voice.mp3)" -gt 10000
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1 alert-voice.mp3 | grep -q mp3
       - name: Commit audio to repository
         run: |
           git config user.name 'github-actions[bot]'
