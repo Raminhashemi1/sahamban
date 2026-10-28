@@ -23,15 +23,80 @@ function csv(text){
  row.push(cell);if(row.some(x=>x.trim()))out.push(row);
  return out;
 }
-function loadXlsx(){
- if(window.XLSX)return Promise.resolve(window.XLSX);
- return new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-  script.onload=()=>window.XLSX?resolve(window.XLSX):reject(Error('کتابخانه خواندن اکسل بارگیری نشد'));
-  script.onerror=()=>reject(Error('اتصال لازم برای خواندن اکسل برقرار نشد. می‌توانید CSV بگیرید.'));
-  document.head.appendChild(script);
- });
+// Read modern .xlsx (OOXML) inside the browser without third-party code or uploads.
+async function unzipXlsx(file){
+ const bytes=new Uint8Array(await file.arrayBuffer()),view=new DataView(bytes.buffer);
+ const decoder=new TextDecoder('utf-8');
+ let eocd=-1;
+ for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}
+ if(eocd<0)throw Error('ساختار فایل XLSX معتبر نیست.');
+ const count=view.getUint16(eocd+10,true),offset=view.getUint32(eocd+16,true);
+ if(count>1500||offset>=bytes.length)throw Error('فایل اکسل بسیار پیچیده یا نامعتبر است.');
+ const entries=new Map();let ptr=offset;
+ for(let i=0;i<count;i++){
+  if(view.getUint32(ptr,true)!==0x02014b50)throw Error('فهرست XLSX آسیب دیده است.');
+  const method=view.getUint16(ptr+10,true),compressed=view.getUint32(ptr+20,true),uncompressed=view.getUint32(ptr+24,true);
+  const nameLen=view.getUint16(ptr+28,true),extraLen=view.getUint16(ptr+30,true),commentLen=view.getUint16(ptr+32,true);
+  const local=view.getUint32(ptr+42,true);
+  const name=decoder.decode(bytes.subarray(ptr+46,ptr+46+nameLen));
+  if(!name.includes('..')&&uncompressed<=12*1024*1024)entries.set(name,{method,compressed,uncompressed,local});
+  ptr+=46+nameLen+extraLen+commentLen;
+ }
+ async function read(name){
+  const e=entries.get(name);if(!e)return null;
+  const p=e.local;if(view.getUint32(p,true)!==0x04034b50)throw Error('فایل XLSX آسیب دیده است.');
+  const header=30+view.getUint16(p+26,true)+view.getUint16(p+28,true),begin=p+header;
+  if(begin+e.compressed>bytes.length)throw Error('داده XLSX ناقص است.');
+  let raw=bytes.slice(begin,begin+e.compressed);
+  if(e.method===8){
+   if(typeof DecompressionStream==='undefined')throw Error('این مرورگر خواندن آفلاین اکسل را پشتیبانی نمی‌کند؛ خروجی CSV بگیرید.');
+   const stream=new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+   raw=new Uint8Array(await new Response(stream).arrayBuffer());
+  }else if(e.method!==0)throw Error('روش فشرده‌سازی این اکسل پشتیبانی نمی‌شود.');
+  if(raw.length!==e.uncompressed)throw Error('حجم داده XLSX صحیح نیست.');
+  return decoder.decode(raw);
+ }
+ const parse=xml=>{
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw Error('ساختار XML فایل اکسل معتبر نیست.');
+  return doc;
+ };
+ const sharedXml=await read('xl/sharedStrings.xml'),shared=[];
+ if(sharedXml){
+  const doc=parse(sharedXml);
+  for(const si of Array.from(doc.getElementsByTagName('si'))){
+   shared.push(Array.from(si.getElementsByTagName('t')).map(x=>x.textContent).join(''));
+   if(shared.length>20000)throw Error('فهرست متن‌های اکسل بیش از حد بزرگ است.');
+  }
+ }
+ let sheetName='xl/worksheets/sheet1.xml';
+ const wb=await read('xl/workbook.xml'),rels=await read('xl/_rels/workbook.xml.rels');
+ if(wb&&rels){
+  const workbook=parse(wb),relationships=parse(rels);
+  const sheet=workbook.getElementsByTagName('sheet')[0];
+  const relId=sheet?.getAttribute('r:id')||sheet?.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+  const rel=Array.from(relationships.getElementsByTagName('Relationship')).find(x=>x.getAttribute('Id')===relId);
+  const target=rel?.getAttribute('Target');
+  if(target){const cleaned=target.replace(/^\/+/,'');if(!cleaned.includes('..'))sheetName=cleaned.startsWith('xl/')?cleaned:'xl/'+cleaned;}
+ }
+ const sheetXml=await read(sheetName);
+ if(!sheetXml)throw Error('برگه اول فایل اکسل پیدا نشد.');
+ const doc=parse(sheetXml),matrix=[];
+ for(const row of Array.from(doc.getElementsByTagName('row'))){
+  const values=[];let position=0;
+  for(const c of Array.from(row.getElementsByTagName('c'))){
+   const reference=c.getAttribute('r')||'',letters=(reference.match(/^[A-Z]+/i)||[])[0];
+   if(letters){let column=0;for(const ch of letters.toUpperCase())column=column*26+ch.charCodeAt(0)-64;position=column-1;}
+   if(position>500)throw Error('تعداد ستون‌ها بیش از حد است.');
+   const t=c.getAttribute('t'),v=c.getElementsByTagName('v')[0]?.textContent??'';
+   let value=t==='s'?shared[Number(v)]??'':t==='inlineStr'?Array.from(c.getElementsByTagName('t')).map(x=>x.textContent).join(''):v;
+   if(t==='n'||(!t&&v!==''))value=Number(v);
+   values[position]=value;position++;
+  }
+  if(values.some(v=>String(v??'').trim()))matrix.push(values);
+  if(matrix.length>1001)throw Error('فایل بیش از حد بزرگ است.');
+ }
+ return matrix;
 }
 const groups={
  symbol:['نام نماد','نماد','symbol','ticker','نام سهم','نام شرکت'],
@@ -60,14 +125,15 @@ function previewRows(){
   if(!symbol&&row.every(x=>String(x??'').trim()===''))return null;
   const clean=normal(symbol);let issue='';
   if(!symbol||symbol.length>35||/[\r\n,;\t]/.test(symbol))issue='نماد نامعتبر';
-  else if(found.has(clean)){issue='نماد تکراری — نیازمند بررسی';duplicate.add(clean)}
   else if(!Number.isSafeInteger(quantity)||quantity<=0||!Number.isFinite(buy)||buy<=0||!Number.isFinite(current)||current<=0)issue='تعداد یا قیمت نامعتبر';
-  found.add(clean);if(issue)errors++;
+  else if(found.has(clean)){issue='ردیف تکراری — کنار گذاشته می‌شود';duplicate.add(clean)}
+  else found.add(clean);
+  if(issue)errors++;
   return {symbol,quantity,buy,current,issue,row:i+2};
  }).filter(Boolean);
  if(preview.length>100)throw Error('حداکثر ۱۰۰ ردیف پشتیبانی می‌شود.');
  if(!preview.length)throw Error('هیچ دارایی معتبری پیدا نشد.');
- for(const p of preview)if(duplicate.has(normal(p.symbol)))p.issue='نماد تکراری — نیازمند بررسی';
+ // First valid occurrence is preserved; later repetitions and zero-price entries are excluded.
  const body=el('brokerRows');body.replaceChildren();
  for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,p.issue||'آماده']);body.append(tr);}
  const invalid=preview.filter(x=>x.issue).length;
@@ -85,10 +151,8 @@ el('brokerFile').addEventListener('change',async()=>{
   if(/\.csv$/i.test(f.name)){
    let data=await f.text();matrix=csv(data.replace(/^\uFEFF/,''));
    if(matrix[0]?.length===1&&data.includes(';'))matrix=csv(data.replace(/;/g,','));
-  }else if(/\.xlsx?$/i.test(f.name)){
-   const XLSX=await loadXlsx();const workbook=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:false});
-   const sheet=workbook.Sheets[workbook.SheetNames[0]];
-   matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
+  }else if(/\.xlsx$/i.test(f.name)){
+   matrix=await unzipXlsx(f);
   }else throw Error('فقط فایل Excel یا CSV انتخاب کنید.');
   matrix=matrix.filter(r=>Array.isArray(r)&&r.some(x=>String(x??'').trim()!==''));
   if(matrix.length<2||matrix.length>1001)throw Error('فایل خالی یا بسیار بزرگ است.');
@@ -98,10 +162,16 @@ el('brokerFile').addEventListener('change',async()=>{
  }catch(e){status('خواندن فایل ناموفق: '+e.message);}
 });
 el('brokerPreview').addEventListener('click',()=>{try{previewRows();status('پیش‌نمایش آماده است؛ هنوز چیزی ذخیره نشده.')}catch(e){ready=false;el('brokerReview').hidden=true;status(e.message)}});
+for(const id of ['brokerUnit','brokerSymbolCol','brokerQtyCol','brokerBuyCol','brokerCurrentCol'])el(id).addEventListener('change',()=>{ready=false;el('brokerReview').hidden=true;status('تنظیمات ستون یا واحد قیمت تغییر کرد؛ پیش‌نمایش را دوباره بسازید.');});
 el('brokerApply').addEventListener('click',()=>{
  if(!ready){status('هیچ ردیف سالمی برای ذخیره وجود ندارد.');return;}
  const holdings=preview.filter(p=>!p.issue).map(({symbol,quantity,buy,current})=>({symbol,quantity,buy,current}));
  try{
+  const previous=localStorage.getItem(STORAGE);
+  if(previous){
+   if(!window.confirm('دارایی‌های واردشده قبلی روی این دستگاه وجود دارند. آن نسخه پشتیبان می‌شود و سپس با '+holdings.length+' سهم جدید جایگزین می‌شود. ادامه می‌دهید؟'))return;
+   localStorage.setItem(STORAGE+'-previous',previous);
+  }
   localStorage.setItem(STORAGE,JSON.stringify({version:1,created:new Date().toISOString(),holdings}));
   preview=holdings.map(p=>({...p,issue:''}));status(holdings.length+' سهم سالم در بخش دارایی‌های واردشده ذخیره شد. ردیف‌های تکراری یا نامعتبر ذخیره نشدند؛ سبد تحلیل ریسک و صدای هشدار دست‌نخورده‌اند.');
   el('brokerRisk').disabled=false;
