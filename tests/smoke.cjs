@@ -68,6 +68,11 @@ test('Backup validation blocks corrupted or dangerous settings',()=>{
 test('Portfolio rejects excessive arithmetic',()=>{
  assert.throws(()=>context.parsePortfolio('الف,9007199254740991,1e300,1e300,1e299,1e301'));
 });
+test('Aggregate overflow rejected before storage and backup import',()=>{
+ const large=Array.from({length:30},(_,i)=>'نماد'+i+',1,1e306,1e307,1e306,1.1e307').join('\\n');
+ assert.throws(()=>context.parsePortfolio(large));
+ assert.throws(()=>context.validatePortfolioBackup({version:1,data:large,capital:'',riskCap:'5',stress:'10',concentration:'30'}));
+});
 test('Saved status rejects corrupted local portfolio',()=>{
  const record={version:1,data:'فولاد,1000,500,540,470,650',capital:'1000000',riskCap:'5',stress:'10',concentration:'30'};
  const status={textContent:''};
