@@ -139,6 +139,44 @@ function reportPortfolio(){
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;}
 }
 const portfolioDemo='فولاد,1000,500,540,470,650\nخودرو,2000,280,260,235,320';
+function portfolioRowsForEditing(){
+ const raw=$('portfolioData').value.trim();
+ if(!raw)return [];
+ return parsePortfolio(raw);
+}
+function refreshPortfolioChoices(preferred=''){
+ const menu=$('pfExisting');
+ const current=preferred||menu.value;
+ menu.replaceChildren();
+ const first=document.createElement('option');first.value='';first.textContent='یک نماد انتخاب کنید';menu.appendChild(first);
+ try{for(const p of portfolioRowsForEditing()){const opt=document.createElement('option');opt.value=p.symbol;opt.textContent=p.symbol;menu.appendChild(opt);}}catch(e){$('pfStatus').textContent='اطلاعات سبد نامعتبر است؛ ابتدا سطرها را اصلاح کنید: '+e.message;}
+ if([...menu.options].some(x=>x.value===current))menu.value=current;
+}
+$('pfEdit').addEventListener('click',()=>{
+ try{
+  const symbol=$('pfExisting').value;
+  if(!symbol)throw Error('ابتدا نماد را از فهرست انتخاب کنید.');
+  const p=portfolioRowsForEditing().find(x=>x.symbol===symbol);
+  if(!p)throw Error('نماد انتخاب‌شده دیگر در سبد نیست.');
+  for(const [id,value] of [['pfSymbol',p.symbol],['pfQty',p.qty],['pfBuy',p.buy],['pfCurrent',p.current],['pfStop',p.stop],['pfTarget',p.target]])$(id).value=value;
+  $('pfStatus').textContent='اطلاعات '+symbol+' در فرم قرار گرفت. پس از اصلاح، «افزودن / به‌روزرسانی سهم» را بزنید.';
+ }catch(e){$('pfStatus').textContent='ویرایش ممکن نشد: '+e.message;}
+});
+$('pfDelete').addEventListener('click',()=>{
+ try{
+  const symbol=$('pfExisting').value;
+  if(!symbol)throw Error('ابتدا نماد را انتخاب کنید.');
+  const rows=portfolioRowsForEditing();
+  if(!rows.some(x=>x.symbol===symbol))throw Error('نماد در سبد پیدا نشد.');
+  const remaining=rows.filter(x=>x.symbol!==symbol);
+  $('portfolioData').value=remaining.map(x=>[x.symbol,x.qty,x.buy,x.current,x.stop,x.target].join(',')).join('\n');
+  refreshPortfolioChoices();
+  if(remaining.length){reportPortfolio();}else{$('portfolioSummary').textContent='سبد خالی شد. برای محاسبه گزارش، سهم جدید اضافه کنید.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;}
+  $('pfStatus').textContent='نماد '+symbol+' از سبد فعلی حذف شد. نسخه ذخیره‌شده روی گوشی تغییر نکرد.';
+ }catch(e){$('pfStatus').textContent='حذف انجام نشد: '+e.message;}
+});
+$('portfolioData').addEventListener('input',()=>refreshPortfolioChoices());
+refreshPortfolioChoices();
 $('pfAdd').addEventListener('click',()=>{
  const status=$('pfStatus');
  try{
@@ -157,6 +195,7 @@ $('pfAdd').addEventListener('click',()=>{
   input.value=lines.join('\n');
   status.textContent=(index>=0?'اطلاعات نماد به‌روزرسانی شد.':'نماد به سبد اضافه شد.')+' گزارش جدید در پایین محاسبه شد. قیمت‌ها دستی هستند، نه زنده.';
   reportPortfolio();
+  refreshPortfolioChoices(symbol);
  }catch(e){status.textContent='خطا: '+e.message;}
 });
 const PORTFOLIO_STORAGE_KEY='sahamban-portfolio-local-v1';
@@ -193,6 +232,7 @@ $('portfolioLoad').addEventListener('click',()=>{
   $('portfolioStress').value=record.stress;
   $('portfolioConcentration').value=record.concentration??'30';
   reportPortfolio();
+  refreshPortfolioChoices();
   portfolioStoreNotice('سبد ذخیره‌شده بازیابی شد. اطلاعات فقط متعلق به همین مرورگر است.');
  }catch(e){portfolioStoreNotice('بازیابی انجام نشد: '+e.message);}
 });
@@ -203,7 +243,7 @@ $('portfolioForget').addEventListener('click',()=>{
  }catch(e){portfolioStoreNotice('حذف نسخه ذخیره‌شده ممکن نشد: '+e.message);}
 });
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
-$('portfolioClear').addEventListener('click',()=>{$('portfolioData').value='';$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
+$('portfolioClear').addEventListener('click',()=>{$('portfolioData').value='';refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 $('portfolioExport').addEventListener('click',()=>{
  if(!latestPortfolioReport){$('portfolioSummary').textContent='ابتدا گزارش سبد را محاسبه کنید.';return;}
  const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman'];
