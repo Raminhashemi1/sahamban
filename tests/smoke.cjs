@@ -25,8 +25,8 @@ test('Rial-only portfolio examples and Persian numerical display are wired',()=>
  new vm.Script(persianUi);
  assert.ok(html.includes('فولاد,1000,5000,5400,4700,6500'));
  assert.ok(app.includes("const portfolioDemo='فولاد,1000,5000,5400,4700,6500"));
- assert.ok(html.includes('./persian-ui.js?v=46'));
- assert.ok(sw.includes('./persian-ui.js?v=46'));
+ assert.ok(html.includes('./persian-ui.js?v=47'));
+ assert.ok(sw.includes('./persian-ui.js?v=47'));
  assert.ok(!app.includes(' تومان')&&!app.includes('_toman'));
 });
 test('Legacy toman backup is converted to rial without mutating source',()=>{
