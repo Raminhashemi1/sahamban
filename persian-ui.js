@@ -3,10 +3,12 @@
 (()=>{
  const persian=s=>String(s).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[+d]);
  const latin=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,'');
- for(const input of document.querySelectorAll('input[type="number"]')){
+ for(const input of document.querySelectorAll('input[type="number"], textarea#portfolioData, textarea#historyText')){
   const initial=input.value;
-  input.type='text';input.inputMode='decimal';input.autocomplete='off';
-  const desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  if(input.tagName==='INPUT')input.type='text';
+  input.inputMode='decimal';input.autocomplete='off';
+  const proto=input.tagName==='INPUT'?HTMLInputElement.prototype:HTMLTextAreaElement.prototype;
+  const desc=Object.getOwnPropertyDescriptor(proto,'value');
   Object.defineProperty(input,'value',{configurable:true,get(){return latin(desc.get.call(this));},set(v){desc.set.call(this,persian(v));}});
   input.value=initial;
   input.addEventListener('input',()=>{
