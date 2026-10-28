@@ -54,5 +54,9 @@ test('Market alarms require independently validated quotes',()=>{
 test('CSV spreadsheet formula injection neutralised',()=>{
  for(const x of ['=1+1','+SUM(A1:A2)','@HYPERLINK(A1)'])assert.ok(context.portfolioCsvCell(x).startsWith('"\''));
 });
+test('CSV negative numeric losses remain numeric',()=>{
+ assert.equal(context.portfolioCsvCell(-1250),'"-1250"');
+ assert.equal(context.portfolioCsvCell('-SUM(1)'),'"\'-SUM(1)"');
+});
 test('Own cache cleanup never targets other apps',()=>assert.ok(sw.includes("k.startsWith('sahamban-static-')&&k!==CACHE")));
 console.log('SUCCESS: '+count+' smoke checks');
