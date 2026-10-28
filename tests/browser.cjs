@@ -29,8 +29,8 @@ async function main(){
   // Broker imports are staged independently and never overwrite the analytical portfolio.
   const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
   await page.locator('#brokerFile').setInputFiles({name:'brokers.csv',mimeType:'text/csv',buffer:Buffer.from(
-    'نام نماد,تعداد دارایی,قیمت میانگین خرید در آخرین دوره با لحاظ کارمزد,قیمت پایانی\\n' +
-    'فولاد,100,2500,3000\\nوملل,1842,6975,2282\\nوملل,1842,0,1000\\n', 'utf8')});
+    'نام نماد,تعداد دارایی,قیمت میانگین خرید در آخرین دوره با لحاظ کارمزد,قیمت پایانی\n' +
+    'فولاد,100,2500,3000\nوملل,1842,6975,2282\nوملل,1842,0,1000\n', 'utf8')});
   await page.locator('#brokerMapping').waitFor({state:'visible'});
   await page.locator('#brokerPreview').click();
   assert.match(await page.locator('#brokerReviewStatus').innerText(),/۳ ردیف/);
