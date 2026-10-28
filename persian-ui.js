@@ -34,6 +34,7 @@
    for(const n of nodes)localize(n);
   }
  }
+ for(const element of document.querySelectorAll('[placeholder],[title],[aria-label]'))for(const name of ['placeholder','title','aria-label'])if(element.hasAttribute(name))element.setAttribute(name,persian(element.getAttribute(name)));
  localize(document.body);
  const observer=new MutationObserver(records=>{
   for(const rec of records){
