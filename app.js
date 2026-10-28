@@ -265,8 +265,8 @@ function refreshPortfolioSaveState(){
  try{
   const raw=localStorage.getItem(PORTFOLIO_STORAGE_KEY);
   if(!raw){status.textContent='این سبد روی گوشی ذخیره نشده است. برای نگه‌داشتن اطلاعات، «ذخیره سبد روی گوشی» را بزنید.';return;}
-  const record=JSON.parse(raw),now=portfolioSnapshot();
-  const matched=record.version===1&&['data','capital','riskCap','stress'].every(field=>record[field]===now[field])&&(record.concentration??'30')===now.concentration;
+  const record=validatePortfolioBackup(JSON.parse(raw)),now=portfolioSnapshot();
+  const matched=['data','capital','riskCap','stress'].every(field=>record[field]===now[field])&&record.concentration===now.concentration;
   status.textContent=matched?'تغییرات فعلی سبد روی همین مرورگر ذخیره شده‌اند.':'تغییرات سبد هنوز ذخیره نشده‌اند. برای حفظ تغییرات، «ذخیره سبد روی گوشی» را بزنید.';
  }catch(e){status.textContent='وضعیت ذخیره‌سازی مشخص نیست؛ داده‌های مرورگر قابل خواندن نیستند.';}
 }
