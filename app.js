@@ -106,6 +106,8 @@ function reportPortfolio(){
   const baseText=$('portfolioCapital').value.trim();
   const capital=baseText===''?null:portfolioNumber(baseText,'سرمایه');
   const riskCap=portfolioNumber($('portfolioRiskCap').value,'سقف ریسک');
+  const stress=portfolioNumber($('portfolioStress').value,'افت فرضی');
+  if(stress<0||stress>100)throw Error('افت فرضی باید بین صفر و ۱۰۰ درصد باشد.');
   if((capital!==null&&capital<=0)||riskCap<=0||riskCap>100)throw Error('سرمایه مبنا باید مثبت و درصد سقف زیان بین صفر و ۱۰۰ باشد.');
   const sum=k=>positions.reduce((a,x)=>a+x[k],0),value=sum('value'),cost=sum('cost'),pnl=sum('pnl'),atRisk=sum('atRisk'),upside=sum('upside');
   if(![value,cost,pnl,atRisk,upside].every(Number.isFinite))throw Error('اعداد بیش از حد بزرگ هستند.');
@@ -113,8 +115,12 @@ function reportPortfolio(){
   const concentrated=strongest.value/value*100;
   const riskPercent=capital===null?null:atRisk/capital*100;
   const outside=capital!==null&&value>capital;
+  const stressLoss=value*stress/100;
+  const stressValue=value-stressLoss;
+  const stressOnCapital=capital===null?'':`، معادل ${fmt(stressLoss/capital*100)}٪ سرمایه مبنا`;
   const exceeds=riskPercent!==null&&riskPercent>riskCap;
   summary.textContent=`تعداد نماد: ${fmt(positions.length)} | ارزش روز سبد: ${fmt(value)} تومان | بهای خرید: ${fmt(cost)} تومان | سود/زیان تحقق‌نیافته: ${fmt(pnl)} تومان (${fmt(cost?100*pnl/cost:0)}٪) | زیان نظری از قیمت جاری تا حد ضرر: ${fmt(atRisk)} تومان${riskPercent===null?'':` (${fmt(riskPercent)}٪ سرمایه مبنا)`} | سود نظری تا اهداف: ${fmt(upside)} تومان | بیشترین تمرکز: ${strongest.symbol}، ${fmt(concentrated)}٪ ارزش سبد.${exceeds?' هشدار: زیان نظری سبد بیشتر از سقف تعیین‌شده است.':''}${outside?' هشدار: ارزش روز سهام از سرمایه مبنای ثبت‌شده بیشتر است؛ این الزاماً خطا نیست و ممکن است به دلیل سود یا تأمین مالی باشد.':''} این اعداد بدون کارمزد و لغزش هستند.`;
+  summary.textContent+=` | آزمون افت فرضی ${fmt(stress)}٪ همه نمادها: کاهش ارزش ${fmt(stressLoss)} تومان${stressOnCapital}؛ ارزش سبد پس از افت ${fmt(stressValue)} تومان. این صرفاً یک سناریوی ریاضی است، نه پیش‌بینی بازار.`;
   const table=document.createElement('table');table.style.cssText='width:100%;min-width:610px;border-collapse:collapse;font-size:13px;text-align:right';
   const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (تومان)','سود/زیان (تومان)','زیان تا حد ضرر','سهم از سبد'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
   positions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
