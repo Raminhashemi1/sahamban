@@ -3,7 +3,7 @@
 (()=>{
  const persian=s=>String(s).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[+d]);
  const latin=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,'');
- for(const input of document.querySelectorAll('input[type="number"], textarea#portfolioData, textarea#historyText')){
+ for(const input of document.querySelectorAll('input[type="number"], textarea#portfolioData, textarea#historyText, input#marketCode, input#watchCode')){
   const initial=input.value;
   if(input.tagName==='INPUT')input.type='text';
   input.inputMode='decimal';input.autocomplete='off';
@@ -20,7 +20,7 @@
    }
   });
  }
- const skip=new Set(['SCRIPT','STYLE','NOSCRIPT','TEXTAREA','OPTION']);
+ const skip=new Set(['SCRIPT','STYLE','NOSCRIPT','TEXTAREA']);
  function localize(root){
   if(!root||!root.isConnected)return;
   if(root.nodeType===3){
