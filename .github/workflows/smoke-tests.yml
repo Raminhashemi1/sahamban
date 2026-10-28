@@ -29,3 +29,11 @@ jobs:
       - run: npm install --no-save playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser.cjs
+      - name: Save Chromium failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahamban-chromium-failure
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
