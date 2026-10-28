@@ -134,7 +134,14 @@ function reportPortfolio(){
   summary.textContent+=` | آزمون افت فرضی ${fmt(stress)}٪ همه نمادها: کاهش ارزش ${fmt(stressLoss)} تومان${stressOnCapital}؛ ارزش سبد پس از افت ${fmt(stressValue)} تومان. این صرفاً یک سناریوی ریاضی است، نه پیش‌بینی بازار.`;
   const table=document.createElement('table');table.style.cssText='width:100%;min-width:610px;border-collapse:collapse;font-size:13px;text-align:right';
   const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (تومان)','سود/زیان (تومان)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
-  positions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'+(100*x.value/value>concentrationCap?' — بیش از سقف':''),atRisk>0?fmt(100*x.atRisk/atRisk)+'٪':'۰٪',x.pnl>0?(grossGains>0?fmt(100*x.pnl/grossGains)+'٪ از سودها':'—'):x.pnl<0?(grossLosses>0?fmt(100*(-x.pnl)/grossLosses)+'٪ از زیان‌ها':'—'):'بدون سود و زیان'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
+  const sortMode=$('portfolioSort').value;
+  const sortFields={risk:'atRisk',value:'value',loss:'pnl',gain:'pnl'};
+  const displayPositions=positions.slice();
+  if(Object.prototype.hasOwnProperty.call(sortFields,sortMode)){
+   const field=sortFields[sortMode],direction=sortMode==='loss'?1:-1;
+   displayPositions.sort((a,b)=>direction*(a[field]-b[field]));
+  }
+  displayPositions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'+(100*x.value/value>concentrationCap?' — بیش از سقف':''),atRisk>0?fmt(100*x.atRisk/atRisk)+'٪':'۰٪',x.pnl>0?(grossGains>0?fmt(100*x.pnl/grossGains)+'٪ از سودها':'—'):x.pnl<0?(grossLosses>0?fmt(100*(-x.pnl)/grossLosses)+'٪ از زیان‌ها':'—'):'بدون سود و زیان'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
   details.replaceChildren(table);latestPortfolioReport={positions,capital,riskCap,value,cost,pnl,atRisk,upside,concentrationCap};
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;}
 }
@@ -348,6 +355,7 @@ $('portfolioBackupApply').addEventListener('click',()=>{
  refreshPortfolioChoices();reportPortfolio();refreshPortfolioSaveState();
  $('portfolioBackupStatus').textContent='اطلاعات فایل روی صفحه بازیابی شد. برای نگه‌داشتن آنها در مرورگر، دکمه «ذخیره سبد روی گوشی» را بزنید.';
 });
+$('portfolioSort').addEventListener('change',reportPortfolio);
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
 $('portfolioClear').addEventListener('click',()=>{resetPortfolioDelete();portfolioEditingSymbol=null;portfolioLastDeletion=null;portfolioUndoAvailability();$('portfolioData').value='';refreshPortfolioSaveState();refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 $('portfolioExport').addEventListener('click',()=>{
