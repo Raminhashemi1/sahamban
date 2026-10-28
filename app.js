@@ -161,17 +161,19 @@ function portfolioSavedState(){
  if(record.version!==1||typeof record.data!=='string'||record.data.length>25000||!record.data.trim())throw Error('اطلاعات ذخیره‌شده معتبر نیست.');
  parsePortfolio(record.data);
  for(const field of ['capital','riskCap','stress'])if(typeof record[field]!=='string'||record[field].length>60)throw Error('ساختار ذخیره‌شده معتبر نیست.');
+ if(record.concentration!==undefined&&(typeof record.concentration!=='string'||record.concentration.length>60||portfolioNumber(record.concentration,'تمرکز')<1||portfolioNumber(record.concentration,'تمرکز')>100))throw Error('سقف تمرکز ذخیره‌شده نامعتبر است.');
  return record;
 }
 $('portfolioSave').addEventListener('click',()=>{
  try{
   const data=$('portfolioData').value.trim();
   parsePortfolio(data);
-  const capital=$('portfolioCapital').value.trim(),riskCap=$('portfolioRiskCap').value.trim(),stress=$('portfolioStress').value.trim();
+  const capital=$('portfolioCapital').value.trim(),riskCap=$('portfolioRiskCap').value.trim(),stress=$('portfolioStress').value.trim(),concentration=$('portfolioConcentration').value.trim();
   if(capital&&(portfolioNumber(capital,'سرمایه')<=0))throw Error('سرمایه مبنا باید مثبت باشد.');
   if(portfolioNumber(riskCap,'سقف ریسک')<=0||portfolioNumber(riskCap,'سقف ریسک')>100)throw Error('سقف ریسک باید بین صفر و ۱۰۰ باشد.');
   if(portfolioNumber(stress,'افت فرضی')<0||portfolioNumber(stress,'افت فرضی')>100)throw Error('افت فرضی باید بین صفر و ۱۰۰ باشد.');
-  localStorage.setItem(PORTFOLIO_STORAGE_KEY,JSON.stringify({version:1,data,capital,riskCap,stress,savedAt:new Date().toISOString()}));
+  if(portfolioNumber(concentration,'تمرکز')<1||portfolioNumber(concentration,'تمرکز')>100)throw Error('سقف تمرکز باید بین ۱ تا ۱۰۰ درصد باشد.');
+  localStorage.setItem(PORTFOLIO_STORAGE_KEY,JSON.stringify({version:1,data,capital,riskCap,stress,concentration,savedAt:new Date().toISOString()}));
   portfolioStoreNotice('سبد روی همین مرورگر ذخیره شد. با «بازیابی سبد ذخیره‌شده» می‌توانی آن را برگردانی.');
  }catch(e){portfolioStoreNotice('ذخیره انجام نشد: '+e.message);}
 });
@@ -182,6 +184,7 @@ $('portfolioLoad').addEventListener('click',()=>{
   $('portfolioCapital').value=record.capital;
   $('portfolioRiskCap').value=record.riskCap;
   $('portfolioStress').value=record.stress;
+  $('portfolioConcentration').value=record.concentration??'30';
   reportPortfolio();
   portfolioStoreNotice('سبد ذخیره‌شده بازیابی شد. اطلاعات فقط متعلق به همین مرورگر است.');
  }catch(e){portfolioStoreNotice('بازیابی انجام نشد: '+e.message);}
