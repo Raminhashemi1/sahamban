@@ -160,7 +160,7 @@ function reportPortfolio(){
   details.replaceChildren(table);latestPortfolioReport={positions,capital,riskCap,value,cost,pnl,atRisk,upside,concentrationCap};portfolioReportSnapshot=JSON.stringify(portfolioSnapshot());
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;portfolioReportSnapshot=null;}
 }
-const portfolioDemo='فولاد,1000,500,540,470,650\nخودرو,2000,280,260,235,320';
+const portfolioDemo='فولاد,1000,5000,5400,4700,6500\nخودرو,2000,2800,2600,2350,3200';
 let portfolioEditingSymbol=null;
 let portfolioPendingDelete=null;
 let portfolioLastDeletion=null;
