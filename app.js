@@ -367,10 +367,19 @@ $('portfolioBackupApply').addEventListener('click',()=>{
 $('portfolioSort').addEventListener('change',reportPortfolio);
 $('portfolioAnalyze').addEventListener('click',reportPortfolio);
 $('portfolioClear').addEventListener('click',()=>{resetPortfolioDelete();portfolioEditingSymbol=null;portfolioLastDeletion=null;portfolioUndoAvailability();$('portfolioData').value='';refreshPortfolioSaveState();refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
+function portfolioCsvCell(value){
+ const text=String(value);
+ const safe=/^[\s\u200e\u200f\ufeff]*[=+@\-]/u.test(text)?"'"+text:text;
+ return '"'+safe.replace(/"/g,'""')+'"';
+}
 $('portfolioExport').addEventListener('click',()=>{
  if(!latestPortfolioReport||portfolioReportSnapshot!==JSON.stringify(portfolioSnapshot())){invalidatePortfolioReport();$('portfolioSummary').textContent='گزارش فعلی موجود نیست یا اطلاعات تغییر کرده است؛ ابتدا «محاسبه گزارش سبد» را بزنید، سپس فایل CSV بگیرید.';return;}
- const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman'];
- const rows=latestPortfolioReport.positions.map(x=>[x.symbol,x.qty,x.buy,x.current,x.stop,x.target,x.value,x.pnl,x.atRisk,x.upside].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+ const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman','portfolio_weight_percent','risk_contribution_percent','reward_risk_ratio'];
+ const report=latestPortfolioReport;
+ const rows=report.positions.map(x=>{
+  const ratio=portfolioRewardRisk(x.upside,x.atRisk);
+  return [x.symbol,x.qty,x.buy,x.current,x.stop,x.target,x.value,x.pnl,x.atRisk,x.upside,100*x.value/report.value,report.atRisk>0?100*x.atRisk/report.atRisk:0,ratio===null?'':ratio].map(portfolioCsvCell).join(',');
+ });
  const blob=new Blob(['\uFEFF'+[header.join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='sahamban_portfolio_report.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
