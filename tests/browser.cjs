@@ -26,6 +26,58 @@ async function main(){
   page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
+  // Broker imports are staged independently and never overwrite the analytical portfolio.
+  const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
+  await page.locator('#brokerFile').setInputFiles({name:'brokers.csv',mimeType:'text/csv',buffer:Buffer.from(
+    'نام نماد,تعداد دارایی,قیمت میانگین خرید در آخرین دوره با لحاظ کارمزد,قیمت پایانی\\n' +
+    'فولاد,100,2500,3000\\nوملل,1842,6975,2282\\nوملل,1842,0,1000\\n', 'utf8')});
+  await page.locator('#brokerMapping').waitFor({state:'visible'});
+  await page.locator('#brokerPreview').click();
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/3 ردیف|۳ ردیف/);
+  assert.equal(await page.locator('#brokerApply').isDisabled(),false);
+  await page.locator('#brokerApply').click();
+  const importedCSV=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
+  assert.equal(importedCSV.holdings.length,2);
+  assert.equal(importedCSV.holdings[0].buy,250);
+  assert.equal(importedCSV.holdings[1].symbol,'وملل');
+  assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  console.log('PASS: generic CSV mapping, toman conversion, duplicate and zero-price exclusion, no portfolio overwrite');
+
+  // Generate a minimal compressed XLSX in-memory; no personal brokerage file in test artifacts.
+  function zip(files){
+   const {deflateRawSync}=require('node:zlib');
+   const parts=[],directory=[];let offset=0;
+   for(const [name,content] of Object.entries(files)){
+    const data=Buffer.from(content,'utf8'),packed=deflateRawSync(data),filename=Buffer.from(name);
+    const header=Buffer.alloc(30);header.writeUInt32LE(0x04034b50,0);header.writeUInt16LE(20,4);header.writeUInt16LE(8,8);header.writeUInt32LE(packed.length,18);header.writeUInt32LE(data.length,22);header.writeUInt16LE(filename.length,26);
+    parts.push(header,filename,packed);
+    const entry=Buffer.alloc(46);entry.writeUInt32LE(0x02014b50,0);entry.writeUInt16LE(20,4);entry.writeUInt16LE(20,6);entry.writeUInt16LE(8,10);entry.writeUInt32LE(packed.length,20);entry.writeUInt32LE(data.length,24);entry.writeUInt16LE(filename.length,28);entry.writeUInt32LE(offset,42);
+    directory.push(entry,filename);offset+=header.length+filename.length+packed.length;
+   }
+   const central=Buffer.concat(directory),eocd=Buffer.alloc(22);eocd.writeUInt32LE(0x06054b50,0);
+   const count=Object.keys(files).length;eocd.writeUInt16LE(count,8);eocd.writeUInt16LE(count,10);eocd.writeUInt32LE(central.length,12);eocd.writeUInt32LE(offset,16);
+   return Buffer.concat([...parts,central,eocd]);
+  }
+  const xlsx=zip({
+   'xl/workbook.xml':'<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Holdings" sheetId="1" r:id="rId1"/></sheets></workbook>',
+   'xl/_rels/workbook.xml.rels':'<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>',
+   'xl/sharedStrings.xml':'<?xml version="1.0"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>نام نماد</t></si><si><t>تعداد دارایی</t></si><si><t>قیمت میانگین خرید در آخرین دوره با لحاظ کارمزد</t></si><si><t>قیمت پایانی</t></si><si><t>خودرو</t></si></sst>',
+   'xl/worksheets/sheet1.xml':'<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c><c r="D1" t="s"><v>3</v></c></row><row r="2"><c r="A2" t="s"><v>4</v></c><c r="B2"><v>200</v></c><c r="C2"><v>5000</v></c><c r="D2"><v>4500</v></c></row></sheetData></worksheet>'
+  });
+  await page.locator('#brokerFile').setInputFiles({name:'sample.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:xlsx});
+  await page.locator('#brokerMapping').waitFor({state:'visible'});
+  await page.locator('#brokerPreview').click();
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/1 ردیف|۱ ردیف/);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#brokerApply').click();
+  const importedExcel=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
+  const previousExcel=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1-previous')));
+  assert.equal(importedExcel.holdings.length,1);
+  assert.equal(importedExcel.holdings[0].symbol,'خودرو');
+  assert.equal(importedExcel.holdings[0].buy,500);
+  assert.equal(previousExcel.holdings.length,2);
+  assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  console.log('PASS: offline compressed XLSX, local backup on replacement, no analytical portfolio changes');
   // Simulate an existing user recording; portfolio actions must never overwrite it.
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const recordedBefore=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
