@@ -18,7 +18,16 @@ function extract(name){
 }
 const context=vm.createContext({fmt:n=>String(n),Intl,Date});
 vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marketDateCheck','portfolioCsvCell','validatePortfolioBackup','refreshPortfolioSaveState'].map(extract).join('\n'),context);
-test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);});
+const brokerImport=fs.readFileSync('broker-import.js','utf8');
+test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);new vm.Script(brokerImport);});
+test('Broker import is local-only with separate storage and offline Excel parser',()=>{
+ assert.ok(html.includes('id="brokerFile"')&&html.includes('id="brokerReview"')&&html.includes('id="brokerApply"'));
+ assert.ok(html.includes('broker-import.js?v='));
+ assert.ok(brokerImport.includes("sahamban-broker-holdings-v1"));
+ assert.ok(brokerImport.includes("new DecompressionStream('deflate-raw')"));
+ assert.ok(!brokerImport.includes('cdn.jsdelivr.net')&&!brokerImport.includes('fetch('));
+ assert.ok(brokerImport.includes("STORAGE+'-previous'"));
+});
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v'+v));
