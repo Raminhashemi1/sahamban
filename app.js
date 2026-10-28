@@ -93,7 +93,7 @@ function parsePortfolio(raw){
  if(!lines.length)throw Error('دست‌کم یک سهم وارد کنید.');
  if(lines.length>100)throw Error('حداکثر ۱۰۰ سهم پشتیبانی می‌شود.');
  const names=new Set();
- return lines.map((line,i)=>{
+ const positions=lines.map((line,i)=>{
    const cols=line.split(/[,،;\t]/).map(s=>s.trim());
    if(cols.length!==6)throw Error(`در سطر ${i+1} باید دقیقاً ۶ مقدار باشد.`);
    const symbol=cols[0];
@@ -105,6 +105,10 @@ function parsePortfolio(raw){
    if(!Object.values(computed).every(Number.isFinite))throw Error(`مقادیر بسیار بزرگ و محاسبه‌ناپذیر در سطر ${i+1}.`);
    return {symbol,qty,buy,current,stop,target,...computed};
  });
+ for(const key of ['value','cost','pnl','atRisk','upside']){
+  if(!Number.isFinite(positions.reduce((sum,p)=>sum+p[key],0)))throw Error('جمع ارزش‌ها یا ریسک سبد بیش از حد بزرگ است.');
+ }
+ return positions;
 }
 function portfolioRewardRisk(upside,risk){return risk>0&&Number.isFinite(upside/risk)?upside/risk:null;}
 function reportPortfolio(){
