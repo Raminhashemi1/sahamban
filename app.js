@@ -1,13 +1,13 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const n = id => Number($(id).value);
+const n = id => Number(String($(id).value).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.'));
 const fmt = value => new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(value);
 $('calculate').addEventListener('click',()=>{
  const [capital,risk,entry,stop,target,budget]=['capital','risk','entry','stop','target','budget'].map(n);
  if(![capital,risk,entry,stop,target,budget].every(Number.isFinite)||capital<=0||risk<=0||risk>100||entry<=0||stop<0||stop>=entry||target<=entry||budget<=0){$('calcResult').textContent='مقادیر معتبر وارد کنید: حد ضرر کمتر از قیمت ورود و حد سود بیشتر از آن باشد.';return;}
  const allowed=capital*risk/100, qty=Math.max(0,Math.floor(Math.min(allowed/(entry-stop),Math.min(budget,capital)/entry)));
  const loss=qty*(entry-stop),gain=qty*(target-entry);
- $('calcResult').textContent=`سقف خرید محاسباتی: ${fmt(qty)} سهم | ارزش خرید: ${fmt(qty*entry)} تومان | زیان نظری تا حد ضرر: ${fmt(loss)} تومان | سود نظری تا حد سود: ${fmt(gain)} تومان | نسبت سود به زیان: ${fmt((target-entry)/(entry-stop))}`;
+ $('calcResult').textContent=`سقف خرید محاسباتی: ${fmt(qty)} سهم | ارزش خرید: ${fmt(qty*entry)} ریال | زیان نظری تا حد ضرر: ${fmt(loss)} ریال | سود نظری تا حد سود: ${fmt(gain)} ریال | نسبت سود به زیان: ${fmt((target-entry)/(entry-stop))}`;
 });
 function playBeep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();c.resume().then(()=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.value=.3;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.45);o.onended=()=>c.close()}).catch(()=>{})}catch(e){}}
 function speak(s){playBeep();const out=$('alerts');const saved=localStorage.getItem('sahamban-recorded-alert');if(saved){try{const a=new Audio(saved);a.play().then(()=>{if(out)out.textContent='بوق و پیام صوتی ضبط‌شده پخش شدند.'}).catch(()=>{if(out)out.textContent='بوق پخش شد، اما پخش صدای ضبط‌شده در مرورگر ممکن نشد.'});return}catch(e){}}if(out)out.textContent='بوق پخش شد. برای پیام فارسی، یک بار صدای خودت را با دکمه ضبط هشدار ثبت کن.'}
@@ -20,7 +20,7 @@ $('voicePreview').addEventListener('click',()=>{const status=$('alerts');status.
 $('check').addEventListener('click',()=>{
  const symbol=$('symbol').value.trim().slice(0,35)||'سهم',price=n('price'),stop=n('aStop'),target=n('aTarget'),el=$('alerts');
  el.replaceChildren();if(![price,stop,target].every(Number.isFinite)||price<0||stop<0||target<=stop){el.textContent='قیمت‌ها را معتبر وارد کنید و حد سود را بیشتر از حد ضرر بگذارید.';return;}
- const message=price<=stop?`هشدار حد ضرر: قیمت ${symbol} به ${fmt(price)} تومان رسیده است.`:price>=target?`هشدار حد سود: قیمت ${symbol} به ${fmt(price)} تومان رسیده است.`:`برای ${symbol} در قیمت ${fmt(price)} تومان، حد سود یا ضرر فعال نشده است.`;
+ const message=price<=stop?`هشدار حد ضرر: قیمت ${symbol} به ${fmt(price)} ریال رسیده است.`:price>=target?`هشدار حد سود: قیمت ${symbol} به ${fmt(price)} ریال رسیده است.`:`برای ${symbol} در قیمت ${fmt(price)} ریال، حد سود یا ضرر فعال نشده است.`;
  const p=document.createElement('div');p.className=price<=stop||price>=target?'alarm':'result';p.textContent=message;el.appendChild(p);if(price<=stop||price>=target)speak(message);
 });
 const fields=['symbol','aStop','aTarget'];
@@ -141,14 +141,14 @@ function reportPortfolio(){
   const stressValue=value-stressLoss;
   const stressOnCapital=capital===null?'':`، معادل ${fmt(stressLoss/capital*100)}٪ سرمایه مبنا`;
   const exceeds=riskPercent!==null&&riskPercent>riskCap;
-  summary.textContent=`تعداد نماد: ${fmt(positions.length)} | ارزش روز سبد: ${fmt(value)} تومان | بهای خرید: ${fmt(cost)} تومان | سود/زیان تحقق‌نیافته: ${fmt(pnl)} تومان (${fmt(cost?100*pnl/cost:0)}٪) | زیان نظری از قیمت جاری تا حد ضرر: ${fmt(atRisk)} تومان${riskPercent===null?'':` (${fmt(riskPercent)}٪ سرمایه مبنا)`} | سود نظری تا اهداف: ${fmt(upside)} تومان | بیشترین تمرکز: ${strongest.symbol}، ${fmt(concentrated)}٪ ارزش سبد.${exceeds?' هشدار: زیان نظری سبد بیشتر از سقف تعیین‌شده است.':''}${outside?' هشدار: ارزش روز سهام از سرمایه مبنای ثبت‌شده بیشتر است؛ این الزاماً خطا نیست و ممکن است به دلیل سود یا تأمین مالی باشد.':''} این اعداد بدون کارمزد و لغزش هستند.`;
+  summary.textContent=`تعداد نماد: ${fmt(positions.length)} | ارزش روز سبد: ${fmt(value)} ریال | بهای خرید: ${fmt(cost)} ریال | سود/زیان تحقق‌نیافته: ${fmt(pnl)} ریال (${fmt(cost?100*pnl/cost:0)}٪) | زیان نظری از قیمت جاری تا حد ضرر: ${fmt(atRisk)} ریال${riskPercent===null?'':` (${fmt(riskPercent)}٪ سرمایه مبنا)`} | سود نظری تا اهداف: ${fmt(upside)} ریال | بیشترین تمرکز: ${strongest.symbol}، ${fmt(concentrated)}٪ ارزش سبد.${exceeds?' هشدار: زیان نظری سبد بیشتر از سقف تعیین‌شده است.':''}${outside?' هشدار: ارزش روز سهام از سرمایه مبنای ثبت‌شده بیشتر است؛ این الزاماً خطا نیست و ممکن است به دلیل سود یا تأمین مالی باشد.':''} این اعداد بدون کارمزد و لغزش هستند.`;
   summary.textContent+=overConcentrated.length?` | هشدار تمرکز: ${fmt(overConcentrated.length)} نماد بیش از سقف ${fmt(concentrationCap)}٪ هستند: ${overConcentrated.map(x=>x.symbol+' ('+fmt(x.weight)+'٪)').join('، ')}. این شاخص فقط تمرکز را نشان می‌دهد و توصیه خرید یا فروش نیست.`:` | تمرکز سبد: هیچ نمادی بالاتر از سقف ${fmt(concentrationCap)}٪ نیست.`;
-  summary.textContent+=` | سهم‌های سودده: ${fmt(grossGains)} تومان سود ناخالصِ تحقق‌نیافته${topGainer?`؛ بیشترین سود: ${topGainer.symbol} (${fmt(topGainer.pnl)} تومان)`:'؛ هیچ سهم سوددهی ثبت نشده'} | سهم‌های زیان‌ده: ${fmt(grossLosses)} تومان زیان ناخالصِ تحقق‌نیافته${topLoser?`؛ بیشترین زیان: ${topLoser.symbol} (${fmt(-topLoser.pnl)} تومان)`:'؛ هیچ سهم زیان‌دهی ثبت نشده'}. سهم هر نماد از سودها یا زیان‌ها جداگانه محاسبه می‌شود، نه از سود خالص سبد.`;
-  summary.textContent+=` | بیشترین سهم از ریسک حد ضرر: ${largestRisk.symbol} با ${fmt(largestRisk.atRisk)} تومان${atRisk>0?` (${fmt(largestRisk.atRisk/atRisk*100)}٪ ریسک نظری کل سبد)`:' (ریسک نظری صفر)'}. این شاخص با سهم از ارزش سبد متفاوت است.`;
+  summary.textContent+=` | سهم‌های سودده: ${fmt(grossGains)} ریال سود ناخالصِ تحقق‌نیافته${topGainer?`؛ بیشترین سود: ${topGainer.symbol} (${fmt(topGainer.pnl)} ریال)`:'؛ هیچ سهم سوددهی ثبت نشده'} | سهم‌های زیان‌ده: ${fmt(grossLosses)} ریال زیان ناخالصِ تحقق‌نیافته${topLoser?`؛ بیشترین زیان: ${topLoser.symbol} (${fmt(-topLoser.pnl)} ریال)`:'؛ هیچ سهم زیان‌دهی ثبت نشده'}. سهم هر نماد از سودها یا زیان‌ها جداگانه محاسبه می‌شود، نه از سود خالص سبد.`;
+  summary.textContent+=` | بیشترین سهم از ریسک حد ضرر: ${largestRisk.symbol} با ${fmt(largestRisk.atRisk)} ریال${atRisk>0?` (${fmt(largestRisk.atRisk/atRisk*100)}٪ ریسک نظری کل سبد)`:' (ریسک نظری صفر)'}. این شاخص با سهم از ارزش سبد متفاوت است.`;
   summary.textContent+=` | نسبت سود نظری تا هدف به زیان نظری تا حد ضرر: ${rewardRisk===null?'نامشخص':fmt(rewardRisk)+' به ۱'}. ${lowRewardRisk.length?fmt(lowRewardRisk.length)+' نماد نسبت کمتر از ۱ دارند: '+lowRewardRisk.map(x=>x.symbol).join('، ')+'.':'هیچ نمادی نسبت کمتر از ۱ ندارد.'} این نسبت صرفاً فاصله قیمت‌ها را مقایسه می‌کند و احتمال رسیدن به هدف یا حد ضرر را لحاظ نمی‌کند.`;
-  summary.textContent+=` | آزمون افت فرضی ${fmt(stress)}٪ همه نمادها: کاهش ارزش ${fmt(stressLoss)} تومان${stressOnCapital}؛ ارزش سبد پس از افت ${fmt(stressValue)} تومان. این صرفاً یک سناریوی ریاضی است، نه پیش‌بینی بازار.`;
+  summary.textContent+=` | آزمون افت فرضی ${fmt(stress)}٪ همه نمادها: کاهش ارزش ${fmt(stressLoss)} ریال${stressOnCapital}؛ ارزش سبد پس از افت ${fmt(stressValue)} ریال. این صرفاً یک سناریوی ریاضی است، نه پیش‌بینی بازار.`;
   const table=document.createElement('table');table.style.cssText='width:100%;min-width:610px;border-collapse:collapse;font-size:13px;text-align:right';
-  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (تومان)','سود/زیان (تومان)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها','نسبت سود به ریسک'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
+  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (ریال)','سود/زیان (ریال)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها','نسبت سود به ریسک'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
   const sortMode=$('portfolioSort').value;
   const sortFields={risk:'atRisk',value:'value',loss:'pnl',gain:'pnl'};
   const displayPositions=positions.slice();
@@ -261,6 +261,18 @@ $('pfAdd').addEventListener('click',()=>{
  }catch(e){status.textContent='خطا: '+e.message;}
 });
 const PORTFOLIO_STORAGE_KEY='sahamban-portfolio-local-v1';
+// Storage v1 and backup v1 used toman; convert on read without touching saved originals.
+function convertLegacyPortfolio(record){
+ if(record.version!==1)return record;
+ const data=record.data.split(/\r?\n/).map(line=>{
+  const fields=line.split(/[,،;\t]/);
+  if(fields.length!==6)throw Error('ساختار سبد قدیمی معتبر نیست.');
+  return [fields[0],fields[1],...fields.slice(2).map((v,i)=>String(portfolioNumber(v,'فایل قدیمی')*10))].join(',');
+ }).join('\n');
+ const capital=record.capital?String(portfolioNumber(record.capital,'سرمایه قدیمی')*10):'';
+ return {...record,version:2,data,capital};
+}
+
 function portfolioSnapshot(){
  return {data:$('portfolioData').value.trim(),capital:$('portfolioCapital').value.trim(),riskCap:$('portfolioRiskCap').value.trim(),stress:$('portfolioStress').value.trim(),concentration:$('portfolioConcentration').value.trim()};
 }
@@ -289,7 +301,7 @@ $('portfolioSave').addEventListener('click',()=>{
   if(portfolioNumber(riskCap,'سقف ریسک')<=0||portfolioNumber(riskCap,'سقف ریسک')>100)throw Error('سقف ریسک باید بین صفر و ۱۰۰ باشد.');
   if(portfolioNumber(stress,'افت فرضی')<0||portfolioNumber(stress,'افت فرضی')>100)throw Error('افت فرضی باید بین صفر و ۱۰۰ باشد.');
   if(portfolioNumber(concentration,'تمرکز')<1||portfolioNumber(concentration,'تمرکز')>100)throw Error('سقف تمرکز باید بین ۱ تا ۱۰۰ درصد باشد.');
-  localStorage.setItem(PORTFOLIO_STORAGE_KEY,JSON.stringify({version:1,data,capital,riskCap,stress,concentration,savedAt:new Date().toISOString()}));
+  localStorage.setItem(PORTFOLIO_STORAGE_KEY,JSON.stringify({version:2,data,capital,riskCap,stress,concentration,savedAt:new Date().toISOString()}));
   refreshPortfolioSaveState();
   portfolioStoreNotice('سبد روی همین مرورگر ذخیره شد. با «بازیابی سبد ذخیره‌شده» می‌توانی آن را برگردانی.');
  }catch(e){portfolioStoreNotice('ذخیره انجام نشد: '+e.message);}
@@ -322,7 +334,8 @@ for(const id of ['portfolioCapital','portfolioRiskCap','portfolioStress','portfo
 refreshPortfolioSaveState();
 let pendingPortfolioBackup=null;
 function validatePortfolioBackup(record){
- if(!record||record.version!==1||typeof record.data!=='string'||record.data.length>25000)throw Error('ساختار فایل پشتیبان معتبر نیست.');
+ if(!record||(record.version!==1&&record.version!==2)||typeof record.data!=='string'||record.data.length>25000)throw Error('ساختار فایل پشتیبان معتبر نیست.');
+ record=convertLegacyPortfolio(record);
  parsePortfolio(record.data);
  for(const key of ['capital','riskCap','stress'])if(typeof record[key]!=='string'||record[key].length>60)throw Error('فیلدهای فایل کامل نیستند.');
  const concentration=record.concentration??'30';
@@ -330,13 +343,13 @@ function validatePortfolioBackup(record){
  if(record.capital&&portfolioNumber(record.capital,'سرمایه')<=0)throw Error('سرمایه مبنا نامعتبر است.');
  const risk=portfolioNumber(record.riskCap,'سقف ریسک'),stress=portfolioNumber(record.stress,'افت فرضی'),cap=portfolioNumber(concentration,'تمرکز');
  if(risk<=0||risk>100||stress<0||stress>100||cap<1||cap>100)throw Error('تنظیمات ریسک یا تمرکز فایل معتبر نیستند.');
- return {data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration};
+ return {version:2,data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration};
 }
 $('portfolioBackup').addEventListener('click',()=>{
  try{
   const snapshot=portfolioSnapshot();
-  const valid=validatePortfolioBackup({version:1,...snapshot});
-  const blob=new Blob([JSON.stringify({format:'sahamban-portfolio',version:1,...valid,exportedAt:new Date().toISOString()},null,2)],{type:'application/json;charset=utf-8'});
+  const valid=validatePortfolioBackup({version:2,...snapshot});
+  const blob=new Blob([JSON.stringify({format:'sahamban-portfolio',version:2,...valid,exportedAt:new Date().toISOString()},null,2)],{type:'application/json;charset=utf-8'});
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download='sahamban-portfolio-backup.json';
   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -376,7 +389,7 @@ function portfolioCsvCell(value){
 }
 $('portfolioExport').addEventListener('click',()=>{
  if(!latestPortfolioReport||portfolioReportSnapshot!==JSON.stringify(portfolioSnapshot())){invalidatePortfolioReport();$('portfolioSummary').textContent='گزارش فعلی موجود نیست یا اطلاعات تغییر کرده است؛ ابتدا «محاسبه گزارش سبد» را بزنید، سپس فایل CSV بگیرید.';return;}
- const header=['symbol','quantity','buy_price_toman','current_price_toman','stop_toman','target_toman','value_toman','unrealized_pnl_toman','risk_to_stop_toman','potential_gain_toman','portfolio_weight_percent','risk_contribution_percent','reward_risk_ratio'];
+ const header=['symbol','quantity','buy_price_rial','current_price_rial','stop_rial','target_rial','value_rial','unrealized_pnl_rial','risk_to_stop_rial','potential_gain_rial','portfolio_weight_percent','risk_contribution_percent','reward_risk_ratio'];
  const report=latestPortfolioReport;
  const rows=report.positions.map(x=>{
   const ratio=portfolioRewardRisk(x.upside,x.atRisk);
