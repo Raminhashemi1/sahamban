@@ -113,11 +113,11 @@ function selectColumn(id,aliases){
  if(idx<0)idx=headers.findIndex(h=>exact.some(a=>a.length>3&&normal(h).includes(a)));
  if(idx>=0)s.value=String(idx);
 }
-function rowText(tr,values){for(const v of values){const td=document.createElement('td');td.style.padding='6px';td.style.borderBottom='1px solid #34546d';td.textContent=String(v);tr.append(td)}}
+function rowText(tr,values){for(const v of values){const td=document.createElement('td');td.style.padding='6px';td.style.borderBottom='1px solid #34546d';td.textContent=typeof v==='number'?new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(v):String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);tr.append(td)}}
 function previewRows(){
  const ids=['brokerSymbolCol','brokerQtyCol','brokerBuyCol','brokerCurrentCol'].map(id=>el(id).value);
  if(ids.some(x=>x==='')||new Set(ids).size!==4)throw Error('چهار ستون متفاوت انتخاب کنید.');
- const factor=el('brokerUnit').value==='rial'?10:1;
+ const factor=el('brokerUnit').value==='rial'?1:10;
  const duplicate=new Set(),found=new Set();let errors=0;
  preview=matrix.slice(1).map((row,i)=>{
   const symbol=String(row[+ids[0]]??'').trim();
@@ -137,7 +137,7 @@ function previewRows(){
  const body=el('brokerRows');body.replaceChildren();
  for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,p.issue||'آماده']);body.append(tr);}
  const invalid=preview.filter(x=>x.issue).length;
- el('brokerReviewStatus').textContent=preview.length+' ردیف پیدا شد؛ '+invalid+' ردیف تکراری یا نامعتبر از ذخیره کنار گذاشته می‌شود. '+(invalid?'فقط ردیف‌های سالم را پس از بررسی تأیید کنید؛ ردیف‌های کنارگذاشته‌شده در همین جدول مشخص‌اند.':'قیمت‌ها به تومان نمایش داده شده‌اند.');
+ el('brokerReviewStatus').textContent=preview.length+' ردیف پیدا شد؛ '+invalid+' ردیف تکراری یا نامعتبر از ذخیره کنار گذاشته می‌شود. '+(invalid?'فقط ردیف‌های سالم را پس از بررسی تأیید کنید؛ ردیف‌های کنارگذاشته‌شده در همین جدول مشخص‌اند.':'قیمت‌ها به ریال نمایش داده شده‌اند.');
  el('brokerApply').disabled=preview.every(x=>x.issue);
  el('brokerRisk').disabled=true;
  el('brokerReview').hidden=false;ready=preview.some(x=>!x.issue);
@@ -172,7 +172,7 @@ el('brokerApply').addEventListener('click',()=>{
    if(!window.confirm('دارایی‌های واردشده قبلی روی این دستگاه وجود دارند. آن نسخه پشتیبان می‌شود و سپس با '+holdings.length+' سهم جدید جایگزین می‌شود. ادامه می‌دهید؟'))return;
    localStorage.setItem(STORAGE+'-previous',previous);
   }
-  localStorage.setItem(STORAGE,JSON.stringify({version:1,created:new Date().toISOString(),holdings}));
+  localStorage.setItem(STORAGE,JSON.stringify({version:2,created:new Date().toISOString(),holdings}));
   preview=holdings.map(p=>({...p,issue:''}));status(holdings.length+' سهم سالم در بخش دارایی‌های واردشده ذخیره شد. ردیف‌های تکراری یا نامعتبر ذخیره نشدند؛ سبد تحلیل ریسک و صدای هشدار دست‌نخورده‌اند.');
   el('brokerRisk').disabled=false;
  }catch(e){status('ذخیره محلی انجام نشد: '+e.message);}
@@ -181,7 +181,7 @@ el('brokerLoad').addEventListener('click',()=>{
  try{
   const obj=JSON.parse(localStorage.getItem(STORAGE)||'null');
   if(!obj||!Array.isArray(obj.holdings))throw Error('هنوز دارایی واردشده‌ای ذخیره نشده.');
-  preview=obj.holdings.map(p=>({...p,issue:''}));ready=true;
+  preview=obj.holdings.map(p=>({...p,buy:obj.version===1?p.buy*10:p.buy,current:obj.version===1?p.current*10:p.current,issue:''}));ready=true;
   const body=el('brokerRows');body.replaceChildren();
   for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,'ذخیره‌شده']);body.append(tr);}
   el('brokerReview').hidden=false;el('brokerReviewStatus').textContent=preview.length+' سهم از حافظه این دستگاه بارگذاری شد.';
