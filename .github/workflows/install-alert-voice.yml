@@ -1,0 +1,26 @@
+name: Install local Persian alert sample
+on:
+  push:
+    paths:
+      - .github/workflows/install-alert-voice.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Fetch and validate audio
+        run: |
+          curl --fail --location --retry 3 --max-time 40 'https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/5b66859a-494b-4d86-8be6-f4a2c9709604.mp3' --output alert-voice.mp3
+          test "$(wc -c < alert-voice.mp3)" -gt 10000
+          file alert-voice.mp3 | grep -i 'audio'
+      - name: Commit audio to repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add alert-voice.mp3
+          git diff --cached --quiet || (git commit -m 'Add local Persian voice sample' && git push)
