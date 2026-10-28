@@ -367,7 +367,7 @@ $('portfolioAnalyze').addEventListener('click',reportPortfolio);
 $('portfolioClear').addEventListener('click',()=>{resetPortfolioDelete();portfolioEditingSymbol=null;portfolioLastDeletion=null;portfolioUndoAvailability();$('portfolioData').value='';refreshPortfolioSaveState();refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 function portfolioCsvCell(value){
  const text=String(value);
- const safe=/^[\s\u200e\u200f\ufeff]*[=+@\-]/u.test(text)?"'"+text:text;
+ const safe=typeof value==='number'&&Number.isFinite(value)?text:/^[\s\u200e\u200f\ufeff]*[=+@\-]/u.test(text)?"'"+text:text;
  return '"'+safe.replace(/"/g,'""')+'"';
 }
 $('portfolioExport').addEventListener('click',()=>{
