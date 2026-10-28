@@ -9,7 +9,7 @@ $('calculate').addEventListener('click',()=>{
  const loss=qty*(entry-stop),gain=qty*(target-entry);
  $('calcResult').textContent=`سقف خرید محاسباتی: ${fmt(qty)} سهم | ارزش خرید: ${fmt(qty*entry)} تومان | زیان نظری تا حد ضرر: ${fmt(loss)} تومان | سود نظری تا حد سود: ${fmt(gain)} تومان | نسبت سود به زیان: ${fmt((target-entry)/(entry-stop))}`;
 });
-function speak(s){try{if('speechSynthesis' in window){speechSynthesis.cancel();let a=new SpeechSynthesisUtterance(s);a.lang='fa-IR';a.rate=.95;speechSynthesis.speak(a);}}catch(e){}}
+function speak(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();let a=new SpeechSynthesisUtterance(s);a.lang='fa-IR';a.rate=.95;speechSynthesis.speak(a);}}catch(e){}try{let C=window.AudioContext||window.webkitAudioContext;if(C){let c=new C();c.resume().then(()=>{let o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.15;o.start();o.stop(c.currentTime+.35);o.onended=()=>c.close();}).catch(()=>{});}}catch(e){}}
 $('speech').addEventListener('click',()=>speak('آزمایش هشدار صوتی سهام بان'));
 $('check').addEventListener('click',()=>{
  const symbol=$('symbol').value.trim().slice(0,35)||'سهم',price=n('price'),stop=n('aStop'),target=n('aTarget'),el=$('alerts');
