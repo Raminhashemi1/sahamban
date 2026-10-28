@@ -17,9 +17,26 @@ function extract(name){
  return tail.slice(0,next+3);
 }
 const context=vm.createContext({fmt:n=>String(n),Intl,Date});
-vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marketDateCheck','portfolioCsvCell','validatePortfolioBackup','refreshPortfolioSaveState'].map(extract).join('\n'),context);
+vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marketDateCheck','portfolioCsvCell','validatePortfolioBackup','convertLegacyPortfolio','refreshPortfolioSaveState'].map(extract).join('\n'),context);
 const brokerImport=fs.readFileSync('broker-import.js','utf8');
 test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);new vm.Script(brokerImport);});
+const persianUi=fs.readFileSync('persian-ui.js','utf8');
+test('Rial-only portfolio examples and Persian numerical display are wired',()=>{
+ new vm.Script(persianUi);
+ assert.ok(html.includes('فولاد,1000,5000,5400,4700,6500'));
+ assert.ok(app.includes("const portfolioDemo='فولاد,1000,5000,5400,4700,6500"));
+ assert.ok(html.includes('./persian-ui.js?v=46'));
+ assert.ok(sw.includes('./persian-ui.js?v=46'));
+ assert.ok(!app.includes(' تومان')&&!app.includes('_toman'));
+});
+test('Legacy toman backup is converted to rial without mutating source',()=>{
+ const legacy={version:1,data:'فولاد,100,200,250,150,300',capital:'50000',riskCap:'5',stress:'10',concentration:'30'};
+ const converted=context.validatePortfolioBackup(legacy);
+ assert.equal(converted.version,2);
+ assert.equal(converted.data,'فولاد,100,2000,2500,1500,3000');
+ assert.equal(converted.capital,'500000');
+ assert.equal(legacy.data,'فولاد,100,200,250,150,300');
+});
 test('Broker import is local-only with separate storage and offline Excel parser',()=>{
  assert.ok(html.includes('id="brokerFile"')&&html.includes('id="brokerReview"')&&html.includes('id="brokerApply"'));
  assert.ok(html.includes('broker-import.js?v='));
