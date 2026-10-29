@@ -32,6 +32,25 @@
    status.textContent='تحلیل فقط از تاریخچه قیمت پایانی معتبرِ دریافت‌شده در همین نشست محاسبه شد؛ اطلاعات سبد ذخیره یا ارسال نشده است.';
   }catch(e){result.textContent='تحلیل محاسبه نشد: '+e.message;}
  }
+ window.addEventListener('sahamban:portfolio-symbols-v50',event=>{
+  const incoming=event?.detail?.symbols;
+  if(!Array.isArray(incoming))return;
+  const symbols=[...new Set(incoming.filter(s=>typeof s==='string'&&s.trim()))];
+  if(!symbols.length)return;
+  // The visible portfolio supplies names only. Imported/current prices are never treated as historical data.
+  quotes=symbols.map(symbol=>({symbol,marketDate:null,history:null}));
+  selector.replaceChildren();
+  for(const symbol of symbols){
+   const option=document.createElement('option');
+   option.value=symbol;
+   option.textContent=symbol+' — تاریخچه تأییدشده دریافت نشده';
+   selector.append(option);
+  }
+  selector.disabled=false;
+  selector.value=symbols[0];
+  status.textContent='فهرست نمادهای سبد فعال شد؛ برای محاسبه اندیکاتورها هنوز تاریخچه قیمت پایانی تأییدشده لازم است.';
+  show();
+ });
  selector.addEventListener('change',show);
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
   const incoming=event?.detail?.quotes;

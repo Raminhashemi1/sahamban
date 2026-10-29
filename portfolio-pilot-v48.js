@@ -105,6 +105,9 @@
   $('livePortfolioSummary').textContent=(mode==='import'?'ارزش بر اساس قیمت فایل: ':'ارزش طبق قیمت پایانی بازار: ')+fmt(value)+' ریال | بهای خرید: '+fmt(cost)+' ریال | سود/زیان تحقق‌نیافته: '+fmt(pnl)+' ریال ('+fmt(percent)+'٪). کارمزد و مالیات لحاظ نشده‌اند.';
   $('livePortfolioMeta').textContent=mode==='import'?'تعداد دارایی: '+fmt(holdings.length)+' | منبع: قیمت پایانی درج‌شده در فایل کارگزاری؛ تاریخ دقیق قیمت بازار نامشخص است. زمان ورود فایل به مرورگر: '+(Number.isFinite(Date.parse(receivedAt))?new Date(receivedAt).toLocaleString('fa-IR'):'نامشخص')+'. این نتیجه قیمت روز یا به‌روزرسانی خودکار نیست.':'تعداد دارایی: '+fmt(holdings.length)+' | تاریخ بازار هر نماد در جدول مشخص است | زمان دریافت پاسخ‌ها: '+new Date(receivedAt).toLocaleString('fa-IR')+' (زمان دستگاه). زمان دریافت، زمان آخرین معامله نیست.';
   $('livePortfolioTable').hidden=false;
+  // Publish symbol names only so the technical selector stays usable even for file-import views.
+  // The historical-analysis panel still requires the separate verified-history event below.
+  window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:holdings.map(h=>h.symbol)}}));
  }
  // Read-only startup verification: never writes, uploads or merges real holdings with demo rows.
  try{
