@@ -275,6 +275,9 @@ async function main(){
   const nineteen=Array.from({length:19},(_,i)=>({symbol:'سهم'+(i+1),quantity:i+1,buy:1000+i,current:1100+i}));
   await page.evaluate(holdings=>localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings})),nineteen);
   const originalNineteen=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  await page.reload({waitUntil:'load'});
+  assert.match(await page.locator('#livePortfolioStatus').innerText(),/۱۹ نماد/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),originalNineteen);
   await page.unrouteAll();
   await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
    const symbol=decodeURIComponent(route.request().url().split('/').at(-1)),n=Number(symbol.replace('سهم',''));
