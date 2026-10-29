@@ -30,7 +30,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.match(pilot,/GetClosingPriceDailyList/);
  assert.match(pilot,/sahamban:verified-historical-quotes-v50/);
  assert.match(pilot,/rowsValid\.length<15/);
- assert.doesNotMatch(tech,/\\bfetch\\s*\\(/);
+ assert.doesNotMatch(tech, /\bfetch\s*\(/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.5/);
  assert.match(sw,/sahamban-static-v50-7/);
 });
