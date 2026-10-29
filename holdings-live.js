@@ -143,8 +143,15 @@
   try{
    const holdings=readHoldings();
    say('در حال دریافت قیمت پایانی از TSETMC برای '+fmt(holdings.length)+' نماد. تا پایان بررسی، جمع ارزش روز نمایش داده نمی‌شود...');
-   const outcomes=new Array(holdings.length);let next=0;
-   async function worker(){while(true){const i=next++;if(i>=holdings.length)return;const h=holdings[i];try{outcomes[i]={ok:true,quote:await getOne(h)}}catch(e){outcomes[i]={ok:false,symbol:h.symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message}}}}
+   const outcomes=new Array(holdings.length);let next=0,completed=0,successes=0;
+   async function worker(){while(true){
+    const i=next++;if(i>=holdings.length)return;
+    const h=holdings[i];
+    try{outcomes[i]={ok:true,quote:await getOne(h)};successes++;}
+    catch(e){outcomes[i]={ok:false,symbol:h.symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message};}
+    completed++;
+    say('بررسی قیمت‌ها: '+fmt(completed)+' از '+fmt(holdings.length)+' نماد؛ تأیید کامل '+fmt(successes)+' نماد. تا پایان همه درخواست‌ها هیچ جمع جدیدی نشان داده نمی‌شود.');
+   }}
    await Promise.all(Array.from({length:Math.min(3,holdings.length)},()=>worker()));
    const failed=outcomes.filter(x=>!x.ok);
    if(failed.length){
