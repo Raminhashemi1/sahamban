@@ -221,8 +221,8 @@ async function main(){
   const beforeDownload=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
   const pendingBackup=page.waitForEvent('download');
   await page.locator('#brokerExportBackup').click();
-  const backup=await pendingBackup;
-  assert.equal(backup.suggestedFilename(),'sahamban-broker-holdings-backup.json');
+  const downloadedBrokerBackup=await pendingBackup;
+  assert.equal(downloadedBrokerBackup.suggestedFilename(),'sahamban-broker-holdings-backup.json');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),beforeDownload);
   console.log('PASS: mobile real-holdings JSON backup download does not mutate 19-position storage');
 
