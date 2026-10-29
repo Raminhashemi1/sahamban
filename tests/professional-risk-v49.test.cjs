@@ -1,0 +1,5 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');
+const js=fs.readFileSync('professional-risk-v49.js','utf8'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
+test('v49 risk engine parses and is integrated into main page and offline cache',()=>{new vm.Script(js);assert.match(html,/id="professionalRiskV49"/);assert.match(html,/professional-risk-v49\.js\?v=49/);assert.match(sw,/professional-risk-v49\.js\?v=49/);assert.match(sw,/sahamban-static-v49/);});
+test('v49 requires verified quote status and never writes or clears local storage',()=>{assert.match(js,/readVerifiedRows/);assert.match(js,/دریافت قیمت پایانی همه نمادها/);assert.doesNotMatch(js,/localStorage\.(?:setItem|removeItem|clear)\s*\(/);assert.doesNotMatch(js,/fetch\s*\(/);});
+test('v49 has bounded risk inputs and explicit downside scenarios',()=>{assert.match(html,/max="10"/);assert.match(html,/value="5"/);assert.match(html,/value="10"/);assert.match(html,/value="20"/);assert.match(html,/value="30"/);assert.match(js,/Number\.isSafeInteger/);assert.match(js,/شاخص تمرکز HHI/);});
