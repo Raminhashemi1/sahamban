@@ -27,7 +27,7 @@ async function json(path){
   if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)throw Error('invalid market date '+date);
   const now=new Date(),age=Math.floor((Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate())-dt.getTime())/86400000);
   if(age<0||age>7)throw Error('quote is stale or future-dated; market date='+date+', ageDays='+age);
-  console.log('INTEGRATION PASS: TSETMC search and quote endpoints reachable from GitHub Actions; exact ticker فولاد, price='+price+' rial, marketDate='+date+', calendarAgeDays='+age+'. This does not verify browser CORS or access from the user's phone.');
+  console.log('INTEGRATION PASS: TSETMC search and quote endpoints reachable from GitHub Actions; exact ticker فولاد, price='+price+' rial, marketDate='+date+', calendarAgeDays='+age+'. This does not verify browser CORS or access from a user's phone.');
  }catch(error){
   console.log('INTEGRATION BLOCKED/UNVERIFIED: '+(error.name==='AbortError'?'request timed out':error.message)+'. This is not a passing live-data test; browser CORS and phone-network access remain unverified.');
  }
