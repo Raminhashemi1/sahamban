@@ -121,7 +121,7 @@ function previewRows(){
  const duplicate=new Set(),found=new Set();let errors=0;
  preview=matrix.slice(1).map((row,i)=>{
   const symbol=String(row[+ids[0]]??'').trim();
-  const quantity=num(row[+ids[1]]),buy=num(row[+ids[2]])/factor,current=num(row[+ids[3]])/factor;
+  const quantity=num(row[+ids[1]]),buy=num(row[+ids[2]])*factor,current=num(row[+ids[3]])*factor;
   if(!symbol&&row.every(x=>String(x??'').trim()===''))return null;
   const clean=normal(symbol);let issue='';
   if(!symbol||symbol.length>35||/[\r\n,;\t]/.test(symbol))issue='نماد نامعتبر';
