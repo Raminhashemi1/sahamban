@@ -16,11 +16,11 @@
   const raw=localStorage.getItem(HOLDINGS_KEY);
   if(!raw)throw Error('ابتدا فایل کارگزاری را وارد و دارایی‌ها را روی همین گوشی ذخیره کنید.');
   const data=JSON.parse(raw);
-  if(!data||!Array.isArray(data.holdings)||!data.holdings.length)throw Error('ساختار دارایی‌های ذخیره‌شده معتبر نیست.');
+  if(!data||![1,2].includes(data.version)||!Array.isArray(data.holdings)||!data.holdings.length)throw Error('ساختار دارایی‌های ذخیره‌شده معتبر نیست.');
   if(data.holdings.length>100)throw Error('بیش از ۱۰۰ سهم پشتیبانی نمی‌شود.');
   const seen=new Set();
   return data.holdings.map((p,i)=>{
-   const symbol=String(p.symbol??'').trim(),quantity=Number(p.quantity),buy=Number(p.buy);
+   const symbol=String(p.symbol??'').trim(),quantity=Number(p.quantity),buy=Number(p.buy)*(data.version===1?10:1);
    const key=norm(symbol);
    if(!symbol||!key||seen.has(key))throw Error('نماد خالی یا تکراری در دارایی ذخیره‌شده (ردیف '+(i+1)+').');
    seen.add(key);
@@ -111,6 +111,7 @@
    const holdings=readHoldings(),snapshot=JSON.parse(localStorage.getItem(QUOTES_KEY)||'null');
    if(!snapshot||snapshot.version!==1||snapshot.source!=='TSETMC'||!Array.isArray(snapshot.quotes))throw Error('هنوز تصویر قیمت ذخیره‌شده‌ای وجود ندارد.');
    const quotes=snapshot.quotes;
+   if(quotes.some(q=>!q||!Number.isFinite(q.price)||q.price<=0||!Number.isSafeInteger(q.quantity)||q.quantity<=0||!Number.isFinite(q.buy)||q.buy<=0||!/^[0-9]{8,25}$/.test(String(q.insCode??''))))throw Error('فایل قیمت ذخیره‌شده ناقص یا نامعتبر است.');
    if(holdings.length!==quotes.length||holdings.some(h=>!quotes.some(q=>q.symbol===h.symbol&&q.quantity===h.quantity&&q.buy===h.buy)))throw Error('سبد فعلی با تصویر قیمت قبلی یکسان نیست؛ ابتدا قیمت‌ها را تازه‌سازی کنید.');
    for(const q of quotes)validDate(q.marketDate);
    render(holdings,quotes,snapshot.receivedAt);
