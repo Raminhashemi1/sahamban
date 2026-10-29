@@ -7,8 +7,7 @@
  function fail(s){$('riskStatusV49').textContent=s;$('riskSummaryV49').textContent='';$('riskDetailsV49').replaceChildren();}
  function readVerifiedRows(){
   const status=$('livePortfolioStatus')?.textContent||'';
-  if(!/دریافت و اعتبارسنجی قیمت پایانی همه ۱۹ نماد موفق بود/.test(status) &&
-     !/دریافت و اعتبارسنجی قیمت پایانی همه/.test(status)) throw Error('ابتدا دکمه دریافت قیمت پایانی همه نمادها را اجرا کنید و موفقیت اعتبارسنجی قیمت‌ها را ببینید.');
+  if(!/^دریافت و اعتبارسنجی قیمت پایانی همه\s+[۰-۹٠-٩0-9]+\s+نماد موفق بود/.test(status)) throw Error('ابتدا دکمه دریافت قیمت پایانی همه نمادها را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
   const rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
   if(!rows.length)throw Error('جدول قیمت تأییدشده در صفحه موجود نیست.');
   const result=rows.map(tr=>{
