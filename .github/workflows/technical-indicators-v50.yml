@@ -1,7 +1,7 @@
 name: Technical Indicators v50 Safety
 on:
   push:
-    branches: [main, feat/v50-technical-indicators]
+    branches: [main, feat/v50-technical-analysis-release]
   pull_request:
     branches: [main]
   workflow_dispatch:
