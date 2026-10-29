@@ -299,6 +299,29 @@ async function main(){
   assert.equal(nineteenSnapshot.quotes.reduce((s,q)=>s+q.quantity*q.buy,0),expectedCost);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),originalNineteen);
   console.log('PASS: 19 synthetic holdings refresh atomically with unchanged original quantities and purchase prices');
+  // Simulate a user-side quantity change while the next synthetic quote batch is in flight.
+  // This is deliberately mocked; it must not contact TSETMC or touch a real portfolio.
+  const priorQuotesDuringRace=await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1'));
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/**',async route=>{
+   await new Promise(resolve=>setTimeout(resolve,150));
+   await route.fallback();
+  });
+  const pendingQuoteRequest=page.waitForRequest(req=>req.url().includes('/ClosingPrice/GetClosingPriceInfo/'),{timeout:10000});
+  await page.locator('#livePortfolioRefresh').click();
+  await pendingQuoteRequest;
+  await page.evaluate(()=>{
+   const key='sahamban-broker-holdings-v1';
+   const current=JSON.parse(localStorage.getItem(key));
+   current.holdings[0].quantity+=1;
+   localStorage.setItem(key,JSON.stringify(current));
+  });
+  await page.getByText('دارایی‌ها هنگام دریافت قیمت تغییر کرده‌اند',{exact:false}).waitFor({timeout:30000});
+  assert.equal(await page.locator('#livePortfolioTable').isVisible(),false);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),priorQuotesDuringRace);
+  const raceHoldings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
+  assert.equal(raceHoldings.holdings[0].quantity,nineteen[0].quantity+1);
+  assert.equal(raceHoldings.holdings[0].buy,nineteen[0].buy);
+  console.log('PASS: concurrent synthetic holdings change blocks quote commit without overwriting previous snapshot');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),recordedBefore);
   console.log('PASS: portfolio, backup and market checks preserve recorded user voice');
 
