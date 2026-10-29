@@ -20,12 +20,12 @@
   if(data.holdings.length>100)throw Error('بیش از ۱۰۰ سهم پشتیبانی نمی‌شود.');
   const seen=new Set();
   return data.holdings.map((p,i)=>{
-   const symbol=String(p.symbol??'').trim(),quantity=Number(p.quantity),buy=Number(p.buy)*(data.version===1?10:1);
+   const symbol=String(p.symbol??'').trim(),quantity=Number(p.quantity),buy=Number(p.buy)*(data.version===1?10:1),importCurrent=Number(p.current)*(data.version===1?10:1);
    const key=norm(symbol);
    if(!symbol||!key||seen.has(key))throw Error('نماد خالی یا تکراری در دارایی ذخیره‌شده (ردیف '+(i+1)+').');
    seen.add(key);
    if(!Number.isSafeInteger(quantity)||quantity<=0||!Number.isFinite(buy)||buy<=0)throw Error('تعداد یا میانگین خرید نامعتبر برای '+symbol+'.');
-   return {symbol,key,quantity,buy};
+   return {symbol,key,quantity,buy,importCurrent,importedAt:typeof data.created==='string'?data.created:null};
   });
  }
  async function fetchJson(path){
@@ -64,7 +64,7 @@
   const date=validDate(info.dEven??info.date??info.lastDate);
   return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date};
  }
- function render(holdings,quotes,receivedAt){
+ function render(holdings,quotes,receivedAt,mode='live'){
   const body=$('livePortfolioRows');body.replaceChildren();
   let value=0,cost=0;
   for(const h of holdings){
@@ -75,10 +75,20 @@
    body.append(tr);value+=q.price*h.quantity;cost+=h.buy*h.quantity;
   }
   const pnl=value-cost,percent=cost?100*pnl/cost:0;
-  $('livePortfolioSummary').textContent='ارزش روز: '+fmt(value)+' ریال | بهای خرید: '+fmt(cost)+' ریال | سود/زیان تحقق‌نیافته: '+fmt(pnl)+' ریال ('+fmt(percent)+'٪). کارمزد و مالیات لحاظ نشده‌اند.';
-  $('livePortfolioMeta').textContent='تعداد دارایی: '+fmt(holdings.length)+' | تاریخ بازار هر نماد در جدول مشخص است | زمان دریافت پاسخ‌ها: '+new Date(receivedAt).toLocaleString('fa-IR')+' (زمان دستگاه). زمان دریافت، زمان آخرین معامله نیست.';
+  $('livePortfolioSummary').textContent=(mode==='import'?'ارزش بر اساس قیمت فایل: ':'ارزش روز: ')+fmt(value)+' ریال | بهای خرید: '+fmt(cost)+' ریال | سود/زیان تحقق‌نیافته: '+fmt(pnl)+' ریال ('+fmt(percent)+'٪). کارمزد و مالیات لحاظ نشده‌اند.';
+  $('livePortfolioMeta').textContent=mode==='import'?'تعداد دارایی: '+fmt(holdings.length)+' | منبع: قیمت پایانی درج‌شده در فایل کارگزاری؛ تاریخ دقیق قیمت بازار نامشخص است. زمان ورود فایل به مرورگر: '+(Number.isFinite(Date.parse(receivedAt))?new Date(receivedAt).toLocaleString('fa-IR'):'نامشخص')+'. این نتیجه قیمت روز یا به‌روزرسانی خودکار نیست.':'تعداد دارایی: '+fmt(holdings.length)+' | تاریخ بازار هر نماد در جدول مشخص است | زمان دریافت پاسخ‌ها: '+new Date(receivedAt).toLocaleString('fa-IR')+' (زمان دستگاه). زمان دریافت، زمان آخرین معامله نیست.';
   $('livePortfolioTable').hidden=false;
  }
+ $('livePortfolioImported').addEventListener('click',()=>{
+  try{
+   const holdings=readHoldings();
+   if(holdings.some(h=>!Number.isFinite(h.importCurrent)||h.importCurrent<=0))throw Error('قیمت پایانی معتبر برای همه دارایی‌ها در فایل واردشده موجود نیست.');
+   const quotes=holdings.map(h=>({symbol:h.symbol,quantity:h.quantity,buy:h.buy,price:h.importCurrent,marketDate:'نامشخص'}));
+   const receivedAt=holdings[0].importedAt;
+   render(holdings,quotes,receivedAt,'import');
+   say('محاسبه فقط بر اساس آخرین فایل واردشده انجام شد؛ هیچ درخواست بازار ارسال نشد و اطلاعات خرید، تعداد و قیمت ذخیره‌شده تغییر نکردند. این قیمت روز تأییدشده نیست.');
+  }catch(e){$('livePortfolioTable').hidden=true;say('محاسبه فایل انجام نشد: '+e.message);}
+ });
  $('livePortfolioRefresh').addEventListener('click',async()=>{
   if(running)return;
   running=true;$('livePortfolioRefresh').disabled=true;$('livePortfolioTable').hidden=true;
