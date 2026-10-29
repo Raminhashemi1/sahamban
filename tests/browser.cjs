@@ -99,6 +99,14 @@ async function main(){
   assert.equal(tomanImported.holdings[0].current,1400);
   assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
   console.log('PASS: old toman prices multiplied by 10 into rial, quantity and risk portfolio unchanged');
+  const importedBeforeOffline=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  await page.locator('#livePortfolioImported').click();
+  assert.match(await page.locator('#livePortfolioSummary').innerText(),/ارزش بر اساس قیمت فایل: ۹٬۸۰۰ ریال/);
+  assert.match(await page.locator('#livePortfolioSummary').innerText(),/سود\/زیان تحقق‌نیافته: ۱٬۰۵۰ ریال/);
+  assert.match(await page.locator('#livePortfolioMeta').innerText(),/قیمت روز یا به‌روزرسانی خودکار نیست/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),importedBeforeOffline);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
+  console.log('PASS: offline file-based valuation explicitly marked non-live, with no storage mutation');
   await page.locator('#brokerUnit').selectOption('rial');
   // Simulate an existing user recording; portfolio actions must never overwrite it.
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
