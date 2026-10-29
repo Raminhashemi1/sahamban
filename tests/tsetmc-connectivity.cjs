@@ -31,4 +31,25 @@ async function json(path){
  }catch(error){
   console.log('INTEGRATION BLOCKED/UNVERIFIED: '+(error.name==='AbortError'?'request timed out':error.message)+'. This is not a passing live-data test; browser CORS and phone-network access remain unverified.');
  }
+
+(async()=>{
+ const url='https://webgw.tse.ir/InstrumentProvider/api/v1/MarketWatch/MarketWatchCash/fa';
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+ try{
+  const response=await fetch(url,{signal:controller.signal,cache:'no-store',headers:{
+   accept:'application/json, text/plain, */*',
+   'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36',
+   referer:'https://www.tse.ir/',
+   origin:'https://www.tse.ir'
+  }});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const type=response.headers.get('content-type')||'';
+  if(!type.toLowerCase().includes('json'))throw Error('response is not JSON');
+  const data=await response.json();
+  if(!Array.isArray(data?.Items))throw Error('MarketWatchCash Items array missing');
+  console.log('OFFICIAL GATEWAY PASS: webgw.tse.ir returned '+data.Items.length+' market-watch rows. Sample field names: '+Object.keys(data.Items[0]||{}).slice(0,20).join(', ')+'. This runner cannot establish browser CORS or phone access.');
+ }catch(error){
+  console.log('OFFICIAL GATEWAY BLOCKED/UNVERIFIED: '+(error.name==='AbortError'?'request timed out':error.message)+'. No alternative source has been approved for production.');
+ }finally{clearTimeout(timer);}
+})();
 })();
