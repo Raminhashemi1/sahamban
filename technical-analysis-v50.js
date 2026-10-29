@@ -34,11 +34,25 @@
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
   const incoming=event?.detail?.quotes;
   if(!Array.isArray(incoming)){status.textContent='داده تاریخی دریافت‌شده ساختار معتبر ندارد.';return;}
-  quotes=incoming.filter(q=>q&&typeof q.symbol==='string'&&Array.isArray(q.history));
+  quotes=[...new Map(incoming.filter(q=>q&&typeof q.symbol==='string'&&q.symbol.trim()).map(q=>[q.symbol,q])).values()];
   selector.replaceChildren();
-  for(const q of quotes){const option=document.createElement('option');option.value=q.symbol;option.textContent=q.symbol;selector.append(option);}
+  for(const q of quotes){
+   const option=document.createElement('option');
+   option.value=q.symbol;
+   option.textContent=q.symbol+(Array.isArray(q.history)&&q.history.length?'':' — تاریخچه در دسترس نیست');
+   selector.append(option);
+  }
   selector.disabled=quotes.length===0;
-  if(quotes.length){selector.value=quotes[0].symbol;show();}
-  else{result.textContent='تاریخچه معتبر از منبع بازار دریافت نشد؛ اندیکاتور قابل محاسبه نیست.';status.textContent='هیچ سری تاریخی معتبر برای تحلیل تأیید نشد.';}
+  const withHistory=quotes.filter(q=>Array.isArray(q.history)&&q.history.length>0).length;
+  if(quotes.length){
+   selector.value=quotes[0].symbol;
+   status.textContent=withHistory
+    ?'قیمت پایانی نمادها تأیید شد. تاریخچه قابل استفاده برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شده است.'
+    :'قیمت پایانی تأیید شده، اما تاریخچه روزانه قابل استفاده از منبع بازار نرسیده است. نمادها را می‌توانید انتخاب کنید؛ اندیکاتور بدون تاریخچه محاسبه نمی‌شود.';
+   show();
+  }else{
+   result.textContent='هیچ نماد تأییدشده‌ای به بخش تکنیکال نرسید. دریافت قیمت پایانی همه نمادها را دوباره اجرا کنید و پیام وضعیت بخش کارگزاری را بررسی کنید.';
+   status.textContent='داده قیمت تأییدشده به بخش تحلیل نرسیده است.';
+  }
  });
 })();
