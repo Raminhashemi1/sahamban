@@ -79,6 +79,14 @@
   $('livePortfolioMeta').textContent=mode==='import'?'تعداد دارایی: '+fmt(holdings.length)+' | منبع: قیمت پایانی درج‌شده در فایل کارگزاری؛ تاریخ دقیق قیمت بازار نامشخص است. زمان ورود فایل به مرورگر: '+(Number.isFinite(Date.parse(receivedAt))?new Date(receivedAt).toLocaleString('fa-IR'):'نامشخص')+'. این نتیجه قیمت روز یا به‌روزرسانی خودکار نیست.':'تعداد دارایی: '+fmt(holdings.length)+' | تاریخ بازار هر نماد در جدول مشخص است | زمان دریافت پاسخ‌ها: '+new Date(receivedAt).toLocaleString('fa-IR')+' (زمان دستگاه). زمان دریافت، زمان آخرین معامله نیست.';
   $('livePortfolioTable').hidden=false;
  }
+ // Read-only startup verification: never writes, uploads or merges real holdings with demo rows.
+ try{
+  const saved=localStorage.getItem(HOLDINGS_KEY);
+  if(saved){
+   const holdings=readHoldings();
+   say('اطلاعات واقعی کارگزاری روی همین مرورگر شناسایی شد: '+fmt(holdings.length)+' نماد؛ جمع تعداد سهم‌ها '+fmt(holdings.reduce((sum,h)=>sum+h.quantity,0))+' سهم. هیچ داده‌ای تغییر نکرد. قیمت روز هنوز دریافت نشده است.');
+  }else say('در این مرورگر هنوز فایل دارایی‌های واقعی ذخیره نشده است؛ این بخش از داده‌های نمایشی استفاده نمی‌کند.');
+ }catch(e){say('خواندن ایمن دارایی‌های واقعی ناموفق بود: '+e.message+'؛ داده ذخیره‌شده تغییر نکرد.');}
  $('livePortfolioImported').addEventListener('click',()=>{
   try{
    const holdings=readHoldings();
