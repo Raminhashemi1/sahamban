@@ -203,7 +203,7 @@ async function main(){
 
   // Test the live portfolio overlay using synthetic holdings and mocked TSETMC responses only.
   const marketToday=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const marketYesterday=new Date(Date.now()-86400000).toISOString().slice(0,10).replace(/-/g,'');
+  const marketYesterday=new Date(Date.now()-9*86400000).toISOString().slice(0,10).replace(/-/g,'');
   let staleBeta=true;
   await page.evaluate(()=>{
    localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings:[
