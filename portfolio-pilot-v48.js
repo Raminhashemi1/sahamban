@@ -109,6 +109,51 @@
   // The historical-analysis panel still requires the separate verified-history event below.
   window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:holdings.map(h=>h.symbol)}}));
  }
+
+ // Independent historical-series flow: does not require today's quote to pass freshness checks.
+ async function getHistoricalOne(holding){
+  const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
+  const rows=search?.instrumentSearch;
+  if(!Array.isArray(rows))throw Error('ساختار جست‌وجوی '+holding.symbol+' معتبر نیست.');
+  const candidates=[...new Map(rows.filter(x=>norm(x.lVal18AFC)===holding.key&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>[String(x.insCode),x])).values()];
+  if(candidates.length!==1)throw Error(candidates.length?'شناسه دقیق نماد یکتا نیست.':'شناسه دقیق نماد پیدا نشد.');
+  const data=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+candidates[0].insCode+'/0');
+  const daily=data?.closingPriceDaily;
+  if(!Array.isArray(daily))throw Error('پاسخ تاریخچه ساختار معتبر ندارد.');
+  const rowsValid=daily.map(row=>{
+   const date=String(row?.dEven??''),close=Number(row?.pClosing);
+   if(!/^\\d{8}$/.test(date)||!Number.isFinite(close)||close<=0)return null;
+   const y=+date.slice(0,4),m=+date.slice(4,6),d=+date.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
+   if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
+   return {date,close};
+  }).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
+  const unique=new Set(rowsValid.map(x=>x.date));
+  if(rowsValid.length<15||unique.size!==rowsValid.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
+  return {symbol:holding.symbol,marketDate:rowsValid[rowsValid.length-1].date,history:rowsValid.slice(-250),insCode:String(candidates[0].insCode)};
+ }
+ $('technicalHistoryAllV50').addEventListener('click',async()=>{
+  const button=$('technicalHistoryAllV50');
+  if(running)return;
+  running=true;button.disabled=true;
+  try{
+   const holdings=readHoldings();
+   say('دریافت تاریخچه مستقل برای '+fmt(holdings.length)+' نماد آغاز شد؛ اطلاعات سبد فقط خوانده می‌شود و تغییر نمی‌کند...');
+   const outcomes=new Array(holdings.length);let next=0,completed=0;
+   async function worker(){while(true){
+    const i=next++;if(i>=holdings.length)return;
+    try{outcomes[i]={ok:true,quote:await getHistoricalOne(holdings[i])};}
+    catch(e){outcomes[i]={ok:false,symbol:holdings[i].symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message};}
+    completed++;say('تاریخچه: '+fmt(completed)+' از '+fmt(holdings.length)+' نماد بررسی شد؛ هنوز داده‌ای برای نمادهای ناموفق حدس زده نمی‌شود.');
+   }}
+   await Promise.all(Array.from({length:Math.min(3,holdings.length)},()=>worker()));
+   const quotes=outcomes.map(x=>x.ok?x.quote:{symbol:x.symbol,marketDate:null,history:null,error:x.error});
+   window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes}}));
+   const good=outcomes.filter(x=>x.ok).length,failed=outcomes.filter(x=>!x.ok);
+   say('تاریخچه معتبر برای '+fmt(good)+' از '+fmt(holdings.length)+' نماد دریافت شد.'+(failed.length?' ناموفق: '+failed.map(x=>x.symbol+': '+x.error).join('؛ '):'')+'؛ اطلاعات سبد تغییری نکرد.');
+  }catch(e){say('دریافت تاریخچه انجام نشد: '+e.message+'؛ اطلاعات سبد دست‌نخورده ماند.');}
+  finally{running=false;button.disabled=false;}
+ });
+
  // Read-only startup verification: never writes, uploads or merges real holdings with demo rows.
  try{
   const saved=localStorage.getItem(HOLDINGS_KEY);
