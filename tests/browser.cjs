@@ -136,8 +136,8 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),before);
   console.log('PASS: selecting a valid backup never overwrites current holdings');
   await page.locator('#portfolioBackupApply').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
-  assert.equal(await page.locator('#portfolioCapital').inputValue(),'100000');
+  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,۷,۱۰۰۰,۱۲۰۰,۹۰۰,۱۷۰۰');
+  assert.equal(await page.locator('#portfolioCapital').inputValue(),'۱۰۰۰۰۰');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-portfolio-local-v1')),savedBeforeImport);
   console.log('PASS: confirmed JSON backup restores screen fields without replacing saved copy');
 
