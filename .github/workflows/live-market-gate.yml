@@ -1,0 +1,17 @@
+name: Real market data release gate
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/portfolio-live-prices-v48]
+jobs:
+  live-source-verified:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Real TSETMC symbol, quote, date and daily-history verification (must PASS to release)
+        run: node tests/live-market-gate.cjs
