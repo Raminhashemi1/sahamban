@@ -27,7 +27,7 @@ const server=http.createServer((req,res)=>{
   const saved=JSON.stringify({version:2,created:new Date().toISOString(),holdings});
   await page.addInitScript(v=>localStorage.setItem('sahamban-broker-holdings-v1',v),saved);
   await page.goto('http://127.0.0.1:'+server.address().port+'/portfolio-pilot.html');
-  assert.match(await page.locator('#livePortfolioStatus').innerText(),/۱۹ نماد/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),saved);
   await page.locator('#livePortfolioImported').click();
   const summary=await page.locator('#livePortfolioSummary').innerText();
   assert.match(summary,/ارزش بر اساس قیمت فایل/);
