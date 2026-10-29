@@ -117,11 +117,12 @@ function rowText(tr,values){for(const v of values){const td=document.createEleme
 function previewRows(){
  const ids=['brokerSymbolCol','brokerQtyCol','brokerBuyCol','brokerCurrentCol'].map(id=>el(id).value);
  if(ids.some(x=>x==='')||new Set(ids).size!==4)throw Error('چهار ستون متفاوت انتخاب کنید.');
+ // Imported toman prices are converted into rial once; stored version 2 is always rial.
  const factor=el('brokerUnit').value==='rial'?1:10;
  const duplicate=new Set(),found=new Set();let errors=0;
  preview=matrix.slice(1).map((row,i)=>{
   const symbol=String(row[+ids[0]]??'').trim();
-  const quantity=num(row[+ids[1]]),buy=num(row[+ids[2]])/factor,current=num(row[+ids[3]])/factor;
+  const quantity=num(row[+ids[1]]),buy=num(row[+ids[2]])*factor,current=num(row[+ids[3]])*factor;
   if(!symbol&&row.every(x=>String(x??'').trim()===''))return null;
   const clean=normal(symbol);let issue='';
   if(!symbol||symbol.length>35||/[\r\n,;\t]/.test(symbol))issue='نماد نامعتبر';
