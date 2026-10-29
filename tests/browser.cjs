@@ -97,14 +97,14 @@ async function main(){
   await page.locator('#pfSymbol').fill('بتا');
   for(const [id,value] of Object.entries({pfQty:'20',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'150'}))await page.locator('#'+id).fill(value);
   await page.locator('#pfAdd').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,20,100,110,90,150/);
+  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,۲۰,۱۰۰,۱۱۰,۹۰,۱۵۰/);
   console.log('PASS: add holding via form');
 
   await page.locator('#pfExisting').selectOption('بتا');
   await page.locator('#pfEdit').click();
   await page.locator('#pfQty').fill('30');
   await page.locator('#pfAdd').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,30,100,110,90,150/);
+  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,۳۰,۱۰۰,۱۱۰,۹۰,۱۵۰/);
   console.log('PASS: edit existing holding');
 
   await page.locator('#pfExisting').selectOption('بتا');
@@ -156,9 +156,9 @@ async function main(){
   for(const [id,value] of Object.entries({pfQty:'5',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'130'}))await page.locator('#'+id).fill(value);
   await page.locator('#pfAdd').click();
   const retainedRows=await page.locator('#portfolioData').inputValue();
-  assert.match(retainedRows,/فولاد,1000,500,540,470,650/);
-  assert.match(retainedRows,/خودرو,2000,280,260,235,320/);
-  assert.match(retainedRows,/آزمایش,5,100,110,90,130/);
+  assert.match(retainedRows,/فولاد,۱۰۰۰,۵۰۰,۵۴۰,۴۷۰,۶۵۰/);
+  assert.match(retainedRows,/خودرو,۲۰۰۰,۲۸۰,۲۶۰,۲۳۵,۳۲۰/);
+  assert.match(retainedRows,/آزمایش,۵,۱۰۰,۱۱۰,۹۰,۱۳۰/);
   console.log('PASS: adding a holding never silently removes example-shaped existing positions');
 
   // Mock market responses: no request is sent to the real exchange.
