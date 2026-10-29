@@ -97,7 +97,7 @@ async function main(){
   assert.equal(tomanImported.holdings[0].quantity,7);
   assert.equal(tomanImported.holdings[0].buy,1250);
   assert.equal(tomanImported.holdings[0].current,1400);
-  assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  assert.equal(await readPortfolio(),portfolioBeforeImport);
   console.log('PASS: old toman prices multiplied by 10 into rial, quantity and risk portfolio unchanged');
   const importedBeforeOffline=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
   await page.locator('#livePortfolioImported').click();
