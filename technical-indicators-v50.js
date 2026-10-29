@@ -46,7 +46,7 @@
     if(f>=s)throw new RangeError('دوره سریع MACD باید از دوره کند کوتاه‌تر باشد.');
     const ef=ema(x,f),es=ema(x,s),line=Array(x.length).fill(null);
     for(let i=0;i<x.length;i++)if(ef[i]!==null&&es[i]!==null)line[i]=ef[i]-es[i];
-    const validStart=s-1,compact=line.slice(validStart),sigCompact=ema(compact,sig),signalLine=Array(x.length).fill(null),hist=Array(x.length).fill(null);
+    const validStart=s-1,compact=line.slice(validStart),sigCompact=compact.length?ema(compact,sig):[],signalLine=Array(x.length).fill(null),hist=Array(x.length).fill(null);
     for(let j=0;j<sigCompact.length;j++){const i=j+validStart;if(sigCompact[j]!==null){signalLine[i]=sigCompact[j];hist[i]=line[i]-sigCompact[j];}}
     return {macd:line,signal:signalLine,histogram:hist};
   }
