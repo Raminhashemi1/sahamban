@@ -237,6 +237,7 @@ async function main(){
   const marketToday=new Date().toISOString().slice(0,10).replace(/-/g,'');
   const marketYesterday=new Date(Date.now()-9*86400000).toISOString().slice(0,10).replace(/-/g,'');
   let staleBeta=true;
+  let mismatchedHistory=false;
   await page.evaluate(()=>{
    localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings:[
     {symbol:'آلفا',quantity:10,buy:1000,current:1200},
@@ -260,7 +261,7 @@ async function main(){
    const code=route.request().url().split('/').at(-2);
    const isBeta=code==='12345678902';
    const price=isBeta?2100:1500;
-   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:[{dEven:Number(marketToday),pClosing:price}]})});
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:[{dEven:Number(marketToday),pClosing:mismatchedHistory&&isBeta?price+100:price}]})});
   });
   await page.locator('#livePortfolioRefresh').click();
   await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:10000});
@@ -277,6 +278,14 @@ async function main(){
   assert.equal(savedQuotes.quotes.length,2);
   assert.equal(savedQuotes.source,'TSETMC');
   console.log('PASS: mocked fresh quotes calculate rial value/P&L and preserve quantities and buy prices');
+  const quoteSnapshotBeforeMismatch=await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1'));
+  mismatchedHistory=true;
+  await page.locator('#livePortfolioRefresh').click();
+  await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:10000});
+  assert.equal(await page.locator('#livePortfolioTable').isVisible(),false);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),quoteSnapshotBeforeMismatch);
+  console.log('PASS: independent closing-price mismatch blocks portfolio valuation and snapshot overwrite');
+  mismatchedHistory=false;
   // Full-size synthetic test: nineteen holdings, no private user positions or real brokerage credentials.
   const nineteen=Array.from({length:19},(_,i)=>({symbol:'سهم'+(i+1),quantity:i+1,buy:1000+i,current:1100+i}));
   await page.evaluate(holdings=>localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings})),nineteen);
