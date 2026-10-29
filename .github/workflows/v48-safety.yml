@@ -20,3 +20,5 @@ jobs:
           node --check holdings-live.js
       - name: Run portfolio live-price safety tests
         run: node --test tests/portfolio-live.test.cjs
+      - name: Probe real TSETMC endpoints (best effort; never counts as pass when blocked)
+        run: node tests/tsetmc-connectivity.cjs
