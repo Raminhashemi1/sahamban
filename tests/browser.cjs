@@ -201,6 +201,44 @@ async function main(){
   assert.equal(await page.evaluate(()=>window.__sahambanTestSpeechCalls),1);
   console.log('PASS: verified quote crossing upper limit triggers exactly one speech alert');
 
+  // Test the live portfolio overlay using synthetic holdings and mocked TSETMC responses only.
+  const marketToday=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const marketYesterday=new Date(Date.now()-86400000).toISOString().slice(0,10).replace(/-/g,'');
+  let staleBeta=true;
+  await page.evaluate(()=>{
+   localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings:[
+    {symbol:'آلفا',quantity:10,buy:1000,current:1200},
+    {symbol:'بتا',quantity:20,buy:2000,current:2100}
+   ]}));
+   localStorage.removeItem('sahamban-broker-live-quotes-v1');
+  });
+  await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
+   const symbol=decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
+   const code=symbol==='آلفا'?'12345678901':symbol==='بتا'?'12345678902':null;
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:code?[{insCode:code,lVal18AFC:symbol,lVal30:symbol}]:[]})});
+  });
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/**',async route=>{
+   const code=new URL(route.request().url()).pathname.split('/').at(-1);
+   const isBeta=code==='12345678902';
+   const date=isBeta&&staleBeta?Number(marketYesterday):Number(marketToday);
+   const price=isBeta?2100:1500;
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceInfo:{dEven:date,pClosing:price}})});
+  });
+  await page.locator('#livePortfolioRefresh').click();
+  await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:10000});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
+  assert.equal(await page.locator('#livePortfolioTable').isVisible(),false);
+  console.log('PASS: stale quote for one holding blocks partial portfolio totals');
+  staleBeta=false;
+  await page.locator('#livePortfolioRefresh').click();
+  await page.getByText('ارزش روز: ۵۷٬۰۰۰ ریال',{exact:false}).waitFor({timeout:10000});
+  assert.match(await page.locator('#livePortfolioSummary').innerText(),/سود\/زیان تحقق‌نیافته: ۷٬۰۰۰ ریال/);
+  const storedAfterLive=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
+  assert.deepEqual(storedAfterLive.holdings.map(x=>[x.symbol,x.quantity,x.buy]),[['آلفا',10,1000],['بتا',20,2000]]);
+  const savedQuotes=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-live-quotes-v1')));
+  assert.equal(savedQuotes.quotes.length,2);
+  assert.equal(savedQuotes.source,'TSETMC');
+  console.log('PASS: mocked fresh quotes calculate rial value/P&L and preserve quantities and buy prices');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),recordedBefore);
   console.log('PASS: portfolio, backup and market checks preserve recorded user voice');
 
