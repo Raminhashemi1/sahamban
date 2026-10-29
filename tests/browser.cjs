@@ -218,6 +218,13 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
   assert.equal(await page.locator('#portfolioData').inputValue(),analysisBeforeIntegrated);
   console.log('PASS: v48 integrated main page reads 19 synthetic broker positions without mutations or demo-portfolio mixing');
+  const beforeDownload=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  const pendingBackup=page.waitForEvent('download');
+  await page.locator('#brokerExportBackup').click();
+  const backup=await pendingBackup;
+  assert.equal(backup.suggestedFilename(),'sahamban-broker-holdings-backup.json');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),beforeDownload);
+  console.log('PASS: mobile real-holdings JSON backup download does not mutate 19-position storage');
 
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
