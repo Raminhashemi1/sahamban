@@ -15,3 +15,31 @@ test('indicator engine has no network or local storage side effects',()=>{const 
 
 test('v50 mobile panel is wired to the verified quote flow and offline cache',()=>{const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8'),pilot=fs.readFileSync('portfolio-pilot-v48.js','utf8'),ui=fs.readFileSync('technical-analysis-v50.js','utf8');assert.match(html,/id="technicalAnalysisV50"/);assert.match(html,/id="professionalRiskV49"/);assert.match(html,/professional-risk-v49\.js\?v=49/);assert.match(sw,/professional-risk-v49\.js\?v=49/);assert.match(html,/app\.js\?v=50/);assert.match(sw,/app\.js\?v=50/);assert.match(html,/technical-indicators-v50\.js\?v=50/);assert.match(html,/technical-analysis-v50\.js\?v=50/);assert.match(sw,/sahamban-static-v50/);assert.match(sw,/technical-indicators-v50\.js\?v=50/);assert.match(sw,/technical-analysis-v50\.js\?v=50/);assert.match(pilot,/sahamban:verified-historical-quotes-v50/);assert.match(pilot,/historyRows=.*\.sort/);assert.match(pilot,/!\/\^\\d\{8\}\$\/\.test\(d\)/);assert.match(ui,/SahambanTechnicalV50\.calculate/);assert.match(ui,/sahamban:verified-historical-quotes-v50/);assert.doesNotMatch(ui,/\bfetch\s*\(/);assert.doesNotMatch(ui,/localStorage\s*\./);});
 test('historical analysis is not derived from imported file prices or demo rows',()=>{const html=fs.readFileSync('index.html','utf8'),ui=fs.readFileSync('technical-analysis-v50.js','utf8');assert.match(html,/قیمت‌های فایل کارگزاری به‌تنهایی برای این تحلیل استفاده نمی‌شوند/);assert.match(ui,/تاریخچه معتبر برای این نماد/);assert.match(html,/منتظر دریافت موفق قیمت پایانی تأییدشده/);});
+
+test('technical selector activates from visible portfolio symbols without treating imported prices as history',()=>{
+ const fs=require('node:fs'),vm=require('node:vm');
+ const ui=fs.readFileSync('technical-analysis-v50.js','utf8');
+ const elements={};
+ class Element{
+  constructor(){this.disabled=false;this.value='';this.textContent='';this.children=[];this.listeners={};}
+  addEventListener(name,fn){this.listeners[name]=fn;}
+  replaceChildren(){this.children=[];}
+  append(child){this.children.push(child);}
+ }
+ const document={getElementById:id=>elements[id]||(elements[id]=new Element()),createElement:()=>new Element()};
+ const handlers={};
+ const window={SahambanTechnicalV50:api,addEventListener:(name,fn)=>{handlers[name]=fn;}};
+ vm.runInNewContext(ui,{document,window,Intl,Number,Array,Map,String});
+ const selector=elements.technicalSymbolV50,result=elements.technicalResultV50,status=elements.technicalStatusV50;
+ assert.equal(selector.disabled,true);
+ handlers['sahamban:portfolio-symbols-v50']({detail:{symbols:['فولاد','خودرو','فولاد']}});
+ assert.equal(selector.disabled,false);
+ assert.deepEqual(selector.children.map(x=>x.value),['فولاد','خودرو']);
+ assert.match(selector.children[0].textContent,/تاریخچه تأییدشده دریافت نشده/);
+ assert.match(result.textContent,/تاریخچه معتبر/);
+ assert.match(status.textContent,/هنوز تاریخچه/);
+ handlers['sahamban:verified-historical-quotes-v50']({detail:{quotes:[{symbol:'فولاد',marketDate:'20260101',history:Array.from({length:40},(_,i)=>({date:String(20250101+i),close:100+i}))}]}});
+ assert.equal(selector.disabled,false);
+ assert.equal(selector.children[0].textContent,'فولاد');
+ assert.match(result.textContent,/تعداد نقاط تاریخی معتبر/);
+});
