@@ -1,0 +1,19 @@
+name: Technical Indicators v50 Safety
+on:
+  push:
+    branches: [main, feat/v50-technical-analysis-release]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  indicators:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check technical-indicators-v50.js
+      - run: node --test tests/technical-indicators-v50.test.cjs
