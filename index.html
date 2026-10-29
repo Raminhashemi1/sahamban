@@ -10,12 +10,12 @@
 <div class="card" id="livePortfolioSection">
 <h3>ارزش روز دارایی‌های واردشده</h3>
 <p class="muted">این بخش قیمت پایانی را مستقیماً از API بازار TSETMC می‌خواند. همه نمادها باید با شناسه یکتا و تاریخ بازار معتبر دریافت شوند؛ اگر حتی یک نماد ناموفق یا قدیمی باشد، جمع جدید نمایش داده نمی‌شود. قیمت‌ها در کلید جداگانه ذخیره می‌شوند و تعداد و میانگین خرید تغییر نمی‌کنند. رمز کارگزاری لازم نیست.</p>
-<div class="row"><button id="livePortfolioRefresh">دریافت قیمت تازه و محاسبه ارزش روز</button><button id="livePortfolioShowLast" class="secondary">نمایش آخرین تصویر قیمت ذخیره‌شده</button></div>
+<div class="row"><button id="livePortfolioImported" class="secondary">محاسبه با قیمت فایل کارگزاری (بدون اینترنت)</button><button id="livePortfolioRefresh">دریافت قیمت تازه و محاسبه ارزش روز</button><button id="livePortfolioShowLast" class="secondary">نمایش آخرین تصویر قیمت ذخیره‌شده</button></div>
 <p id="livePortfolioStatus" class="result" aria-live="polite">هنوز قیمت تازه‌ای دریافت نشده است.</p>
 <div id="livePortfolioTable" hidden>
 <p id="livePortfolioSummary" class="result" aria-live="polite"></p>
 <p id="livePortfolioMeta" class="muted"></p>
-<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>نماد</th><th>تعداد</th><th>خرید (ریال)</th><th>پایانی (ریال)</th><th>ارزش روز (ریال)</th><th>سود/زیان (ریال)</th><th>تاریخ بازار</th></tr></thead><tbody id="livePortfolioRows"></tbody></table></div>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>نماد</th><th>تعداد</th><th>خرید (ریال)</th><th>پایانی (ریال)</th><th>ارزش محاسباتی (ریال)</th><th>سود/زیان (ریال)</th><th>تاریخ بازار</th></tr></thead><tbody id="livePortfolioRows"></tbody></table></div>
 </div>
 <p class="muted">منبع قیمت به دسترسی شبکه، سیاست CORS و محدودیت جغرافیایی وابسته است. زمان دریافت پاسخ، زمان آخرین معامله نیست. در صورت شکست درخواست، به قیمت‌های قبلی به‌عنوان قیمت روز اعتماد نکنید.</p>
 </div></section>
