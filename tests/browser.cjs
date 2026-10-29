@@ -276,6 +276,13 @@ async function main(){
   assert.ok(networkRequestPaths.every(x=>!x.includes('آلفا')&&!x.includes('بتا')));
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeNetwork);
   console.log('PASS: independent public-symbol network diagnostic never sends or changes imported holdings');
+  const rejectPublicSearch=async route=>route.fulfill({status:503,contentType:'application/json',body:'{}'});
+  await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',rejectPublicSearch);
+  await page.locator('#livePortfolioNetworkTest').click();
+  await page.getByText('آزمون اتصال از این مرورگر ناموفق یا تأییدنشده بود',{exact:false}).waitFor({timeout:10000});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeNetwork);
+  await page.unroute('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',rejectPublicSearch);
+  console.log('PASS: public-symbol diagnostic safely reports HTTP failures and preserves holdings');
   await page.locator('#livePortfolioRefresh').click();
   await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
