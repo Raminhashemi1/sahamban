@@ -147,7 +147,7 @@ async function main(){
   });
   await page.getByText('فایل پذیرفته نشد:',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.locator('#portfolioBackupApply').isDisabled(),true);
-  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
+  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,۷,۱۰۰۰,۱۲۰۰,۹۰۰,۱۷۰۰');
   console.log('PASS: invalid JSON backup rejected without changing current holdings');
 
   // Matching the built-in example must never silently discard those holdings.
