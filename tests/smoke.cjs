@@ -100,7 +100,7 @@ test('Aggregate overflow rejected before storage and backup import',()=>{
  assert.throws(()=>context.validatePortfolioBackup({version:1,data:large,capital:'',riskCap:'5',stress:'10',concentration:'30'}));
 });
 test('Saved status rejects corrupted local portfolio',()=>{
- const record={version:1,data:'فولاد,1000,500,540,470,650',capital:'1000000',riskCap:'5',stress:'10',concentration:'30'};
+ const record={version:2,data:'فولاد,1000,500,540,470,650',capital:'1000000',riskCap:'5',stress:'10',concentration:'30'};
  const status={textContent:''};
  context.$=()=>status;
  context.PORTFOLIO_STORAGE_KEY='sahamban-portfolio-local-v1';
