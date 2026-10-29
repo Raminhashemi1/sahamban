@@ -1,5 +1,5 @@
 'use strict';
-/* v50.2 UI consumes verified quotes independently of the indicator library. */
+/* v50.3 UI consumes verified quotes and includes a DOM-table fallback. */
 (()=>{
  const $=id=>document.getElementById(id);
  const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50');
@@ -51,6 +51,32 @@
   status.textContent='فهرست نمادهای سبد فعال شد؛ برای محاسبه اندیکاتورها هنوز تاریخچه قیمت پایانی تأییدشده لازم است.';
   show();
  });
+
+ // Independent fallback: observe the already-rendered verified portfolio table.
+ // This keeps symbol selection usable even if a custom event is missed by the page lifecycle.
+ const portfolioRows=$('livePortfolioRows');
+ if(portfolioRows&&typeof MutationObserver!=='undefined'){
+  const activateFromVisibleRows=()=>{
+   if(!selector.disabled||!portfolioRows.rows.length)return;
+   const symbols=[...new Set([...portfolioRows.rows].map(row=>String(row.cells[0]?.textContent||'').trim()).filter(s=>s&&s!=='—'))];
+   if(!symbols.length)return;
+   quotes=symbols.map(symbol=>({symbol,marketDate:null,history:null}));
+   selector.replaceChildren();
+   for(const symbol of symbols){
+    const option=document.createElement('option');
+    option.value=symbol;
+    option.textContent=symbol+' — تاریخچه تأییدشده دریافت نشده';
+    selector.append(option);
+   }
+   selector.disabled=false;
+   selector.value=symbols[0];
+   status.textContent='فهرست نمادها از جدول قیمت‌های تأییدشده فعال شد؛ برای اندیکاتورها تاریخچه معتبر لازم است.';
+   show();
+  };
+  new MutationObserver(activateFromVisibleRows).observe(portfolioRows,{childList:true,subtree:true});
+  activateFromVisibleRows();
+ }
+
  selector.addEventListener('change',show);
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
   const incoming=event?.detail?.quotes;

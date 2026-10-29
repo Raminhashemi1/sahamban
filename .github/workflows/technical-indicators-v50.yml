@@ -17,3 +17,5 @@ jobs:
           node-version: 22
       - run: node --check technical-indicators-v50.js
       - run: node --test tests/technical-indicators-v50.test.cjs
+      - run: node --check technical-analysis-v50.js
+      - run: node --test tests/technical-selector-bridge.test.cjs
