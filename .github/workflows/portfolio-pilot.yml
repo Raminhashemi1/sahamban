@@ -1,0 +1,19 @@
+name: Portfolio pilot mobile safety
+on:
+  push:
+    branches: [pilot/mobile-portfolio-v48]
+  pull_request:
+    branches: [main]
+jobs:
+  portfolio-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node --check portfolio-pilot-v48.js && node --check tests/portfolio-pilot.test.cjs
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/portfolio-pilot.test.cjs
