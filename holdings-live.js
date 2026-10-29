@@ -96,6 +96,8 @@
     return;
    }
    const quotes=outcomes.map(x=>x.quote);
+   const currentHoldings=readHoldings();
+   if(currentHoldings.length!==holdings.length||holdings.some((h,i)=>currentHoldings[i].key!==h.key||currentHoldings[i].quantity!==h.quantity||currentHoldings[i].buy!==h.buy))throw Error('دارایی‌ها هنگام دریافت قیمت تغییر کرده‌اند؛ برای جلوگیری از نسبت‌دادن قیمت‌ها به سبد اشتباه، نتیجه ذخیره نشد. دوباره تازه‌سازی کنید.');
    const snapshot={version:1,source:'TSETMC',receivedAt:new Date().toISOString(),quotes};
    localStorage.setItem(QUOTES_KEY,JSON.stringify(snapshot));
    render(holdings,quotes,snapshot.receivedAt);
