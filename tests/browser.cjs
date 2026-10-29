@@ -207,8 +207,8 @@ async function main(){
   const nineteen=Array.from({length:19},(_,i)=>({symbol:'سبد'+(i+1),quantity:i+1,buy:1200+i,current:1300+i}));
   const beforeNineteen=JSON.stringify({version:2,created:new Date().toISOString(),holdings:nineteen});
   await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),beforeNineteen);
-  const analysisBeforeIntegrated=await page.locator('#portfolioData').inputValue();
   await page.reload({waitUntil:'load'});
+  const analysisBeforeIntegrated=await page.locator('#portfolioData').inputValue();
   await page.getByText('۱۹ نماد',{exact:false}).first().waitFor({timeout:10000});
   await page.locator('#livePortfolioImported').click();
   assert.match(await page.locator('#livePortfolioSummary').innerText(),/ارزش بر اساس قیمت فایل/);
