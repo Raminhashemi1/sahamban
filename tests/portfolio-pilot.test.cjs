@@ -59,7 +59,8 @@ const server=http.createServer((req,res)=>{
   });
   await page.locator('#livePortfolioRefresh').click();
   await page.getByText('دریافت و اعتبارسنجی همه ۱۹ قیمت موفق بود',{exact:false}).waitFor({timeout:40000});
-  assert.match(await page.locator('#livePortfolioSummary').innerText(),/ارزش روز/);
+  assert.match(await page.locator('#livePortfolioSummary').innerText(),/ارزش طبق قیمت پایانی بازار/);
+  assert.match(await page.locator('#livePortfolioStatus').innerText(),/هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد/);
   assert.equal(await page.locator('#livePortfolioRows tr').count(),19);
   assert.equal(await page.evaluate(()=>localStorage.length),1);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),saved);
