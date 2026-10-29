@@ -83,6 +83,23 @@ async function main(){
   assert.equal(await readPortfolio(),portfolioBeforeImport);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),voiceBeforeBrokerImport);
   console.log('PASS: offline compressed XLSX, local backup on replacement, no analytical portfolio changes');
+
+  // Older brokerage exports may be in toman. Multiply by 10 to store rial.
+  await page.locator('#brokerUnit').selectOption('toman');
+  await page.locator('#brokerFile').setInputFiles({name:'legacy-toman.csv',mimeType:'text/csv',buffer:Buffer.from(
+    'نام نماد,تعداد دارایی,میانگین خرید,قیمت پایانی\\nفولاد,7,125,140\\n','utf8')});
+  await page.locator('#brokerPreview').click();
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/۱ ردیف/);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#brokerApply').click();
+  const tomanImported=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')));
+  assert.equal(tomanImported.version,2);
+  assert.equal(tomanImported.holdings[0].quantity,7);
+  assert.equal(tomanImported.holdings[0].buy,1250);
+  assert.equal(tomanImported.holdings[0].current,1400);
+  assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  console.log('PASS: old toman prices multiplied by 10 into rial, quantity and risk portfolio unchanged');
+  await page.locator('#brokerUnit').selectOption('rial');
   // Simulate an existing user recording; portfolio actions must never overwrite it.
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const recordedBefore=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
