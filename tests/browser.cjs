@@ -271,6 +271,31 @@ async function main(){
   assert.equal(savedQuotes.quotes.length,2);
   assert.equal(savedQuotes.source,'TSETMC');
   console.log('PASS: mocked fresh quotes calculate rial value/P&L and preserve quantities and buy prices');
+  // Full-size synthetic test: nineteen holdings, no private user positions or real brokerage credentials.
+  const nineteen=Array.from({length:19},(_,i)=>({symbol:'سهم'+(i+1),quantity:i+1,buy:1000+i,current:1100+i}));
+  await page.evaluate(holdings=>localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings})),nineteen);
+  const originalNineteen=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  await page.unrouteAll();
+  await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
+   const symbol=decodeURIComponent(route.request().url().split('/').at(-1)),n=Number(symbol.replace('سهم',''));
+   const items=n>=1&&n<=19?[{insCode:String(100000000000000+n),lVal18AFC:symbol,lVal30:symbol}]:[];
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:items})});
+  });
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/**',async route=>{
+   const n=Number(route.request().url().split('/').at(-1))-100000000000000;
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceInfo:{dEven:Number(marketToday),pClosing:2000+n}})});
+  });
+  await page.locator('#livePortfolioRefresh').click();
+  await page.getByText('دریافت و اعتبارسنجی همه ۱۹ قیمت موفق بود',{exact:false}).waitFor({timeout:30000});
+  assert.equal(await page.locator('#livePortfolioRows tr').count(),19);
+  const expectedValue=nineteen.reduce((sum,h,i)=>sum+h.quantity*(2000+i+1),0);
+  const expectedCost=nineteen.reduce((sum,h)=>sum+h.quantity*h.buy,0);
+  const nineteenSnapshot=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-live-quotes-v1')));
+  assert.equal(nineteenSnapshot.quotes.length,19);
+  assert.equal(nineteenSnapshot.quotes.reduce((s,q)=>s+q.quantity*q.price,0),expectedValue);
+  assert.equal(nineteenSnapshot.quotes.reduce((s,q)=>s+q.quantity*q.buy,0),expectedCost);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),originalNineteen);
+  console.log('PASS: 19 synthetic holdings refresh atomically with unchanged original quantities and purchase prices');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),recordedBefore);
   console.log('PASS: portfolio, backup and market checks preserve recorded user voice');
 
