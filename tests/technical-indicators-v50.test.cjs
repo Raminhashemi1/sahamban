@@ -44,3 +44,14 @@ test('technical selector activates from visible portfolio symbols without treati
  assert.equal(selector.children[0].textContent,'فولاد');
  assert.match(result.textContent,/تعداد نقاط تاریخی معتبر/);
 });
+
+test('broker import visible rows publish symbol names to technical selector without sending prices',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync('broker-import.js','utf8');
+ assert.match(source,/function publishVisibleSymbols\(items\)/);
+ assert.match(source,/sahamban:portfolio-symbols-v50/);
+ assert.match(source,/publishVisibleSymbols\(preview\.filter\(p=>!p\.issue\)\)/);
+ assert.match(source,/publishVisibleSymbols\(preview\);/);
+ assert.match(source,/detail:\{symbols\}/);
+ assert.doesNotMatch(source,/sahamban:portfolio-symbols-v50[^\n]*price|sahamban:portfolio-symbols-v50[^\n]*current/);
+});
