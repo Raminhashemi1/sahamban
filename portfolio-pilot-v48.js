@@ -131,7 +131,8 @@
   if(rowsValid.length<15||unique.size!==rowsValid.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
   return {symbol:holding.symbol,marketDate:rowsValid[rowsValid.length-1].date,history:rowsValid.slice(-250),insCode:String(candidates[0].insCode)};
  }
- $('technicalHistoryAllV50').addEventListener('click',async()=>{
+ const historyButton=$('technicalHistoryAllV50');
+ if(historyButton)historyButton.addEventListener('click',async()=>{
   const button=$('technicalHistoryAllV50');
   if(running)return;
   running=true;button.disabled=true;
