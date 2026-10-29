@@ -238,6 +238,7 @@ async function main(){
   const marketYesterday=new Date(Date.now()-9*86400000).toISOString().slice(0,10).replace(/-/g,'');
   let staleBeta=true;
   let mismatchedHistory=false;
+  let duplicateBeta=false,duplicateFresh=false;
   await page.evaluate(()=>{
    localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings:[
     {symbol:'آلفا',quantity:10,buy:1000,current:1200},
@@ -248,12 +249,14 @@ async function main(){
   await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
    const symbol=decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
    const code=symbol==='آلفا'?'12345678901':symbol==='بتا'?'12345678902':symbol==='فولاد'?'12345678903':null;
-   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:code?[{insCode:code,lVal18AFC:symbol,lVal30:symbol}]:[]})});
+   const matches=code?[{insCode:code,lVal18AFC:symbol,lVal30:symbol}]:[];
+   if(symbol==='بتا'&&duplicateBeta)matches.push({insCode:'12345678904',lVal18AFC:symbol,lVal30:'بتا (شناسه دیگر)'});
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:matches})});
   });
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/**',async route=>{
    const code=new URL(route.request().url()).pathname.split('/').at(-1);
    const isBeta=code==='12345678902';
-   const date=isBeta&&staleBeta?Number(marketYesterday):Number(marketToday);
+   const date=(isBeta&&staleBeta||code==='12345678904'&&!duplicateFresh)?Number(marketYesterday):Number(marketToday);
    const price=isBeta?2100:code==='12345678903'?1600:1500;
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceInfo:{dEven:date,pClosing:price}})});
   });
@@ -306,6 +309,19 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),quoteSnapshotBeforeMismatch);
   console.log('PASS: independent closing-price mismatch blocks portfolio valuation and snapshot overwrite');
   mismatchedHistory=false;
+  duplicateBeta=true;
+  await page.locator('#livePortfolioRefresh').click();
+  await page.getByText('دریافت و اعتبارسنجی همه ۲ قیمت موفق بود',{exact:false}).waitFor({timeout:15000});
+  assert.equal(await page.locator('#livePortfolioRows tr').count(),2);
+  console.log('PASS: reused ticker resolves one fresh quote while rejecting a stale historical code');
+  duplicateFresh=true;
+  const quotesBeforeAmbiguity=await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1'));
+  await page.locator('#livePortfolioRefresh').click();
+  await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:15000});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),quotesBeforeAmbiguity);
+  assert.equal(await page.locator('#livePortfolioTable').isVisible(),false);
+  duplicateBeta=false;duplicateFresh=false;
+  console.log('PASS: two fresh instrument codes remain ambiguous and block portfolio valuation');
   // Full-size synthetic test: nineteen holdings, no private user positions or real brokerage credentials.
   const nineteen=Array.from({length:19},(_,i)=>({symbol:'سهم'+(i+1),quantity:i+1,buy:1000+i,current:1100+i}));
   await page.evaluate(holdings=>localStorage.setItem('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings})),nineteen);
