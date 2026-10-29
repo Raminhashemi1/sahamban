@@ -100,6 +100,32 @@
    say('اطلاعات واقعی کارگزاری روی همین مرورگر شناسایی شد: '+fmt(holdings.length)+' نماد؛ جمع تعداد سهم‌ها '+fmt(holdings.reduce((sum,h)=>sum+h.quantity,0))+' سهم. هیچ داده‌ای تغییر نکرد. قیمت روز هنوز دریافت نشده است.');
   }else say('در این مرورگر هنوز فایل دارایی‌های واقعی ذخیره نشده است؛ این بخش از داده‌های نمایشی استفاده نمی‌کند.');
  }catch(e){say('خواندن ایمن دارایی‌های واقعی ناموفق بود: '+e.message+'؛ داده ذخیره‌شده تغییر نکرد.');}
+ // Public-symbol network diagnostic: deliberately never reads the user's brokerage holdings.
+ $('livePortfolioNetworkTest').addEventListener('click',async()=>{
+  const button=$('livePortfolioNetworkTest');
+  if(running)return;
+  running=true;button.disabled=true;
+  $('livePortfolioNetworkStatus').textContent='در حال آزمون اتصال مستقل با نماد عمومی فولاد. اطلاعات سبد شما ارسال نمی‌شود...';
+  try{
+   const publicSymbol='فولاد';
+   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(publicSymbol));
+   const instruments=search?.instrumentSearch;
+   if(!Array.isArray(instruments))throw Error('جست‌وجوی نماد پاسخ معتبر نداد.');
+   const unique=[...new Set(instruments.filter(x=>norm(x.lVal18AFC)===norm(publicSymbol)&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.insCode)))];
+   if(unique.length!==1)throw Error('شناسه عمومی فولاد یکتا و قابل تأیید نیست ('+fmt(unique.length)+' نتیجه).');
+   const insCode=unique[0];
+   const info=(await fetchJson('/ClosingPrice/GetClosingPriceInfo/'+insCode))?.closingPriceInfo;
+   const price=Number(info?.pClosing),date=validDate(info?.dEven);
+   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر دریافت نشد.');
+   const history=(await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0'))?.closingPriceDaily;
+   if(!Array.isArray(history))throw Error('تاریخچه بازار قابل دریافت نیست.');
+   const matching=history.filter(x=>String(x?.dEven??'')===date);
+   if(matching.length!==1||Number(matching[0].pClosing)!==price)throw Error('قیمت با تاریخچه بازار تطبیق ندارد.');
+   $('livePortfolioNetworkStatus').textContent='اتصال و تطبیق قیمت نماد عمومی فولاد موفق بود. تاریخ بازار: '+date.replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)])+'؛ قیمت پایانی: '+fmt(price)+' ریال. این نتیجه فقط آزمون شبکه همین مرورگر است و به معنی به‌روزشدن سبد شما نیست.';
+  }catch(e){
+   $('livePortfolioNetworkStatus').textContent='آزمون اتصال از این مرورگر ناموفق یا تأییدنشده بود: '+(e.name==='AbortError'?'مهلت اتصال تمام شد':e.message)+'. اطلاعات سبد ارسال یا تغییر نکرد.';
+  }finally{running=false;button.disabled=false;}
+ });
  $('livePortfolioImported').addEventListener('click',()=>{
   try{
    const holdings=readHoldings();
