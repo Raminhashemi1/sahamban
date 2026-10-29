@@ -1,5 +1,5 @@
 'use strict';
-/* v50.3 UI consumes verified quotes and includes a DOM-table fallback. */
+/* v50.4 UI exposes per-symbol history validation failures and includes a DOM-table fallback. */
 (()=>{
  const $=id=>document.getElementById(id);
  const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50');
@@ -11,7 +11,7 @@
  function show(){
   const q=quotes.find(x=>x.symbol===selector.value);
   if(!q){result.textContent='برای نمایش تحلیل، ابتدا دریافت و اعتبارسنجی قیمت پایانی همه نمادها را با موفقیت اجرا کنید.';return;}
-  if(!Array.isArray(q.history)||!q.history.length){result.textContent='تاریخچه معتبر برای این نماد در پاسخ بازار موجود نیست؛ هیچ عددی حدس زده نمی‌شود.';return;}
+  if(!Array.isArray(q.history)||!q.history.length){result.textContent='تاریخچه معتبر برای این نماد دریافت نشد؛ هیچ عددی حدس زده نمی‌شود.'+(q.error?'\nعلت اعلام‌شده از سرویس: '+q.error:'\nعلت دقیق از پاسخ سرویس در دسترس نیست.');return;}
   if(!window.SahambanTechnicalV50){result.textContent='نماد دریافت شد، اما کتابخانه اندیکاتورها بارگذاری نشده است. صفحه را دوباره باز کنید؛ فهرست نمادها فعال می‌ماند.';return;}
   try{
    const closes=q.history.map(x=>x.close);
@@ -88,16 +88,15 @@
   for(const q of quotes){
    const option=document.createElement('option');
    option.value=q.symbol;
-   option.textContent=q.symbol+(Array.isArray(q.history)&&q.history.length?'':' — تاریخچه در دسترس نیست');
+   option.textContent=q.symbol+(Array.isArray(q.history)&&q.history.length?'':' — تأیید نشد'+(q.error?'؛ علت: '+q.error.slice(0,110):''));
    selector.append(option);
   }
   selector.disabled=quotes.length===0;
   const withHistory=quotes.filter(q=>Array.isArray(q.history)&&q.history.length>0).length;
   if(quotes.length){
    selector.value=quotes[0].symbol;
-   status.textContent=withHistory
-    ?'قیمت پایانی نمادها تأیید شد. تاریخچه قابل استفاده برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شده است.'
-    :'تاریخچه روزانه قابل استفاده دریافت نشد. اندیکاتور بدون تاریخچه محاسبه نمی‌شود.'+(quotes.filter(q=>q.error).slice(0,3).map(q=>q.symbol+': '+q.error).join('؛ ')?' جزئیات: '+quotes.filter(q=>q.error).slice(0,3).map(q=>q.symbol+': '+q.error).join('؛ '):'');
+   const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);
+   status.textContent='تاریخچه قابل استفاده برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شد.'+(failed.length?' نمادهای ناموفق و علت ثبت‌شده: '+failed.map(q=>q.symbol+': '+(q.error||'علت از سرویس گزارش نشده')).join(' | '):' همه نمادها موفق بودند.');
    show();
   }else{
    result.textContent='هیچ نماد تأییدشده‌ای به بخش تکنیکال نرسید. دریافت قیمت پایانی همه نمادها را دوباره اجرا کنید و پیام وضعیت بخش کارگزاری را بررسی کنید.';
