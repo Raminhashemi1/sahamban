@@ -67,7 +67,10 @@
   if(matching.length!==1)throw Error('تاریخ معامله در تاریخچه یکتا نیست.');
   const historyPrice=Number(matching[0].pClosing);
   if(!Number.isFinite(historyPrice)||historyPrice<=0||Math.abs(historyPrice-price)>0.000001)throw Error('قیمت با تاریخچه تطبیق ندارد.');
-  return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date};
+  const historyRows=daily.map(row=>{const d=String(row?.dEven??''),p=Number(row?.pClosing);if(!/^\d{8}$/.test(d)||!Number.isFinite(p)||p<=0)return null;const y=+d.slice(0,4),m=+d.slice(4,6),day=+d.slice(6,8),dt=new Date(Date.UTC(y,m-1,day));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==day)return null;return {date:d,close:p};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
+  const uniqueHistory=new Set(historyRows.map(row=>row.date));
+  const historicalSeries=historyRows.length&&uniqueHistory.size===historyRows.length?historyRows.slice(-250):null;
+  return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date,history:historicalSeries};
  }
  async function getOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
@@ -164,6 +167,7 @@
    const snapshot={version:1,source:'TSETMC',receivedAt:new Date().toISOString(),quotes};
    // No quote-cache persistence in this pilot; never write to any browser storage.
    render(holdings,quotes,snapshot.receivedAt);
+   window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,marketDate:q.marketDate,history:q.history}))}}));
    say('دریافت و اعتبارسنجی قیمت پایانی همه '+fmt(holdings.length)+' نماد موفق بود. نتیجه فقط روی همین صفحه محاسبه شد؛ هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد. تاریخ قیمت هر نماد در جدول مشخص است.');
   }catch(e){
    say('به‌روزرسانی انجام نشد: '+e.message+'. قیمت قبلی به‌عنوان قیمت جدید معرفی نمی‌شود و اطلاعات دارایی‌ها تغییر نمی‌کنند.');
