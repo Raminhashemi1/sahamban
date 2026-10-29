@@ -247,22 +247,35 @@ async function main(){
   });
   await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
    const symbol=decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
-   const code=symbol==='آلفا'?'12345678901':symbol==='بتا'?'12345678902':null;
+   const code=symbol==='آلفا'?'12345678901':symbol==='بتا'?'12345678902':symbol==='فولاد'?'12345678903':null;
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:code?[{insCode:code,lVal18AFC:symbol,lVal30:symbol}]:[]})});
   });
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/**',async route=>{
    const code=new URL(route.request().url()).pathname.split('/').at(-1);
    const isBeta=code==='12345678902';
    const date=isBeta&&staleBeta?Number(marketYesterday):Number(marketToday);
-   const price=isBeta?2100:1500;
+   const price=isBeta?2100:code==='12345678903'?1600:1500;
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceInfo:{dEven:date,pClosing:price}})});
   });
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
    const code=route.request().url().split('/').at(-2);
    const isBeta=code==='12345678902';
-   const price=isBeta?2100:1500;
+   const price=isBeta?2100:code==='12345678903'?1600:1500;
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:[{dEven:Number(marketToday),pClosing:mismatchedHistory&&isBeta?price+100:price}]})});
   });
+  const holdingsBeforeNetwork=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  const networkRequestPaths=[];
+  const onNetworkRequest=request=>{
+   if(request.url().startsWith('https://cdn.tsetmc.com/api/'))networkRequestPaths.push(decodeURIComponent(new URL(request.url()).pathname));
+  };
+  page.on('request',onNetworkRequest);
+  await page.locator('#livePortfolioNetworkTest').click();
+  await page.getByText('اتصال و تطبیق قیمت نماد عمومی فولاد موفق بود',{exact:false}).waitFor({timeout:15000});
+  page.off('request',onNetworkRequest);
+  assert.equal(networkRequestPaths.length,3);
+  assert.ok(networkRequestPaths.every(x=>!x.includes('آلفا')&&!x.includes('بتا')));
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeNetwork);
+  console.log('PASS: independent public-symbol network diagnostic never sends or changes imported holdings');
   await page.locator('#livePortfolioRefresh').click();
   await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
