@@ -19,14 +19,15 @@ function extract(name){
 const context=vm.createContext({fmt:n=>String(n),Intl,Date});
 vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marketDateCheck','portfolioCsvCell','validatePortfolioBackup','convertLegacyPortfolio','refreshPortfolioSaveState'].map(extract).join('\n'),context);
 const brokerImport=fs.readFileSync('broker-import.js','utf8');
-test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);new vm.Script(brokerImport);});
+const portfolioLive=fs.readFileSync('portfolio-pilot-v48.js','utf8');
+test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);new vm.Script(brokerImport);new vm.Script(portfolioLive);});
 const persianUi=fs.readFileSync('persian-ui.js','utf8');
 test('Rial-only portfolio examples and Persian numerical display are wired',()=>{
  new vm.Script(persianUi);
  assert.ok(html.includes('فولاد,1000,5000,5400,4700,6500'));
  assert.ok(app.includes("const portfolioDemo='فولاد,1000,5000,5400,4700,6500"));
- assert.ok(html.includes('./persian-ui.js?v=47'));
- assert.ok(sw.includes('./persian-ui.js?v=47'));
+ assert.ok(html.includes('./persian-ui.js?v=48'));
+ assert.ok(sw.includes('./persian-ui.js?v=48'));
  assert.ok(!app.includes(' تومان')&&!app.includes('_toman'));
 });
 test('Legacy toman backup is converted to rial without mutating source',()=>{
@@ -48,6 +49,15 @@ test('Broker import is local-only with separate storage and offline Excel parser
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v'+v));
+});
+test('Real broker holdings valuation is read-only with independent quote validation',()=>{
+ assert.ok(html.includes('id="livePortfolioSection"'));
+ assert.ok(html.includes('portfolio-pilot-v48.js?v=48-integrated1'));
+ assert.ok(sw.includes('portfolio-pilot-v48.js?v=48-integrated1'));
+ assert.ok(portfolioLive.includes("sahamban-broker-holdings-v1"));
+ assert.ok(portfolioLive.includes("GetClosingPriceDailyList"));
+ assert.ok(!/localStorage\\.(?:setItem|removeItem|clear)\\s*\\(/.test(portfolioLive));
+ assert.ok(brokerImport.includes("buy=num(row[+ids[2]])*factor"));
 });
 test('No duplicated HTML ids and no missing JS ids',()=>{
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
