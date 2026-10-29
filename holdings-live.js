@@ -70,8 +70,8 @@
   for(const h of holdings){
    const q=quotes.find(x=>x.symbol===h.symbol);
    const tr=document.createElement('tr');
-   const vals=[h.symbol,h.quantity,h.buy,q.price,q.price*h.quantity,h.quantity*(q.price-h.buy)];
-   vals.forEach((v,i)=>{const td=document.createElement('td');td.style.padding='7px 5px';td.style.borderBottom='1px solid #34546d';td.textContent=i===0?String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]):fmt(v);tr.append(td);});
+   const vals=[h.symbol,h.quantity,h.buy,q.price,q.price*h.quantity,h.quantity*(q.price-h.buy),q.marketDate];
+   vals.forEach((v,i)=>{const td=document.createElement('td');td.style.padding='7px 5px';td.style.borderBottom='1px solid #34546d';td.textContent=i===0||i===6?String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]):fmt(v);tr.append(td);});
    body.append(tr);value+=q.price*h.quantity;cost+=h.buy*h.quantity;
   }
   const pnl=value-cost,percent=cost?100*pnl/cost:0;
@@ -86,10 +86,9 @@
   try{
    const holdings=readHoldings();
    say('در حال دریافت قیمت پایانی از TSETMC برای '+fmt(holdings.length)+' نماد. تا پایان بررسی، جمع ارزش روز نمایش داده نمی‌شود...');
-   const outcomes=await Promise.all(holdings.map(async h=>{
-    try{return {ok:true,quote:await getOne(h)}}
-    catch(e){return {ok:false,symbol:h.symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message}}
-   }));
+   const outcomes=new Array(holdings.length);let next=0;
+   async function worker(){while(true){const i=next++;if(i>=holdings.length)return;const h=holdings[i];try{outcomes[i]={ok:true,quote:await getOne(h)}}catch(e){outcomes[i]={ok:false,symbol:h.symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message}}}}
+   await Promise.all(Array.from({length:Math.min(3,holdings.length)},()=>worker()));
    const failed=outcomes.filter(x=>!x.ok);
    if(failed.length){
     const list=failed.map(x=>x.symbol+': '+x.error).join('؛ ');
