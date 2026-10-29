@@ -26,10 +26,12 @@ async function main(){
   page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
+  const latinize=value=>String(value).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const readPortfolio=async()=>latinize(await page.locator('#portfolioData').inputValue());
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   // Broker imports are staged independently and never overwrite the analytical portfolio.
-  const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
+  const portfolioBeforeImport=await readPortfolio();
   await page.locator('#brokerFile').setInputFiles({name:'brokers.csv',mimeType:'text/csv',buffer:Buffer.from(
     'نام نماد,تعداد دارایی,قیمت میانگین خرید در آخرین دوره با لحاظ کارمزد,قیمت پایانی\n' +
     'فولاد,100,2500,3000\nوملل,1842,6975,2282\nوملل,1842,0,1000\n', 'utf8')});
@@ -42,7 +44,7 @@ async function main(){
   assert.equal(importedCSV.holdings.length,2);
   assert.equal(importedCSV.holdings[0].buy,2500);
   assert.equal(importedCSV.holdings[1].symbol,'وملل');
-  assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  assert.equal(await readPortfolio(),portfolioBeforeImport);
   console.log('PASS: generic CSV mapping, rial prices, duplicate and zero-price exclusion, no portfolio overwrite');
 
   // Generate a minimal compressed XLSX in-memory; no personal brokerage file in test artifacts.
@@ -78,7 +80,7 @@ async function main(){
   assert.equal(importedExcel.holdings[0].symbol,'خودرو');
   assert.equal(importedExcel.holdings[0].buy,5000);
   assert.equal(previousExcel.holdings.length,2);
-  assert.equal(await page.locator('#portfolioData').inputValue(),portfolioBeforeImport);
+  assert.equal(await readPortfolio(),portfolioBeforeImport);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),voiceBeforeBrokerImport);
   console.log('PASS: offline compressed XLSX, local backup on replacement, no analytical portfolio changes');
   // Simulate an existing user recording; portfolio actions must never overwrite it.
@@ -97,24 +99,24 @@ async function main(){
   await page.locator('#pfSymbol').fill('بتا');
   for(const [id,value] of Object.entries({pfQty:'20',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'150'}))await page.locator('#'+id).fill(value);
   await page.locator('#pfAdd').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,20,100,110,90,150/);
+  assert.match(await readPortfolio(),/بتا,20,100,110,90,150/);
   console.log('PASS: add holding via form');
 
   await page.locator('#pfExisting').selectOption('بتا');
   await page.locator('#pfEdit').click();
   await page.locator('#pfQty').fill('30');
   await page.locator('#pfAdd').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,30,100,110,90,150/);
+  assert.match(await readPortfolio(),/بتا,30,100,110,90,150/);
   console.log('PASS: edit existing holding');
 
   await page.locator('#pfExisting').selectOption('بتا');
-  const before=await page.locator('#portfolioData').inputValue();
+  const before=await readPortfolio();
   await page.locator('#pfDelete').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),before);
+  assert.equal(await readPortfolio(),before);
   await page.locator('#pfDelete').click();
-  assert.doesNotMatch(await page.locator('#portfolioData').inputValue(),/بتا,/);
+  assert.doesNotMatch(await readPortfolio(),/بتا,/);
   await page.locator('#pfUndo').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),before);
+  assert.equal(await readPortfolio(),before);
   console.log('PASS: two-step delete and undo');
 
   await page.locator('#portfolioSave').click();
@@ -122,7 +124,7 @@ async function main(){
   await page.locator('#portfolioData').fill('آلفا,10,100,120,90,180');
   assert.match(await page.locator('#portfolioSaveState').innerText(),/هنوز ذخیره نشده‌اند/);
   await page.locator('#portfolioLoad').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),before);
+  assert.equal(await readPortfolio(),before);
   console.log('PASS: on-device save, unsaved warning, restore');
 
   // Import is deliberately a two-step operation; the stored copy must remain untouched.
@@ -133,11 +135,11 @@ async function main(){
   });
   await page.locator('#portfolioBackupApply').waitFor({state:'visible'});
   await page.waitForFunction(()=>!document.getElementById('portfolioBackupApply').disabled);
-  assert.equal(await page.locator('#portfolioData').inputValue(),before);
+  assert.equal(await readPortfolio(),before);
   console.log('PASS: selecting a valid backup never overwrites current holdings');
   await page.locator('#portfolioBackupApply').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
-  assert.equal(await page.locator('#portfolioCapital').inputValue(),'100000');
+  assert.equal(await readPortfolio(),'گاما,7,1000,1200,900,1700');
+  assert.equal(latinize(await page.locator('#portfolioCapital').inputValue()),'100000');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-portfolio-local-v1')),savedBeforeImport);
   console.log('PASS: confirmed JSON backup restores screen fields without replacing saved copy');
 
@@ -147,7 +149,7 @@ async function main(){
   });
   await page.getByText('فایل پذیرفته نشد:',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.locator('#portfolioBackupApply').isDisabled(),true);
-  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
+  assert.equal(await readPortfolio(),'گاما,7,1000,1200,900,1700');
   console.log('PASS: invalid JSON backup rejected without changing current holdings');
 
   // Matching the built-in example must never silently discard those holdings.
@@ -155,7 +157,7 @@ async function main(){
   await page.locator('#pfSymbol').fill('آزمایش');
   for(const [id,value] of Object.entries({pfQty:'5',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'130'}))await page.locator('#'+id).fill(value);
   await page.locator('#pfAdd').click();
-  const retainedRows=await page.locator('#portfolioData').inputValue();
+  const retainedRows=await readPortfolio();
   assert.match(retainedRows,/فولاد,1000,500,540,470,650/);
   assert.match(retainedRows,/خودرو,2000,280,260,235,320/);
   assert.match(retainedRows,/آزمایش,5,100,110,90,130/);
