@@ -5,6 +5,10 @@ const el=id=>document.getElementById(id);
 const STORAGE='sahamban-broker-holdings-v1';
 let matrix=[], headers=[], preview=[],ready=false;
 const status=s=>{el('brokerStatus').textContent=s;};
+function publishVisibleSymbols(items){
+ const symbols=[...new Set(items.filter(p=>p&&typeof p.symbol==='string').map(p=>p.symbol.trim()).filter(Boolean))];
+ if(symbols.length)window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols}}));
+}
 function normal(v){return String(v??'').replace(/[\u200c\u200f\u200e]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').trim().toLowerCase();}
 function num(v){
  if(typeof v==='number')return v;
@@ -136,6 +140,7 @@ function previewRows(){
  // First valid occurrence is preserved; later repetitions and zero-price entries are excluded.
  const body=el('brokerRows');body.replaceChildren();
  for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,p.issue||'آماده']);body.append(tr);}
+ publishVisibleSymbols(preview.filter(p=>!p.issue));
  const invalid=preview.filter(x=>x.issue).length;
  el('brokerReviewStatus').textContent=preview.length+' ردیف پیدا شد؛ '+invalid+' ردیف تکراری یا نامعتبر از ذخیره کنار گذاشته می‌شود. '+(invalid?'فقط ردیف‌های سالم را پس از بررسی تأیید کنید؛ ردیف‌های کنارگذاشته‌شده در همین جدول مشخص‌اند.':'قیمت‌ها به ریال نمایش داده شده‌اند.');
  el('brokerApply').disabled=preview.every(x=>x.issue);
@@ -173,7 +178,7 @@ el('brokerApply').addEventListener('click',()=>{
    localStorage.setItem(STORAGE+'-previous',previous);
   }
   localStorage.setItem(STORAGE,JSON.stringify({version:2,created:new Date().toISOString(),holdings}));
-  preview=holdings.map(p=>({...p,issue:''}));status(holdings.length+' سهم سالم در بخش دارایی‌های واردشده ذخیره شد. ردیف‌های تکراری یا نامعتبر ذخیره نشدند؛ سبد تحلیل ریسک و صدای هشدار دست‌نخورده‌اند.');
+  preview=holdings.map(p=>({...p,issue:''}));publishVisibleSymbols(preview);status(holdings.length+' سهم سالم در بخش دارایی‌های واردشده ذخیره شد. ردیف‌های تکراری یا نامعتبر ذخیره نشدند؛ سبد تحلیل ریسک و صدای هشدار دست‌نخورده‌اند.');
   el('brokerRisk').disabled=false;
  }catch(e){status('ذخیره محلی انجام نشد: '+e.message);}
 });
@@ -184,6 +189,7 @@ el('brokerLoad').addEventListener('click',()=>{
   preview=obj.holdings.map(p=>({...p,buy:obj.version===1?p.buy*10:p.buy,current:obj.version===1?p.current*10:p.current,issue:''}));ready=true;
   const body=el('brokerRows');body.replaceChildren();
   for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,'ذخیره‌شده']);body.append(tr);}
+  publishVisibleSymbols(preview);
   el('brokerReview').hidden=false;el('brokerReviewStatus').textContent=preview.length+' سهم از حافظه این دستگاه بارگذاری شد.';
   el('brokerApply').disabled=false;el('brokerRisk').disabled=false;status('دارایی‌های ذخیره‌شده نمایش داده شدند.');
  }catch(e){status(e.message);}
