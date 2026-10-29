@@ -43,7 +43,9 @@
   if(!/^\d{8}$/.test(s))throw Error('تاریخ بازار در پاسخ وجود ندارد یا معتبر نیست.');
   const y=+s.slice(0,4),m=+s.slice(4,6),d=+s.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
   if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)throw Error('تاریخ بازار نامعتبر است.');
-  const today=new Date(),todayUTC=Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate());
+  // Compare against the exchange's Tehran calendar date, not the phone's timezone.
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));
+  const todayUTC=Date.UTC(parts.year,parts.month-1,parts.day);
   const age=Math.floor((todayUTC-dt.getTime())/86400000);
   if(age<0)throw Error('تاریخ داده بازار در آینده است.');
   if(age>7)throw Error('قیمت قدیمی است؛ تاریخ آخرین بازار '+fmt(age)+' روز پیش است.');
@@ -80,8 +82,11 @@
    const tr=document.createElement('tr');
    const vals=[h.symbol,h.quantity,h.buy,q.price,q.price*h.quantity,h.quantity*(q.price-h.buy),q.marketDate];
    vals.forEach((v,i)=>{const td=document.createElement('td');td.style.padding='7px 5px';td.style.borderBottom='1px solid #34546d';td.textContent=i===0||i===6?String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]):fmt(v);tr.append(td);});
-   body.append(tr);value+=q.price*h.quantity;cost+=h.buy*h.quantity;
+   const rowValue=q.price*h.quantity,rowCost=h.buy*h.quantity;
+   if(!Number.isSafeInteger(h.quantity)||!Number.isFinite(rowValue)||!Number.isFinite(rowCost)||rowValue>Number.MAX_SAFE_INTEGER||rowCost>Number.MAX_SAFE_INTEGER)throw Error('مبلغ دارایی از محدوده محاسبه مطمئن خارج است.');
+   body.append(tr);value+=rowValue;cost+=rowCost;
   }
+  if(!Number.isFinite(value)||!Number.isFinite(cost)||value>Number.MAX_SAFE_INTEGER||cost>Number.MAX_SAFE_INTEGER)throw Error('جمع سبد از محدوده محاسبه مطمئن خارج است.');
   const pnl=value-cost,percent=cost?100*pnl/cost:0;
   $('livePortfolioSummary').textContent=(mode==='import'?'ارزش بر اساس قیمت فایل: ':'ارزش روز: ')+fmt(value)+' ریال | بهای خرید: '+fmt(cost)+' ریال | سود/زیان تحقق‌نیافته: '+fmt(pnl)+' ریال ('+fmt(percent)+'٪). کارمزد و مالیات لحاظ نشده‌اند.';
   $('livePortfolioMeta').textContent=mode==='import'?'تعداد دارایی: '+fmt(holdings.length)+' | منبع: قیمت پایانی درج‌شده در فایل کارگزاری؛ تاریخ دقیق قیمت بازار نامشخص است. زمان ورود فایل به مرورگر: '+(Number.isFinite(Date.parse(receivedAt))?new Date(receivedAt).toLocaleString('fa-IR'):'نامشخص')+'. این نتیجه قیمت روز یا به‌روزرسانی خودکار نیست.':'تعداد دارایی: '+fmt(holdings.length)+' | تاریخ بازار هر نماد در جدول مشخص است | زمان دریافت پاسخ‌ها: '+new Date(receivedAt).toLocaleString('fa-IR')+' (زمان دستگاه). زمان دریافت، زمان آخرین معامله نیست.';
