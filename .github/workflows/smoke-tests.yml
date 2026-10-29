@@ -18,6 +18,7 @@ jobs:
       - run: node tests/smoke.cjs
       - run: node tests/sw-offline.cjs
       - run: node tests/market-validation.cjs
+      - run: node tests/portfolio-risk-v49.test.cjs
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
