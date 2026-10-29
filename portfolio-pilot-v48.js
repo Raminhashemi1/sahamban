@@ -122,7 +122,7 @@
   if(!Array.isArray(daily))throw Error('پاسخ تاریخچه ساختار معتبر ندارد.');
   const rowsValid=daily.map(row=>{
    const date=String(row?.dEven??''),close=Number(row?.pClosing);
-   if(!/^\\d{8}$/.test(date)||!Number.isFinite(close)||close<=0)return null;
+   if(!/^\d{8}$/.test(date)||!Number.isFinite(close)||close<=0)return null;
    const y=+date.slice(0,4),m=+date.slice(4,6),d=+date.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
    return {date,close};
