@@ -107,6 +107,13 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),importedBeforeOffline);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
   console.log('PASS: offline file-based valuation explicitly marked non-live, with no storage mutation');
+  const savedBeforeExport=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  const backupDownload=page.waitForEvent('download');
+  await page.locator('#brokerExportBackup').click();
+  const downloaded=await backupDownload;
+  assert.equal(downloaded.suggestedFilename(),'sahamban-broker-holdings-backup.json');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),savedBeforeExport);
+  console.log('PASS: broker holdings JSON backup downloads without changing stored holdings');
   await page.locator('#brokerUnit').selectOption('rial');
   // Simulate an existing user recording; portfolio actions must never overwrite it.
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
