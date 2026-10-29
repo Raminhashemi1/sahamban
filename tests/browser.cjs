@@ -242,6 +242,22 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),recordedBefore);
   console.log('PASS: portfolio, backup and market checks preserve recorded user voice');
 
+  // Best-effort direct browser CORS probe against the real endpoint after removing all mocks.
+  await page.unrouteAll();
+  const browserProbe=await page.evaluate(async()=>{
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+   try{
+    const response=await fetch('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/'+encodeURIComponent('فولاد'),{cache:'no-store',signal:controller.signal,headers:{accept:'application/json'}});
+    if(!response.ok)throw Error('HTTP '+response.status);
+    const type=response.headers.get('content-type')||'';
+    if(!type.toLowerCase().includes('json'))throw Error('response is not JSON');
+    const data=await response.json(),rows=data?.instrumentSearch;
+    if(!Array.isArray(rows)||!rows.some(x=>String(x.lVal18AFC||'').replace(/\\s/g,'')==='فولاد'))throw Error('exact ticker not present in response');
+    return {ok:true,message:'Real TSETMC search endpoint reachable from browser origin; this runner origin is localhost, not GitHub Pages.'};
+   }catch(e){return {ok:false,message:(e.name==='AbortError'?'timeout':e.message)+'; CORS/network/geographic access remains unverified.'};}
+   finally{clearTimeout(timer);}
+  });
+  console.log((browserProbe.ok?'BROWSER INTEGRATION PASS: ':'BROWSER INTEGRATION BLOCKED/UNVERIFIED: ')+browserProbe.message);
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
  }catch(error){
