@@ -1,0 +1,22 @@
+name: v48 safety checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/portfolio-live-prices-v48]
+jobs:
+  static-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Parse JavaScript
+        run: |
+          node --check app.js
+          node --check broker-import.js
+          node --check persian-ui.js
+          node --check holdings-live.js
+      - name: Run portfolio live-price safety tests
+        run: node --test tests/portfolio-live.test.cjs
