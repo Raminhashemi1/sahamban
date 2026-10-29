@@ -26,7 +26,9 @@ test('totals are withheld when any holding has a failed quote', () => {
 
 test('symbol lookup requires exactly one normalized ticker match', () => {
   assert.match(source, /norm\(x\.lVal18AFC\)===holding\.key/);
-  assert.match(source, /if\(exact\.length!==1\)/);
+  assert.match(source, /if\(!exact\.length\)/);
+  assert.match(source, /if\(valid\.length!==1\)/);
+  assert.match(source, /verifiedCode\(holding,String\(candidate\.insCode\)\)/);
   assert.match(source, /قیمت پایانی معتبر/);
 });
 
