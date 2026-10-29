@@ -2,6 +2,8 @@ name: v48 isolated holdings-race regression
 on:
   push:
     branches: [test/v48-holdings-race-guard-20261029]
+  pull_request:
+    branches: [feat/portfolio-live-prices-v48]
 jobs:
   browser-race:
     runs-on: ubuntu-latest
