@@ -99,7 +99,7 @@
   }
   if(!Number.isFinite(value)||!Number.isFinite(cost)||value>Number.MAX_SAFE_INTEGER||cost>Number.MAX_SAFE_INTEGER)throw Error('جمع سبد از محدوده محاسبه مطمئن خارج است.');
   const pnl=value-cost,percent=cost?100*pnl/cost:0;
-  $('livePortfolioSummary').textContent=(mode==='import'?'ارزش بر اساس قیمت فایل: ':'ارزش روز: ')+fmt(value)+' ریال | بهای خرید: '+fmt(cost)+' ریال | سود/زیان تحقق‌نیافته: '+fmt(pnl)+' ریال ('+fmt(percent)+'٪). کارمزد و مالیات لحاظ نشده‌اند.';
+  $('livePortfolioSummary').textContent=(mode==='import'?'ارزش بر اساس قیمت فایل: ':'ارزش طبق قیمت پایانی بازار: ')+fmt(value)+' ریال | بهای خرید: '+fmt(cost)+' ریال | سود/زیان تحقق‌نیافته: '+fmt(pnl)+' ریال ('+fmt(percent)+'٪). کارمزد و مالیات لحاظ نشده‌اند.';
   $('livePortfolioMeta').textContent=mode==='import'?'تعداد دارایی: '+fmt(holdings.length)+' | منبع: قیمت پایانی درج‌شده در فایل کارگزاری؛ تاریخ دقیق قیمت بازار نامشخص است. زمان ورود فایل به مرورگر: '+(Number.isFinite(Date.parse(receivedAt))?new Date(receivedAt).toLocaleString('fa-IR'):'نامشخص')+'. این نتیجه قیمت روز یا به‌روزرسانی خودکار نیست.':'تعداد دارایی: '+fmt(holdings.length)+' | تاریخ بازار هر نماد در جدول مشخص است | زمان دریافت پاسخ‌ها: '+new Date(receivedAt).toLocaleString('fa-IR')+' (زمان دستگاه). زمان دریافت، زمان آخرین معامله نیست.';
   $('livePortfolioTable').hidden=false;
  }
@@ -164,7 +164,7 @@
    const snapshot={version:1,source:'TSETMC',receivedAt:new Date().toISOString(),quotes};
    // No quote-cache persistence in this pilot; never write to any browser storage.
    render(holdings,quotes,snapshot.receivedAt);
-   say('دریافت و اعتبارسنجی همه '+fmt(holdings.length)+' قیمت موفق بود. فقط قیمت‌ها در ذخیره‌سازی جداگانه ثبت شدند؛ تعداد و میانگین خرید دست‌نخورده‌اند.');
+   say('دریافت و اعتبارسنجی قیمت پایانی همه '+fmt(holdings.length)+' نماد موفق بود. نتیجه فقط روی همین صفحه محاسبه شد؛ هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد. تاریخ قیمت هر نماد در جدول مشخص است.');
   }catch(e){
    say('به‌روزرسانی انجام نشد: '+e.message+'. قیمت قبلی به‌عنوان قیمت جدید معرفی نمی‌شود و اطلاعات دارایی‌ها تغییر نمی‌کنند.');
   }finally{running=false;$('livePortfolioRefresh').disabled=false;}
