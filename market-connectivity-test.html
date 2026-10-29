@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>آزمون اتصال قیمت بورس | سهام‌بان</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{max-width:680px;margin:0 auto;padding:24px;line-height:1.8}
+main{border:1px solid #8886;border-radius:16px;padding:20px}
+button{font:inherit;padding:12px 18px;border:0;border-radius:10px;background:#2864dc;color:white;cursor:pointer}
+button:disabled{opacity:.6}
+#status{white-space:pre-wrap;overflow-wrap:anywhere}
+small{opacity:.75}
+</style>
+</head>
+<body>
+<main>
+<h1>آزمون اتصال قیمت بورس</h1>
+<p>این صفحه فقط نماد عمومی «فولاد» را بررسی می‌کند. به اطلاعات سبد، فایل کارگزاری یا رمز شما دسترسی ندارد و چیزی از آن‌ها ارسال نمی‌کند.</p>
+<p>برای بررسی اینکه مرورگر گوشی به منبع قیمت دسترسی دارد، دکمه را بزنید.</p>
+<button id="run">آزمون اتصال</button>
+<p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
+<small>منبع آزمایش: API عمومی TSETMC؛ این آزمون به‌تنهایی مجوز استفاده یا پایداری منبع را تضمین نمی‌کند.</small>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const api='https://cdn.tsetmc.com/api';
+const fa=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
+const norm=s=>String(s??'').replace(/[\u200c\u200e\u200f\uFEFF\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
+async function get(path){
+ const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),10000);
+ try{
+  const r=await fetch(api+path,{cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
+  if(!r.ok)throw Error('HTTP '+r.status);
+  if(!(r.headers.get('content-type')||'').toLowerCase().includes('json'))throw Error('پاسخ JSON نیست؛ احتمال محدودیت شبکه یا جغرافیایی');
+  return await r.json();
+ }finally{clearTimeout(timer);}
+}
+function dateOk(raw){
+ const s=String(raw??'');
+ if(!/^\d{8}$/.test(s))throw Error('تاریخ بازار معتبر نیست.');
+ const y=+s.slice(0,4),m=+s.slice(4,6),d=+s.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
+ if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)throw Error('تاریخ بازار نامعتبر است.');
+ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
+ const age=(Date.UTC(p.year,p.month-1,p.day)-dt.getTime())/86400000;
+ if(age<0||age>7)throw Error('قیمت قدیمی یا تاریخ آینده است؛ فاصله روز تقویمی: '+fa(age));
+ return s;
+}
+$('run').addEventListener('click',async()=>{
+ const b=$('run'),s=$('status');b.disabled=true;s.textContent='در حال بررسی نماد عمومی فولاد؛ حداکثر چند ثانیه...';
+ try{
+  const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent('فولاد'));
+  const rows=search?.instrumentSearch;
+  if(!Array.isArray(rows))throw Error('ساختار پاسخ جستجوی نماد معتبر نیست.');
+  const codes=[...new Set(rows.filter(x=>norm(x.lVal18AFC)==norm('فولاد')&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.insCode)))];
+  if(!codes.length||codes.length>5)throw Error('تعداد شناسه‌های دقیق نماد غیرمنتظره است: '+fa(codes.length));
+  const valid=[];
+  for(const code of codes){
+   try{
+    const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
+    const price=Number(info?.pClosing),date=dateOk(info?.dEven);
+    if(!Number.isFinite(price)||price<=0)throw Error('قیمت نامعتبر');
+    const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
+    if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
+    const matching=hist.filter(x=>String(x?.dEven??'')===date);
+    if(matching.length!==1||Number(matching[0].pClosing)!==price)throw Error('قیمت با تاریخچه تطبیق ندارد');
+    valid.push({code,price,date});
+   }catch(e){/* reject this candidate; never guess */}
+  }
+  if(valid.length!==1)throw Error('تعداد شناسه‌های دارای قیمت و تاریخچه معتبر دقیقاً یک نیست: '+fa(valid.length));
+  const q=valid[0];
+  s.textContent='موفق: مرورگر توانست قیمت و تاریخچه را دریافت و تطبیق دهد.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار (میلادی): '+q.date+'\nاین نتیجه فقط دسترسی شبکه را تأیید می‌کند؛ سبد شخصی شما بررسی یا تغییر نشده است.';
+ }catch(e){
+  s.textContent='ناموفق یا تأییدنشده: '+(e?.name==='AbortError'?'مهلت اتصال ۱۰ ثانیه‌ای تمام شد':String(e?.message||e))+'\nهیچ اطلاعات سبدی خوانده یا تغییر داده نشده است.';
+ }finally{b.disabled=false;}
+});
+</script>
+</body>
+</html>

@@ -97,14 +97,14 @@ async function main(){
   await page.locator('#pfSymbol').fill('بتا');
   for(const [id,value] of Object.entries({pfQty:'20',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'150'}))await page.locator('#'+id).fill(value);
   await page.locator('#pfAdd').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,20,100,110,90,150/);
+  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,۲۰,۱۰۰,۱۱۰,۹۰,۱۵۰/);
   console.log('PASS: add holding via form');
 
   await page.locator('#pfExisting').selectOption('بتا');
   await page.locator('#pfEdit').click();
   await page.locator('#pfQty').fill('30');
   await page.locator('#pfAdd').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,30,100,110,90,150/);
+  assert.match(await page.locator('#portfolioData').inputValue(),/بتا,۳۰,۱۰۰,۱۱۰,۹۰,۱۵۰/);
   console.log('PASS: edit existing holding');
 
   await page.locator('#pfExisting').selectOption('بتا');
@@ -136,8 +136,8 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),before);
   console.log('PASS: selecting a valid backup never overwrites current holdings');
   await page.locator('#portfolioBackupApply').click();
-  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
-  assert.equal(await page.locator('#portfolioCapital').inputValue(),'100000');
+  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,۷,۱۰۰۰,۱۲۰۰,۹۰۰,۱۷۰۰');
+  assert.equal(await page.locator('#portfolioCapital').inputValue(),'۱۰۰۰۰۰');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-portfolio-local-v1')),savedBeforeImport);
   console.log('PASS: confirmed JSON backup restores screen fields without replacing saved copy');
 
@@ -147,7 +147,7 @@ async function main(){
   });
   await page.getByText('فایل پذیرفته نشد:',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.locator('#portfolioBackupApply').isDisabled(),true);
-  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,7,1000,1200,900,1700');
+  assert.equal(await page.locator('#portfolioData').inputValue(),'گاما,۷,۱۰۰۰,۱۲۰۰,۹۰۰,۱۷۰۰');
   console.log('PASS: invalid JSON backup rejected without changing current holdings');
 
   // Matching the built-in example must never silently discard those holdings.
@@ -156,9 +156,9 @@ async function main(){
   for(const [id,value] of Object.entries({pfQty:'5',pfBuy:'100',pfCurrent:'110',pfStop:'90',pfTarget:'130'}))await page.locator('#'+id).fill(value);
   await page.locator('#pfAdd').click();
   const retainedRows=await page.locator('#portfolioData').inputValue();
-  assert.match(retainedRows,/فولاد,1000,500,540,470,650/);
-  assert.match(retainedRows,/خودرو,2000,280,260,235,320/);
-  assert.match(retainedRows,/آزمایش,5,100,110,90,130/);
+  assert.match(retainedRows,/فولاد,۱۰۰۰,۵۰۰,۵۴۰,۴۷۰,۶۵۰/);
+  assert.match(retainedRows,/خودرو,۲۰۰۰,۲۸۰,۲۶۰,۲۳۵,۳۲۰/);
+  assert.match(retainedRows,/آزمایش,۵,۱۰۰,۱۱۰,۹۰,۱۳۰/);
   console.log('PASS: adding a holding never silently removes example-shaped existing positions');
 
   // Mock market responses: no request is sent to the real exchange.

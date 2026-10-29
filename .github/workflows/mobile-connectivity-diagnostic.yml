@@ -1,0 +1,15 @@
+name: Mobile connectivity diagnostic safety
+on:
+  push:
+    branches: [diagnostic/mobile-tsetmc-probe]
+  pull_request:
+    branches: [main]
+jobs:
+  diagnostic-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/market-connectivity-page.test.cjs
