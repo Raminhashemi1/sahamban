@@ -4,7 +4,7 @@ const base='https://cdn.tsetmc.com/api';
 async function json(path){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
  try{
-  const response=await fetch(base+path,{signal:controller.signal,cache:'no-store',headers:{accept:'application/json'}});
+  const response=await fetch(base+path,{signal:controller.signal,cache:'no-store',headers:{accept:'application/json, text/plain, */*','user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36',referer:'https://www.tsetmc.com/',origin:'https://www.tsetmc.com'}});
   if(!response.ok)throw Error('HTTP '+response.status);
   const type=response.headers.get('content-type')||'';
   if(!type.toLowerCase().includes('json'))throw Error('response is not JSON; possible proxy or access restriction');
