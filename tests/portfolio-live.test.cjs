@@ -37,8 +37,8 @@ test('market date is validated and stale prices are rejected', () => {
 });
 
 test('values are calculated in rial and unrealized P/L uses quantity times price difference', () => {
-  assert.match(source, /value\+=q\.price\*h\.quantity/);
-  assert.match(source, /cost\+=h\.buy\*h\.quantity/);
+  assert.match(source, /const rowValue=q\.price\*h\.quantity/);
+  assert.match(source, /rowCost=h\.buy\*h\.quantity/);
   assert.match(source, /const pnl=value-cost/);
   assert.match(html, /ارزش محاسباتی \(ریال\)/);
   assert.match(html, /سود\/زیان \(ریال\)/);
