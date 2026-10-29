@@ -51,28 +51,38 @@
   if(age>7)throw Error('قیمت قدیمی است؛ تاریخ آخرین بازار '+fmt(age)+' روز پیش است.');
   return s;
  }
+ async function verifiedCode(holding,insCode){
+  const result=await fetchJson('/ClosingPrice/GetClosingPriceInfo/'+insCode);
+  const info=result?.closingPriceInfo;
+  if(!info||typeof info!=='object')throw Error('اطلاعات قیمت دریافت نشد.');
+  const price=Number(info.pClosing);
+  if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر دریافت نشد.');
+  const date=validDate(info.dEven??info.date??info.lastDate);
+  // Match the closing price against an independent dated history response.
+  const history=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
+  const daily=history?.closingPriceDaily;
+  if(!Array.isArray(daily)||daily.length===0)throw Error('تاریخچه معتبر موجود نیست.');
+  const matching=daily.filter(row=>String(row?.dEven??'')===date);
+  if(matching.length!==1)throw Error('تاریخ معامله در تاریخچه یکتا نیست.');
+  const historyPrice=Number(matching[0].pClosing);
+  if(!Number.isFinite(historyPrice)||historyPrice<=0||Math.abs(historyPrice-price)>0.000001)throw Error('قیمت با تاریخچه تطبیق ندارد.');
+  return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date};
+ }
  async function getOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
   const rows=search?.instrumentSearch;
   if(!Array.isArray(rows))throw Error('ساختار پاسخ جست‌وجو برای '+holding.symbol+' معتبر نیست.');
-  const exact=[...new Map(rows.filter(x=>norm(x.lVal18AFC)===holding.key&&/^\d{8,25}$/.test(String(x.insCode??''))).map(x=>[String(x.insCode),x])).values()];
-  if(exact.length!==1)throw Error(exact.length?'نماد '+holding.symbol+' چند شناسه دقیق دارد؛ انتخاب خودکار ایمن نیست.':'نماد دقیق '+holding.symbol+' پیدا نشد.');
-  const insCode=String(exact[0].insCode);
-  const result=await fetchJson('/ClosingPrice/GetClosingPriceInfo/'+insCode);
-  const info=result?.closingPriceInfo;
-  if(!info||typeof info!=='object')throw Error('اطلاعات قیمت '+holding.symbol+' دریافت نشد.');
-  const price=Number(info.pClosing);
-  if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر برای '+holding.symbol+' دریافت نشد.');
-  const date=validDate(info.dEven??info.date??info.lastDate);
-  // Independent historical endpoint must agree with the quote on trading date and closing price.
-  const history=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
-  const daily=history?.closingPriceDaily;
-  if(!Array.isArray(daily)||daily.length===0)throw Error('تاریخچه قابل تطبیق برای '+holding.symbol+' دریافت نشد.');
-  const matching=daily.filter(row=>String(row?.dEven??'')===date);
-  if(matching.length!==1)throw Error('تاریخ قیمت '+holding.symbol+' در تاریخچه منطبق یا یکتا نیست.');
-  const historyPrice=Number(matching[0].pClosing);
-  if(!Number.isFinite(historyPrice)||historyPrice<=0||Math.abs(historyPrice-price)>0.000001)throw Error('قیمت پایانی '+holding.symbol+' با تاریخچه TSETMC تطبیق ندارد.');
-  return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date};
+  const exact=[...new Map(rows.filter(x=>norm(x.lVal18AFC)===holding.key&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>[String(x.insCode),x])).values()];
+  if(!exact.length)throw Error('شناسه دقیق نماد '+holding.symbol+' پیدا نشد.');
+  if(exact.length>5)throw Error('شناسه‌های مشابه برای '+holding.symbol+' بیش از حد هستند؛ انتخاب خودکار ایمن نیست.');
+  const valid=[];
+  let lastError='';
+  for(const candidate of exact){
+   try{valid.push(await verifiedCode(holding,String(candidate.insCode)));}
+   catch(e){lastError=e.message;}
+  }
+  if(valid.length!==1)throw Error(valid.length?'چند شناسه تازه و معتبر برای '+holding.symbol+' وجود دارد؛ انتخاب خودکار ایمن نیست.':'هیچ شناسه‌ای برای '+holding.symbol+' با قیمت و تاریخ معتبر تأیید نشد. '+lastError);
+  return valid[0];
  }
  function render(holdings,quotes,receivedAt,mode='live'){
   const body=$('livePortfolioRows');body.replaceChildren();
