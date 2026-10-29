@@ -31,6 +31,7 @@ test('technical selector activates from visible portfolio symbols without treati
  const window={SahambanTechnicalV50:api,addEventListener:(name,fn)=>{handlers[name]=fn;}};
  vm.runInNewContext(ui,{document,window,Intl,Number,Array,Map,String});
  const selector=elements.technicalSymbolV50,result=elements.technicalResultV50,status=elements.technicalStatusV50;
+ selector.disabled=true; // Mirror the HTML's initial disabled attribute.
  assert.equal(selector.disabled,true);
  handlers['sahamban:portfolio-symbols-v50']({detail:{symbols:['فولاد','خودرو','فولاد']}});
  assert.equal(selector.disabled,false);
