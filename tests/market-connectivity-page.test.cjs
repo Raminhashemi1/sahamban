@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('node:fs');
+const vm=require('node:vm');
+const assert=require('node:assert/strict');
+const html=fs.readFileSync('market-connectivity-test.html','utf8');
+assert.match(html,/<html lang="fa" dir="rtl">/);
+assert.match(html,/نماد عمومی/);
+assert.match(html,/GetInstrumentSearch/);
+assert.match(html,/GetClosingPriceInfo/);
+assert.match(html,/GetClosingPriceDailyList/);
+assert.match(html,/ریال/);
+assert.doesNotMatch(html,/sahamban-broker-holdings|sahamban-broker-live-quotes|localStorage|sessionStorage/);
+const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
+assert.equal(scripts.length,1,'exactly one self-contained script');
+new vm.Script(scripts[0]);
+console.log('PASS: standalone market diagnostic syntax, source-validation flow, Persian/Rial UI and no portfolio-storage access');
