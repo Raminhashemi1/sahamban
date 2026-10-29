@@ -178,6 +178,19 @@ el('brokerApply').addEventListener('click',()=>{
   el('brokerRisk').disabled=false;
  }catch(e){status('ذخیره محلی انجام نشد: '+e.message);}
 });
+el('brokerExportBackup').addEventListener('click',()=>{
+ try{
+  const raw=localStorage.getItem(STORAGE);
+  if(!raw)throw Error('ابتدا دارایی‌های کارگزاری را ذخیره کنید.');
+  const data=JSON.parse(raw);
+  if(!data||![1,2].includes(data.version)||!Array.isArray(data.holdings)||!data.holdings.length)throw Error('ساختار ذخیره معتبر نیست.');
+  const blob=new Blob([JSON.stringify({format:'sahamban-broker-holdings',exportedAt:new Date().toISOString(),...data},null,2)],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='sahamban-broker-holdings-backup.json';
+  document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  status('نسخه پشتیبان فایل دارایی‌های واقعی برای نگهداری در حافظه امن گوشی آماده شد. داده‌های ذخیره‌شده تغییر نکردند.');
+ }catch(e){status('پشتیبان‌گیری انجام نشد: '+e.message);}
+});
 el('brokerLoad').addEventListener('click',()=>{
  try{
   const obj=JSON.parse(localStorage.getItem(STORAGE)||'null');
