@@ -25,7 +25,7 @@ test('Rial-only portfolio examples and Persian numerical display are wired',()=>
  new vm.Script(persianUi);
  assert.ok(html.includes('فولاد,1000,5000,5400,4700,6500'));
  assert.ok(app.includes("const portfolioDemo='فولاد,1000,5000,5400,4700,6500"));
- const version=html.match(/app\\.js\\?v=(\\d+)/)?.[1];
+ const version=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(version,'app script version missing');
  assert.ok(html.includes('./persian-ui.js?v='+version));
  assert.ok(sw.includes('./persian-ui.js?v='+version));
