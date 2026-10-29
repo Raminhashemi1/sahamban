@@ -87,7 +87,7 @@ async function main(){
   // Older brokerage exports may be in toman. Multiply by 10 to store rial.
   await page.locator('#brokerUnit').selectOption('toman');
   await page.locator('#brokerFile').setInputFiles({name:'legacy-toman.csv',mimeType:'text/csv',buffer:Buffer.from(
-    'نام نماد,تعداد دارایی,میانگین خرید,قیمت پایانی\\nفولاد,7,125,140\\n','utf8')});
+    'نام نماد,تعداد دارایی,میانگین خرید,قیمت پایانی\nفولاد,7,125,140\n','utf8')});
   await page.locator('#brokerPreview').click();
   assert.match(await page.locator('#brokerReviewStatus').innerText(),/۱ ردیف/);
   page.once('dialog',dialog=>dialog.accept());
