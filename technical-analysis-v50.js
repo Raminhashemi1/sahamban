@@ -1,9 +1,10 @@
 'use strict';
-/* v50 UI consumes only the in-memory, verified historical-close event. */
+/* v50.2 UI consumes verified quotes independently of the indicator library. */
 (()=>{
  const $=id=>document.getElementById(id);
  const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50');
- if(!selector||!result||!status||!window.SahambanTechnicalV50)return;
+ if(!selector||!result||!status)return;
+ if(!window.SahambanTechnicalV50){status.textContent='کتابخانه محاسبه اندیکاتورها بارگذاری نشده است؛ فهرست نمادها پس از دریافت قیمت همچنان فعال می‌شود.';}
  let quotes=[];
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:4}).format(n);
  const latest=values=>{for(let i=values.length-1;i>=0;i--)if(values[i]!==null&&Number.isFinite(values[i]))return values[i];return null;};
@@ -11,6 +12,7 @@
   const q=quotes.find(x=>x.symbol===selector.value);
   if(!q){result.textContent='برای نمایش تحلیل، ابتدا دریافت و اعتبارسنجی قیمت پایانی همه نمادها را با موفقیت اجرا کنید.';return;}
   if(!Array.isArray(q.history)||!q.history.length){result.textContent='تاریخچه معتبر برای این نماد در پاسخ بازار موجود نیست؛ هیچ عددی حدس زده نمی‌شود.';return;}
+  if(!window.SahambanTechnicalV50){result.textContent='نماد دریافت شد، اما کتابخانه اندیکاتورها بارگذاری نشده است. صفحه را دوباره باز کنید؛ فهرست نمادها فعال می‌ماند.';return;}
   try{
    const closes=q.history.map(x=>x.close);
    const indicators=window.SahambanTechnicalV50.calculate(closes,{smaPeriod:20,rsiPeriod:14,macd:{fast:12,slow:26,signal:9}});
@@ -34,6 +36,7 @@
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
   const incoming=event?.detail?.quotes;
   if(!Array.isArray(incoming)){status.textContent='داده تاریخی دریافت‌شده ساختار معتبر ندارد.';return;}
+  status.textContent='داده قیمت تأییدشده دریافت شد؛ فهرست نمادها در حال به‌روزرسانی است.';
   quotes=[...new Map(incoming.filter(q=>q&&typeof q.symbol==='string'&&q.symbol.trim()).map(q=>[q.symbol,q])).values()];
   selector.replaceChildren();
   for(const q of quotes){
