@@ -256,6 +256,12 @@ async function main(){
    const price=isBeta?2100:1500;
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceInfo:{dEven:date,pClosing:price}})});
   });
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
+   const code=route.request().url().split('/').at(-2);
+   const isBeta=code==='12345678902';
+   const price=isBeta?2100:1500;
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:[{dEven:Number(marketToday),pClosing:price}]})});
+  });
   await page.locator('#livePortfolioRefresh').click();
   await page.getByText('به‌روزرسانی کامل نشد',{exact:false}).waitFor({timeout:10000});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
@@ -287,6 +293,11 @@ async function main(){
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/**',async route=>{
    const n=Number(route.request().url().split('/').at(-1))-100000000000000;
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceInfo:{dEven:Number(marketToday),pClosing:2000+n}})});
+  });
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
+   const code=route.request().url().split('/').at(-2);
+   const n=Number(code)-100000000000000;
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:[{dEven:Number(marketToday),pClosing:2000+n}]})});
   });
   await page.locator('#livePortfolioRefresh').click();
   await page.getByText('دریافت و اعتبارسنجی همه ۱۹ قیمت موفق بود',{exact:false}).waitFor({timeout:30000});
