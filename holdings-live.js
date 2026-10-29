@@ -62,6 +62,14 @@
   const price=Number(info.pClosing);
   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر برای '+holding.symbol+' دریافت نشد.');
   const date=validDate(info.dEven??info.date??info.lastDate);
+  // Independent historical endpoint must agree with the quote on trading date and closing price.
+  const history=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
+  const daily=history?.closingPriceDaily;
+  if(!Array.isArray(daily)||daily.length===0)throw Error('تاریخچه قابل تطبیق برای '+holding.symbol+' دریافت نشد.');
+  const matching=daily.filter(row=>String(row?.dEven??'')===date);
+  if(matching.length!==1)throw Error('تاریخ قیمت '+holding.symbol+' در تاریخچه منطبق یا یکتا نیست.');
+  const historyPrice=Number(matching[0].pClosing);
+  if(!Number.isFinite(historyPrice)||historyPrice<=0||Math.abs(historyPrice-price)>0.000001)throw Error('قیمت پایانی '+holding.symbol+' با تاریخچه TSETMC تطبیق ندارد.');
   return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date};
  }
  function render(holdings,quotes,receivedAt,mode='live'){
