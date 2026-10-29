@@ -202,6 +202,30 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert')),recordedBefore);
   console.log('PASS: portfolio, backup and market checks preserve recorded user voice');
 
+  // Integrated main-page regression: nineteen imported holdings must be read-only,
+  // and must never be confused with the editable risk-analysis/demo portfolio.
+  const nineteen=Array.from({length:19},(_,i)=>({symbol:'سبد'+(i+1),quantity:i+1,buy:1200+i,current:1300+i}));
+  const beforeNineteen=JSON.stringify({version:2,created:new Date().toISOString(),holdings:nineteen});
+  await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),beforeNineteen);
+  await page.reload({waitUntil:'load'});
+  const analysisBeforeIntegrated=await page.locator('#portfolioData').inputValue();
+  await page.getByText('۱۹ نماد',{exact:false}).first().waitFor({timeout:10000});
+  await page.locator('#livePortfolioImported').click();
+  assert.match(await page.locator('#livePortfolioSummary').innerText(),/ارزش بر اساس قیمت فایل/);
+  assert.match(await page.locator('#livePortfolioMeta').innerText(),/قیمت روز یا به‌روزرسانی خودکار نیست/);
+  assert.equal(await page.locator('#livePortfolioRows tr').count(),19);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),beforeNineteen);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
+  assert.equal(await page.locator('#portfolioData').inputValue(),analysisBeforeIntegrated);
+  console.log('PASS: v48 integrated main page reads 19 synthetic broker positions without mutations or demo-portfolio mixing');
+  const beforeDownload=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  const pendingBackup=page.waitForEvent('download');
+  await page.locator('#brokerExportBackup').click();
+  const downloadedBrokerBackup=await pendingBackup;
+  assert.equal(downloadedBrokerBackup.suggestedFilename(),'sahamban-broker-holdings-backup.json');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),beforeDownload);
+  console.log('PASS: mobile real-holdings JSON backup download does not mutate 19-position storage');
+
   assert.deepEqual(errors,[],errors.join('\n'));
   console.log('SUCCESS: Chromium browser integration tests');
  }catch(error){
