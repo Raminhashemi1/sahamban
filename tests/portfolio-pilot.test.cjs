@@ -8,7 +8,7 @@ const html=fs.readFileSync('portfolio-pilot.html','utf8');
 assert.doesNotMatch(src,/localStorage\.setItem\s*\((?!MAPPINGS_KEY\s*,)/);
 assert.doesNotMatch(src,/localStorage\.removeItem\s*\(/);
 assert.doesNotMatch(src,/localStorage\.clear\s*\(/);
-assert.match(src,/localStorage\.setItem\(MAPPINGS_KEY/);
+assert.match(src,/localStorage\.setItem\(MAPPINGS_KEY/);\nassert.match(src,/شناسه ذخیره‌شده نامعتبر/);
 assert.match(src,/const MAPPINGS_KEY='sahamban-instrument-mappings-v1'/);
 assert.match(src,/const HOLDINGS_KEY='sahamban-broker-holdings-v1'/);
 assert.doesNotMatch(html,/<script[^>]*persian-ui/);
