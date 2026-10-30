@@ -17,15 +17,15 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.15/);
- assert.match(sw,/sahamban-static-v50-20/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.16/);
+ assert.match(sw,/sahamban-static-v50-21/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.15/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.16/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.15 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۵ | تطبیق‌گر ۴۹.۰'));
+ assert.ok(tech.includes('v50.16 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۶ | تطبیق‌گر ۴۹.۱'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -42,8 +42,8 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.15/);
- assert.match(sw,/sahamban-static-v50-20/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.16/);
+ assert.match(sw,/sahamban-static-v50-21/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -88,3 +88,12 @@ test('instrument mapping save and clear operations verify exact localStorage rea
  assert.match(pilot,/ذخیره تأیید نشد:/);
  assert.match(pilot,/پاک‌شدن آن از حافظه تأیید شد/);
 });
+
+test('candidate diagnostics expose lastDate and yMarNSC from instrument identity metadata',()=>{
+ assert.match(pilot,/lastDate:identity\.lastDate\?\?candidate\.lastDate/);
+ assert.match(pilot,/yMarNSC:identity\.yMarNSC\?\?candidate\.yMarNSC/);
+ assert.match(pilot,/آخرین تاریخ معامله=/);
+ assert.match(pilot,/شناسه طبقه‌بندی بازار=/);
+});
+
+// Cache-busted diagnostic metadata assertions are covered above.
