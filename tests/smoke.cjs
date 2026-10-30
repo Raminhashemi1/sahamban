@@ -56,6 +56,8 @@ test('Real broker holdings valuation is read-only with independent quote validat
  assert.ok(sw.includes('portfolio-pilot-v48.js?v=48.3'));
  assert.ok(portfolioLive.includes("sahamban-broker-holdings-v1"));
  assert.ok(portfolioLive.includes("GetClosingPriceDailyList"));
+ assert.ok(portfolioLive.includes('const checks=await Promise.all(candidates.map(async candidate=>')); 
+ assert.ok(portfolioLive.includes('چند شناسه برای '));
  assert.ok(!portfolioLive.includes('localStorage.setItem(')&&!portfolioLive.includes('localStorage.removeItem(')&&!portfolioLive.includes('localStorage.clear('));
  assert.ok(brokerImport.includes("buy=num(row[+ids[2]])*factor"));
 });
