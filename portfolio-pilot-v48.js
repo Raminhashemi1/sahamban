@@ -289,7 +289,7 @@
    const today=Date.UTC(parts.year,parts.month-1,parts.day);
    const recent=valid.filter(x=>{
     const raw=String(x.candidate?.historyEndDate??'');
-    if(!/^\\d{8}$/.test(raw))return false;
+    if(!/^\d{8}$/.test(raw))return false;
     const y=+raw.slice(0,4),m=+raw.slice(4,6),d=+raw.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
     if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return false;
     const age=Math.floor((today-dt.getTime())/86400000);

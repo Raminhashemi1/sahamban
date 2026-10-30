@@ -17,15 +17,15 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.18/);
- assert.match(sw,/sahamban-static-v50-24/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.19/);
+ assert.match(sw,/sahamban-static-v50-25/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.18/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.19/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.18 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۸ | تطبیق‌گر ۴۹.۳'));
+ assert.ok(tech.includes('v50.19 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۹ | تطبیق‌گر ۴۹.۴'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -42,8 +42,8 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.18/);
- assert.match(sw,/sahamban-static-v50-24/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.19/);
+ assert.match(sw,/sahamban-static-v50-25/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -103,6 +103,14 @@ test('candidate diagnostics ignore zero lastDate and expose actual verified hist
  assert.ok(pilot.includes('historyStartDate,historyEndDate,historyCount:history.length'));
  assert.ok(pilot.includes('بازه تاریخچه معتبر='));
  assert.ok(pilot.includes('تعداد رکوردهای تاریخچه='));
+});
+
+test('recent-history date matcher uses a single-digit-class escape and accepts real YYYYMMDD dates',()=>{
+ assert.ok(pilot.includes("if(!/^\\d{8}$/.test(raw))return false;"));
+ assert.ok(!pilot.includes("if(!/^\\\\d{8}$/.test(raw))return false;"));
+ const datePattern=/^\d{8}$/;
+ assert.equal(datePattern.test('20261028'),true);
+ assert.equal(datePattern.test('2026-10-28'),false);
 });
 
 test('unique recent historical candidate is selected for this session without persisting a market mapping',()=>{
