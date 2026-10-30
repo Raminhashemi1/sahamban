@@ -95,3 +95,5 @@ test('candidate diagnostics expose lastDate and yMarNSC from instrument identity
  assert.match(pilot,/آخرین تاریخ معامله=/);
  assert.match(pilot,/شناسه طبقه‌بندی بازار=/);
 });
+
+// Cache-busted diagnostic metadata assertions are covered above.
