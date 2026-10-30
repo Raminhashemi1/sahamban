@@ -8,12 +8,12 @@
  let quotes=[];
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:4}).format(n);
  const latest=values=>{for(let i=values.length-1;i>=0;i--)if(values[i]!==null&&Number.isFinite(values[i]))return values[i];return null;};
- const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\\n');};
+ const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\n');};
  if(copyDiagnostics)copyDiagnostics.addEventListener('click',async()=>{const report=diagnostics();try{await navigator.clipboard.writeText(report);status.textContent='گزارش کامل خطاها و شناسه‌های کاندیدا کپی شد؛ آن را همین‌جا جای‌گذاری کن.';}catch(e){const area=document.createElement('textarea');area.value=report;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();status.textContent=ok?'گزارش کامل کپی شد؛ آن را همین‌جا جای‌گذاری کن.':'کپی خودکار ممکن نشد؛ متن گزارش خطاها را از بخش نتیجه انتخاب و کپی کن.';}});
  function show(){
   const q=quotes.find(x=>x.symbol===selector.value);
   if(!q){result.textContent='برای نمایش تحلیل، ابتدا دریافت و اعتبارسنجی قیمت پایانی همه نمادها را با موفقیت اجرا کنید.';return;}
-  if(!Array.isArray(q.history)||!q.history.length){result.textContent='تاریخچه معتبر برای این نماد دریافت نشد؛ هیچ عددی حدس زده نمی‌شود.'+(q.error?'\nعلت اعلام‌شده از سرویس: '+q.error:'\nعلت دقیق از پاسخ سرویس در دسترس نیست.');return;}
+  if(!Array.isArray(q.history)||!q.history.length){result.textContent='تاریخچه معتبر برای این نماد دریافت نشد؛ هیچ عددی حدس زده نمی‌شود.'+(q.error?'\n\nگزارش کامل سرویس و مشخصات شناسه‌ها:\n'+q.error:'\nعلت دقیق از پاسخ سرویس در دسترس نیست.');return;}
   if(!window.SahambanTechnicalV50){result.textContent='نماد دریافت شد، اما کتابخانه اندیکاتورها بارگذاری نشده است. صفحه را دوباره باز کنید؛ فهرست نمادها فعال می‌ماند.';return;}
   try{
    const closes=q.history.map(x=>x.close);
