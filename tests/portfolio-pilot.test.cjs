@@ -12,6 +12,9 @@ assert.match(src,/localStorage\.setItem\(MAPPINGS_KEY/);
 assert.match(src,/شناسه ذخیره‌شده .* در این نوبت تأیید نشد/);
 assert.match(src,/const MAPPINGS_KEY='sahamban-instrument-mappings-v1'/);
 assert.match(src,/const HOLDINGS_KEY='sahamban-broker-holdings-v1'/);
+const historyHandler=src.slice(src.indexOf("const historyButton=$('technicalHistoryAllV50')"),src.indexOf('// Read-only startup verification'));
+assert.ok(historyHandler.includes('statusMessage('),'history operation must update its own visible status panel');
+assert.doesNotMatch(historyHandler,/\bsay\(/,'history operation must not overwrite portfolio status');
 assert.doesNotMatch(html,/<script[^>]*persian-ui/);
 assert.match(html,/تعداد، میانگین خرید و سایر اطلاعات سبد هرگز تغییر نمی‌کنند/);
 const server=http.createServer((req,res)=>{
