@@ -130,7 +130,9 @@
    (c.flowTitle?' | '+c.flowTitle:'')+
    (c.flow!=null?' | کد بازار='+c.flow:'')+
    (c.yVal?' | نوع ابزار='+c.yVal:'')+
-   (c.cgrValCot?' | گروه='+c.cgrValCot:'');
+   (c.cgrValCot?' | گروه='+c.cgrValCot:'')+
+   (c.lastDate?' | آخرین تاریخ معامله='+c.lastDate:'')+
+   (c.yMarNSC?' | شناسه طبقه‌بندی بازار='+c.yMarNSC:'');
  }
  function renderInstrumentMappingPanel(){
   const panel=$('instrumentMappingPanel');
@@ -235,6 +237,8 @@
     flowTitle:identity.flowTitle??candidate.flowTitle,
     yVal:identity.yVal??candidate.yVal,
     cgrValCot:identity.cgrValCot??candidate.cgrValCot,
+    lastDate:identity.lastDate??candidate.lastDate,
+    yMarNSC:identity.yMarNSC??candidate.yMarNSC,
     lVal30:identity.lVal30??candidate.lVal30,
     lVal18AFC:identity.lVal18AFC??candidate.lVal18AFC
    }:{}) ,identityError};
@@ -285,9 +289,11 @@
    const instrumentId=String(c.instrumentID??'').trim();
    const instrumentType=String(c.yVal??'').trim();
    const group=String(c.cgrValCot??'').trim();
+   const lastDate=String(c.lastDate??'').trim();
+   const marketClass=String(c.yMarNSC??'').trim();
    const identityError=String(c.identityError??'').trim();
    const insCode=String(c.insCode??x.quote?.insCode??x.insCode??'شناسه نامشخص');
-   return insCode+(label?' ('+label+')':'')+(cIsin?'؛ cIsin='+cIsin:'')+(instrumentId?'؛ instrumentID='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
+   return insCode+(label?' ('+label+')':'')+(cIsin?'؛ cIsin='+cIsin:'')+(instrumentId?'؛ instrumentID='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(lastDate?'؛ آخرین تاریخ معامله='+lastDate:'')+(marketClass?'؛ شناسه طبقه‌بندی بازار='+marketClass:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
   };
   if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
   throw Error('هیچ‌یک از '+fmt(candidates.length)+' شناسه دقیق برای '+holding.symbol+' تاریخچه معتبر نداشتند: '+checks.map(x=>describe(x)+'؛ '+x.error).join(' | '));
