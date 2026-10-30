@@ -17,15 +17,15 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.14/);
- assert.match(sw,/sahamban-static-v50-19/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.15/);
+ assert.match(sw,/sahamban-static-v50-20/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.14/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.15/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.14 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۹'));
+ assert.ok(tech.includes('v50.15 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۵ | تطبیق‌گر ۴۹.۰'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -42,8 +42,8 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.14/);
- assert.match(sw,/sahamban-static-v50-19/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.15/);
+ assert.match(sw,/sahamban-static-v50-20/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -72,7 +72,8 @@ test('instrument selection is explicit, local-only and revalidated against fresh
  assert.match(html,/id="instrumentMappingPanel"/);
  assert.match(pilot,/sahamban-instrument-mappings-v1/);
  assert.match(pilot,/تأیید و ذخیره انتخاب/);
- assert.match(pilot,/انتخاب ذخیره‌شده برای /);
+ assert.match(pilot,/انتخاب ذخیره‌شده /);
+ assert.match(pilot,/خودکار پاک شد/);
  assert.match(pilot,/برای اعمال، دریافت تاریخچه همه نمادها را دوباره اجرا کن/);
  assert.match(pilot,/localStorage\.setItem\(MAPPINGS_KEY/);
  assert.doesNotMatch(pilot,/localStorage\.setItem\(HOLDINGS_KEY/);

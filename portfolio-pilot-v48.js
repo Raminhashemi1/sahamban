@@ -256,12 +256,25 @@
   }));
   const valid=checks.filter(x=>x.ok);
   const savedMapping=readInstrumentMappings()[holding.symbol];
-  if(valid.length>1||savedMapping)mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
   if(savedMapping){
    const selected=valid.find(x=>String(x.insCode)===String(savedMapping));
    if(selected)return selected.quote;
-   throw Error('انتخاب ذخیره‌شده برای '+holding.symbol+' ('+savedMapping+') در بررسی تازه تاریخچه معتبر نداشت؛ سامانه به کاندیدای دیگری تغییر مسیر نمی‌دهد. انتخاب را پاک یا اصلاح کن.');
+   // A stale local mapping must not block discovery of a uniquely valid current history.
+   // Remove only the exact stale value observed above; never overwrite a concurrent user change.
+   const currentMappings=readInstrumentMappings();
+   if(String(currentMappings[holding.symbol]??'')!==String(savedMapping)){
+    throw Error('انتخاب ذخیره‌شده '+holding.symbol+' هنگام بررسی هم‌زمان تغییر کرد؛ برای جلوگیری از حذف انتخاب تازه، عملیات متوقف شد.');
+   }
+   delete currentMappings[holding.symbol];
+   const serialized=JSON.stringify(currentMappings);
+   localStorage.setItem(MAPPINGS_KEY,serialized);
+   const readBack=localStorage.getItem(MAPPINGS_KEY);
+   if(readBack!==serialized||Object.hasOwn(JSON.parse(readBack||'{}'),holding.symbol)){
+    throw Error('شناسه نامعتبر '+savedMapping+' برای '+holding.symbol+' شناسایی شد، اما پاک‌سازی امن آن از حافظه تأیید نشد؛ انتخاب دیگری اعمال نشد.');
+   }
+   statusMessage('شناسه ذخیره‌شده نامعتبر '+savedMapping+' برای '+holding.symbol+' خودکار پاک شد؛ گزینه‌های معتبر دوباره ارزیابی شدند. اطلاعات سبد تغییر نکرد.');
   }
+  if(valid.length>1)mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
   if(valid.length===1)return valid[0].quote;
   const describe=x=>{
    const c=x.candidate||{};
