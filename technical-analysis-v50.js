@@ -2,12 +2,14 @@
 /* v50.4 UI exposes per-symbol history validation failures and includes a DOM-table fallback. */
 (()=>{
  const $=id=>document.getElementById(id);
- const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50');
+ const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50'),copyDiagnostics=$('technicalCopyDiagnosticsV50');
  if(!selector||!result||!status)return;
  if(!window.SahambanTechnicalV50){status.textContent='کتابخانه محاسبه اندیکاتورها بارگذاری نشده است؛ فهرست نمادها پس از دریافت قیمت همچنان فعال می‌شود.';}
  let quotes=[];
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:4}).format(n);
  const latest=values=>{for(let i=values.length-1;i>=0;i--)if(values[i]!==null&&Number.isFinite(values[i]))return values[i];return null;};
+ const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\\n');};
+ if(copyDiagnostics)copyDiagnostics.addEventListener('click',async()=>{const report=diagnostics();try{await navigator.clipboard.writeText(report);status.textContent='گزارش کامل خطاها و شناسه‌های کاندیدا کپی شد؛ آن را همین‌جا جای‌گذاری کن.';}catch(e){const area=document.createElement('textarea');area.value=report;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();status.textContent=ok?'گزارش کامل کپی شد؛ آن را همین‌جا جای‌گذاری کن.':'کپی خودکار ممکن نشد؛ متن گزارش خطاها را از بخش نتیجه انتخاب و کپی کن.';}});
  function show(){
   const q=quotes.find(x=>x.symbol===selector.value);
   if(!q){result.textContent='برای نمایش تحلیل، ابتدا دریافت و اعتبارسنجی قیمت پایانی همه نمادها را با موفقیت اجرا کنید.';return;}
@@ -96,7 +98,7 @@
   if(quotes.length){
    selector.value=quotes[0].symbol;
    const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);
-   status.textContent='تاریخچه قابل استفاده برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شد.'+(failed.length?' نمادهای ناموفق و علت ثبت‌شده: '+failed.map(q=>q.symbol+': '+(q.error||'علت از سرویس گزارش نشده')).join(' | '):' همه نمادها موفق بودند.');
+   status.textContent='تاریخچه قابل استفاده برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شد.'+(failed.length?'؛ برای دیدن و کپی گزارش کامل شناسه‌های کاندیدا، نماد ناموفق را انتخاب کن و دکمه کپی گزارش را بزن.':' همه نمادها موفق بودند.');
    show();
   }else{
    result.textContent='هیچ نماد تأییدشده‌ای به بخش تکنیکال نرسید. دریافت قیمت پایانی همه نمادها را دوباره اجرا کنید و پیام وضعیت بخش کارگزاری را بررسی کنید.';
