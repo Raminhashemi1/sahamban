@@ -12,6 +12,9 @@ assert.match(src,/localStorage\.setItem\(MAPPINGS_KEY/);
 assert.match(src,/شناسه ذخیره‌شده .* در این نوبت تأیید نشد/);
 assert.match(src,/const MAPPINGS_KEY='sahamban-instrument-mappings-v1'/);
 assert.match(src,/const HOLDINGS_KEY='sahamban-broker-holdings-v1'/);
+const historyHandler=src.slice(src.indexOf("const historyButton=$('technicalHistoryAllV50')"),src.indexOf('// Read-only startup verification'));
+assert.ok(historyHandler.includes('statusMessage('),'history operation must update its own visible status panel');
+assert.doesNotMatch(historyHandler,/\bsay\(/,'history operation must not overwrite portfolio status');
 assert.doesNotMatch(html,/<script[^>]*persian-ui/);
 assert.match(html,/تعداد، میانگین خرید و سایر اطلاعات سبد هرگز تغییر نمی‌کنند/);
 const server=http.createServer((req,res)=>{
@@ -127,7 +130,7 @@ const server=http.createServer((req,res)=>{
   assert.match(selected?.resolutionNote||'',/30000000003/);
   const savedSelected=await page.evaluate(()=>window.__verifiedHistoryQuotes?.find(x=>x.symbol==='سهم4'));
   assert.equal(savedSelected?.insCode,'30000000008');
-  assert.match(await page.locator('#livePortfolioStatus').innerText(),/چند شناسه برای سهم3/);
+  assert.match(await page.locator('#technicalStatusV50').innerText(),/چند شناسه برای سهم3/);
   assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
   assert.ok(await page.locator('#instrumentMappingPanel select').count()>=2); // every unresolved saved/tied identity remains available for explicit review
   assert.equal(await page.locator('#instrumentMappingPanel select option').count(),5); // saved-but-unverified: 1 valid candidate; tied symbol: 2; plus 2 placeholders

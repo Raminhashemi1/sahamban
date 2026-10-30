@@ -326,21 +326,21 @@
   try{
    const holdings=readHoldings();
    mappingCandidates={};
-   say('دریافت تاریخچه مستقل برای '+fmt(holdings.length)+' نماد آغاز شد؛ اطلاعات سبد فقط خوانده می‌شود و تغییر نمی‌کند...');
+   statusMessage('دریافت تاریخچه مستقل برای '+fmt(holdings.length)+' نماد آغاز شد؛ اطلاعات سبد فقط خوانده می‌شود و تغییر نمی‌کند...');
    const outcomes=new Array(holdings.length);let next=0,completed=0;
    async function worker(){while(true){
     const i=next++;if(i>=holdings.length)return;
     try{outcomes[i]={ok:true,quote:await getHistoricalOne(holdings[i])};}
     catch(e){outcomes[i]={ok:false,symbol:holdings[i].symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message};}
-    completed++;say('تاریخچه: '+fmt(completed)+' از '+fmt(holdings.length)+' نماد بررسی شد؛ هنوز داده‌ای برای نمادهای ناموفق حدس زده نمی‌شود.');
+    completed++;statusMessage('تاریخچه: '+fmt(completed)+' از '+fmt(holdings.length)+' نماد بررسی شد؛ هنوز داده‌ای برای نمادهای ناموفق حدس زده نمی‌شود.');
    }}
    await Promise.all(Array.from({length:Math.min(3,holdings.length)},()=>worker()));
    renderInstrumentMappingPanel();
    const quotes=outcomes.map(x=>x.ok?x.quote:{symbol:x.symbol,marketDate:null,history:null,error:x.error});
    window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes}}));
    const good=outcomes.filter(x=>x.ok).length,failed=outcomes.filter(x=>!x.ok);
-   say('تاریخچه معتبر برای '+fmt(good)+' از '+fmt(holdings.length)+' نماد دریافت شد.'+(failed.length?' ناموفق: '+failed.map(x=>x.symbol+': '+x.error).join('؛ '):'')+'؛ اطلاعات سبد تغییری نکرد.');
-  }catch(e){say('دریافت تاریخچه انجام نشد: '+e.message+'؛ اطلاعات سبد دست‌نخورده ماند.');}
+   statusMessage('تاریخچه معتبر برای '+fmt(good)+' از '+fmt(holdings.length)+' نماد دریافت شد.'+(failed.length?' ناموفق: '+failed.map(x=>x.symbol+': '+x.error).join('؛ '):'')+'؛ اطلاعات سبد تغییری نکرد.');
+  }catch(e){statusMessage('دریافت تاریخچه انجام نشد: '+e.message+'؛ اطلاعات سبد دست‌نخورده ماند.');}
   finally{running=false;button.disabled=false;}
  });
 
