@@ -40,7 +40,7 @@ test('v50 selector can request real history for every portfolio symbol without f
 test('history failure reasons are visible in both selector labels and status details',()=>{
  assert.match(tech,/q\.error\?'\\n\\nگزارش کامل سرویس و مشخصات شناسه‌ها:/);
  assert.match(tech,/const failed=quotes\.filter/);
- assert.match(tech,/q\.error\|\|'علت از سرویس گزارش نشده'/);
+ assert.match(tech,/q\.error\|\|'سرویس علت مشخصی گزارش نکرده است\.'/);
  assert.match(tech,/تأیید نشد.*q\.error\.slice/);
 });
 
