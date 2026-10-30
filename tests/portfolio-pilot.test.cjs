@@ -135,7 +135,7 @@ const server=http.createServer((req,res)=>{
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
    const code=new URL(route.request().url()).pathname.split('/').at(-2);
    if(code==='30000000015')await route.fulfill({status:503,contentType:'application/json',body:'{}'});
-   else await route.continue();
+   else await route.fallback();
   });
   await page.locator('#technicalHistoryAllV50').click();
   await page.getByText('تاریخچه معتبر برای ۱۷ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
