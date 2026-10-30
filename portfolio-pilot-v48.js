@@ -283,14 +283,13 @@
   if(valid.length===1)return valid[0].quote;
   if(valid.length>1){
    // Operational fallback: among candidates with verified histories in the last
-   // 7 Tehran calendar days, use the uniquely freshest history. This distinguishes
-   // an actively traded instrument from stale duplicate listings without persisting
-   // an identity mapping. Equal latest dates remain ambiguous.
+   // 7 Tehran calendar days, use the uniquely freshest history. Equal latest dates
+   // remain ambiguous. The temporary selection is never persisted as an identity.
    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));
    const today=Date.UTC(parts.year,parts.month-1,parts.day);
    const recent=valid.map(x=>{
     const raw=String(x.candidate?.historyEndDate??'');
-    if(!/^\d{8}$/.test(raw))return null;
+    if(!/^\\d{8}$/.test(raw))return null;
     const y=+raw.slice(0,4),m=+raw.slice(4,6),d=+raw.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
     if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
     const age=Math.floor((today-dt.getTime())/86400000);
@@ -303,7 +302,6 @@
      const selected=freshest[0];
      return {...selected.quote,resolution:'unique-freshest-recent-history',resolutionNote:'شناسه '+selected.insCode+' به‌صورت موقت انتخاب شد؛ تاریخچه معتبر آن ('+newest+') از همه کاندیداهای دارای سابقه تازه جدیدتر و یکتا بود. این انتخاب در حافظه ذخیره نشده و هویت بازارِ ثبت‌شده در فایل اکسل را اثبات نمی‌کند.'};
     }
-   }
    }
    mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
   }
