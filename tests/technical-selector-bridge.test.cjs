@@ -73,7 +73,7 @@ test('instrument selection is explicit, local-only and revalidated against fresh
  assert.match(pilot,/sahamban-instrument-mappings-v1/);
  assert.match(pilot,/تأیید و ذخیره انتخاب/);
  assert.match(pilot,/انتخاب ذخیره‌شده /);
- assert.match(pilot,/خودکار پاک شد/);
+ assert.match(pilot,/شناسه حفظ شد و انتخاب خودکار دیگری انجام نشد/);
  assert.match(pilot,/برای اعمال، دریافت تاریخچه همه نمادها را دوباره اجرا کن/);
  assert.match(pilot,/localStorage\.setItem\(MAPPINGS_KEY/);
  assert.doesNotMatch(pilot,/localStorage\.setItem\(HOLDINGS_KEY/);

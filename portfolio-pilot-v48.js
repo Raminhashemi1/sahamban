@@ -265,27 +265,11 @@
   if(savedMapping){
    const selected=valid.find(x=>String(x.quote?.insCode)===String(savedMapping));
    if(selected)return selected.quote;
-   // A transient outage or a failed history fetch cannot prove a saved identity is stale.
-   // Preserve user data unless another verified candidate exists AND the saved code
-   // was absent from the exact-symbol search response (rather than merely failing fetch).
-   const savedCandidate=checks.find(x=>String(x.candidate?.insCode??x.insCode)===String(savedMapping));
-   if(!valid.length||savedCandidate&&!savedCandidate.ok){
-    throw Error('شناسه ذخیره‌شده '+savedMapping+' برای '+holding.symbol+' تأیید نشد؛ احتمال خطای ارتباطی یا داده ناقص وجود دارد. انتخاب ذخیره‌شده حفظ شد.');
-   }
-   // A stale local mapping must not block discovery of a uniquely valid current history.
-   // Remove only the exact stale value observed above; never overwrite a concurrent user change.
-   const currentMappings=readInstrumentMappings();
-   if(String(currentMappings[holding.symbol]??'')!==String(savedMapping)){
-    throw Error('انتخاب ذخیره‌شده '+holding.symbol+' هنگام بررسی هم‌زمان تغییر کرد؛ برای جلوگیری از حذف انتخاب تازه، عملیات متوقف شد.');
-   }
-   delete currentMappings[holding.symbol];
-   const serialized=JSON.stringify(currentMappings);
-   localStorage.setItem(MAPPINGS_KEY,serialized);
-   const readBack=localStorage.getItem(MAPPINGS_KEY);
-   if(readBack!==serialized||Object.hasOwn(JSON.parse(readBack||'{}'),holding.symbol)){
-    throw Error('شناسه نامعتبر '+savedMapping+' برای '+holding.symbol+' شناسایی شد، اما پاک‌سازی امن آن از حافظه تأیید نشد؛ انتخاب دیگری اعمال نشد.');
-   }
-   statusMessage('شناسه ذخیره‌شده نامعتبر '+savedMapping+' برای '+holding.symbol+' خودکار پاک شد؛ گزینه‌های معتبر دوباره ارزیابی شدند. اطلاعات سبد تغییر نکرد.');
+   // A missing candidate or failed history is not proof that a saved mapping is stale:
+   // search responses can be incomplete and market APIs can fail transiently.
+   // Never delete or replace a saved identity automatically.
+   if(valid.length)mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
+   throw Error('شناسه ذخیره‌شده '+savedMapping+' برای '+holding.symbol+' در این نوبت تأیید نشد؛ ممکن است پاسخ جست‌وجو ناقص یا سرویس بازار موقتاً مختل باشد. شناسه حفظ شد و انتخاب خودکار دیگری انجام نشد.');
   }
   if(valid.length===1)return valid[0].quote;
   if(valid.length>1){
