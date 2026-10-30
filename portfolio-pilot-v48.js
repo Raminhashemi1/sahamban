@@ -280,8 +280,27 @@
    }
    statusMessage('شناسه ذخیره‌شده نامعتبر '+savedMapping+' برای '+holding.symbol+' خودکار پاک شد؛ گزینه‌های معتبر دوباره ارزیابی شدند. اطلاعات سبد تغییر نکرد.');
   }
-  if(valid.length>1)mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
   if(valid.length===1)return valid[0].quote;
+  if(valid.length>1){
+   // Safe operational fallback: if exactly one candidate has a verified history ending
+   // within the last 7 Tehran calendar days, use it for technical history in this session.
+   // This is deliberately NOT persisted as an instrument identity mapping.
+   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));
+   const today=Date.UTC(parts.year,parts.month-1,parts.day);
+   const recent=valid.filter(x=>{
+    const raw=String(x.candidate?.historyEndDate??'');
+    if(!/^\\d{8}$/.test(raw))return false;
+    const y=+raw.slice(0,4),m=+raw.slice(4,6),d=+raw.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
+    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return false;
+    const age=Math.floor((today-dt.getTime())/86400000);
+    return age>=0&&age<=7;
+   });
+   if(recent.length===1){
+    const selected=recent[0];
+    return {...selected.quote,resolution:'unique-recent-history',resolutionNote:'شناسه '+selected.insCode+' به‌صورت موقت برای تحلیل انتخاب شد؛ تنها کاندیدای دارای تاریخچه معتبر در ۷ روز اخیر بود. این انتخاب در حافظه ذخیره نشده و هویت بازارِ ثبت‌شده در فایل اکسل را اثبات نمی‌کند.'};
+   }
+   mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
+  }
   const describe=x=>{
    const c=x.candidate||{};
    const label=String(c.lVal30??c.lVal18AFC??'').trim();
