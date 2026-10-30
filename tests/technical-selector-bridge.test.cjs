@@ -97,3 +97,11 @@ test('candidate diagnostics expose lastDate and yMarNSC from instrument identity
 });
 
 // Cache-busted diagnostic metadata assertions are covered above.
+
+test('candidate diagnostics ignore zero lastDate and expose actual verified history range and count',()=>{
+ assert.match(pilot,/const lastDateRaw=String\(c\.lastDate\?\?' '\)/);
+ assert.match(pilot,/const lastDate=\/\^\\\\d\{8\}\$\//);
+ assert.match(pilot,/historyStartDate,historyEndDate,historyCount:history\.length/);
+ assert.match(pilot,/بازه تاریخچه معتبر=/);
+ assert.match(pilot,/تعداد رکوردهای تاریخچه=/);
+});
