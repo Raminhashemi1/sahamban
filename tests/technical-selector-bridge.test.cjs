@@ -23,6 +23,11 @@ test('HTML and service worker load cache-busted selector and broker scripts',()=
  assert.match(sw,/technical-analysis-v50\.js\?v=50\.10/);
 });
 
+test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
+ assert.match(tech,/v50\\.10 UI/);
+ assert.match(tech,/نسخه گزارش: تحلیل ۵۰\\.۱۰ \\| تطبیق‌گر ۴۸\\.۶/);
+});
+
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
  assert.match(html,/technicalHistoryAllV50/);
  assert.match(pilot,/getHistoricalOne/);
