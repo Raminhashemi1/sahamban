@@ -29,7 +29,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.match(pilot,/GetInstrumentSearch/);
  assert.match(pilot,/GetClosingPriceDailyList/);
  assert.match(pilot,/sahamban:verified-historical-quotes-v50/);
- assert.match(pilot,/rowsValid\.length<15/);
+ assert.match(pilot,/history\.length<15/);
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
