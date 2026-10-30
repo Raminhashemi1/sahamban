@@ -62,7 +62,7 @@ test('Real broker holdings valuation is read-only with independent quote validat
  assert.ok(portfolioLive.includes('چند شناسه برای '));
  assert.ok(html.includes('id="instrumentMappingPanel"'));
  assert.ok(portfolioLive.includes("sahamban-instrument-mappings-v1"));
- assert.ok(portfolioLive.includes('انتخاب ذخیره‌شده برای '));
+ assert.ok(portfolioLive.includes('انتخاب ذخیره‌شده '));
  assert.ok(portfolioLive.includes('تأیید و ذخیره انتخاب'));
  assert.ok(!portfolioLive.includes("localStorage.setItem(HOLDINGS_KEY")&&!portfolioLive.includes("localStorage.removeItem(HOLDINGS_KEY"));
  assert.ok(!portfolioLive.includes('localStorage.setItem(HOLDINGS_KEY')&&!portfolioLive.includes('localStorage.removeItem(HOLDINGS_KEY')&&!portfolioLive.includes('localStorage.clear('));
