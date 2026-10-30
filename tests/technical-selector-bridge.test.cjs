@@ -17,15 +17,15 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.12/);
- assert.match(sw,/sahamban-static-v50-17/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.13/);
+ assert.match(sw,/sahamban-static-v50-18/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.12/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.13/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.12 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۷'));
+ assert.ok(tech.includes('v50.13 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۸'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -42,8 +42,8 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.12/);
- assert.match(sw,/sahamban-static-v50-17/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.13/);
+ assert.match(sw,/sahamban-static-v50-18/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -66,4 +66,14 @@ test('ambiguous symbol diagnostics expose full candidate metadata and a copy act
  assert.match(tech,/گزارش کامل کپی شد/);
  assert.match(tech,/q\.error/);
  assert.match(tech,/گزارش تشخیصی تاریخچه نمادها/);
+});
+
+test('instrument selection is explicit, local-only and revalidated against fresh history',()=>{
+ assert.match(html,/id="instrumentMappingPanel"/);
+ assert.match(pilot,/sahamban-instrument-mappings-v1/);
+ assert.match(pilot,/تأیید و ذخیره انتخاب/);
+ assert.match(pilot,/انتخاب ذخیره‌شده برای /);
+ assert.match(pilot,/برای اعمال آن، دوباره دریافت تاریخچه همه نمادها را اجرا کن/);
+ assert.match(pilot,/localStorage\.setItem\(MAPPINGS_KEY/);
+ assert.doesNotMatch(pilot,/localStorage\.setItem\(HOLDINGS_KEY/);
 });
