@@ -18,7 +18,7 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.19/);
- assert.match(sw,/sahamban-static-v50-25/);
+ assert.match(sw,/sahamban-static-v50-26/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
  assert.match(sw,/technical-analysis-v50\.js\?v=50\.19/);
 });
@@ -43,7 +43,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.19/);
- assert.match(sw,/sahamban-static-v50-25/);
+ assert.match(sw,/sahamban-static-v50-26/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -106,7 +106,7 @@ test('candidate diagnostics ignore zero lastDate and expose actual verified hist
 });
 
 test('recent-history date matcher uses a single-digit-class escape and accepts real YYYYMMDD dates',()=>{
- assert.ok(pilot.includes("if(!/^\\d{8}$/.test(raw))return false;"));
+ assert.ok(pilot.includes("if(!/^\\d{8}$/.test(raw))return null;"));
  assert.ok(!pilot.includes("if(!/^\\\\d{8}$/.test(raw))return false;"));
  const datePattern=/^\d{8}$/;
  assert.equal(datePattern.test('20261028'),true);
@@ -114,9 +114,9 @@ test('recent-history date matcher uses a single-digit-class escape and accepts r
 });
 
 test('unique recent historical candidate is selected for this session without persisting a market mapping',()=>{
- assert.match(pilot,/unique-recent-history/);
+ assert.match(pilot,/unique-freshest-recent-history/);
  assert.match(pilot,/age>=0&&age<=7/);
- assert.match(pilot,/recent\.length===1/);
+ assert.match(pilot,/freshest\.length===1/);
  assert.match(pilot,/این انتخاب در حافظه ذخیره نشده/);
  assert.match(pilot,/mappingCandidates\[holding\.symbol\]=valid\.map/);
  assert.match(tech,/q\.resolutionNote/);
