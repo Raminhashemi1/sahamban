@@ -111,7 +111,7 @@ const server=http.createServer((req,res)=>{
   const mappings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1')||'{}'));
   assert.deepEqual(mappings,{});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
-  assert.match(await page.locator('#technicalStatusV50').innerText(),/چند شناسه برای سهم2/);
+  assert.match(await page.locator('#livePortfolioStatus').innerText(),/چند شناسه برای سهم2/);
   assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
   assert.equal(await page.locator('#instrumentMappingPanel select option').count(),3); // placeholder + 2 candidates
   console.log('PASS: stale mapping auto-clear, unique alternative acceptance, ambiguity retained, holdings untouched');
