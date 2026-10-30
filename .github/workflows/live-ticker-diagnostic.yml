@@ -1,0 +1,13 @@
+name: Temporary live ticker history diagnostic
+on:
+  push:
+    branches: [diagnostic/live-ticker-history]
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: node scripts/live-ticker-diagnostic.cjs
