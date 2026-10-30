@@ -282,22 +282,26 @@
   }
   if(valid.length===1)return valid[0].quote;
   if(valid.length>1){
-   // Safe operational fallback: if exactly one candidate has a verified history ending
-   // within the last 7 Tehran calendar days, use it for technical history in this session.
-   // This is deliberately NOT persisted as an instrument identity mapping.
+   // Operational fallback: among candidates with verified histories in the last
+   // 7 Tehran calendar days, use the uniquely freshest history. Equal latest dates
+   // remain ambiguous. The temporary selection is never persisted as an identity.
    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));
    const today=Date.UTC(parts.year,parts.month-1,parts.day);
-   const recent=valid.filter(x=>{
+   const recent=valid.map(x=>{
     const raw=String(x.candidate?.historyEndDate??'');
-    if(!/^\d{8}$/.test(raw))return false;
+    if(!/^\d{8}$/.test(raw))return null;
     const y=+raw.slice(0,4),m=+raw.slice(4,6),d=+raw.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
-    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return false;
+    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
     const age=Math.floor((today-dt.getTime())/86400000);
-    return age>=0&&age<=7;
-   });
-   if(recent.length===1){
-    const selected=recent[0];
-    return {...selected.quote,resolution:'unique-recent-history',resolutionNote:'شناسه '+selected.insCode+' به‌صورت موقت برای تحلیل انتخاب شد؛ تنها کاندیدای دارای تاریخچه معتبر در ۷ روز اخیر بود. این انتخاب در حافظه ذخیره نشده و هویت بازارِ ثبت‌شده در فایل اکسل را اثبات نمی‌کند.'};
+    return age>=0&&age<=7?{...x,historyDate:raw}:null;
+   }).filter(Boolean);
+   if(recent.length){
+    const newest=recent.reduce((best,x)=>x.historyDate>best?x.historyDate:best,'');
+    const freshest=recent.filter(x=>x.historyDate===newest);
+    if(freshest.length===1){
+     const selected=freshest[0];
+     return {...selected.quote,resolution:'unique-freshest-recent-history',resolutionNote:'شناسه '+(selected.quote?.insCode??selected.insCode)+' به‌صورت موقت انتخاب شد؛ تاریخچه معتبر آن ('+newest+') از همه کاندیداهای دارای سابقه تازه جدیدتر و یکتا بود. این انتخاب در حافظه ذخیره نشده و هویت بازارِ ثبت‌شده در فایل اکسل را اثبات نمی‌کند.'};
+    }
    }
    mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
   }
