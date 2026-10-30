@@ -292,7 +292,7 @@
    const instrumentType=String(c.yVal??'').trim();
    const group=String(c.cgrValCot??'').trim();
    const lastDateRaw=String(c.lastDate??'').trim();
-   const lastDate=/^\\d{8}$/.test(lastDateRaw)?lastDateRaw:'';
+   const lastDate=/^\d{8}$/.test(lastDateRaw)?lastDateRaw:'';
    const historyStartDate=String(c.historyStartDate??'').trim();
    const historyEndDate=String(c.historyEndDate??'').trim();
    const historyCount=Number(c.historyCount);
