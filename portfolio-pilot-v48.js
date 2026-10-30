@@ -120,6 +120,23 @@
   if(candidates.length>10)throw Error('برای '+holding.symbol+' بیش از ۱۰ شناسه دقیق برگشت؛ بررسی خودکار متوقف شد تا از انتخاب اشتباه جلوگیری شود.');
   const checks=await Promise.all(candidates.map(async candidate=>{
    const insCode=String(candidate.insCode);
+   let identity=null,identityError='';
+   try{
+    const identityResponse=await fetchJson('/Instrument/GetInstrumentInfo/'+insCode);
+    const rawIdentity=identityResponse?.instrumentInfo??identityResponse;
+    if(rawIdentity&&String(rawIdentity.insCode??insCode)===insCode)identity=rawIdentity;
+    else identityError='پاسخ مشخصات ابزار با شناسه درخواست‌شده تطبیق نداشت.';
+   }catch(identityFailure){identityError=identityFailure.name==='AbortError'?'مهلت دریافت مشخصات هویتی تمام شد':identityFailure.message;}
+   const enrichedCandidate={...candidate,...(identity?{
+    cIsin:identity.cIsin??candidate.cIsin,
+    instrumentID:identity.instrumentID??candidate.instrumentID,
+    flow:identity.flow??candidate.flow,
+    flowTitle:identity.flowTitle??candidate.flowTitle,
+    yVal:identity.yVal??candidate.yVal,
+    cgrValCot:identity.cgrValCot??candidate.cgrValCot,
+    lVal30:identity.lVal30??candidate.lVal30,
+    lVal18AFC:identity.lVal18AFC??candidate.lVal18AFC
+   }:{}) ,identityError};
    try{
     const data=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
     const daily=data?.closingPriceDaily;
@@ -133,8 +150,8 @@
     }).filter(Boolean).sort((x,y)=>x.date.localeCompare(y.date));
     const unique=new Set(history.map(x=>x.date));
     if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
-    return {ok:true,quote:{symbol:holding.symbol,marketDate:history[history.length-1].date,history:history.slice(-250),insCode},candidate};
-   }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate};}
+    return {ok:true,quote:{symbol:holding.symbol,marketDate:history[history.length-1].date,history:history.slice(-250),insCode},candidate:enrichedCandidate};
+   }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);
   if(valid.length===1)return valid[0].quote;
@@ -142,9 +159,14 @@
    const c=x.candidate||{};
    const label=String(c.lVal30??c.lVal18AFC??'').trim();
    const isin=String(c.cIsin??'').trim();
-   const flow=c.flow==null?'':'؛ بازار='+String(c.flow);
+   const flowTitle=String(c.flowTitle??'').trim();
+   const flow=c.flow==null?'':'؛ کد بازار='+String(c.flow);
+   const instrumentId=String(c.instrumentID??'').trim();
+   const instrumentType=String(c.yVal??'').trim();
+   const group=String(c.cgrValCot??'').trim();
+   const identityError=String(c.identityError??'').trim();
    const insCode=String(c.insCode??x.quote?.insCode??x.insCode??'شناسه نامشخص');
-   return insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+flow;
+   return insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+(instrumentId?'؛ شناسه هویتی='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
   };
   if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
   throw Error('هیچ‌یک از '+fmt(candidates.length)+' شناسه دقیق برای '+holding.symbol+' تاریخچه معتبر نداشتند: '+checks.map(x=>describe(x)+'؛ '+x.error).join(' | '));
