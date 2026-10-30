@@ -82,7 +82,7 @@ const server=http.createServer((req,res)=>{
   // Stale saved mappings are cleared only after fresh validation. A unique valid
   // alternative is accepted; multiple valid alternatives remain explicitly ambiguous.
   const holdingsBeforeHistory=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
-  await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم1':'99999999991','سهم2':'99999999992'})));
+  await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم1':'99999999991','سهم2':'99999999992','سهم4':'30000000008'})));
   await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
    const symbol=decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
    const i=Number(symbol.replace('سهم',''));
@@ -92,6 +92,8 @@ const server=http.createServer((req,res)=>{
      ?[{insCode:'30000000003',lVal18AFC:symbol},{insCode:'30000000004',lVal18AFC:symbol}]
      :i===3
       ?[{insCode:'30000000005',lVal18AFC:symbol},{insCode:'30000000006',lVal18AFC:symbol}]
+      :i===4
+       ?[{insCode:'30000000007',lVal18AFC:symbol},{insCode:'30000000008',lVal18AFC:symbol}]
       :[{insCode:String(30000000000+i+10),lVal18AFC:symbol}];
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:candidates})});
   });
@@ -118,11 +120,13 @@ const server=http.createServer((req,res)=>{
   await page.locator('#technicalHistoryAllV50').click();
   await page.getByText('تاریخچه معتبر برای ۱۸ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
   const mappings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1')||'{}'));
-  assert.deepEqual(mappings,{});
+  assert.deepEqual(mappings,{'سهم4':'30000000008'});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
   const selected=await page.evaluate(()=>window.__verifiedHistoryQuotes?.find(x=>x.symbol==='سهم2'));
   assert.equal(selected?.resolution,'unique-freshest-recent-history');
   assert.match(selected?.resolutionNote||'',/30000000003/);
+  const savedSelected=await page.evaluate(()=>window.__verifiedHistoryQuotes?.find(x=>x.symbol==='سهم4'));
+  assert.equal(savedSelected?.insCode,'30000000008');
   assert.match(await page.locator('#livePortfolioStatus').innerText(),/چند شناسه برای سهم3/);
   assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
   assert.equal(await page.locator('#instrumentMappingPanel select option').count(),3); // placeholder + 2 tied candidates
