@@ -130,6 +130,17 @@ const server=http.createServer((req,res)=>{
   assert.match(await page.locator('#livePortfolioStatus').innerText(),/چند شناسه برای سهم3/);
   assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
   assert.equal(await page.locator('#instrumentMappingPanel select option').count(),3); // placeholder + 2 tied candidates
+  // Network failures must not erase a previously saved instrument identity.
+  await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم5':'30000000015'})));
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
+   const code=new URL(route.request().url()).pathname.split('/').at(-2);
+   if(code==='30000000015')await route.fulfill({status:503,contentType:'application/json',body:'{}'});
+   else await route.fallback();
+  });
+  await page.locator('#technicalHistoryAllV50').click();
+  await page.getByText(/تاریخچه معتبر برای .* از ۱۹ نماد دریافت شد/).waitFor({timeout:40000});
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1'))['سهم5']),'30000000015');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
   console.log('PASS: stale mapping auto-clear, freshest unique recent history auto-resolution, tied candidates remain ambiguous, holdings untouched');
  }finally{
   await browser.close();await new Promise(r=>server.close(r));

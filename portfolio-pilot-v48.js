@@ -265,6 +265,13 @@
   if(savedMapping){
    const selected=valid.find(x=>String(x.quote?.insCode)===String(savedMapping));
    if(selected)return selected.quote;
+   // A transient outage or a failed history fetch cannot prove a saved identity is stale.
+   // Preserve user data unless another verified candidate exists AND the saved code
+   // was absent from the exact-symbol search response (rather than merely failing fetch).
+   const savedCandidate=checks.find(x=>String(x.candidate?.insCode??x.insCode)===String(savedMapping));
+   if(!valid.length||savedCandidate&&!savedCandidate.ok){
+    throw Error('شناسه ذخیره‌شده '+savedMapping+' برای '+holding.symbol+' تأیید نشد؛ احتمال خطای ارتباطی یا داده ناقص وجود دارد. انتخاب ذخیره‌شده حفظ شد.');
+   }
    // A stale local mapping must not block discovery of a uniquely valid current history.
    // Remove only the exact stale value observed above; never overwrite a concurrent user change.
    const currentMappings=readInstrumentMappings();
