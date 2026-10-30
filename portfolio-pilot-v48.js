@@ -255,7 +255,9 @@
     }).filter(Boolean).sort((x,y)=>x.date.localeCompare(y.date));
     const unique=new Set(history.map(x=>x.date));
     if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
-    return {ok:true,quote:{symbol:holding.symbol,marketDate:history[history.length-1].date,history:history.slice(-250),insCode},candidate:enrichedCandidate};
+    const historyStartDate=history[0].date,historyEndDate=history[history.length-1].date;
+    const diagnosticCandidate={...enrichedCandidate,historyStartDate,historyEndDate,historyCount:history.length};
+    return {ok:true,quote:{symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode},candidate:diagnosticCandidate};
    }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);
@@ -289,11 +291,15 @@
    const instrumentId=String(c.instrumentID??'').trim();
    const instrumentType=String(c.yVal??'').trim();
    const group=String(c.cgrValCot??'').trim();
-   const lastDate=String(c.lastDate??'').trim();
+   const lastDateRaw=String(c.lastDate??'').trim();
+   const lastDate=/^\\d{8}$/.test(lastDateRaw)?lastDateRaw:'';
+   const historyStartDate=String(c.historyStartDate??'').trim();
+   const historyEndDate=String(c.historyEndDate??'').trim();
+   const historyCount=Number(c.historyCount);
    const marketClass=String(c.yMarNSC??'').trim();
    const identityError=String(c.identityError??'').trim();
    const insCode=String(c.insCode??x.quote?.insCode??x.insCode??'شناسه نامشخص');
-   return insCode+(label?' ('+label+')':'')+(cIsin?'؛ cIsin='+cIsin:'')+(instrumentId?'؛ instrumentID='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(lastDate?'؛ آخرین تاریخ معامله='+lastDate:'')+(marketClass?'؛ شناسه طبقه‌بندی بازار='+marketClass:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
+   return insCode+(label?' ('+label+')':'')+(cIsin?'؛ cIsin='+cIsin:'')+(instrumentId?'؛ instrumentID='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(lastDate?'؛ آخرین تاریخ معامله ثبت‌شده در مشخصات ابزار='+lastDate:'')+(historyStartDate&&historyEndDate?'؛ بازه تاریخچه معتبر='+historyStartDate+' تا '+historyEndDate:'')+(Number.isFinite(historyCount)&&historyCount>0?'؛ تعداد رکوردهای تاریخچه='+historyCount:'')+(marketClass?'؛ شناسه طبقه‌بندی بازار='+marketClass:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
   };
   if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
   throw Error('هیچ‌یک از '+fmt(candidates.length)+' شناسه دقیق برای '+holding.symbol+' تاریخچه معتبر نداشتند: '+checks.map(x=>describe(x)+'؛ '+x.error).join(' | '));
