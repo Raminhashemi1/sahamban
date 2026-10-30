@@ -130,7 +130,7 @@ const server=http.createServer((req,res)=>{
   assert.match(await page.locator('#livePortfolioStatus').innerText(),/چند شناسه برای سهم3/);
   assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
   assert.equal(await page.locator('#instrumentMappingPanel select').count(),2); // saved-but-unverified symbol and tied symbol
-  assert.equal(await page.locator('#instrumentMappingPanel select option').count(),6); // each selector has placeholder + 2 candidates
+  assert.equal(await page.locator('#instrumentMappingPanel select option').count(),5); // saved-but-unverified: 1 valid candidate; tied symbol: 2; plus 2 placeholders
   // Network failures must not erase a previously saved instrument identity.
   await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم5':'30000000015'})));
   await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
