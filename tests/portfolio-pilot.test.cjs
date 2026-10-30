@@ -12,7 +12,7 @@ assert.match(src,/localStorage\.setItem\(MAPPINGS_KEY/);
 assert.match(src,/const MAPPINGS_KEY='sahamban-instrument-mappings-v1'/);
 assert.match(src,/const HOLDINGS_KEY='sahamban-broker-holdings-v1'/);
 assert.doesNotMatch(html,/<script[^>]*persian-ui/);
-assert.match(html,/در حافظه گوشی ذخیره، پاک یا جایگزین نمی‌کند/);
+assert.match(html,/تعداد، میانگین خرید و سایر اطلاعات سبد هرگز تغییر نمی‌کنند/);
 const server=http.createServer((req,res)=>{
  const file=new URL(req.url,'http://localhost').pathname.split('/').at(-1);
  if(!['portfolio-pilot.html','portfolio-pilot-v48.js'].includes(file)){res.writeHead(404);res.end();return;}
