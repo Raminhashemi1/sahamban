@@ -116,20 +116,37 @@
   const rows=search?.instrumentSearch;
   if(!Array.isArray(rows))throw Error('ساختار جست‌وجوی '+holding.symbol+' معتبر نیست.');
   const candidates=[...new Map(rows.filter(x=>norm(x.lVal18AFC)===holding.key&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>[String(x.insCode),x])).values()];
-  if(candidates.length!==1)throw Error(candidates.length?'شناسه دقیق نماد یکتا نیست.':'شناسه دقیق نماد پیدا نشد.');
-  const data=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+candidates[0].insCode+'/0');
-  const daily=data?.closingPriceDaily;
-  if(!Array.isArray(daily))throw Error('پاسخ تاریخچه ساختار معتبر ندارد.');
-  const rowsValid=daily.map(row=>{
-   const date=String(row?.dEven??''),close=Number(row?.pClosing);
-   if(!/^\d{8}$/.test(date)||!Number.isFinite(close)||close<=0)return null;
-   const y=+date.slice(0,4),m=+date.slice(4,6),d=+date.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
-   if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
-   return {date,close};
-  }).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
-  const unique=new Set(rowsValid.map(x=>x.date));
-  if(rowsValid.length<15||unique.size!==rowsValid.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
-  return {symbol:holding.symbol,marketDate:rowsValid[rowsValid.length-1].date,history:rowsValid.slice(-250),insCode:String(candidates[0].insCode)};
+  if(!candidates.length)throw Error('شناسه دقیق نماد پیدا نشد.');
+  if(candidates.length>10)throw Error('برای '+holding.symbol+' بیش از ۱۰ شناسه دقیق برگشت؛ بررسی خودکار متوقف شد تا از انتخاب اشتباه جلوگیری شود.');
+  const checks=await Promise.all(candidates.map(async candidate=>{
+   const insCode=String(candidate.insCode);
+   try{
+    const data=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
+    const daily=data?.closingPriceDaily;
+    if(!Array.isArray(daily))throw Error('پاسخ تاریخچه ساختار معتبر ندارد.');
+    const history=daily.map(row=>{
+     const date=String(row?.dEven??''),close=Number(row?.pClosing);
+     if(!/^\\d{8}$/.test(date)||!Number.isFinite(close)||close<=0)return null;
+     const y=+date.slice(0,4),m=+date.slice(4,6),d=+date.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
+     if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
+     return {date,close};
+    }).filter(Boolean).sort((x,y)=>x.date.localeCompare(y.date));
+    const unique=new Set(history.map(x=>x.date));
+    if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
+    return {ok:true,quote:{symbol:holding.symbol,marketDate:history[history.length-1].date,history:history.slice(-250),insCode},candidate};
+   }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate};}
+  }));
+  const valid=checks.filter(x=>x.ok);
+  if(valid.length===1)return valid[0].quote;
+  const describe=x=>{
+   const c=x.candidate||{};
+   const label=String(c.lVal30??c.lVal18AFC??'').trim();
+   const isin=String(c.cIsin??'').trim();
+   const flow=c.flow==null?'':'؛ بازار='+String(c.flow);
+   return x.insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+flow;
+  };
+  if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
+  throw Error('هیچ‌یک از '+fmt(candidates.length)+' شناسه دقیق برای '+holding.symbol+' تاریخچه معتبر نداشتند: '+checks.map(x=>describe(x)+'؛ '+x.error).join(' | '));
  }
  const historyButton=$('technicalHistoryAllV50');
  if(historyButton)historyButton.addEventListener('click',async()=>{
