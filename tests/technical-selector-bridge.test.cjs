@@ -18,7 +18,7 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.16/);
- assert.match(sw,/sahamban-static-v50-21/);
+ assert.match(sw,/sahamban-static-v50-22/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
  assert.match(sw,/technical-analysis-v50\.js\?v=50\.16/);
 });
@@ -43,7 +43,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.16/);
- assert.match(sw,/sahamban-static-v50-21/);
+ assert.match(sw,/sahamban-static-v50-22/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -92,8 +92,15 @@ test('instrument mapping save and clear operations verify exact localStorage rea
 test('candidate diagnostics expose lastDate and yMarNSC from instrument identity metadata',()=>{
  assert.match(pilot,/lastDate:identity\.lastDate\?\?candidate\.lastDate/);
  assert.match(pilot,/yMarNSC:identity\.yMarNSC\?\?candidate\.yMarNSC/);
- assert.match(pilot,/آخرین تاریخ معامله=/);
+ assert.match(pilot,/آخرین تاریخ معامله ثبت‌شده در مشخصات ابزار=/);
  assert.match(pilot,/شناسه طبقه‌بندی بازار=/);
 });
 
 // Cache-busted diagnostic metadata assertions are covered above.
+
+test('candidate diagnostics ignore zero lastDate and expose actual verified history range and count',()=>{
+ assert.ok(pilot.includes('const lastDate=/^\\d{8}$/'));
+ assert.ok(pilot.includes('historyStartDate,historyEndDate,historyCount:history.length'));
+ assert.ok(pilot.includes('بازه تاریخچه معتبر='));
+ assert.ok(pilot.includes('تعداد رکوردهای تاریخچه='));
+});
