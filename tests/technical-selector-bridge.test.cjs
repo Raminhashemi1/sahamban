@@ -43,7 +43,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.17/);
- assert.match(sw,/sahamban-static-v50-22/);
+ assert.match(sw,/sahamban-static-v50-23/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
