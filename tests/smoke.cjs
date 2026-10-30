@@ -52,8 +52,8 @@ test('App script and service worker version match',()=>{
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
- assert.ok(html.includes('portfolio-pilot-v48.js?v=48.6'));
- assert.ok(sw.includes('portfolio-pilot-v48.js?v=48.6'));
+ assert.ok(html.includes('portfolio-pilot-v48.js?v=48.7'));
+ assert.ok(sw.includes('portfolio-pilot-v48.js?v=48.7'));
  assert.ok(portfolioLive.includes("sahamban-broker-holdings-v1"));
  assert.ok(portfolioLive.includes("GetClosingPriceDailyList"));
  assert.ok(portfolioLive.includes('const checks=await Promise.all(candidates.map(async candidate=>')); 

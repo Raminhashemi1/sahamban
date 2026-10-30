@@ -17,15 +17,15 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.11/);
- assert.match(sw,/sahamban-static-v50-16/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.12/);
+ assert.match(sw,/sahamban-static-v50-17/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.11/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.12/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.10 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۰ | تطبیق‌گر ۴۸.۶'));
+ assert.ok(tech.includes('v50.12 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۷'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -42,8 +42,8 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.11/);
- assert.match(sw,/sahamban-static-v50-16/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.12/);
+ assert.match(sw,/sahamban-static-v50-17/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
@@ -51,6 +51,13 @@ test('history failure reasons are visible in both selector labels and status det
  assert.match(tech,/const failed=quotes\.filter/);
  assert.match(tech,/q\.error\|\|'سرویس علت مشخصی گزارش نکرده است\.'/);
  assert.match(tech,/تأیید نشد.*q\.error\.slice/);
+});
+
+test('candidate diagnostics label cIsin and instrumentID as their exact API fields',()=>{
+ assert.match(pilot,/؛ cIsin=/);
+ assert.match(pilot,/؛ instrumentID=/);
+ assert.doesNotMatch(pilot,/؛ ISIN=/);
+ assert.doesNotMatch(pilot,/؛ شناسه هویتی=/);
 });
 
 test('ambiguous symbol diagnostics expose full candidate metadata and a copy action',()=>{
