@@ -18,14 +18,14 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.13/);
- assert.match(sw,/sahamban-static-v50-18/);
+ assert.match(sw,/sahamban-static-v50-19/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
  assert.match(sw,/technical-analysis-v50\.js\?v=50\.13/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
  assert.ok(tech.includes('v50.13 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۸'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۹'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -76,4 +76,14 @@ test('instrument selection is explicit, local-only and revalidated against fresh
  assert.match(pilot,/برای اعمال آن، دوباره دریافت تاریخچه همه نمادها را اجرا کن/);
  assert.match(pilot,/localStorage\.setItem\(MAPPINGS_KEY/);
  assert.doesNotMatch(pilot,/localStorage\.setItem\(HOLDINGS_KEY/);
+});
+
+test('instrument mapping save and clear operations verify exact localStorage readback and show per-row status',()=>{
+ assert.match(pilot,/const savedStatus=document\.createElement\('p'\)/);
+ assert.match(pilot,/localStorage\.setItem\(MAPPINGS_KEY,serialized\)/);
+ assert.match(pilot,/const readBack=localStorage\.getItem\(MAPPINGS_KEY\)/);
+ assert.match(pilot,/String\(verified\?\.\[symbol\]\?\?''\)!==code/);
+ assert.match(pilot,/ذخیره تأیید شد؛ شناسه ثبت‌شده:/);
+ assert.match(pilot,/ذخیره تأیید نشد:/);
+ assert.match(pilot,/پاک‌شدن آن از حافظه تأیید شد/);
 });
