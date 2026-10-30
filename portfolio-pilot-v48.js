@@ -154,20 +154,58 @@
    for(const c of candidates){const option=document.createElement('option');option.value=String(c.insCode);option.textContent=describeCandidate(c);select.append(option);}
    if(candidates.some(c=>String(c.insCode)===String(saved[symbol]??'')))select.value=String(saved[symbol]);
    row.append(select);
+   const savedStatus=document.createElement('p');
+   savedStatus.setAttribute('aria-live','polite');
+   savedStatus.style.cssText='margin:8px 0;font-size:13px';
+   const savedCode=saved[symbol];
+   const savedIsCandidate=candidates.some(c=>String(c.insCode)===String(savedCode??''));
+   if(savedCode){
+    savedStatus.textContent='شناسه ذخیره‌شده فعلی: '+savedCode+(savedIsCandidate?' (در فهرست کاندیداهای معتبر این نوبت)':' (در فهرست معتبر این نوبت نیست)');
+   }else savedStatus.textContent='هنوز برای این نماد شناسه‌ای ذخیره نشده است.';
+   row.append(savedStatus);
+   select.addEventListener('change',()=>{
+    savedStatus.textContent=select.value?'گزینه انتخاب شده: '+select.value+' — هنوز ذخیره نشده است.':'هیچ گزینه‌ای انتخاب نشده است.';
+   });
    const actions=document.createElement('div');actions.className='row';
    const save=document.createElement('button');save.type='button';save.textContent='تأیید و ذخیره انتخاب';
    save.addEventListener('click',()=>{
-    const code=select.value;
-    if(!candidates.some(c=>String(c.insCode)===code)){statusMessage('برای '+symbol+' یک کاندیدای معتبر انتخاب کن.');return;}
-    const next=readInstrumentMappings();next[symbol]=code;
-    try{localStorage.setItem(MAPPINGS_KEY,JSON.stringify(next));statusMessage('انتخاب '+symbol+' ذخیره شد. برای اعمال آن، دوباره دریافت تاریخچه همه نمادها را اجرا کن.');}
-    catch(e){statusMessage('ذخیره انتخاب در این مرورگر ممکن نشد؛ اطلاعات سبد تغییر نکرد.');}
+    const code=String(select.value||'');
+    if(!candidates.some(c=>String(c.insCode)===code)){
+     savedStatus.textContent='ذخیره انجام نشد: ابتدا یک گزینه از فهرست انتخاب کن.';
+     statusMessage('برای '+symbol+' یک کاندیدای معتبر انتخاب کن.');
+     return;
+    }
+    try{
+     const next=readInstrumentMappings();next[symbol]=code;
+     const serialized=JSON.stringify(next);
+     localStorage.setItem(MAPPINGS_KEY,serialized);
+     const readBack=localStorage.getItem(MAPPINGS_KEY);
+     if(readBack!==serialized)throw Error('محتوای ذخیره‌شده با مقدار انتخابی یکسان نیست.');
+     const verified=JSON.parse(readBack);
+     if(String(verified?.[symbol]??'')!==code)throw Error('شناسه پس از ذخیره قابل تأیید نبود.');
+     savedStatus.textContent='ذخیره تأیید شد؛ شناسه ثبت‌شده: '+code+'. برای اعمال، دریافت تاریخچه همه نمادها را دوباره اجرا کن.';
+     statusMessage('ذخیره انتخاب '+symbol+' تأیید شد؛ شناسه '+code+'. اکنون دریافت تاریخچه همه نمادها را دوباره اجرا کن.');
+    }catch(e){
+     savedStatus.textContent='ذخیره تأیید نشد: '+e.message+'؛ هیچ تغییری در اطلاعات سبد ایجاد نشده است.';
+     statusMessage('ذخیره انتخاب '+symbol+' تأیید نشد: '+e.message);
+    }
    });
    const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='پاک‌کردن انتخاب ذخیره‌شده';
    clear.addEventListener('click',()=>{
-    const next=readInstrumentMappings();delete next[symbol];
-    try{localStorage.setItem(MAPPINGS_KEY,JSON.stringify(next));select.value='';statusMessage('انتخاب ذخیره‌شده '+symbol+' پاک شد؛ هیچ اطلاعاتی از سبد تغییر نکرد.');}
-    catch(e){statusMessage('پاک‌کردن انتخاب ممکن نشد؛ اطلاعات سبد تغییر نکرد.');}
+    try{
+     const next=readInstrumentMappings();delete next[symbol];
+     const serialized=JSON.stringify(next);
+     localStorage.setItem(MAPPINGS_KEY,serialized);
+     const readBack=localStorage.getItem(MAPPINGS_KEY);
+     if(readBack!==serialized)throw Error('پاک‌شدن انتخاب از حافظه تأیید نشد.');
+     if(Object.hasOwn(JSON.parse(readBack),symbol))throw Error('شناسه هنوز در حافظه وجود دارد.');
+     select.value='';
+     savedStatus.textContent='انتخاب ذخیره‌شده پاک شد و پاک‌شدن آن از حافظه تأیید شد.';
+     statusMessage('انتخاب ذخیره‌شده '+symbol+' پاک شد و نتیجه از حافظه تأیید شد؛ اطلاعات سبد تغییر نکرد.');
+    }catch(e){
+     savedStatus.textContent='پاک‌کردن تأیید نشد: '+e.message;
+     statusMessage('پاک‌کردن انتخاب '+symbol+' تأیید نشد: '+e.message);
+    }
    });
    actions.append(save,clear);row.append(actions);panel.append(row);
   }

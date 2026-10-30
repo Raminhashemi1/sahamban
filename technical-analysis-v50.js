@@ -1,5 +1,5 @@
 'use strict';
-/* v50.13 UI exposes per-symbol history validation failures and includes a DOM-table fallback. */
+/* v50.14 UI exposes per-symbol history validation failures and includes a DOM-table fallback. */
 (()=>{
  const $=id=>document.getElementById(id);
  const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50'),copyDiagnostics=$('technicalCopyDiagnosticsV50');
@@ -8,7 +8,7 @@
  let quotes=[];
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:4}).format(n);
  const latest=values=>{for(let i=values.length-1;i>=0;i--)if(values[i]!==null&&Number.isFinite(values[i]))return values[i];return null;};
- const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۸','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\n');};
+ const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','نسخه گزارش: تحلیل ۵۰.۱۲ | تطبیق‌گر ۴۸.۹','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\n');};
  if(copyDiagnostics)copyDiagnostics.addEventListener('click',async()=>{const report=diagnostics();try{await navigator.clipboard.writeText(report);status.textContent='گزارش کامل خطاها و شناسه‌های کاندیدا کپی شد؛ آن را همین‌جا جای‌گذاری کن.';}catch(e){const area=document.createElement('textarea');area.value=report;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();status.textContent=ok?'گزارش کامل کپی شد؛ آن را همین‌جا جای‌گذاری کن.':'کپی خودکار ممکن نشد؛ متن گزارش خطاها را از بخش نتیجه انتخاب و کپی کن.';}});
  function show(){
   const q=quotes.find(x=>x.symbol===selector.value);
