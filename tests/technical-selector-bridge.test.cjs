@@ -18,7 +18,7 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.9/);
- assert.match(sw,/sahamban-static-v50-13/);
+ assert.match(sw,/sahamban-static-v50-14/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
  assert.match(sw,/technical-analysis-v50\.js\?v=50\.9/);
 });
@@ -28,6 +28,9 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.match(pilot,/getHistoricalOne/);
   assert.match(pilot,/x\.quote\?\.insCode/);
  assert.match(pilot,/GetInstrumentSearch/);
+ assert.match(pilot,/GetInstrumentInfo/);
+ assert.match(pilot,/instrumentID/);
+ assert.match(pilot,/identityError/);
  assert.match(pilot,/GetClosingPriceDailyList/);
  assert.match(pilot,/sahamban:verified-historical-quotes-v50/);
  assert.match(pilot,/history\.length<15/);
@@ -35,7 +38,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.9/);
- assert.match(sw,/sahamban-static-v50-13/);
+ assert.match(sw,/sahamban-static-v50-14/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
