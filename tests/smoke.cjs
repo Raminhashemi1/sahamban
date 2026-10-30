@@ -49,13 +49,13 @@ test('Broker import is local-only with separate storage and offline Excel parser
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v'+v));
- assert.ok(sw.includes('portfolio-pilot-v48.js?v=48.9'));
- assert.ok(sw.includes('technical-analysis-v50.js?v=50.14'));
+ assert.ok(sw.includes('portfolio-pilot-v48.js?v=49.0'));
+ assert.ok(sw.includes('technical-analysis-v50.js?v=50.15'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
- assert.ok(html.includes('portfolio-pilot-v48.js?v=48.9'));
- assert.ok(sw.includes('portfolio-pilot-v48.js?v=48.9'));
+ assert.ok(html.includes('portfolio-pilot-v48.js?v=49.0'));
+ assert.ok(sw.includes('portfolio-pilot-v48.js?v=49.0'));
  assert.ok(portfolioLive.includes("sahamban-broker-holdings-v1"));
  assert.ok(portfolioLive.includes("GetClosingPriceDailyList"));
  assert.ok(portfolioLive.includes('const checks=await Promise.all(candidates.map(async candidate=>')); 
