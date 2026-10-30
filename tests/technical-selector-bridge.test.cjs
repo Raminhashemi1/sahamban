@@ -105,3 +105,10 @@ test('candidate diagnostics ignore zero lastDate and expose actual verified hist
  assert.match(pilot,/بازه تاریخچه معتبر=/);
  assert.match(pilot,/تعداد رکوردهای تاریخچه=/);
 });
+
+test('candidate diagnostics ignore zero lastDate and expose actual verified history range and count',()=>{
+ assert.ok(pilot.includes('const lastDate=/^\\d{8}$/'));
+ assert.ok(pilot.includes('historyStartDate,historyEndDate,historyCount:history.length'));
+ assert.ok(pilot.includes('بازه تاریخچه معتبر='));
+ assert.ok(pilot.includes('تعداد رکوردهای تاریخچه='));
+});
