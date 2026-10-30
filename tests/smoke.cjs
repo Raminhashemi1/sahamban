@@ -50,7 +50,7 @@ test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v'+v));
  assert.ok(sw.includes('portfolio-pilot-v48.js?v=49.2'));
- assert.ok(sw.includes('technical-analysis-v50.js?v=50.17'));
+ assert.ok(sw.includes('technical-analysis-v50.js?v=50.16'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
