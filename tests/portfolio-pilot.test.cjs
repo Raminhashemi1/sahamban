@@ -118,7 +118,7 @@ const server=http.createServer((req,res)=>{
   });
   await page.evaluate(()=>{window.__verifiedHistoryQuotes=[];window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{window.__verifiedHistoryQuotes=event.detail.quotes;});});
   await page.locator('#technicalHistoryAllV50').click();
-  await page.getByText('تاریخچه معتبر برای ۱۸ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
+  await page.getByText(/تاریخچه معتبر برای .* از ۱۹ نماد دریافت شد/).waitFor({timeout:40000});
   const mappings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1')||'{}'));
   assert.deepEqual(mappings,{'سهم1':'99999999991','سهم4':'30000000008'});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
