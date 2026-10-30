@@ -114,14 +114,15 @@ const server=http.createServer((req,res)=>{
    });
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:rows})});
   });
+  await page.evaluate(()=>{window.__verifiedHistoryQuotes=[];window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{window.__verifiedHistoryQuotes=event.detail.quotes;});});
   await page.locator('#technicalHistoryAllV50').click();
   await page.getByText('تاریخچه معتبر برای ۱۸ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
   const mappings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1')||'{}'));
   assert.deepEqual(mappings,{});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
-  await page.locator('#technicalSymbolV50').selectOption('سهم2');
-  assert.match(await page.locator('#technicalResultV50').innerText(),/تاریخچه معتبر آن/);
-  assert.match(await page.locator('#technicalResultV50').innerText(),/30000000003/);
+  const selected=await page.evaluate(()=>window.__verifiedHistoryQuotes?.find(x=>x.symbol==='سهم2'));
+  assert.equal(selected?.resolution,'unique-freshest-recent-history');
+  assert.match(selected?.resolutionNote||'',/30000000003/);
   assert.match(await page.locator('#livePortfolioStatus').innerText(),/چند شناسه برای سهم3/);
   assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
   assert.equal(await page.locator('#instrumentMappingPanel select option').count(),3); // placeholder + 2 tied candidates
