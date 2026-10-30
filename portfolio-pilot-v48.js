@@ -263,7 +263,7 @@
   const valid=checks.filter(x=>x.ok);
   const savedMapping=readInstrumentMappings()[holding.symbol];
   if(savedMapping){
-   const selected=valid.find(x=>String(x.insCode)===String(savedMapping));
+   const selected=valid.find(x=>String(x.quote?.insCode)===String(savedMapping));
    if(selected)return selected.quote;
    // A stale local mapping must not block discovery of a uniquely valid current history.
    // Remove only the exact stale value observed above; never overwrite a concurrent user change.
