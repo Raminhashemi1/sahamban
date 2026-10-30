@@ -158,7 +158,7 @@
   const describe=x=>{
    const c=x.candidate||{};
    const label=String(c.lVal30??c.lVal18AFC??'').trim();
-   const isin=String(c.cIsin??'').trim();
+   const cIsin=String(c.cIsin??'').trim();
    const flowTitle=String(c.flowTitle??'').trim();
    const flow=c.flow==null?'':'؛ کد بازار='+String(c.flow);
    const instrumentId=String(c.instrumentID??'').trim();
@@ -166,7 +166,7 @@
    const group=String(c.cgrValCot??'').trim();
    const identityError=String(c.identityError??'').trim();
    const insCode=String(c.insCode??x.quote?.insCode??x.insCode??'شناسه نامشخص');
-   return insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+(instrumentId?'؛ شناسه هویتی='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
+   return insCode+(label?' ('+label+')':'')+(cIsin?'؛ cIsin='+cIsin:'')+(instrumentId?'؛ instrumentID='+instrumentId:'')+(flowTitle?'؛ '+flowTitle:'')+flow+(instrumentType?'؛ نوع ابزار='+instrumentType:'')+(group?'؛ گروه='+group:'')+(identityError?'؛ خطای مشخصات='+identityError:'');
   };
   if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
   throw Error('هیچ‌یک از '+fmt(candidates.length)+' شناسه دقیق برای '+holding.symbol+' تاریخچه معتبر نداشتند: '+checks.map(x=>describe(x)+'؛ '+x.error).join(' | '));
