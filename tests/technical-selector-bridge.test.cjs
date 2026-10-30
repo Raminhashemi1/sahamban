@@ -92,19 +92,11 @@ test('instrument mapping save and clear operations verify exact localStorage rea
 test('candidate diagnostics expose lastDate and yMarNSC from instrument identity metadata',()=>{
  assert.match(pilot,/lastDate:identity\.lastDate\?\?candidate\.lastDate/);
  assert.match(pilot,/yMarNSC:identity\.yMarNSC\?\?candidate\.yMarNSC/);
- assert.match(pilot,/آخرین تاریخ معامله=/);
+ assert.match(pilot,/آخرین تاریخ معامله ثبت‌شده در مشخصات ابزار=/);
  assert.match(pilot,/شناسه طبقه‌بندی بازار=/);
 });
 
 // Cache-busted diagnostic metadata assertions are covered above.
-
-test('candidate diagnostics ignore zero lastDate and expose actual verified history range and count',()=>{
- assert.match(pilot,/const lastDateRaw=String\(c\.lastDate\?\?' '\)/);
- assert.match(pilot,/const lastDate=\/\^\\\\d\{8\}\$\//);
- assert.match(pilot,/historyStartDate,historyEndDate,historyCount:history\.length/);
- assert.match(pilot,/بازه تاریخچه معتبر=/);
- assert.match(pilot,/تعداد رکوردهای تاریخچه=/);
-});
 
 test('candidate diagnostics ignore zero lastDate and expose actual verified history range and count',()=>{
  assert.ok(pilot.includes('const lastDate=/^\\d{8}$/'));
