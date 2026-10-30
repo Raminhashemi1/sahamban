@@ -143,7 +143,7 @@
    const label=String(c.lVal30??c.lVal18AFC??'').trim();
    const isin=String(c.cIsin??'').trim();
    const flow=c.flow==null?'':'؛ بازار='+String(c.flow);
-   const insCode=String(x.insCode??x.quote?.insCode??c.insCode??'شناسه نامشخص');
+   const insCode=String(c.insCode??x.quote?.insCode??x.insCode??'شناسه نامشخص');
    return insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+flow;
   };
   if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
