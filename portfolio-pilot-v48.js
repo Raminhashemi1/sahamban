@@ -300,7 +300,7 @@
     const freshest=recent.filter(x=>x.historyDate===newest);
     if(freshest.length===1){
      const selected=freshest[0];
-     return {...selected.quote,resolution:'unique-freshest-recent-history',resolutionNote:'شناسه '+selected.insCode+' به‌صورت موقت انتخاب شد؛ تاریخچه معتبر آن ('+newest+') از همه کاندیداهای دارای سابقه تازه جدیدتر و یکتا بود. این انتخاب در حافظه ذخیره نشده و هویت بازارِ ثبت‌شده در فایل اکسل را اثبات نمی‌کند.'};
+     return {...selected.quote,resolution:'unique-freshest-recent-history',resolutionNote:'شناسه '+(selected.quote?.insCode??selected.insCode)+' به‌صورت موقت انتخاب شد؛ تاریخچه معتبر آن ('+newest+') از همه کاندیداهای دارای سابقه تازه جدیدتر و یکتا بود. این انتخاب در حافظه ذخیره نشده و هویت بازارِ ثبت‌شده در فایل اکسل را اثبات نمی‌کند.'};
     }
    }
    mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
