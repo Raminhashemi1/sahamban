@@ -9,7 +9,7 @@ assert.doesNotMatch(src,/localStorage\.setItem\s*\((?!MAPPINGS_KEY\s*,)/);
 assert.doesNotMatch(src,/localStorage\.removeItem\s*\(/);
 assert.doesNotMatch(src,/localStorage\.clear\s*\(/);
 assert.match(src,/localStorage\.setItem\(MAPPINGS_KEY/);
-assert.match(src,/شناسه ذخیره‌شده نامعتبر/);
+assert.match(src,/شناسه ذخیره‌شده .* در این نوبت تأیید نشد/);
 assert.match(src,/const MAPPINGS_KEY='sahamban-instrument-mappings-v1'/);
 assert.match(src,/const HOLDINGS_KEY='sahamban-broker-holdings-v1'/);
 assert.doesNotMatch(html,/<script[^>]*persian-ui/);
@@ -79,10 +79,10 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>localStorage.length),1);
   assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')))).holdings[0].quantity,2);
 
-  // Stale saved mappings are cleared only after fresh validation. A unique valid
-  // alternative is accepted; multiple valid alternatives remain explicitly ambiguous.
+  // Saved mappings are never auto-deleted when absent from a search response. A unique
+  // fresh history may resolve only when no saved mapping exists; tied histories remain ambiguous.
   const holdingsBeforeHistory=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
-  await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم1':'99999999991','سهم2':'99999999992','سهم4':'30000000008'})));
+  await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم1':'99999999991','سهم4':'30000000008'})));
   await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
    const symbol=decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
    const i=Number(symbol.replace('سهم',''));
@@ -120,7 +120,7 @@ const server=http.createServer((req,res)=>{
   await page.locator('#technicalHistoryAllV50').click();
   await page.getByText('تاریخچه معتبر برای ۱۸ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
   const mappings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1')||'{}'));
-  assert.deepEqual(mappings,{'سهم4':'30000000008'});
+  assert.deepEqual(mappings,{'سهم1':'99999999991','سهم4':'30000000008'});
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
   const selected=await page.evaluate(()=>window.__verifiedHistoryQuotes?.find(x=>x.symbol==='سهم2'));
   assert.equal(selected?.resolution,'unique-freshest-recent-history');
@@ -141,7 +141,7 @@ const server=http.createServer((req,res)=>{
   await page.getByText(/تاریخچه معتبر برای .* از ۱۹ نماد دریافت شد/).waitFor({timeout:40000});
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1'))['سهم5']),'30000000015');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
-  console.log('PASS: stale mapping auto-clear, freshest unique recent history auto-resolution, tied candidates remain ambiguous, holdings untouched');
+  console.log('PASS: saved mappings never auto-deleted on missing search result, freshest unique history resolution without saved mapping, tied candidates remain ambiguous, holdings untouched');
  }finally{
   await browser.close();await new Promise(r=>server.close(r));
  }
