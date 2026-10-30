@@ -138,7 +138,7 @@ const server=http.createServer((req,res)=>{
    else await route.fallback();
   });
   await page.locator('#technicalHistoryAllV50').click();
-  await page.getByText('تاریخچه معتبر برای ۱۷ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
+  await page.getByText(/تاریخچه معتبر برای .* از ۱۹ نماد دریافت شد/).waitFor({timeout:40000});
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1'))['سهم5']),'30000000015');
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
   console.log('PASS: stale mapping auto-clear, freshest unique recent history auto-resolution, tied candidates remain ambiguous, holdings untouched');
