@@ -77,7 +77,43 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.locator('#livePortfolioTable').isVisible(),false);
   assert.equal(await page.evaluate(()=>localStorage.length),1);
   assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-broker-holdings-v1')))).holdings[0].quantity,2);
-  console.log('PASS: 19-holding pilot offline valuation, live mocked valuation, mismatch guard, concurrent holdings change, no pilot writes');
+
+  // Stale saved mappings are cleared only after fresh validation. A unique valid
+  // alternative is accepted; multiple valid alternatives remain explicitly ambiguous.
+  const holdingsBeforeHistory=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
+  await page.evaluate(()=>localStorage.setItem('sahamban-instrument-mappings-v1',JSON.stringify({'سهم1':'99999999991','سهم2':'99999999992'})));
+  await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/**',async route=>{
+   const symbol=decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-1));
+   const i=Number(symbol.replace('سهم',''));
+   const candidates=i===1
+    ?[{insCode:'30000000001',lVal18AFC:symbol},{insCode:'30000000002',lVal18AFC:symbol}]
+    :i===2
+     ?[{insCode:'30000000003',lVal18AFC:symbol},{insCode:'30000000004',lVal18AFC:symbol}]
+     :[{insCode:String(30000000000+i+10),lVal18AFC:symbol}];
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentSearch:candidates})});
+  });
+  await page.route('https://cdn.tsetmc.com/api/Instrument/GetInstrumentInfo/**',async route=>{
+   const insCode=new URL(route.request().url()).pathname.split('/').at(-1);
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({instrumentInfo:{insCode,cIsin:'TEST'+insCode,instrumentID:'TEST'+insCode,flow:1}})});
+  });
+  await page.route('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/**',async route=>{
+   const insCode=new URL(route.request().url()).pathname.split('/').at(-2);
+   const count=insCode==='30000000002'?3:15;
+   const rows=Array.from({length:count},(_,j)=>{
+    const d=new Date(Date.UTC(2025,0,1+j));
+    return {dEven:d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(),pClosing:1000+j};
+   });
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({closingPriceDaily:rows})});
+  });
+  await page.locator('#technicalHistoryAllV50').click();
+  await page.getByText('تاریخچه معتبر برای ۱۸ از ۱۹ نماد دریافت شد',{exact:false}).waitFor({timeout:40000});
+  const mappings=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-instrument-mappings-v1')||'{}'));
+  assert.deepEqual(mappings,{});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),holdingsBeforeHistory);
+  assert.match(await page.locator('#technicalStatusV50').innerText(),/چند شناسه برای سهم2/);
+  assert.equal(await page.locator('#instrumentMappingPanel').isVisible(),true);
+  assert.equal(await page.locator('#instrumentMappingPanel select option').count(),3); // placeholder + 2 candidates
+  console.log('PASS: stale mapping auto-clear, unique alternative acceptance, ambiguity retained, holdings untouched');
  }finally{
   await browser.close();await new Promise(r=>server.close(r));
  }
