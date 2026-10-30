@@ -24,8 +24,8 @@ test('HTML and service worker load cache-busted selector and broker scripts',()=
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.18 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۸ | تطبیق‌گر ۴۹.۳'));
+ assert.ok(tech.includes('v50.19 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۹ | تطبیق‌گر ۴۹.۴'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -108,7 +108,7 @@ test('candidate diagnostics ignore zero lastDate and expose actual verified hist
 test('recent-history date matcher uses a single-digit-class escape and accepts real YYYYMMDD dates',()=>{
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(raw))return false;"));
  assert.ok(!pilot.includes("if(!/^\\\\d{8}$/.test(raw))return false;"));
- const datePattern=/^\\d{8}$/;
+ const datePattern=/^\d{8}$/;
  assert.equal(datePattern.test('20261028'),true);
  assert.equal(datePattern.test('2026-10-28'),false);
 });
