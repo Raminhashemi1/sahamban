@@ -143,7 +143,8 @@
    const label=String(c.lVal30??c.lVal18AFC??'').trim();
    const isin=String(c.cIsin??'').trim();
    const flow=c.flow==null?'':'؛ بازار='+String(c.flow);
-   return x.insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+flow;
+   const insCode=String(x.insCode??x.quote?.insCode??c.insCode??'شناسه نامشخص');
+   return insCode+(label?' ('+label+')':'')+(isin?'؛ ISIN='+isin:'')+flow;
   };
   if(valid.length>1)throw Error('چند شناسه برای '+holding.symbol+' تاریخچه معتبر دارند؛ انتخاب خودکار ایمن نیست: '+valid.map(describe).join(' | '));
   throw Error('هیچ‌یک از '+fmt(candidates.length)+' شناسه دقیق برای '+holding.symbol+' تاریخچه معتبر نداشتند: '+checks.map(x=>describe(x)+'؛ '+x.error).join(' | '));
