@@ -17,10 +17,10 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.7/);
- assert.match(sw,/sahamban-static-v50-10/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.8/);
+ assert.match(sw,/sahamban-static-v50-11/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.7/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.8/);
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -33,13 +33,21 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.7/);
- assert.match(sw,/sahamban-static-v50-10/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.8/);
+ assert.match(sw,/sahamban-static-v50-11/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
- assert.match(tech,/q\.error\?'\\nعلت اعلام‌شده از سرویس: '/);
+ assert.match(tech,/q\.error\?'\\n\\nگزارش کامل سرویس و مشخصات شناسه‌ها:/);
  assert.match(tech,/const failed=quotes\.filter/);
- assert.match(tech,/q\.error\|\|'علت از سرویس گزارش نشده'/);
+ assert.match(tech,/q\.error\|\|'سرویس علت مشخصی گزارش نکرده است\.'/);
  assert.match(tech,/تأیید نشد.*q\.error\.slice/);
+});
+
+test('ambiguous symbol diagnostics expose full candidate metadata and a copy action',()=>{
+ assert.match(html,/technicalCopyDiagnosticsV50/);
+ assert.match(tech,/navigator\.clipboard\.writeText\(report\)/);
+ assert.match(tech,/گزارش کامل کپی شد/);
+ assert.match(tech,/q\.error/);
+ assert.match(tech,/گزارش تشخیصی تاریخچه نمادها/);
 });
