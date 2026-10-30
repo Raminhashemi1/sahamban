@@ -6,6 +6,8 @@
  const $=id=>document.getElementById(id);
  const HOLDINGS_KEY='sahamban-broker-holdings-v1';
  const QUOTES_KEY='sahamban-broker-live-quotes-v1';
+ const MAPPINGS_KEY='sahamban-instrument-mappings-v1';
+ let mappingCandidates={};
  // Pilot mode: no persistent quote writes; all quote calculations stay in memory.
  const API='https://cdn.tsetmc.com/api';
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
@@ -110,6 +112,67 @@
   window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:holdings.map(h=>h.symbol)}}));
  }
 
+ // Explicit, local-only instrument mapping. This key is independent from brokerage holdings.
+ function readInstrumentMappings(){
+  try{
+   const raw=localStorage.getItem(MAPPINGS_KEY);
+   if(!raw)return {};
+   const parsed=JSON.parse(raw);
+   if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return {};
+   return Object.fromEntries(Object.entries(parsed).filter(([symbol,code])=>typeof symbol==='string'&&symbol.length<=50&&/^[0-9]{8,25}$/.test(String(code))));
+  }catch(e){return {};}
+ }
+ function describeCandidate(c){
+  const label=String(c.lVal30??c.lVal18AFC??'').trim();
+  return String(c.insCode)+(label?' — '+label:'')+
+   (c.cIsin?' | cIsin='+c.cIsin:'')+
+   (c.instrumentID?' | instrumentID='+c.instrumentID:'')+
+   (c.flowTitle?' | '+c.flowTitle:'')+
+   (c.flow!=null?' | کد بازار='+c.flow:'')+
+   (c.yVal?' | نوع ابزار='+c.yVal:'')+
+   (c.cgrValCot?' | گروه='+c.cgrValCot:'');
+ }
+ function renderInstrumentMappingPanel(){
+  const panel=$('instrumentMappingPanel');
+  if(!panel)return;
+  panel.replaceChildren();
+  const symbols=Object.keys(mappingCandidates);
+  if(!symbols.length){panel.hidden=true;return;}
+  panel.hidden=false;
+  const intro=document.createElement('p');
+  intro.textContent='برای نمادهایی که بیش از یک تاریخچه معتبر دارند، ورقه موردنظر را خودت انتخاب و جداگانه تأیید کن. انتخاب فقط روی همین مرورگر و در کلیدی مستقل از اطلاعات سبد ذخیره می‌شود. پس از ثبت، دوباره «دریافت تاریخچه تأییدشده همه نمادها» را بزن.';
+  panel.append(intro);
+  const saved=readInstrumentMappings();
+  for(const symbol of symbols){
+   const candidates=mappingCandidates[symbol];
+   const row=document.createElement('div');
+   row.style.cssText='border:1px solid #49627a;border-radius:10px;padding:12px;margin:10px 0';
+   const heading=document.createElement('strong');heading.textContent='نماد '+symbol;row.append(heading);
+   const label=document.createElement('label');label.textContent='ورقه / شناسه ابزار';label.style.marginTop='8px';row.append(label);
+   const select=document.createElement('select');select.style.width='100%';
+   const empty=document.createElement('option');empty.value='';empty.textContent='انتخاب کنید؛ هیچ گزینه‌ای از پیش تأیید نشده';select.append(empty);
+   for(const c of candidates){const option=document.createElement('option');option.value=String(c.insCode);option.textContent=describeCandidate(c);select.append(option);}
+   if(candidates.some(c=>String(c.insCode)===String(saved[symbol]??'')))select.value=String(saved[symbol]);
+   row.append(select);
+   const actions=document.createElement('div');actions.className='row';
+   const save=document.createElement('button');save.type='button';save.textContent='تأیید و ذخیره انتخاب';
+   save.addEventListener('click',()=>{
+    const code=select.value;
+    if(!candidates.some(c=>String(c.insCode)===code)){statusMessage('برای '+symbol+' یک کاندیدای معتبر انتخاب کن.');return;}
+    const next=readInstrumentMappings();next[symbol]=code;
+    try{localStorage.setItem(MAPPINGS_KEY,JSON.stringify(next));statusMessage('انتخاب '+symbol+' ذخیره شد. برای اعمال آن، دوباره دریافت تاریخچه همه نمادها را اجرا کن.');}
+    catch(e){statusMessage('ذخیره انتخاب در این مرورگر ممکن نشد؛ اطلاعات سبد تغییر نکرد.');}
+   });
+   const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='پاک‌کردن انتخاب ذخیره‌شده';
+   clear.addEventListener('click',()=>{
+    const next=readInstrumentMappings();delete next[symbol];
+    try{localStorage.setItem(MAPPINGS_KEY,JSON.stringify(next));select.value='';statusMessage('انتخاب ذخیره‌شده '+symbol+' پاک شد؛ هیچ اطلاعاتی از سبد تغییر نکرد.');}
+    catch(e){statusMessage('پاک‌کردن انتخاب ممکن نشد؛ اطلاعات سبد تغییر نکرد.');}
+   });
+   actions.append(save,clear);row.append(actions);panel.append(row);
+  }
+ }
+ function statusMessage(message){const node=$('technicalStatusV50');if(node)node.textContent=message;}
  // Independent historical-series flow: does not require today's quote to pass freshness checks.
  async function getHistoricalOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
@@ -154,6 +217,13 @@
    }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);
+  const savedMapping=readInstrumentMappings()[holding.symbol];
+  if(valid.length>1||savedMapping)mappingCandidates[holding.symbol]=valid.map(x=>x.candidate).filter(Boolean);
+  if(savedMapping){
+   const selected=valid.find(x=>String(x.insCode)===String(savedMapping));
+   if(selected)return selected.quote;
+   throw Error('انتخاب ذخیره‌شده برای '+holding.symbol+' ('+savedMapping+') در بررسی تازه تاریخچه معتبر نداشت؛ سامانه به کاندیدای دیگری تغییر مسیر نمی‌دهد. انتخاب را پاک یا اصلاح کن.');
+  }
   if(valid.length===1)return valid[0].quote;
   const describe=x=>{
    const c=x.candidate||{};
@@ -178,6 +248,7 @@
   running=true;button.disabled=true;
   try{
    const holdings=readHoldings();
+   mappingCandidates={};
    say('دریافت تاریخچه مستقل برای '+fmt(holdings.length)+' نماد آغاز شد؛ اطلاعات سبد فقط خوانده می‌شود و تغییر نمی‌کند...');
    const outcomes=new Array(holdings.length);let next=0,completed=0;
    async function worker(){while(true){
@@ -187,6 +258,7 @@
     completed++;say('تاریخچه: '+fmt(completed)+' از '+fmt(holdings.length)+' نماد بررسی شد؛ هنوز داده‌ای برای نمادهای ناموفق حدس زده نمی‌شود.');
    }}
    await Promise.all(Array.from({length:Math.min(3,holdings.length)},()=>worker()));
+   renderInstrumentMappingPanel();
    const quotes=outcomes.map(x=>x.ok?x.quote:{symbol:x.symbol,marketDate:null,history:null,error:x.error});
    window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes}}));
    const good=outcomes.filter(x=>x.ok).length,failed=outcomes.filter(x=>!x.ok);
