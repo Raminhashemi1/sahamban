@@ -16,8 +16,7 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 });
 
 test('technical selector supports arbitrary dynamic basket sizes, including 1, 19 and more than 19 symbols',()=>{
- const eventPath=tech.match(/const incoming=event\\?\.detail\\?\.symbols[\\s\\S]{0,500}/)?.[0]||'';
- assert.ok(eventPath.includes('new Set(incoming.filter'));
+ assert.ok(tech.includes("new Set(incoming.filter(s=>typeof s==='string'&&s.trim()))"));
  assert.ok(tech.includes("new MutationObserver(activateFromVisibleRows)"));
  assert.ok(tech.includes("portfolioRows.rows"));
  assert.ok(tech.includes("map(symbol=>({symbol,marketDate:null,history:null}))"));
