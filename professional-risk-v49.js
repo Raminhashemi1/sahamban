@@ -20,7 +20,7 @@
    const quantity=Number(digits(c[1])),buy=Number(digits(c[2])),price=Number(digits(c[3]));
    const marketDate=String(c.length>=15?c[9]:c[6]??'').trim(),priceBasis=String(c.length>=15?c[13]:'').trim();
    if(!c[0]||![quantity,buy,price].every(Number.isFinite)||quantity<=0||buy<=0||price<=0)throw Error('مقادیر نامعتبر در ردیف '+(c[0]||'نامشخص'));
-   if(!/^(?:\\d{8}|\\d{4}\\/\\d{2}\\/\\d{2})$/.test(marketDate))throw Error('تاریخ بازار برای '+c[0]+' معتبر نیست؛ گزارش ریسک فقط با قیمت تأییدشده پذیرفته می‌شود.');
+   if(!/^(?:\d{8}|\d{4}\/\d{2}\/\d{2})$/.test(marketDate))throw Error('تاریخ بازار برای '+c[0]+' معتبر نیست؛ گزارش ریسک فقط با قیمت تأییدشده پذیرفته می‌شود.');
    if(c.length>=15&&priceBasis!=='آخرین معامله'&&priceBasis!=='پایانی')throw Error('مبنای قیمت برای '+c[0]+' تأیید نشده است.');
    return {symbol:c[0],quantity,buy,price,value:quantity*price,cost:quantity*buy,date:marketDate};
   });
