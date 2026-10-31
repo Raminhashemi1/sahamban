@@ -95,12 +95,11 @@
   const valid=[];
   let lastError='';
   for(const candidate of exact){
-   try{valid.push(await verifiedCode(holding,String(candidate.insCode)));}
+   try{const verified=await verifiedCode(holding,String(candidate.insCode));verified.flow=Number.isFinite(Number(candidate.flow))?Number(candidate.flow):null;valid.push(verified);}
    catch(e){lastError=e.message;}
   }
   if(valid.length!==1)throw Error(valid.length?'چند شناسه تازه و معتبر برای '+holding.symbol+' وجود دارد؛ انتخاب خودکار ایمن نیست.':'هیچ شناسه‌ای برای '+holding.symbol+' با قیمت و تاریخ معتبر تأیید نشد. '+lastError);
   const quote=valid[0];
-  quote.flow=Number.isFinite(Number(exact[0]?.flow))?Number(exact[0].flow):null;
   // Sector metadata is optional: a failure must not invalidate an otherwise verified quote.
   try{
    const response=await fetchJson('/Instrument/GetInstrumentInfo/'+encodeURIComponent(quote.insCode));
