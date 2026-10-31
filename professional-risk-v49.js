@@ -27,13 +27,13 @@
  const exportButton=$('riskExportV49');
  function csvCell(value){
   let text=String(value??'');
-  if(/^[=+@\\-\\t\\r]/.test(text))text="'"+text;
+  if(/^[=+\-@\t\r]/.test(text))text="'"+text;
   return '"'+text.replace(/"/g,'""')+'"';
  }
  exportButton?.addEventListener('click',()=>{
   if(!latestCsv)return;
   try{
-   const blob=new Blob(['\\uFEFF'+latestCsv],{type:'text/csv;charset=utf-8'});
+   const blob=new Blob(['\uFEFF'+latestCsv],{type:'text/csv;charset=utf-8'});
    const url=URL.createObjectURL(blob),a=document.createElement('a');
    a.href=url;a.download='sahamban-risk-report.csv';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
    $('riskStatusV49').textContent+=' فایل گزارش CSV آماده شد؛ داده‌ای در سرور ذخیره نشد.';
