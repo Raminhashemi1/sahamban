@@ -135,3 +135,6 @@ test('Saved status rejects corrupted local portfolio',()=>{
 });
 test('Own cache cleanup never targets other apps',()=>assert.ok(sw.includes("k.startsWith('sahamban-static-')&&k!==CACHE")));
 console.log('SUCCESS: '+count+' smoke checks');
+
+// Execute v53 weekend quote regression tests in the existing smoke CI workflow.
+require('./pilot-v53-weekend.test.cjs');
