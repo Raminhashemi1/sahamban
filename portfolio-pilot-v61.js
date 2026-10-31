@@ -127,6 +127,22 @@
    const old=quotes.filter(q=>q.marketDate!==today);
    if(old.length)$('livePortfolioMeta').textContent+=' | هشدار: تاریخ بازار '+fmt(old.length)+' نماد مربوط به امروز تهران نیست؛ دریافت تازه لزوماً به معنی معامله امروز نیست.';
   }
+  const insight=$('portfolioInsightsV613');
+  if(insight){
+   insight.replaceChildren();
+   const ranked=holdings.map(h=>{const q=quotes.find(x=>x.symbol===h.symbol);const market=q.price*h.quantity,costRow=h.buy*h.quantity;return {symbol:h.symbol,market,cost:costRow,pnl:market-costRow,pct:costRow?(market-costRow)/costRow*100:0,weight:value?market/value*100:0};}).sort((a,b)=>b.pct-a.pct);
+   const title=document.createElement('strong');title.textContent='خلاصه عملکرد و تمرکز سبد';insight.append(title);
+   const stats=document.createElement('p');
+   const best=ranked[0],worst=ranked[ranked.length-1],hhi=ranked.reduce((sum,r)=>sum+(r.weight/100)**2,0)*10000,top3=ranked.slice().sort((a,b)=>b.weight-a.weight).slice(0,3).reduce((sum,r)=>sum+r.weight,0);
+   stats.textContent='بهترین بازده: '+best.symbol+' ('+fmt(best.pct)+'٪) | ضعیف‌ترین بازده: '+worst.symbol+' ('+fmt(worst.pct)+'٪) | سهم سه نماد بزرگ از ارزش سبد: '+fmt(top3)+'٪ | شاخص تمرکز HHI: '+fmt(hhi)+' از ۱۰۰۰۰.';
+   insight.append(stats);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const head=document.createElement('tr');['نماد','وزن سبد','سود/زیان (ریال)','بازده نسبت به خرید'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   ranked.forEach(r=>{const tr=document.createElement('tr');[r.symbol,fmt(r.weight)+'٪',fmt(r.pnl),fmt(r.pct)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+   insight.append(table);
+   const note=document.createElement('p');note.className='muted';note.textContent='رتبه‌بندی بر اساس بازده تحقق‌نیافته نسبت به بهای خرید است؛ این رتبه‌بندی توصیه خرید/فروش نیست. HHI و وزن‌ها فقط از قیمت‌های همین گزارش محاسبه شده‌اند.';insight.append(note);
+   insight.hidden=false;
+  }
   $('livePortfolioTable').hidden=false;
   // Publish symbol names only so the technical selector stays usable even for file-import views.
   // The historical-analysis panel still requires the separate verified-history event below.
