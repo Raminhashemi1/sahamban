@@ -340,7 +340,7 @@
     const used=components.reduce((a,x)=>a+x.weight,0),score=used?components.reduce((a,x)=>a+x.score*x.weight,0)/used:null;
     return {...h,components,score,coverage:used/100*100};
    });
-   const total=rowsOut.reduce((a,x)=>a+x.value,0),available=rowsOut.filter(x=>x.score!==null),portfolio=total>0?available.reduce((a,x)=>a+x.score*x.value,0)/total:null;
+   const total=rowsOut.reduce((a,x)=>a+x.value,0),available=rowsOut.filter(x=>x.score!==null),scoredValue=available.reduce((a,x)=>a+x.value,0),portfolio=scoredValue>0?available.reduce((a,x)=>a+x.score*x.value,0)/scoredValue:null;
    const coverage=total>0?rowsOut.reduce((a,x)=>a+x.coverage*x.value,0)/total:0;
    panel.replaceChildren();
    const title=document.createElement('strong');title.textContent='امتیاز تحلیلی نمادها و سبد';panel.append(title);
