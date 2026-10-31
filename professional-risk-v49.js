@@ -166,7 +166,7 @@
   const results=holdings.map(h=>{
    const history=lookup.get(h.symbol)?.history;
    if(!Array.isArray(history))throw Error('تاریخچه '+h.symbol+' موجود نیست.');
-   const valid=history.filter(x=>/^\\d{8}$/.test(String(x?.date??''))&&Number.isFinite(Number(x?.tradedValue))&&Number(x.tradedValue)>=0).sort((a,b)=>a.date.localeCompare(b.date)).slice(-20);
+   const valid=history.filter(x=>/^\d{8}$/.test(String(x?.date??''))&&Number.isFinite(Number(x?.tradedValue))&&Number(x.tradedValue)>=0).sort((a,b)=>a.date.localeCompare(b.date)).slice(-20);
    if(valid.length<15)throw Error('برای '+h.symbol+' کمتر از ۱۵ روز ارزش معاملات معتبر وجود دارد.');
    const average=valid.reduce((sum,x)=>sum+Number(x.tradedValue),0)/valid.length;
    return {...h,average,count:valid.length,days:average>0?h.currentValue/(average*0.10):null};
