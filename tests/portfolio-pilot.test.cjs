@@ -3,7 +3,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const http=require('node:http');
 const {chromium}=require('playwright');
-const src=fs.readFileSync('portfolio-pilot-v48.js','utf8');
+const src=fs.readFileSync('portfolio-pilot-v51.js','utf8');
+assert.equal(src,fs.readFileSync('portfolio-pilot-v48.js','utf8'),'new URL must serve the validated current script');
 const html=fs.readFileSync('portfolio-pilot.html','utf8');
 assert.doesNotMatch(src,/localStorage\.setItem\s*\((?!MAPPINGS_KEY\s*,)/);
 assert.doesNotMatch(src,/localStorage\.removeItem\s*\(/);
@@ -16,10 +17,12 @@ const historyHandler=src.slice(src.indexOf("const historyButton=$('technicalHist
 assert.ok(historyHandler.includes('statusMessage('),'history operation must update its own visible status panel');
 assert.doesNotMatch(historyHandler,/\bsay\(/,'history operation must not overwrite portfolio status');
 assert.doesNotMatch(html,/<script[^>]*persian-ui/);
+assert.match(html,/portfolio-pilot-v51\.js\?v=51\.0/);
+assert.match(html,/نسخه آزمایشی ۵۱/);
 assert.match(html,/تعداد، میانگین خرید و سایر اطلاعات سبد هرگز تغییر نمی‌کنند/);
 const server=http.createServer((req,res)=>{
  const file=new URL(req.url,'http://localhost').pathname.split('/').at(-1);
- if(!['portfolio-pilot.html','portfolio-pilot-v48.js'].includes(file)){res.writeHead(404);res.end();return;}
+ if(!['portfolio-pilot.html','portfolio-pilot-v51.js'].includes(file)){res.writeHead(404);res.end();return;}
  const content=fs.readFileSync(file);
  res.writeHead(200,{'Content-Type':file.endsWith('.js')?'application/javascript':'text/html'});
  res.end(content);
