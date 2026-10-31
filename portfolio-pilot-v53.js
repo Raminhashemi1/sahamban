@@ -74,16 +74,16 @@
   const history=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
   const daily=history?.closingPriceDaily;
   if(!Array.isArray(daily)||daily.length===0)throw Error('تاریخچه معتبر موجود نیست.');
-  // On a non-trading weekend the summary endpoint may be stamped with today's
+  // On Friday (the exchange's regular closure) the summary may be stamped with today's
   // calendar date while the daily series ends on the last actual session.
   // Use the last recorded session ONLY when its closing price exactly matches
-  // the summary price, the date is recent, and the day is Friday/Saturday.
+  // the summary price, the date is recent, and the day is Friday (market-closed day).
   let effectiveDate=date;
   const rawMatching=daily.filter(row=>String(row?.dEven??'')===date);
   if(!rawMatching.length){
    const stamp=new Date(Date.UTC(+date.slice(0,4),+date.slice(4,6)-1,+date.slice(6,8)));
-   if([5,6].includes(stamp.getUTCDay())){
-    const dated=daily.filter(row=>/^\\d{8}$/.test(String(row?.dEven??''))).sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
+   if(stamp.getUTCDay()===5){
+    const dated=daily.filter(row=>/^\d{8}$/.test(String(row?.dEven??''))).sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
     if(dated.length){
      const latest=String(dated[0].dEven);
      const latestRows=dated.filter(row=>String(row.dEven)===latest);
