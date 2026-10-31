@@ -246,13 +246,19 @@
     return {...x,net,avgBuy,avgSell,power:avgBuy!==null&&avgSell!==null&&avgSell>0?avgBuy/avgSell:null};
    });
    const net=rows.reduce((sum,x)=>sum+x.net,0),corporateNet=rows.reduce((sum,x)=>sum+x.buyCorporateValue-x.sellCorporateValue,0);
+   const dates=new Set(rows.map(x=>x.marketDate));
+   const comparable=rows.length>=5&&dates.size===1&&[...dates][0]&&rows.every(x=>x.buyIndividualValue+x.sellIndividualValue>0);
+   const ratios=rows.map(x=>x.net/(x.buyIndividualValue+x.sellIndividualValue));
+   const sorted=[...ratios].sort((a,b)=>a-b),median=sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+   const deviations=ratios.map(x=>Math.abs(x-median)).sort((a,b)=>a-b),mad=deviations.length%2?deviations[(deviations.length-1)/2]:(deviations[deviations.length/2-1]+deviations[deviations.length/2])/2;
+   rows.forEach((x,i)=>{x.netRatio=ratios[i];x.robustScore=comparable&&mad>0?0.6745*(ratios[i]-median)/mad:null;x.crossSectionalOutlier=x.robustScore!==null&&Math.abs(x.robustScore)>=3.5;});
    panel.replaceChildren();
    const title=document.createElement('strong');title.textContent='جریان خرید و فروش حقیقی و حقوقی';panel.append(title);
-   const note=document.createElement('p');note.textContent='مبنای محاسبه: داده رسمی نوع مشتری برای تاریخ معاملاتی هر نماد. خالص جریان حقیقی = ارزش خرید حقیقی منهای ارزش فروش حقیقی. قدرت خریدار به فروشنده از میانگین حجم خرید هر خریدار حقیقی تقسیم بر میانگین حجم فروش هر فروشنده حقیقی محاسبه شده است؛ در صورت نبود تعداد معتبر، نمایش داده نمی‌شود.';panel.append(note);
-   const summary=document.createElement('p');summary.textContent='نمادهای کامل: '+fmt(rows.length)+' | خالص جریان حقیقی سبد: '+fmt(net)+' ریال | خالص جریان حقوقی سبد: '+fmt(corporateNet)+' ریال';panel.append(summary);
+   const note=document.createElement('p');note.textContent='مبنای محاسبه: داده رسمی نوع مشتری برای تاریخ معاملاتی هر نماد. خالص جریان حقیقی = ارزش خرید حقیقی منهای ارزش فروش حقیقی. قدرت خریدار حقیقی از میانگین حجم خرید هر خریدار تقسیم بر میانگین حجم فروش هر فروشنده محاسبه می‌شود. پرچم غیرعادی فعلی فقط مقایسه مقطعی نسبت خالص جریان به مجموع خرید و فروش حقیقی بین حداقل ۵ نماد در یک تاریخ یکسان است؛ امتیاز مقاوم MAD با آستانه ۳٫۵ استفاده می‌شود و به معنی ناهنجاری زمانی یا سیگنال خرید و فروش نیست. برای تشخیص تغییر نسبت به روزهای گذشته، سری تاریخی معتبر هنوز لازم است.';panel.append(note);
+   const summary=document.createElement('p');summary.textContent='نمادهای کامل: '+fmt(rows.length)+' | خالص جریان حقیقی سبد: '+fmt(net)+' ریال | خالص جریان حقوقی سبد: '+fmt(corporateNet)+' ریال | نمادهای دارای انحراف مقطعی قوی: '+(comparable?fmt(rows.filter(x=>x.crossSectionalOutlier).length):'قابل محاسبه نیست؛ حداقل ۵ نماد با تاریخ یکسان لازم است');panel.append(summary);
    const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
-   const head=document.createElement('tr');['نماد','خالص حقیقی (ریال)','خالص حقوقی (ریال)','قدرت خریدار حقیقی','تاریخ داده'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
-   rows.forEach(x=>{const tr=document.createElement('tr');[x.symbol,fmt(x.net),fmt(x.buyCorporateValue-x.sellCorporateValue),x.power===null?'ناموجود':fmt(x.power),x.marketDate].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+   const head=document.createElement('tr');['نماد','خالص حقیقی (ریال)','خالص حقوقی (ریال)','قدرت خریدار حقیقی','نسبت خالص حقیقی','امتیاز انحراف مقطعی','تاریخ داده'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   rows.forEach(x=>{const tr=document.createElement('tr');[x.symbol,fmt(x.net),fmt(x.buyCorporateValue-x.sellCorporateValue),x.power===null?'ناموجود':fmt(x.power),fmt(x.netRatio*100)+'٪',x.robustScore===null?'ناموجود':fmt(x.robustScore)+(x.crossSectionalOutlier?' | غیرعادی':''),x.marketDate].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
    panel.append(table);
   }catch(e){panel.textContent='تحلیل جریان حقیقی و حقوقی انجام نشد: '+e.message+' داده ناقص به‌صورت جمع کل نمایش داده نمی‌شود.';}
  });
