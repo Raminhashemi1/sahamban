@@ -12,3 +12,6 @@ assert.doesNotMatch(pilot,/۱۹ نماد|19 نماد|19 symbols/);
 console.log('PASS homepage latest pilot entry and variable basket label');
 
 assert.ok(html.includes('portfolio-asset-allocation-v62.js?v=62.0'));
+
+assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.0'));
+assert.ok(html.includes('riskFundNavPremiumV63'));

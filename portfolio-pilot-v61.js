@@ -116,9 +116,13 @@
   if(quote.instrumentFlow===18){
    try{
     const fundResponse=await fetchJson('/Fund/GetETFByInsCode/'+encodeURIComponent(quote.insCode));
-    const fund=fundResponse?.etf,nav=Number(fund?.pRedTran??fund?.pSubTran);
-    if(fund&&String(fund.insCode??'')===String(quote.insCode)&&Number.isFinite(nav)&&nav>0){
-     quote.assetClass='fund_etf';quote.assetClassLabel='صندوق قابل معامله';quote.fundNav=nav;
+    const fund=fundResponse?.etf;
+    if(fund&&String(fund.insCode??'')===String(quote.insCode)){
+     quote.assetClass='fund_etf';quote.assetClassLabel='صندوق قابل معامله';
+     const nav=Number(fund.pRedTran);
+     quote.fundNav=Number.isFinite(nav)&&nav>0?nav:null;
+     quote.fundNavDate='';
+     if(quote.fundNav!==null){try{quote.fundNavDate=validDate(fund.deven);}catch(_navDateError){quote.fundNav=null;}}
     }
    }catch(_fundError){/* Unknown is safer than inferring from symbol text. */}
   }else if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
@@ -513,6 +517,7 @@
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
+    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,fundNav:q.fundNav,fundNavDate:q.fundNavDate}))}}));
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
    const investorFlow=await Promise.all(quotes.map(async q=>{
     try{
