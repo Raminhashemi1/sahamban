@@ -140,3 +140,5 @@ console.log('SUCCESS: '+count+' smoke checks');
 require('./pilot-v53-weekend.test.cjs');
 
 require('./pilot-v54-live.test.cjs');
+
+require('./pilot-v55-quote.test.cjs');
