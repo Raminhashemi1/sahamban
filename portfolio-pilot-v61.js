@@ -433,8 +433,7 @@
   }finally{running=false;$('livePortfolioRefresh').disabled=false;}
  }
  $('livePortfolioRefresh').addEventListener('click',refreshLiveQuotes);
- // Refresh only while the page is visible; never modify stored holdings.
- setInterval(()=>{if(!document.hidden&&!running&&localStorage.getItem(HOLDINGS_KEY))refreshLiveQuotes();},60000);
+ // Price refresh is user-initiated only; no background or periodic market requests.
  $('livePortfolioShowLast').addEventListener('click',()=>{
   try{
    const holdings=readHoldings(),snapshot=JSON.parse(localStorage.getItem(QUOTES_KEY)||'null');
