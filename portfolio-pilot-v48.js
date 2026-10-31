@@ -32,14 +32,23 @@
   });
  }
  async function fetchJson(path){
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
-  try{
-   const response=await fetch(API+path,{method:'GET',cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
-   if(!response.ok)throw Error('HTTP '+response.status);
-   const type=response.headers.get('content-type')||'';
-   if(!type.toLowerCase().includes('json'))throw Error('پاسخ JSON نیست؛ احتمال محدودیت شبکه یا جغرافیایی');
-   return await response.json();
-  }finally{clearTimeout(timer);}
+  let lastError;
+  for(let attempt=0;attempt<3;attempt++){
+   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
+   try{
+    const response=await fetch(API+path,{method:'GET',cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
+    if(!response.ok)throw Error('HTTP '+response.status);
+    const type=response.headers.get('content-type')||'';
+    if(!type.toLowerCase().includes('json'))throw Error('پاسخ JSON نیست؛ احتمال محدودیت شبکه یا جغرافیایی');
+    return await response.json();
+   }catch(e){
+    lastError=e;
+    const transient=e.name==='AbortError'||e instanceof TypeError||/^HTTP (429|500|502|503|504)$/.test(e.message);
+    if(!transient||attempt===2)break;
+    await new Promise(resolve=>setTimeout(resolve,400*(attempt+1)));
+   }finally{clearTimeout(timer);}
+  }
+  throw Error('دریافت داده بازار پس از تلاش مجدد ناموفق بود: '+(lastError?.name==='AbortError'?'مهلت اتصال تمام شد':lastError?.message??'خطای نامشخص'));
  }
  function validDate(raw){
   const s=String(raw??'').trim();
@@ -55,35 +64,17 @@
   return s;
  }
  async function verifiedCode(holding,insCode){
+  // The quote feed and daily-history feed can publish at different times.
+  // A missing same-day history row must not invalidate a properly dated quote.
+  // Historical technical analysis is a separate explicit user action.
   const result=await fetchJson('/ClosingPrice/GetClosingPriceInfo/'+insCode);
   const info=result?.closingPriceInfo;
   if(!info||typeof info!=='object')throw Error('اطلاعات قیمت دریافت نشد.');
   const price=Number(info.pClosing);
   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی معتبر دریافت نشد.');
-  const date=validDate(info.dEven??info.date??info.lastDate);
-  // Match the closing price against an independent dated history response.
-  const history=await fetchJson('/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0');
-  const daily=history?.closingPriceDaily;
-  if(!Array.isArray(daily)||daily.length===0)throw Error('تاریخچه معتبر موجود نیست.');
-  const matching=daily.filter(row=>String(row?.dEven??'')===date);
-  if(!matching.length)throw Error('تاریخ قیمت روز در تاریخچه یافت نشد.');
-  // Some market responses repeat the same dated closing-price row. Repeated
-  // identical observations are harmless; conflicting prices are not.
-  const datedPrices=matching.map(row=>Number(row?.pClosing));
-  if(datedPrices.some(p=>!Number.isFinite(p)||p<=0)||new Set(datedPrices).size!==1)throw Error('قیمت‌های متناقض برای یک تاریخ در تاریخچه وجود دارد.');
-  const historyPrice=datedPrices[0];
-  if(!Number.isFinite(historyPrice)||historyPrice<=0||Math.abs(historyPrice-price)>0.000001)throw Error('قیمت با تاریخچه تطبیق ندارد.');
-  const historyRows=daily.map(row=>{const d=String(row?.dEven??''),p=Number(row?.pClosing);if(!/^\d{8}$/.test(d)||!Number.isFinite(p)||p<=0)return null;const y=+d.slice(0,4),m=+d.slice(4,6),day=+d.slice(6,8),dt=new Date(Date.UTC(y,m-1,day));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==day)return null;return {date:d,close:p};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
-  const uniqueHistory=new Set(historyRows.map(row=>row.date));
-  const historicalSeries=historyRows.length&&uniqueHistory.size===historyRows.length?historyRows.slice(-250):null;
-  // A matching symbol and price history do not prove this is the same instrument
-  // as the imported brokerage holding. Stop implausible price-scale mismatches
-  // rather than silently producing a misleading portfolio total.
-  if(Number.isFinite(holding.importCurrent)&&holding.importCurrent>0){
-   const ratio=price/holding.importCurrent;
-   if(ratio<0.1||ratio>10)throw Error('قیمت پایانی '+fmt(price)+' ریال برای '+holding.symbol+' با قیمت فایل کارگزاری ('+fmt(holding.importCurrent)+' ریال) بیش از ۱۰ برابر اختلاف دارد؛ احتمال انتخاب ابزار هم‌نام یا تغییر مبنای قیمت وجود دارد. ارزش کل تا بررسی شناسه محاسبه نمی‌شود.');
-  }
-  return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date,history:historicalSeries};
+  const marketDate=validDate(info.dEven??info.date??info.lastDate);
+  return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,
+   price,marketDate,history:null};
  }
  async function getOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
