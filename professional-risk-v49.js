@@ -7,8 +7,9 @@
  function fail(s){$('riskStatusV49').textContent=s;$('riskSummaryV49').textContent='';$('riskDetailsV49').replaceChildren();}
  function readVerifiedRows(){
   const status=$('livePortfolioStatus')?.textContent||'';
-  const verified=status.match(/^دریافت و اعتبارسنجی قیمت پایانی همه\s+([۰-۹٠-٩0-9]+)\s+نماد موفق بود/);
-  if(!verified)throw Error('ابتدا دکمه دریافت قیمت پایانی همه نمادها را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
+  // Accept both the legacy v50 quote status and the current v61 live-price status.
+  const verified=status.match(/^(?:دریافت و اعتبارسنجی قیمت پایانی همه|دریافت قیمت جاری همه)\s+([۰-۹٠-٩0-9]+)\s+نماد موفق بود/);
+  if(!verified)throw Error('ابتدا دریافت قیمت جاری همه نمادهای سبد را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
   const expectedCount=Number(digits(verified[1]));
   const rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
   if(!rows.length)throw Error('جدول قیمت تأییدشده در صفحه موجود نیست.');
@@ -17,8 +18,11 @@
    const c=[...tr.querySelectorAll('td')].map(td=>td.textContent.trim());
    if(c.length<7)throw Error('ساختار جدول قیمت ناقص است.');
    const quantity=Number(digits(c[1])),buy=Number(digits(c[2])),price=Number(digits(c[3]));
+   const marketDate=String(c[9]??'').trim(),priceBasis=String(c[13]??'').trim();
    if(!c[0]||![quantity,buy,price].every(Number.isFinite)||quantity<=0||buy<=0||price<=0)throw Error('مقادیر نامعتبر در ردیف '+(c[0]||'نامشخص'));
-   return {symbol:c[0],quantity,buy,price,value:quantity*price,cost:quantity*buy,date:c[6]};
+   if(!/^\\d{8}$/.test(marketDate))throw Error('تاریخ بازار برای '+c[0]+' معتبر نیست؛ گزارش ریسک فقط با قیمت تأییدشده پذیرفته می‌شود.');
+   if(priceBasis!=='آخرین معامله'&&priceBasis!=='پایانی')throw Error('مبنای قیمت برای '+c[0]+' تأیید نشده است.');
+   return {symbol:c[0],quantity,buy,price,value:quantity*price,cost:quantity*buy,date:marketDate};
   });
   if(result.length>100||result.some(x=>!Number.isSafeInteger(x.quantity)||!Number.isFinite(x.value)||!Number.isFinite(x.cost)||x.value>Number.MAX_SAFE_INTEGER||x.cost>Number.MAX_SAFE_INTEGER))throw Error('مقادیر از محدوده محاسبه امن خارج‌اند.');
   return result;
