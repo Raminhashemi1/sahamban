@@ -60,4 +60,49 @@
    $('riskDetailsV49').replaceChildren(table);
   }catch(e){fail('محاسبه انجام نشد: '+e.message);}
  });
+
+ function correlation(a,b){
+  const keys=[...a.keys()].filter(k=>b.has(k)).sort();
+  if(keys.length<15)return null;
+  const x=keys.map(k=>a.get(k)),y=keys.map(k=>b.get(k));
+  const mx=x.reduce((s,v)=>s+v,0)/x.length,my=y.reduce((s,v)=>s+v,0)/y.length;
+  let cov=0,vx=0,vy=0;
+  for(let i=0;i<x.length;i++){const dx=x[i]-mx,dy=y[i]-my;cov+=dx*dy;vx+=dx*dx;vy+=dy*dy;}
+  if(vx<=0||vy<=0)return null;
+  return {value:cov/Math.sqrt(vx*vy),count:keys.length};
+ }
+ window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
+  const panel=$('riskCorrelationV49');if(!panel)return;
+  const incoming=event?.detail?.quotes;
+  if(!Array.isArray(incoming)){panel.textContent='داده تاریخچه ساختار معتبر ندارد؛ همبستگی محاسبه نشد.';return;}
+  const returns=[];
+  for(const quote of incoming){
+   if(!quote||typeof quote.symbol!=='string'||!Array.isArray(quote.history))continue;
+   const history=quote.history.filter(x=>x&&/^\d{8}$/.test(String(x.date))&&Number.isFinite(Number(x.close))&&Number(x.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
+   const daily=new Map();
+   for(let i=1;i<history.length;i++){
+    const previous=Number(history[i-1].close),current=Number(history[i].close);
+    if(previous>0&&Number.isFinite(current))daily.set(history[i].date,current/previous-1);
+   }
+   if(daily.size>=15)returns.push({symbol:quote.symbol,daily});
+  }
+  const pairs=[];
+  for(let i=0;i<returns.length;i++)for(let j=i+1;j<returns.length;j++){
+   const result=correlation(returns[i].daily,returns[j].daily);
+   if(result)pairs.push({a:returns[i].symbol,b:returns[j].symbol,r:result.value,n:result.count});
+  }
+  if(!pairs.length){panel.textContent='برای هیچ جفت نمادی حداقل ۱۵ بازده روزانه مشترک و معتبر وجود ندارد. همبستگی گزارش نشد؛ داده ساختگی یا جایگزین استفاده نشده است.';return;}
+  const average=pairs.reduce((sum,p)=>sum+p.r,0)/pairs.length;
+  const high=[...pairs].sort((a,b)=>Math.abs(b.r)-Math.abs(a.r)).slice(0,5);
+  panel.replaceChildren();
+  const title=document.createElement('strong');title.textContent='همبستگی بازده روزانه نمادها';panel.append(title);
+  const summary=document.createElement('p');
+  summary.textContent='نمادهای دارای تاریخچه کافی: '+fmt(returns.length)+' از '+fmt(incoming.length)+' | جفت‌های قابل محاسبه: '+fmt(pairs.length)+' | میانگین همبستگی جفتی: '+fmt(average)+' | این آمار توصیفی است و به‌تنهایی ریسک یا جهت آینده را پیش‌بینی نمی‌کند.';
+  panel.append(summary);
+  const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+  const head=document.createElement('tr');
+  ['جفت نماد','همبستگی','روزهای مشترک'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+  high.forEach(p=>{const tr=document.createElement('tr');[p.a+' / '+p.b,fmt(p.r),fmt(p.n)].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+  panel.append(table);
+ });
 })();
