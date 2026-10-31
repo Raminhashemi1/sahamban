@@ -103,8 +103,8 @@
   for(const h of holdings){
    const q=quotes.find(x=>x.symbol===h.symbol);
    const tr=document.createElement('tr');
-   const vals=[h.symbol,h.quantity,h.buy,q.price,q.price*h.quantity,h.quantity*(q.price-h.buy),q.marketDate];
-   vals.forEach((v,i)=>{const td=document.createElement('td');td.style.padding='7px 5px';td.style.borderBottom='1px solid #34546d';td.textContent=i===0||i===6?String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]):fmt(v);tr.append(td);});
+   const vals=[h.symbol,h.quantity,h.buy,q.price,q.price*h.quantity,h.importCurrent,h.quantity*h.importCurrent,h.quantity*(q.price-h.importCurrent),h.quantity*(q.price-h.buy),q.marketDate];
+   vals.forEach((v,i)=>{const td=document.createElement('td');td.style.padding='7px 5px';td.style.borderBottom='1px solid #34546d';td.textContent=i===0||i===9?String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]):fmt(v);tr.append(td);});
    const rowValue=q.price*h.quantity,rowCost=h.buy*h.quantity;
    if(!Number.isSafeInteger(h.quantity)||!Number.isFinite(rowValue)||!Number.isFinite(rowCost)||rowValue>Number.MAX_SAFE_INTEGER||rowCost>Number.MAX_SAFE_INTEGER)throw Error('مبلغ دارایی از محدوده محاسبه مطمئن خارج است.');
    body.append(tr);value+=rowValue;cost+=rowCost;
