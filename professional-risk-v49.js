@@ -289,4 +289,65 @@
    panel.append(table);
   }catch(e){panel.textContent='تحلیل تاریخی جریان پول انجام نشد: '+e.message+'؛ داده ناقص به هشدار تبدیل نمی‌شود.';}
  });
+
+ const scoreState={quotes:null,flows:null,sector:null};
+ const clamp=(x,a=0,b=100)=>Math.max(a,Math.min(b,x));
+ function renderScorecard(){
+  const panel=$('riskScorecardV51');if(!panel||!scoreState.quotes)return;
+  try{
+   const quotes=scoreState.quotes,rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
+   if(!Array.isArray(quotes)||!rows.length||rows.length>100)throw Error('قیمت یا سبد معتبر در دسترس نیست.');
+   const holdings=rows.map(tr=>{const c=[...tr.querySelectorAll('td')],symbol=String(c[0]?.textContent||'').trim(),quantity=Number(digits(c[1]?.textContent)),value=Number(digits(c[4]?.textContent));if(!symbol||!Number.isSafeInteger(quantity)||quantity<=0||!Number.isFinite(value)||value<0)throw Error('اطلاعات دارایی نامعتبر است.');return {symbol,quantity,value};});
+   const qmap=new Map(quotes.map(q=>[q?.symbol,q]));
+   if(qmap.size!==holdings.length||holdings.some(h=>!qmap.has(h.symbol)))throw Error('تاریخچه با نمادهای سبد فعلی تطبیق کامل ندارد.');
+   const flowMap=new Map((scoreState.flows?.series||[]).map(x=>[x.symbol,x]));
+   const retMaps=new Map();
+   for(const q of quotes){
+    const hist=Array.isArray(q.history)?q.history.filter(x=>x&&/^\d{8}$/.test(String(x.date))&&Number.isFinite(Number(x.close))&&Number(x.close)>0).sort((a,b)=>a.date.localeCompare(b.date)):[];
+    const closes=hist.map(x=>Number(x.close)),daily=new Map();
+    for(let i=1;i<hist.length;i++)daily.set(hist[i].date,closes[i]/closes[i-1]-1);
+    retMaps.set(q.symbol,daily);
+   }
+   const rowsOut=holdings.map(h=>{
+    const q=qmap.get(h.symbol),hist=(q.history||[]).filter(x=>/^\d{8}$/.test(String(x?.date??''))&&Number.isFinite(Number(x.close))&&Number(x.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
+    const components=[];
+    if(hist.length>=26){
+     const closes=hist.map(x=>Number(x.close)),last=closes.at(-1),sma=closes.slice(-20).reduce((a,b)=>a+b,0)/20;
+     const changes=closes.slice(-15).map((v,i,a)=>i?v-a[i-1]:0).slice(1),gains=changes.map(x=>Math.max(0,x)),losses=changes.map(x=>Math.max(0,-x));
+     const ag=gains.reduce((a,b)=>a+b,0)/14,al=losses.reduce((a,b)=>a+b,0)/14, rsi=al===0?100:100-100/(1+ag/al);
+     const trend=clamp(50+(last/sma-1)*500),momentum=clamp(100-Math.abs(rsi-50)*1.5);
+     components.push({name:'تکنیکال',weight:40,score:(trend+momentum)/2});
+    }
+    const flow=flowMap.get(h.symbol),obs=(flow?.observations||[]).filter(x=>!x.error&&Number.isFinite(x.netRatio)).sort((a,b)=>a.date.localeCompare(b.date));
+    if(obs.length>=6){
+     const base=obs.slice(0,-1).slice(-10).map(x=>x.netRatio).sort((a,b)=>a-b),mid=base.length%2?base[(base.length-1)/2]:(base[base.length/2-1]+base[base.length/2])/2;
+     const dev=base.map(x=>Math.abs(x-mid)).sort((a,b)=>a-b),mad=dev.length%2?dev[(dev.length-1)/2]:(dev[dev.length/2-1]+dev[dev.length/2])/2;
+     const z=mad>0?0.6745*(obs.at(-1).netRatio-mid)/mad:null;
+     components.push({name:'جریان پول',weight:25,score:z===null?clamp(50+obs.at(-1).netRatio*50):clamp(50+z*7)});
+    }
+    const liquidity=(q.history||[]).filter(x=>Number.isFinite(Number(x?.tradedValue))&&Number(x.tradedValue)>0).slice(-20);
+    if(liquidity.length>=15){
+     const avg=liquidity.reduce((a,x)=>a+Number(x.tradedValue),0)/liquidity.length,days=avg>0?h.value/(avg*.1):null;
+     if(days!==null&&Number.isFinite(days))components.push({name:'نقدشوندگی',weight:20,score:days<=1?100:days<=3?80:days<=7?60:days<=15?35:10});
+    }
+    const own=retMaps.get(h.symbol)||[],corrs=[];
+    for(const other of holdings){if(other.symbol===h.symbol)continue;const b=retMaps.get(other.symbol)||[],keys=[...own.keys()].filter(k=>b.has(k)).sort();if(keys.length<15)continue;const x=keys.map(k=>own.get(k)),y=keys.map(k=>b.get(k)),mx=x.reduce((a,v)=>a+v,0)/x.length,my=y.reduce((a,v)=>a+v,0)/y.length;let cov=0,vx=0,vy=0;for(let i=0;i<x.length;i++){const dx=x[i]-mx,dy=y[i]-my;cov+=dx*dy;vx+=dx*dx;vy+=dy*dy;}if(vx>0&&vy>0)corrs.push(Math.abs(cov/Math.sqrt(vx*vy)));}
+    if(corrs.length)components.push({name:'تنوع/همبستگی',weight:15,score:clamp(100-corrs.reduce((a,b)=>a+b,0)/corrs.length*100)});
+    const used=components.reduce((a,x)=>a+x.weight,0),score=used?components.reduce((a,x)=>a+x.score*x.weight,0)/used:null;
+    return {...h,components,score,coverage:used/100*100};
+   });
+   const total=rowsOut.reduce((a,x)=>a+x.value,0),available=rowsOut.filter(x=>x.score!==null),portfolio=total>0?available.reduce((a,x)=>a+x.score*x.value,0)/total:null;
+   const coverage=total>0?rowsOut.reduce((a,x)=>a+x.coverage*x.value,0)/total:0;
+   panel.replaceChildren();
+   const title=document.createElement('strong');title.textContent='امتیاز تحلیلی نمادها و سبد';panel.append(title);
+   const note=document.createElement('p');note.textContent='امتیاز ۰ تا ۱۰۰، شاخص توصیفی داخلی است و احتمال سود یا توصیه معامله نیست. وزن مؤلفه‌ها: تکنیکال ۴۰، جریان پول ۲۵، نقدشوندگی ۲۰ و تنوع بر پایه همبستگی ۱۵. مؤلفه‌های فاقد داده حذف و وزن باقی‌مانده برای امتیاز نماد نرمال می‌شود؛ پوشش داده جداگانه گزارش شده است. برای امتیاز سبد، نماد بدون امتیاز صفر فرض نمی‌شود و پوشش کل اعلام می‌شود.';panel.append(note);
+   const summary=document.createElement('p');summary.textContent='امتیاز وزنی نمادهای قابل ارزیابی: '+(portfolio===null?'ناموجود':fmt(portfolio))+' از ۱۰۰ | پوشش وزنی داده: '+fmt(coverage)+'٪ | نمادهای دارای امتیاز: '+fmt(available.length)+' از '+fmt(rowsOut.length);panel.append(summary);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';const head=document.createElement('tr');
+   ['نماد','امتیاز','پوشش داده','تکنیکال','جریان پول','نقدشوندگی','تنوع'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   rowsOut.sort((a,b)=>b.value-a.value).forEach(x=>{const m=Object.fromEntries(x.components.map(c=>[c.name,c.score]));const tr=document.createElement('tr');[x.symbol,x.score===null?'ناموجود':fmt(x.score),fmt(x.coverage)+'٪',m['تکنیکال']===undefined?'ناموجود':fmt(m['تکنیکال']),m['جریان پول']===undefined?'ناموجود':fmt(m['جریان پول']),m['نقدشوندگی']===undefined?'ناموجود':fmt(m['نقدشوندگی']),m['تنوع/همبستگی']===undefined?'ناموجود':fmt(m['تنوع/همبستگی'])].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+   panel.append(table);
+  }catch(e){panel.textContent='امتیازدهی انجام نشد: '+e.message+'؛ داده ناقص به‌عنوان امتیاز معتبر نمایش داده نمی‌شود.';}
+ }
+ window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{scoreState.quotes=event?.detail?.quotes;renderScorecard();});
+ window.addEventListener('sahamban:verified-investor-flow-history-v50',event=>{scoreState.flows=event?.detail;renderScorecard();});
 })();
