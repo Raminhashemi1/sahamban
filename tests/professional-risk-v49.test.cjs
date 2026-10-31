@@ -62,4 +62,4 @@ test('v54 stress report receives the same validated daily-return maps used for p
 });
 test('sector metadata arrival refreshes the integrated scorecard and stress report',()=>{
  assert.match(js,/scoreState\\.sectors=Array\\.isArray\\(event\\?\\.detail\\?\\.quotes\\)\\?event\\.detail\\.quotes:\\[\\];renderScorecard\\(\\)/);
-});
+test('sector metadata arrival refreshes the integrated scorecard and stress report',()=>{assert.ok(js.includes("scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];renderScorecard();"));});
