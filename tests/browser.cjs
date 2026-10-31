@@ -217,7 +217,24 @@ async function main(){
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),beforeNineteen);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
   assert.equal(await page.locator('#portfolioData').inputValue(),analysisBeforeIntegrated);
-  console.log('PASS: v48 integrated main page reads 19 synthetic broker positions without mutations or demo-portfolio mixing');
+  console.log('PASS: integrated main page reads a 19-position broker portfolio without mutations or demo-portfolio mixing');
+  // Variable-size portfolios: support both fewer and more holdings than this user's 19.
+  for(const count of [1,7,35]){
+   const sample=Array.from({length:count},(_,i)=>({symbol:'تعداد'+count+'_'+(i+1),quantity:i+1,buy:900+i,current:1000+i}));
+   const snapshot=JSON.stringify({version:2,created:new Date().toISOString(),holdings:sample});
+   await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),snapshot);
+   await page.reload({waitUntil:'load'});
+   await page.locator('#livePortfolioImported').click();
+   assert.equal(await page.locator('#livePortfolioRows tr').count(),count);
+   assert.match(await page.locator('#livePortfolioMeta').innerText(),new RegExp('تعداد دارایی: '+count));
+   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),snapshot);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
+  }
+  console.log('PASS: variable portfolio sizes 1, 7 and 35 render without storage mutations');
+  const restoreNineteen=JSON.stringify({version:2,created:new Date().toISOString(),holdings:nineteen});
+  await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),restoreNineteen);
+  await page.reload({waitUntil:'load'});
+
   const beforeDownload=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
   const pendingBackup=page.waitForEvent('download');
   await page.locator('#brokerExportBackup').click();
