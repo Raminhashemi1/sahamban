@@ -7,9 +7,12 @@
  function fail(s){$('riskStatusV49').textContent=s;$('riskSummaryV49').textContent='';$('riskDetailsV49').replaceChildren();}
  function readVerifiedRows(){
   const status=$('livePortfolioStatus')?.textContent||'';
-  if(!/^دریافت و اعتبارسنجی قیمت پایانی همه\s+[۰-۹٠-٩0-9]+\s+نماد موفق بود/.test(status)) throw Error('ابتدا دکمه دریافت قیمت پایانی همه نمادها را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
+  const verified=status.match(/^دریافت و اعتبارسنجی قیمت پایانی همه\s+([۰-۹٠-٩0-9]+)\s+نماد موفق بود/);
+  if(!verified)throw Error('ابتدا دکمه دریافت قیمت پایانی همه نمادها را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
+  const expectedCount=Number(digits(verified[1]));
   const rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
   if(!rows.length)throw Error('جدول قیمت تأییدشده در صفحه موجود نیست.');
+  if(rows.length!==expectedCount)throw Error('تعداد ردیف‌های جدول ('+fmt(rows.length)+') با تعداد قیمت‌های تأییدشده ('+fmt(expectedCount)+') برابر نیست؛ گزارش ناقص پذیرفته نشد.');
   const result=rows.map(tr=>{
    const c=[...tr.querySelectorAll('td')].map(td=>td.textContent.trim());
    if(c.length<7)throw Error('ساختار جدول قیمت ناقص است.');
