@@ -367,6 +367,7 @@
    }
 
    renderStressReport(holdings,qmap,rowsOut);
+   renderAllocationReport(holdings,qmap,retMaps);
    const alertPanel=$('riskAlertsV53');
    if(alertPanel){
     alertPanel.replaceChildren();
@@ -430,5 +431,46 @@
    const sectorTable=document.createElement('table');sectorTable.style.cssText='width:100%;border-collapse:collapse;font-size:13px';const sh=document.createElement('tr');['صنعت','وزن از ارزش سبد'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';sh.append(th)});sectorTable.append(sh);
    concentration.forEach(([name,w])=>{const tr=document.createElement('tr');[name,fmt(w*100)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});sectorTable.append(tr)});box.append(sectorTable);
   }catch(e){box.textContent='گزارش ریسک محاسبه نشد: '+e.message+'؛ از داده ناقص برآورد قطعی ساخته نمی‌شود.';}
+ }
+
+ function renderAllocationReport(holdings,qmap,retMaps){
+  const box=$('riskAllocationV55');if(!box)return;
+  try{
+   const total=holdings.reduce((a,h)=>a+h.value,0);if(!(total>0))throw Error('ارزش کل سبد معتبر نیست.');
+   const eligible=holdings.map(h=>{
+    const series=[...(retMaps.get(h.symbol)||new Map()).entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-61).map(x=>x[1]).filter(Number.isFinite);
+    if(series.length<20)return {...h,vol:null};
+    const mean=series.reduce((a,b)=>a+b,0)/series.length;
+    const variance=series.reduce((a,b)=>a+(b-mean)**2,0)/(series.length-1);
+    const vol=Math.sqrt(variance)*Math.sqrt(252);
+    return {...h,vol:Number.isFinite(vol)&&vol>0?vol:null};
+   });
+   const active=eligible.filter(x=>x.vol!==null);
+   if(!active.length)throw Error('برای هیچ نمادی حداقل ۲۰ بازده روزانه معتبر موجود نیست.');
+   const inverse=active.map(x=>1/x.vol),sum=inverse.reduce((a,b)=>a+b,0);
+   const cap=Math.max(.2,1/active.length),target=Array(active.length).fill(0),remaining=new Set(active.map((x,i)=>i));
+   let left=1;
+   while(remaining.size){
+    const denom=[...remaining].reduce((a,i)=>a+inverse[i],0);
+    if(!(denom>0))break;
+    let capped=false;
+    for(const i of [...remaining]){
+     const proposed=left*inverse[i]/denom;
+     if(proposed>cap){target[i]=cap;left-=cap;remaining.delete(i);capped=true;}
+    }
+    if(!capped){for(const i of remaining)target[i]=left*inverse[i]/denom;left=0;break;}
+   }
+   const targetMap=new Map(active.map((x,i)=>[x.symbol,target[i]]));
+   box.replaceChildren();
+   const title=document.createElement('strong');title.textContent='مقایسه وزن فعلی با تخصیص فرضی مبتنی بر نوسان';box.append(title);
+   const note=document.createElement('p');note.textContent='وزن هدف با روش معکوس نوسان سالانه‌شده و سقف ۲۰٪ برای هر نماد واجد شرایط محاسبه می‌شود؛ در سبدهای کمتر از پنج نماد، سقف حداقل به وزن مساوی افزایش می‌یابد. این روش بهینه‌سازی میانگین-واریانس یا برابری ریسک کامل نیست، هزینه معامله و مالیات را لحاظ نمی‌کند و توصیه خرید/فروش نیست. نمادهای فاقد ۲۰ بازده روزانه از تخصیص هدف کنار گذاشته می‌شوند؛ بنابراین وزن‌های هدف فقط بین نمادهای واجد شرایط جمعاً ۱۰۰٪ می‌شوند.';box.append(note);
+   const eligibleValue=active.reduce((a,x)=>a+x.value,0);
+   const summary=document.createElement('p');summary.textContent='نمادهای واجد شرایط: '+fmt(active.length)+' از '+fmt(holdings.length)+' | ارزش نمادهای واجد شرایط: '+fmt(eligibleValue)+' ریال | روش: معکوس نوسان با سقف '+fmt(cap*100)+'٪';box.append(summary);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';const head=document.createElement('tr');
+   ['نماد','وزن فعلی از کل سبد','وزن هدف در بخش واجد شرایط','اختلاف هدف و فعلی','نوسان سالانه‌شده'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   eligible.forEach(x=>{const current=x.value/total,targetWeight=targetMap.get(x.symbol),tr=document.createElement('tr');[x.symbol,fmt(current*100)+'٪',targetWeight===undefined?'داده ناکافی':fmt(targetWeight*100)+'٪',targetWeight===undefined?'محاسبه‌نشده':fmt((targetWeight-current)*100)+' واحد درصد',x.vol===null?'داده ناکافی':fmt(x.vol*100)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+   box.append(table);
+   const footer=document.createElement('p');footer.textContent='اختلاف وزن صرفاً فاصله ریاضی از تخصیص فرضی است. هیچ سفارش، انتقال وجه یا تغییری در سبد ثبت نشده است.';box.append(footer);
+  }catch(e){box.textContent='تخصیص فرضی محاسبه نشد: '+e.message+'؛ داده ناقص به وزن هدف تبدیل نمی‌شود.';}
  }
 })();
