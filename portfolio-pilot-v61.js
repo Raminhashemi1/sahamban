@@ -111,6 +111,7 @@
     quote.instrumentFlow=Number.isFinite(Number(meta.flow))?Number(meta.flow):quote.flow;
    }
   }catch(_sectorError){quote.sectorCode='';quote.sectorName='';}
+  quote.instrumentFlow=quote.instrumentFlow??quote.flow;
   quote.assetClass='unknown';quote.assetClassLabel='نامشخص';quote.fundNav=null;
   if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
   else if(quote.instrumentTypeCode==='301'){quote.assetClass='preemptive_right';quote.assetClassLabel='حق تقدم';}
