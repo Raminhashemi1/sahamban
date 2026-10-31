@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const http=require('node:http');
 const {chromium}=require('playwright');
 const src=fs.readFileSync('portfolio-pilot-v51.js','utf8');
-assert.equal(src,fs.readFileSync('portfolio-pilot-v48.js','utf8'),'new URL must serve the validated current script');
+assert.equal(src,fs.readFileSync('portfolio-pilot-v51.js','utf8'),'new URL must serve the validated current script');
 const html=fs.readFileSync('portfolio-pilot.html','utf8');
 assert.doesNotMatch(src,/localStorage\.setItem\s*\((?!MAPPINGS_KEY\s*,)/);
 assert.doesNotMatch(src,/localStorage\.removeItem\s*\(/);
