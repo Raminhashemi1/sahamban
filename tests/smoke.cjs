@@ -154,3 +154,5 @@ require('./pilot-v59-freshness.test.cjs');
 require('./pilot-v60-mobile.test.cjs');
 
 require('./pilot-v61-coverage.test.cjs');
+
+require('./home-portfolio-v61-entry.test.cjs');
