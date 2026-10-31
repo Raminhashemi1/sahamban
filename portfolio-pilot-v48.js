@@ -72,6 +72,13 @@
   const historyRows=daily.map(row=>{const d=String(row?.dEven??''),p=Number(row?.pClosing);if(!/^\d{8}$/.test(d)||!Number.isFinite(p)||p<=0)return null;const y=+d.slice(0,4),m=+d.slice(4,6),day=+d.slice(6,8),dt=new Date(Date.UTC(y,m-1,day));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==day)return null;return {date:d,close:p};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
   const uniqueHistory=new Set(historyRows.map(row=>row.date));
   const historicalSeries=historyRows.length&&uniqueHistory.size===historyRows.length?historyRows.slice(-250):null;
+  // A matching symbol and price history do not prove this is the same instrument
+  // as the imported brokerage holding. Stop implausible price-scale mismatches
+  // rather than silently producing a misleading portfolio total.
+  if(Number.isFinite(holding.importCurrent)&&holding.importCurrent>0){
+   const ratio=price/holding.importCurrent;
+   if(ratio<0.1||ratio>10)throw Error('قیمت پایانی '+fmt(price)+' ریال برای '+holding.symbol+' با قیمت فایل کارگزاری ('+fmt(holding.importCurrent)+' ریال) بیش از ۱۰ برابر اختلاف دارد؛ احتمال انتخاب ابزار هم‌نام یا تغییر مبنای قیمت وجود دارد. ارزش کل تا بررسی شناسه محاسبه نمی‌شود.');
+  }
   return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,price,marketDate:date,history:historicalSeries};
  }
  async function getOne(holding){
