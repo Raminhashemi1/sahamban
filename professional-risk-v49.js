@@ -126,7 +126,7 @@
    const map=new Map();
    for(const item of history){
     const date=String(item?.date??''),close=Number(item?.close);
-    if(/^\\d{8}$/.test(date)&&Number.isFinite(close)&&close>0)map.set(date,close*h.quantity);
+    if(/^\d{8}$/.test(date)&&Number.isFinite(close)&&close>0)map.set(date,close*h.quantity);
    }
    if(map.size<15)throw Error('تاریخچه '+h.symbol+' کمتر از ۱۵ قیمت معتبر دارد.');
    return map;
