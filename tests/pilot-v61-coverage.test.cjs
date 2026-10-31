@@ -14,4 +14,4 @@ console.log('PASS v61 variable-size portfolio and quote coverage');
 
 assert.ok(src.includes('const outliers=ranked.filter(r=>Math.abs(r.pct)>=50)'));
 assert.ok(src.includes('نیازمند بررسی قیمت خرید/تعدیل'));
-assert.ok(src.includes('سامانه هیچ قیمت یا تعداد سهمی را خودکار اصلاح نمی‌کند'));\n
+assert.ok(src.includes('سامانه هیچ قیمت یا تعداد سهمی را خودکار اصلاح نمی‌کند'));
