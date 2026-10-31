@@ -192,4 +192,41 @@
    panel.append(table);
   }catch(e){panel.textContent='تحلیل نقدشوندگی انجام نشد: '+e.message+' داده ناقص یا ارزش معاملات نامعتبر پذیرفته نشد.';}
  });
+
+ window.addEventListener('sahamban:verified-portfolio-sectors-v50',event=>{
+  const panel=$('riskSectorV49');if(!panel)return;
+  try{
+   const rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
+   const incoming=event?.detail?.quotes;
+   if(!rows.length||rows.length>100||!Array.isArray(incoming))throw Error('اطلاعات سبد یا مشخصات صنعت معتبر نیست.');
+   const values=new Map(rows.map(tr=>{
+    const cells=[...tr.querySelectorAll('td')],symbol=String(cells[0]?.textContent||'').trim(),value=Number(digits(cells[4]?.textContent));
+    if(!symbol||!Number.isFinite(value)||value<0)throw Error('ارزش روز یکی از نمادها معتبر نیست.');
+    return [symbol,value];
+   }));
+   const unique=new Map(incoming.map(q=>[q?.symbol,q]));
+   if(unique.size!==values.size||[...values.keys()].some(s=>!unique.has(s)))throw Error('فهرست نمادها با سبد فعلی تطبیق کامل ندارد.');
+   const groups=new Map();let missing=[];
+   for(const [symbol,value] of values){
+    const q=unique.get(symbol),code=String(q?.sectorCode??'').trim(),name=String(q?.sectorName??'').trim();
+    if(!code||!name){missing.push(symbol);continue;}
+    const key=code;
+    const g=groups.get(key)||{code,name,value:0,count:0};
+    g.value+=value;g.count++;groups.set(key,g);
+   }
+   if(missing.length)throw Error('طبقه‌بندی صنعت برای '+missing.join('، ')+' از منبع بازار دریافت نشد؛ سهم کل صنایع و شاخص تمرکز گزارش نمی‌شود.');
+   const total=[...groups.values()].reduce((sum,g)=>sum+g.value,0);
+   if(!Number.isFinite(total)||total<=0)throw Error('ارزش کل سبد برای محاسبه تمرکز معتبر نیست.');
+   const result=[...groups.values()].map(g=>({...g,weight:g.value/total})).sort((a,b)=>b.value-a.value);
+   const hhi=result.reduce((sum,g)=>sum+g.weight*g.weight,0);
+   panel.replaceChildren();
+   const title=document.createElement('strong');title.textContent='تمرکز سرمایه بر اساس صنعت رسمی بازار';panel.append(title);
+   const note=document.createElement('p');note.textContent='طبقه‌بندی از فیلدهای صنعت در مشخصات ابزار بازار گرفته شده است. سهم‌ها بر مبنای ارزش روز فعلی سبد محاسبه می‌شوند؛ HHI مجموع مربع وزن صنایع است و صرفاً شاخص تمرکز توصیفی است، نه پیش‌بینی ریسک.';panel.append(note);
+   const summary=document.createElement('p');summary.textContent='تعداد نمادها: '+fmt(values.size)+' | تعداد صنایع: '+fmt(result.length)+' | شاخص تمرکز HHI: '+fmt(hhi)+' ('+fmt(hhi*10000)+' از ۱۰٬۰۰۰) | بزرگ‌ترین صنعت: '+result[0].name+' با سهم '+fmt(result[0].weight*100)+'٪';panel.append(summary);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const head=document.createElement('tr');['صنعت','تعداد نماد','ارزش روز (ریال)','سهم سبد'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   result.forEach(g=>{const tr=document.createElement('tr');[g.name,fmt(g.count),fmt(g.value),fmt(g.weight*100)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+   panel.append(table);
+  }catch(e){panel.textContent='تحلیل تمرکز صنایع انجام نشد: '+e.message+' طبقه‌بندی حدسی یا جایگزین استفاده نشده است.';}
+ });
 })();
