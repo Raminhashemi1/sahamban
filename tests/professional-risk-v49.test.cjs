@@ -64,3 +64,5 @@ test('v54 stress report receives the same validated daily-return maps used for p
 test('sector metadata arrival refreshes the integrated scorecard and stress report',()=>{
  assert.ok(js.includes("scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];renderScorecard();"));
 });
+
+test('v51 portfolio score averages only scored holdings while reporting total-weight coverage separately',()=>{assert.ok(js.includes('scoredValue=available.reduce((a,x)=>a+x.value,0)'));assert.ok(js.includes('available.reduce((a,x)=>a+x.score*x.value,0)/scoredValue'));assert.ok(js.includes('coverage=total>0?rowsOut.reduce((a,x)=>a+x.coverage*x.value,0)/total:0'));});
