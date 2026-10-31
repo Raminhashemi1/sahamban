@@ -145,6 +145,13 @@
    const stressHead=document.createElement('tr');['افت فرضی بازار','کاهش ارزش سبد','ارزش باقی‌مانده'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';stressHead.append(th)});stressTable.append(stressHead);
    [5,10,15,20].forEach(shock=>{const loss=value*shock/100;const tr=document.createElement('tr');[fmt(shock)+'٪',fmt(loss)+' ریال',fmt(value-loss)+' ریال'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});stressTable.append(tr)});
    insight.append(stressTable);
+   const qualityTitle=document.createElement('strong');qualityTitle.textContent='پوشش و کیفیت داده قیمت';qualityTitle.style.display='block';qualityTitle.style.marginTop='14px';insight.append(qualityTitle);
+   const lastCount=quotes.filter(q=>q.priceKind==='آخرین معامله').length,closeCount=quotes.length-lastCount;
+   const qualitySummary=document.createElement('p');qualitySummary.textContent='مبنای آخرین قیمت: '+fmt(lastCount)+' نماد آخرین معامله و '+fmt(closeCount)+' نماد قیمت پایانی. تاریخ بازار و ساعت آخرین معامله برای هر نماد جداگانه درج شده است؛ این گزارش معیار نقدشوندگی یا حجم معاملات نیست.';insight.append(qualitySummary);
+   const qualityTable=document.createElement('table');qualityTable.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const qualityHead=document.createElement('tr');['نماد','مبنای قیمت','تاریخ بازار','ساعت آخرین معامله'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';qualityHead.append(th)});qualityTable.append(qualityHead);
+   quotes.forEach(q=>{const tr=document.createElement('tr');[q.symbol,q.priceKind||'پایانی',q.marketDate||'نامشخص',q.lastTradeTime||'نامشخص'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});qualityTable.append(tr)});
+   insight.append(qualityTable);
    const note=document.createElement('p');note.className='muted';note.textContent='رتبه‌بندی بر اساس بازده تحقق‌نیافته نسبت به بهای خرید است؛ این رتبه‌بندی توصیه خرید/فروش نیست. HHI و وزن‌ها فقط از قیمت‌های همین گزارش محاسبه شده‌اند.';insight.append(note);
    insight.hidden=false;
   }
