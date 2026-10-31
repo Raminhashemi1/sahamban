@@ -138,3 +138,5 @@ console.log('SUCCESS: '+count+' smoke checks');
 
 // Execute v53 weekend quote regression tests in the existing smoke CI workflow.
 require('./pilot-v53-weekend.test.cjs');
+
+require('./pilot-v54-live.test.cjs');
