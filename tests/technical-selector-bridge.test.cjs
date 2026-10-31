@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const tech=fs.readFileSync('technical-analysis-v50.js','utf8');
-const pilot=fs.readFileSync('portfolio-pilot-v48.js','utf8');
+const pilot=fs.readFileSync('portfolio-pilot-v61.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const sw=fs.readFileSync('sw.js','utf8');
 
@@ -17,15 +17,15 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.19/);
- assert.match(sw,/sahamban-static-v51-31/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.20/);
+ assert.match(sw,/sahamban-static-v61-32/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.19/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.20/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.19 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۱۹ | تطبیق‌گر ۴۹.۴'));
+ assert.ok(tech.includes('v50.20 UI'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۲۰ | تطبیق‌گر ۴۹.۴'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
@@ -40,10 +40,10 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.match(pilot,/sahamban:verified-historical-quotes-v50/);
  assert.match(pilot,/history\.length<15/);
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
- assert.ok(pilot.includes("if(!/^\\d{8}$/.test(d)"));
+ assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.19/);
- assert.match(sw,/sahamban-static-v51-31/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.20/);
+ assert.match(sw,/sahamban-static-v61-32/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
