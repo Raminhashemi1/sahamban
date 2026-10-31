@@ -229,4 +229,31 @@
    panel.append(table);
   }catch(e){panel.textContent='تحلیل تمرکز صنایع انجام نشد: '+e.message+' طبقه‌بندی حدسی یا جایگزین استفاده نشده است.';}
  });
+
+ window.addEventListener('sahamban:verified-investor-flow-v50',event=>{
+  const panel=$('riskInvestorFlowV49');if(!panel)return;
+  try{
+   const flows=event?.detail?.flows;
+   if(!Array.isArray(flows)||!flows.length||flows.length>100)throw Error('فهرست جریان پول معتبر نیست.');
+   const failed=flows.filter(x=>x?.error||!x?.symbol);
+   if(failed.length)throw Error('داده حقیقی و حقوقی برای '+failed.map(x=>x.symbol||'نماد نامشخص').join('، ')+' کامل دریافت نشد؛ گزارش تجمیعی صادر نمی‌شود.');
+   const rows=flows.map(x=>{
+    const fields=['buyIndividualValue','buyCorporateValue','sellIndividualValue','sellCorporateValue','buyIndividualVolume','sellIndividualVolume','individualBuyerCount','individualSellerCount'];
+    if(fields.some(k=>!Number.isFinite(x[k])||x[k]<0))throw Error('فیلدهای جریان پول برای '+x.symbol+' معتبر نیست.');
+    const net=x.buyIndividualValue-x.sellIndividualValue;
+    const avgBuy=x.individualBuyerCount>0?x.buyIndividualVolume/x.individualBuyerCount:null;
+    const avgSell=x.individualSellerCount>0?x.sellIndividualVolume/x.individualSellerCount:null;
+    return {...x,net,avgBuy,avgSell,power:avgBuy!==null&&avgSell!==null&&avgSell>0?avgBuy/avgSell:null};
+   });
+   const net=rows.reduce((sum,x)=>sum+x.net,0),corporateNet=rows.reduce((sum,x)=>sum+x.buyCorporateValue-x.sellCorporateValue,0);
+   panel.replaceChildren();
+   const title=document.createElement('strong');title.textContent='جریان خرید و فروش حقیقی و حقوقی';panel.append(title);
+   const note=document.createElement('p');note.textContent='مبنای محاسبه: داده رسمی نوع مشتری برای تاریخ معاملاتی هر نماد. خالص جریان حقیقی = ارزش خرید حقیقی منهای ارزش فروش حقیقی. قدرت خریدار به فروشنده از میانگین حجم خرید هر خریدار حقیقی تقسیم بر میانگین حجم فروش هر فروشنده حقیقی محاسبه شده است؛ در صورت نبود تعداد معتبر، نمایش داده نمی‌شود.';panel.append(note);
+   const summary=document.createElement('p');summary.textContent='نمادهای کامل: '+fmt(rows.length)+' | خالص جریان حقیقی سبد: '+fmt(net)+' ریال | خالص جریان حقوقی سبد: '+fmt(corporateNet)+' ریال';panel.append(summary);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const head=document.createElement('tr');['نماد','خالص حقیقی (ریال)','خالص حقوقی (ریال)','قدرت خریدار حقیقی','تاریخ داده'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   rows.forEach(x=>{const tr=document.createElement('tr');[x.symbol,fmt(x.net),fmt(x.buyCorporateValue-x.sellCorporateValue),x.power===null?'ناموجود':fmt(x.power),x.marketDate].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
+   panel.append(table);
+  }catch(e){panel.textContent='تحلیل جریان حقیقی و حقوقی انجام نشد: '+e.message+' داده ناقص به‌صورت جمع کل نمایش داده نمی‌شود.';}
+ });
 })();
