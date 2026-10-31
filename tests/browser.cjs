@@ -219,7 +219,7 @@ async function main(){
   assert.equal(await page.locator('#portfolioData').inputValue(),analysisBeforeIntegrated);
   console.log('PASS: integrated main page reads a 19-position broker portfolio without mutations or demo-portfolio mixing');
   // Variable-size portfolios: support both fewer and more holdings than this user's 19.
-  for(const count of [1,7,35]){
+  for(const count of [1,7,19,35,100]){
    const sample=Array.from({length:count},(_,i)=>({symbol:'تعداد'+count+'_'+(i+1),quantity:i+1,buy:900+i,current:1000+i}));
    const snapshot=JSON.stringify({version:2,created:new Date().toISOString(),holdings:sample});
    await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),snapshot);
@@ -231,7 +231,7 @@ async function main(){
    assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),snapshot);
    assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
   }
-  console.log('PASS: variable portfolio sizes 1, 7 and 35 render without storage mutations');
+  console.log('PASS: variable portfolio sizes 1, 7, 19, 35 and 100 render without storage mutations');
   const restoreNineteen=JSON.stringify({version:2,created:new Date().toISOString(),holdings:nineteen});
   await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),restoreNineteen);
   await page.reload({waitUntil:'load'});
