@@ -370,7 +370,7 @@
     daily.append(rt);
    }
 
-   renderStressReport(holdings,qmap,rowsOut);
+   renderStressReport(holdings,qmap,rowsOut,retMaps);
    renderAllocationReport(holdings,qmap,retMaps);
    const alertPanel=$('riskAlertsV53');
    if(alertPanel){
@@ -407,8 +407,8 @@
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{scoreState.quotes=event?.detail?.quotes;renderScorecard();});
  window.addEventListener('sahamban:verified-investor-flow-history-v50',event=>{scoreState.flows=event?.detail;renderScorecard();});
 
- window.addEventListener('sahamban:verified-portfolio-sectors-v50',event=>{scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];});
- function renderStressReport(holdings,qmap,rowsOut){
+ window.addEventListener('sahamban:verified-portfolio-sectors-v50',event=>{scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];renderScorecard();});
+ function renderStressReport(holdings,qmap,rowsOut,retMaps){
   const box=$('riskStressV54');if(!box)return;
   try{
    const total=holdings.reduce((a,h)=>a+h.value,0);
