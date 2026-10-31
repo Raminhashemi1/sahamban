@@ -105,4 +105,48 @@
   high.forEach(p=>{const tr=document.createElement('tr');[p.a+' / '+p.b,fmt(p.r),fmt(p.n)].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
   panel.append(table);
  });
+
+ function portfolioDrawdown(historyQuotes){
+  const tableRows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
+  if(!tableRows.length)throw Error('جدول دارایی فعلی در دسترس نیست.');
+  const holdings=tableRows.map(tr=>{
+   const cells=[...tr.querySelectorAll('td')];
+   const symbol=String(cells[0]?.textContent||'').trim();
+   const quantity=Number(digits(cells[1]?.textContent));
+   if(!symbol||!Number.isSafeInteger(quantity)||quantity<=0)throw Error('نماد یا تعداد دارایی در جدول معتبر نیست.');
+   return {symbol,quantity};
+  });
+  if(holdings.length>100||new Set(holdings.map(h=>h.symbol)).size!==holdings.length)throw Error('فهرست دارایی‌ها تکراری یا خارج از محدوده است.');
+  if(!Array.isArray(historyQuotes)||historyQuotes.length!==holdings.length)throw Error('تاریخچه همه نمادهای سبد دریافت نشده است.');
+  const bySymbol=new Map(historyQuotes.map(q=>[q?.symbol,q]));
+  if(bySymbol.size!==holdings.length||holdings.some(h=>!bySymbol.has(h.symbol)))throw Error('نمادهای تاریخچه با سبد فعلی تطبیق کامل ندارند.');
+  const maps=holdings.map(h=>{
+   const history=bySymbol.get(h.symbol)?.history;
+   if(!Array.isArray(history))throw Error('تاریخچه '+h.symbol+' معتبر نیست.');
+   const map=new Map();
+   for(const item of history){
+    const date=String(item?.date??''),close=Number(item?.close);
+    if(/^\\d{8}$/.test(date)&&Number.isFinite(close)&&close>0)map.set(date,close*h.quantity);
+   }
+   if(map.size<15)throw Error('تاریخچه '+h.symbol+' کمتر از ۱۵ قیمت معتبر دارد.');
+   return map;
+  });
+  const dates=[...maps[0].keys()].filter(date=>maps.every(m=>m.has(date))).sort();
+  if(dates.length<15)throw Error('کمتر از ۱۵ روز معاملاتی مشترک برای کل سبد وجود دارد.');
+  const values=dates.map(date=>maps.reduce((sum,m)=>sum+m.get(date),0));
+  let peak=-Infinity,peakDate='',maxDrop=0,drawdownPeak='',troughDate='',troughValue=0,peakValue=0;
+  for(let i=0;i<values.length;i++){
+   if(values[i]>peak){peak=values[i];peakDate=dates[i];}
+   const drop=peak>0?(peak-values[i])/peak:0;
+   if(drop>maxDrop){maxDrop=drop;drawdownPeak=peakDate;troughDate=dates[i];peakValue=peak;troughValue=values[i];}
+  }
+  return {count:holdings.length,days:dates.length,maxDrop,drawdownPeak,troughDate,peakValue,troughValue,first:dates[0],last:dates[dates.length-1]};
+ }
+ window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
+  const panel=$('riskDrawdownV49');if(!panel)return;
+  try{
+   const result=portfolioDrawdown(event?.detail?.quotes);
+   panel.textContent='حداکثر افت تاریخی سبد: '+fmt(result.maxDrop*100)+'٪ | از اوج '+result.drawdownPeak+' تا کف '+result.troughDate+' | ارزش اوج: '+fmt(result.peakValue)+' | ارزش کف: '+fmt(result.troughValue)+' | '+fmt(result.count)+' نماد و '+fmt(result.days)+' روز مشترک ('+result.first+' تا '+result.last+'). محاسبه با تعداد فعلی هر نماد و قیمت‌های پایانی تاریخی انجام شده؛ کارمزد، سود نقدی، افزایش سرمایه و تغییرات تاریخی تعداد سهام لحاظ نشده‌اند.';
+  }catch(e){panel.textContent='حداکثر افت محاسبه نشد: '+e.message+' داده ناقص یا غیرهم‌تراز پذیرفته نشد.';}
+ });
 })();
