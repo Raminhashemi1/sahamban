@@ -4,7 +4,7 @@ const html=fs.readFileSync('index.html','utf8');
 const pilot=fs.readFileSync('portfolio-pilot-v61.html','utf8');
 assert.match(html,/id="portfolio-live-entry"/);
 assert.match(html,/href="#livePortfolioSection"/);
-assert.match(html,/portfolio-pilot-v61\.js\?v=61\.4/);
+assert.match(html,/portfolio-pilot-v61\.js\?v=61\.5/);
 assert.match(html,/قیمت دریافتی لزوماً لحظه‌ای نیست/);
 assert.match(pilot,/portfolio-pilot-v61\.js\?v=61\.1/);
 console.log('PASS homepage latest pilot entry');
