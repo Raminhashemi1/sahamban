@@ -226,7 +226,8 @@ async function main(){
    await page.reload({waitUntil:'load'});
    await page.locator('#livePortfolioImported').click();
    assert.equal(await page.locator('#livePortfolioRows tr').count(),count);
-   assert.match(await page.locator('#livePortfolioMeta').innerText(),new RegExp('تعداد دارایی: '+count));
+   const persianCount=String(count).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+   assert.ok((await page.locator('#livePortfolioMeta').innerText()).includes('تعداد دارایی: '+persianCount));
    assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),snapshot);
    assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-live-quotes-v1')),null);
   }
