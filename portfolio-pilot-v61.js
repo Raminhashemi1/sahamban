@@ -468,6 +468,18 @@
    render(holdings,quotes,snapshot.receivedAt);
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
+   // Investor-type flow is fetched separately; a failure never invalidates verified prices.
+   const investorFlow=await Promise.all(quotes.map(async q=>{
+    try{
+     const response=await fetchJson('/ClientType/GetClientType/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(q.marketDate));
+     const row=Array.isArray(response?.clientType)?response.clientType[0]:null;
+     const fields=['buy_I_Volume','buy_N_Volume','buy_I_Value','buy_N_Value','buy_CountI','buy_CountN','sell_I_Volume','sell_N_Volume','sell_I_Value','sell_N_Value','sell_CountI','sell_CountN'];
+     if(!row||fields.some(k=>!Number.isFinite(Number(row[k]))||Number(row[k])<0))throw Error('ساختار داده حقیقی و حقوقی ناقص است');
+     return {symbol:q.symbol,marketDate:q.marketDate,buyIndividualVolume:Number(row.buy_I_Volume),buyCorporateVolume:Number(row.buy_N_Volume),buyIndividualValue:Number(row.buy_I_Value),buyCorporateValue:Number(row.buy_N_Value),individualBuyerCount:Number(row.buy_CountI),corporateBuyerCount:Number(row.buy_CountN),sellIndividualVolume:Number(row.sell_I_Volume),sellCorporateVolume:Number(row.sell_N_Volume),sellIndividualValue:Number(row.sell_I_Value),sellCorporateValue:Number(row.sell_N_Value),individualSellerCount:Number(row.sell_CountI),corporateSellerCount:Number(row.sell_CountN)};
+    }catch(error){return {symbol:q.symbol,marketDate:q.marketDate,error:error.message};}
+   }));
+   window.dispatchEvent(new CustomEvent('sahamban:verified-investor-flow-v50',{detail:{flows:investorFlow}}));
+
    say('دریافت قیمت جاری همه '+fmt(holdings.length)+' نماد موفق بود. نتیجه فقط روی همین صفحه محاسبه شد؛ هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد. تاریخ قیمت هر نماد در جدول مشخص است.');
   }catch(e){
    say('به‌روزرسانی انجام نشد: '+e.message+'. قیمت قبلی به‌عنوان قیمت جدید معرفی نمی‌شود و اطلاعات دارایی‌ها تغییر نمی‌کنند.');
