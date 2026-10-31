@@ -149,4 +149,47 @@
    panel.textContent='حداکثر افت تاریخی سبد: '+fmt(result.maxDrop*100)+'٪ | از اوج '+result.drawdownPeak+' تا کف '+result.troughDate+' | ارزش اوج: '+fmt(result.peakValue)+' | ارزش کف: '+fmt(result.troughValue)+' | '+fmt(result.count)+' نماد و '+fmt(result.days)+' روز مشترک ('+result.first+' تا '+result.last+'). محاسبه با تعداد فعلی هر نماد و قیمت‌های پایانی تاریخی انجام شده؛ کارمزد، سود نقدی، افزایش سرمایه و تغییرات تاریخی تعداد سهام لحاظ نشده‌اند.';
   }catch(e){panel.textContent='حداکثر افت محاسبه نشد: '+e.message+' داده ناقص یا غیرهم‌تراز پذیرفته نشد.';}
  });
+
+ function portfolioLiquidity(quotes){
+  const rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
+  if(!rows.length||rows.length>100)throw Error('جدول دارایی‌های فعلی معتبر نیست.');
+  const holdings=rows.map(tr=>{
+   const cells=[...tr.querySelectorAll('td')],symbol=String(cells[0]?.textContent||'').trim();
+   const currentValue=Number(digits(cells[4]?.textContent));
+   if(!symbol||!Number.isFinite(currentValue)||currentValue<0)throw Error('ارزش روز نماد '+(symbol||'نامشخص')+' معتبر نیست.');
+   return {symbol,currentValue};
+  });
+  if(new Set(holdings.map(h=>h.symbol)).size!==holdings.length)throw Error('نماد تکراری در جدول دارایی‌ها وجود دارد.');
+  if(!Array.isArray(quotes)||quotes.length!==holdings.length)throw Error('تاریخچه همه نمادها دریافت نشده است.');
+  const lookup=new Map(quotes.map(q=>[q?.symbol,q]));
+  if(lookup.size!==holdings.length||holdings.some(h=>!lookup.has(h.symbol)))throw Error('نمادهای تاریخچه با سبد فعلی تطبیق ندارند.');
+  const results=holdings.map(h=>{
+   const history=lookup.get(h.symbol)?.history;
+   if(!Array.isArray(history))throw Error('تاریخچه '+h.symbol+' موجود نیست.');
+   const valid=history.filter(x=>/^\\d{8}$/.test(String(x?.date??''))&&Number.isFinite(Number(x?.tradedValue))&&Number(x.tradedValue)>=0).sort((a,b)=>a.date.localeCompare(b.date)).slice(-20);
+   if(valid.length<15)throw Error('برای '+h.symbol+' کمتر از ۱۵ روز ارزش معاملات معتبر وجود دارد.');
+   const average=valid.reduce((sum,x)=>sum+Number(x.tradedValue),0)/valid.length;
+   return {...h,average,count:valid.length,days:average>0?h.currentValue/(average*0.10):null};
+  });
+  const total=results.reduce((sum,x)=>sum+x.currentValue,0);
+  return results.map(x=>({...x,weight:total>0?x.currentValue/total:0})).sort((a,b)=>(b.days??Infinity)-(a.days??Infinity));
+ }
+ window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
+  const panel=$('riskLiquidityV49');if(!panel)return;
+  try{
+   const results=portfolioLiquidity(event?.detail?.quotes);
+   panel.replaceChildren();
+   const title=document.createElement('strong');title.textContent='تحلیل نقدشوندگی بر پایه ارزش معاملات روزانه';panel.append(title);
+   const note=document.createElement('p');note.textContent='میانگین ارزش معاملات از حداکثر ۲۰ جلسه اخیر (حداقل ۱۵ جلسه معتبر) محاسبه شده است. زمان تقریبی خروج با فرض مشارکت حداکثر ۱۰٪ از ارزش معاملات روزانه برآورد می‌شود؛ این برآورد تضمین اجرای سفارش نیست و صف، دامنه نوسان، توقف نماد و اثر بازار را مدل نمی‌کند.';panel.append(note);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const head=document.createElement('tr');
+   ['نماد','وزن سبد','میانگین ارزش معاملات روزانه (ریال)','روز خروج فرضی','جلسات داده'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   results.forEach(x=>{
+    const tr=document.createElement('tr');
+    const vals=[x.symbol,fmt(x.weight*100)+'٪',fmt(x.average),x.days===null?'بدون معامله':fmt(x.days),fmt(x.count)];
+    vals.forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr);
+   });
+   panel.append(table);
+  }catch(e){panel.textContent='تحلیل نقدشوندگی انجام نشد: '+e.message+' داده ناقص یا ارزش معاملات نامعتبر پذیرفته نشد.';}
+ });
 })();
