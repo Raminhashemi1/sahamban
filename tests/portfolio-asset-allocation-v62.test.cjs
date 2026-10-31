@@ -2,7 +2,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const src=fs.readFileSync('portfolio-asset-allocation-v62.js','utf8'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
 function el(text=''){return {textContent:text,children:[],style:{},dataset:{},append(...x){this.children.push(...x)},replaceChildren(...x){this.children=[...x]},querySelectorAll(sel){return sel==='td'?this.cells||[]:sel==='tr'?this.rows||[]:[]}}}
-function deepText(node){return [node.textContent||'',...(node.children||[]).map(deepText)].join(' ');}\nfunction run(values,quotes){
+function deepText(node){return [node.textContent||'',...(node.children||[]).map(deepText)].join(' ');}
+function run(values,quotes){
  const panel=el(),body=el();body.rows=values.map(([symbol,value])=>{const row=el();row.cells=[el(symbol),el('1'),el('1'),el('1'),el(String(value))];return row});
  const listeners={};const document={getElementById:id=>id==='riskAssetAllocationV62'?panel:id==='livePortfolioRows'?body:null,createElement:()=>el()};
  vm.runInNewContext(src,{document,window:{addEventListener:(n,fn)=>(listeners[n]??=[]).push(fn)},Intl,Number,String,Math,Error,Object});
