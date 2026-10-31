@@ -38,7 +38,7 @@ test('v49 computes totals and stress loss from verified rows without persistence
 test('v49 refuses a success label when table row count does not match verified symbol count',()=>{const h=harness('دریافت و اعتبارسنجی قیمت پایانی همه 3 نماد موفق بود',[['آلفا','10','90','100','500','600','2026/10/28'],['بتا','20','150','200','500','600','2026/10/28']]);h.click();assert.match(h.els.riskStatusV49.textContent,/تعداد ردیف‌های جدول/);assert.equal(h.els.riskSummaryV49.textContent,'');});
 test('v49 refuses non-success and ambiguous quote statuses',()=>{for(const status of ['قیمت واقعی دریافت نشد','دریافت و اعتبارسنجی قیمت پایانی همه 2 نماد ناموفق بود','دریافت و اعتبارسنجی قیمت پایانی همه نمادها در حال بررسی است']){const h=harness(status,[['آلفا','10','90','100','500','600','2026/10/28']]);h.click();assert.match(h.els.riskStatusV49.textContent,/محاسبه انجام نشد/);assert.equal(h.els.riskSummaryV49.textContent,'');}});
 
-test('v49 risk engine accepts v61 live quotes and reads the actual market-date column',()=>{assert.match(js,/دریافت قیمت جاری همه/);assert.match(js,/marketDate=String\(c\[9\]/);assert.match(js,/priceBasis=String\(c\[13\]/);assert.match(js,/آخرین معامله/);});
+test('v49 risk engine accepts v61 live quotes and reads the actual market-date column',()=>{assert.match(js,/دریافت قیمت جاری همه/);assert.ok(js.includes('c.length>=15?c[9]:c[6]'));assert.ok(js.includes("c.length>=15?c[13]:''"));assert.match(js,/آخرین معامله/);});
 
 test('v49 reads the v61 15-column quote table and the real market-date and price-basis columns',()=>{
  const row=['آلفا','10','90','100','1000','80','800','200','100','20261030','100','99','12:30:00','آخرین معامله','امروز تهران'];
