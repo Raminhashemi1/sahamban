@@ -84,14 +84,19 @@ function readSymbols(){
  return symbols;
 }
 async function checkSymbol(symbol){
- const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(symbol));
- const rows=search?.instrumentSearch;
- if(!Array.isArray(rows))throw Error('ساختار جستجو نامعتبر');
+ const queryList=[...new Set([symbol,symbol.slice(0,3),symbol.slice(0,2)].filter(x=>x.length>=2))];
+ const allRows=[];
+ for(const query of queryList){
+  const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(query));
+  if(!Array.isArray(search?.instrumentSearch))throw Error('ساختار جستجو نامعتبر');
+  allRows.push(...search.instrumentSearch);
+ }
+ const rows=[...new Map(allRows.filter(x=>x&&x.insCode!=null).map(x=>[String(x.insCode),x])).values()];
  const exact=rows.filter(x=>norm(x.lVal18AFC)===norm(symbol)&&/^[0-9]{8,25}$/.test(String(x.insCode??'')));
  const candidates=[...new Map(exact.map(x=>[String(x.insCode),x])).values()];
  if(!candidates.length){
-  const suggestions=[...new Set(rows.filter(x=>/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.lVal18AFC||x.lVal30||'').trim()).filter(Boolean))].slice(0,8);
-  throw Error('شناسه دقیق پیدا نشد. نام‌های پیشنهادی منبع: '+(suggestions.join('، ')||'هیچ نتیجه‌ای')+'؛ نام نماد باید با فهرست کارگزاری تطبیق داده شود');
+  const suggestions=[...new Set(rows.filter(x=>/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.lVal18AFC||x.lVal30||'').trim()).filter(Boolean))].slice(0,12);
+  throw Error('شناسه دقیق پیدا نشد؛ جستجوی مستقیم و جستجوی گسترده‌تر انجام شد. نام‌های نزدیک منبع: '+(suggestions.join('، ')||'هیچ نتیجه‌ای')+'؛ هیچ نماد مشابهی خودکار جایگزین نشد.');
  }
  const valid=[],reasons=[];
  for(const candidate of candidates){
