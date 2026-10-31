@@ -9,7 +9,7 @@
   const status=$('livePortfolioStatus')?.textContent||'';
   // Accept both the legacy v50 quote status and the current v61 live-price status.
   const verified=status.match(/^(?:دریافت و اعتبارسنجی قیمت پایانی همه|دریافت قیمت جاری همه)\s+([۰-۹٠-٩0-9]+)\s+نماد موفق بود/);
-  if(!verified)throw Error('ابتدا دریافت قیمت جاری همه نمادهای سبد را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
+  if(!verified)throw Error('ابتدا دریافت قیمت پایانی همه نمادها (قیمت جاری نسخه ۶۱) را اجرا کنید و موفقیت کامل اعتبارسنجی قیمت‌ها را ببینید.');
   const expectedCount=Number(digits(verified[1]));
   const rows=[...($('livePortfolioRows')?.querySelectorAll('tr')||[])];
   if(!rows.length)throw Error('جدول قیمت تأییدشده در صفحه موجود نیست.');
