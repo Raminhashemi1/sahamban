@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const html=fs.readFileSync('portfolio-pilot-v60.html','utf8');
+const js=fs.readFileSync('portfolio-pilot-v60.js','utf8');
+const prior=fs.readFileSync('portfolio-pilot-v59.js','utf8');
+assert.match(html,/portfolio-pilot-v60\.js\?v=60\.0/);
+assert.match(html,/table th:first-child,table td:first-child\{position:sticky;right:0/);
+assert.match(html,/role="region" aria-label="جدول دارایی‌ها؛ قابل پیمایش افقی" tabindex="0"/);
+assert.match(html,/ستون نماد ثابت می‌ماند/);
+assert.equal(js,prior,'v60 must preserve verified quote and holdings logic');
+console.log('PASS v60 mobile scroll and quote logic preserved');
