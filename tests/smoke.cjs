@@ -142,3 +142,5 @@ require('./pilot-v53-weekend.test.cjs');
 require('./pilot-v54-live.test.cjs');
 
 require('./pilot-v55-quote.test.cjs');
+
+require('./pilot-v56-display.test.cjs');
