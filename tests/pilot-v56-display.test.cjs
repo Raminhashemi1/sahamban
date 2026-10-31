@@ -1,0 +1,1 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');const js=fs.readFileSync('portfolio-pilot-v56.js','utf8');const html=fs.readFileSync('portfolio-pilot-v56.html','utf8');assert.ok(js.includes("||v==='نامشخص'?String(v)"));assert.ok(html.includes('portfolio-pilot-v56.js?v=56.0'));console.log('PASS v56 unknown values remain readable');
