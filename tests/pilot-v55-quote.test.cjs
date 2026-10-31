@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const src=fs.readFileSync('portfolio-pilot-v55.js','utf8'),html=fs.readFileSync('portfolio-pilot-v55.html','utf8');
+assert.match(html,/portfolio-pilot-v55\.js\?v=55\.0/);
+assert.match(html,/آخرین معامله \(ریال\)/);
+assert.match(html,/قیمت پایانی \(ریال\)/);
+assert.match(html,/ساعت گزارش بازار/);
+const a=src.indexOf(' async function verifiedCode('),b=src.indexOf(' async function getOne(',a);
+assert.ok(a>=0&&b>a);
+const ctx={fetchJson:async()=>({closingPriceInfo:{pClosing:100,pDrCotVal:105,dEven:20261031,hEven:110305}}),validDate:d=>String(d),Number};
+vm.createContext(ctx);vm.runInContext(src.slice(a,b)+'\nthis.verify=verifiedCode;',ctx);
+(async()=>{const q=await ctx.verify({symbol:'TEST',quantity:10,buy:80},'123456789012345');assert.equal(q.price,105);assert.equal(q.closingPrice,100);assert.equal(q.lastTradeTime,'11:03:05');assert.equal(q.marketDate,'20261031');console.log('PASS v55 quote source fields');})().catch(e=>{console.error(e);process.exitCode=1;});
