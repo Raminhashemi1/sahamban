@@ -22,6 +22,13 @@ small{opacity:.75}
 <p>برای بررسی اینکه مرورگر گوشی به منبع قیمت دسترسی دارد، دکمه را بزنید.</p>
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
+<hr style="margin:28px 0">
+<h2>آزمایش سبد ۱۹ نمادی</h2>
+<p>این آزمون فقط نمادهای عمومی زیر را از TSETMC جستجو می‌کند و قیمت پایانی و تاریخچه آن‌ها را تطبیق می‌دهد. هیچ اطلاعات شخصی یا سبد ذخیره‌شده‌ای خوانده یا ارسال نمی‌شود.</p>
+<p><small>فهرست بر اساس نمادهای قابل مشاهده در تصاویر قبلی شما تنظیم شده است؛ اگر نامی اشتباه خوانده شده باشد، در نتیجه مشخص می‌شود.</small></p>
+<button id="run-basket">آزمون ۱۹ نماد</button>
+<p id="basket-status" role="status" aria-live="polite">هنوز آزمایش سبد اجرا نشده است.</p>
+<div id="basket-results"></div>
 <small>منبع آزمایش: API عمومی TSETMC؛ این آزمون به‌تنهایی مجوز استفاده یا پایداری منبع را تضمین نمی‌کند.</small>
 </main>
 <script>
@@ -49,6 +56,40 @@ function dateOk(raw){
  if(age<0||age>7)throw Error('قیمت قدیمی یا تاریخ آینده است؛ فاصله روز تقویمی: '+fa(age));
  return s;
 }
+
+const basketSymbols=['وساخت','وسایا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','پیوند','عیار','فروژ','استقلال','پرسپولیس'];
+async function checkSymbol(symbol){
+ const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(symbol));
+ const rows=search?.instrumentSearch;
+ if(!Array.isArray(rows))throw Error('ساختار جستجو نامعتبر');
+ const codes=[...new Set(rows.filter(x=>norm(x.lVal18AFC)===norm(symbol)&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.insCode)))];
+ if(codes.length!==1)throw Error('شناسه دقیق یکتا پیدا نشد ('+codes.length+')');
+ const code=codes[0];
+ const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
+ const price=Number(info?.pClosing),date=dateOk(info?.dEven);
+ if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر');
+ const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
+ if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
+ const valid=hist.filter(x=>/^\\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
+ const matching=valid.filter(x=>String(x.dEven)===date&&Number(x.pClosing)===price);
+ if(matching.length!==1)throw Error('قیمت با تاریخچه تطبیق نکرد');
+ if(valid.length<2)throw Error('تعداد سوابق معتبر تاریخچه کافی نیست');
+ return {symbol,price,date,count:valid.length};
+}
+$('run-basket').addEventListener('click',async()=>{
+ const b=$('run-basket'),s=$('basket-status'),out=$('basket-results');
+ b.disabled=true;out.textContent='';let ok=0,fail=0;const results=[];
+ s.textContent='آزمایش ۱۹ نماد آغاز شد؛ درخواست‌ها به‌ترتیب و فقط خواندنی ارسال می‌شوند.';
+ for(let i=0;i<basketSymbols.length;i++){
+  const symbol=basketSymbols[i];s.textContent='در حال بررسی '+(i+1)+' از ۱۹: '+symbol+' | موفق: '+ok+' | نیازمند بررسی: '+fail;
+  try{const r=await checkSymbol(symbol);ok++;results.push({symbol,ok:true,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | '+fa(r.count)+' سابقه'});}
+  catch(e){fail++;results.push({symbol,ok:false,detail:String(e?.message||e)});}
+  const line=document.createElement('p');line.textContent=(results.at(-1).ok?'✓ ':'✕ ')+symbol+' — '+results.at(-1).detail;line.style.color=results.at(-1).ok?'#16834a':'#b45309';out.appendChild(line);
+ }
+ s.textContent='پایان آزمایش: '+ok+' از ۱۹ نماد قیمت و تاریخچه منطبق داشتند؛ '+fail+' نماد نیازمند بررسی‌اند. این آزمون فقط خواندنی بود و سبد شما را تغییر نداد.';
+ b.disabled=false;
+});
+
 $('run').addEventListener('click',async()=>{
  const b=$('run'),s=$('status');b.disabled=true;s.textContent='در حال بررسی نماد عمومی فولاد؛ حداکثر چند ثانیه...';
  try{
