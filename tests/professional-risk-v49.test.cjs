@@ -39,3 +39,27 @@ test('v49 refuses a success label when table row count does not match verified s
 test('v49 refuses non-success and ambiguous quote statuses',()=>{for(const status of ['قیمت واقعی دریافت نشد','دریافت و اعتبارسنجی قیمت پایانی همه 2 نماد ناموفق بود','دریافت و اعتبارسنجی قیمت پایانی همه نمادها در حال بررسی است']){const h=harness(status,[['آلفا','10','90','100','500','600','2026/10/28']]);h.click();assert.match(h.els.riskStatusV49.textContent,/محاسبه انجام نشد/);assert.equal(h.els.riskSummaryV49.textContent,'');}});
 
 test('v49 risk engine accepts v61 live quotes and reads the actual market-date column',()=>{assert.match(js,/دریافت قیمت جاری همه/);assert.match(js,/marketDate=String\(c\[9\]/);assert.match(js,/priceBasis=String\(c\[13\]/);assert.match(js,/آخرین معامله/);});
+
+test('v49 reads the v61 15-column quote table and the real market-date and price-basis columns',()=>{
+ const row=['آلفا','10','90','100','1000','80','800','200','100','20261030','100','99','12:30:00','آخرین معامله','امروز تهران'];
+ const h=harness('دریافت قیمت جاری همه ۱ نماد موفق بود',[row]);h.click();
+ assert.match(h.els.riskStatusV49.textContent,/محاسبه موفق/);
+ assert.match(h.els.riskSummaryV49.textContent,/۱۰۰۰/);
+});
+test('v49 rejects v61 rows with missing or unverified market date and price basis',()=>{
+ for(const row of [
+  ['آلفا','10','90','100','1000','80','800','200','100','','100','99','12:30:00','آخرین معامله','امروز تهران'],
+  ['آلفا','10','90','100','1000','80','800','200','100','20261030','100','99','12:30:00','قیمت نامشخص','امروز تهران']
+ ]){
+  const h=harness('دریافت قیمت جاری همه ۱ نماد موفق بود',[row]);h.click();
+  assert.match(h.els.riskStatusV49.textContent,/محاسبه انجام نشد/);
+  assert.equal(h.els.riskSummaryV49.textContent,'');
+ }
+});
+test('v54 stress report receives the same validated daily-return maps used for portfolio correlation',()=>{
+ assert.match(js,/renderStressReport\\(holdings,qmap,rowsOut,retMaps\\)/);
+ assert.match(js,/function renderStressReport\\(holdings,qmap,rowsOut,retMaps\\)/);
+});
+test('sector metadata arrival refreshes the integrated scorecard and stress report',()=>{
+ assert.match(js,/scoreState\\.sectors=Array\\.isArray\\(event\\?\\.detail\\?\\.quotes\\)\\?event\\.detail\\.quotes:\\[\\];renderScorecard\\(\\)/);
+});
