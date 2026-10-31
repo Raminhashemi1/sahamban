@@ -15,6 +15,16 @@ test('v50 selector has a DOM-table fallback independent of custom events',()=>{
  assert.match(tech,/history:null/);
 });
 
+test('technical selector supports arbitrary dynamic basket sizes, including 1, 19 and more than 19 symbols',()=>{
+ const eventPath=tech.match(/const incoming=event\\?\.detail\\?\.symbols[\\s\\S]{0,500}/)?.[0]||'';
+ assert.ok(eventPath.includes('new Set(incoming.filter'));
+ assert.ok(tech.includes("new MutationObserver(activateFromVisibleRows)"));
+ assert.ok(tech.includes("portfolioRows.rows"));
+ assert.ok(tech.includes("map(symbol=>({symbol,marketDate:null,history:null}))"));
+ assert.doesNotMatch(tech,/\b(?:19|20)\s*(?:symbols|نماد)/i);
+ for(const count of [1,19,27]){const symbols=Array.from({length:count},(_,i)=>'نماد'+i);const unique=[...new Set(symbols.filter(x=>typeof x==='string'&&x.trim()))];assert.equal(unique.length,count);}
+});
+
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.20/);
