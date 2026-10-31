@@ -95,7 +95,7 @@
   const valid=[];
   let lastError='';
   for(const candidate of exact){
-   try{valid.push(await verifiedCode(holding,String(candidate.insCode)));}
+   try{const verified=await verifiedCode(holding,String(candidate.insCode));verified.flow=Number.isFinite(Number(candidate.flow))?Number(candidate.flow):null;valid.push(verified);}
    catch(e){lastError=e.message;}
   }
   if(valid.length!==1)throw Error(valid.length?'چند شناسه تازه و معتبر برای '+holding.symbol+' وجود دارد؛ انتخاب خودکار ایمن نیست.':'هیچ شناسه‌ای برای '+holding.symbol+' با قیمت و تاریخ معتبر تأیید نشد. '+lastError);
@@ -107,8 +107,22 @@
    if(meta&&String(meta.insCode??quote.insCode)===String(quote.insCode)){
     quote.sectorCode=String(meta.cSecVal??meta.sector?.cSecVal??'').trim();
     quote.sectorName=String(meta.lSecVal??meta.sector?.lSecVal??'').trim();
+    quote.instrumentTypeCode=String(meta.yVal??'').trim();
+    quote.instrumentFlow=Number.isFinite(Number(meta.flow))?Number(meta.flow):quote.flow;
    }
   }catch(_sectorError){quote.sectorCode='';quote.sectorName='';}
+  quote.instrumentFlow=quote.instrumentFlow??quote.flow;
+  quote.assetClass='unknown';quote.assetClassLabel='نامشخص';quote.fundNav=null;
+  if(quote.instrumentFlow===18){
+   try{
+    const fundResponse=await fetchJson('/Fund/GetETFByInsCode/'+encodeURIComponent(quote.insCode));
+    const fund=fundResponse?.etf,nav=Number(fund?.pRedTran??fund?.pSubTran);
+    if(fund&&String(fund.insCode??'')===String(quote.insCode)&&Number.isFinite(nav)&&nav>0){
+     quote.assetClass='fund_etf';quote.assetClassLabel='صندوق قابل معامله';quote.fundNav=nav;
+    }
+   }catch(_fundError){/* Unknown is safer than inferring from symbol text. */}
+  }else if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
+  else if(quote.instrumentTypeCode==='301'){quote.assetClass='preemptive_right';quote.assetClassLabel='حق تقدم';}
   return quote;
  }
  function render(holdings,quotes,receivedAt,mode='live'){
@@ -498,6 +512,7 @@
    render(holdings,quotes,snapshot.receivedAt);
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
+  window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
    const investorFlow=await Promise.all(quotes.map(async q=>{
     try{

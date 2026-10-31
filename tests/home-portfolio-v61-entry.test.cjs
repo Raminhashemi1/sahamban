@@ -10,3 +10,5 @@ assert.match(pilot,/portfolio-pilot-v61\.js\?v=61\.2/);
 assert.match(pilot,/دریافت و بررسی تاریخچه همه نمادهای سبد/);
 assert.doesNotMatch(pilot,/۱۹ نماد|19 نماد|19 symbols/);
 console.log('PASS homepage latest pilot entry and variable basket label');
+
+assert.ok(html.includes('portfolio-asset-allocation-v62.js?v=62.0'));
