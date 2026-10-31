@@ -23,10 +23,12 @@ small{opacity:.75}
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
 <hr style="margin:28px 0">
-<h2>آزمایش سبد ۱۹ نمادی</h2>
-<p>این آزمون فقط نمادهای عمومی زیر را از TSETMC جستجو می‌کند و قیمت پایانی و تاریخچه آن‌ها را تطبیق می‌دهد. هیچ اطلاعات شخصی یا سبد ذخیره‌شده‌ای خوانده یا ارسال نمی‌شود.</p>
-<p><small>فهرست بر اساس نمادهای قابل مشاهده در تصاویر قبلی شما تنظیم شده است؛ اگر نامی اشتباه خوانده شده باشد، در نتیجه مشخص می‌شود.</small></p>
-<button id="run-basket">آزمون ۱۹ نماد</button>
+<h2>آزمایش نمادهای سبد</h2>
+<p>فهرست نمادها را از سبد خود وارد کنید؛ هر نماد را در یک خط بنویسید. فهرست اولیه برای شروع، شامل ۱۹ نماد آزمایش قبلی است و می‌توانید آن را کامل تغییر دهید. تعداد نمادها محدود به ۱۹ نیست.</p>
+<label for="symbols-input">نمادها (هر خط یک نماد)</label>
+<textarea id="symbols-input" rows="8" style="width:100%;font:inherit;padding:12px;border:1px solid #8888;border-radius:10px;direction:rtl" spellcheck="false"></textarea>
+<p><small>این صفحه فقط همین فهرست واردشده را بررسی می‌کند؛ به اطلاعات ذخیره‌شده سبد، فایل کارگزاری یا رمز دسترسی ندارد و فهرست را به سرور ارسال نمی‌کند.</small></p>
+<button id="run-basket">آزمایش نمادها</button>
 <p id="basket-status" role="status" aria-live="polite">هنوز آزمایش سبد اجرا نشده است.</p>
 <div id="basket-results"></div>
 <small>منبع آزمایش: API عمومی TSETMC؛ این آزمون به‌تنهایی مجوز استفاده یا پایداری منبع را تضمین نمی‌کند.</small>
@@ -66,7 +68,21 @@ function dateOk(raw){
  return s;
 }
 
-const basketSymbols=['وساخت','وسایا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','پیوند','عیار','فروژ','استقلال','پرسپولیس'];
+const defaultSymbols=['وساخت','وسایا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','پیوند','عیار','فروژ','استقلال','پرسپولیس'];
+$('symbols-input').value=defaultSymbols.join('\\n');
+function readSymbols(){
+ const raw=$('symbols-input').value.split(/[\\n،,;؛\\t]+/).map(x=>x.trim()).filter(Boolean);
+ const seen=new Set(),symbols=[];
+ for(const item of raw){
+  const key=norm(item);
+  if(!key)continue;
+  if(seen.has(key))throw Error('نماد تکراری در فهرست وجود دارد: '+item);
+  seen.add(key);symbols.push(item);
+ }
+ if(!symbols.length)throw Error('حداقل یک نماد وارد کنید.');
+ if(symbols.length>100)throw Error('برای هر نوبت حداکثر ۱۰۰ نماد وارد کنید.');
+ return symbols;
+}
 async function checkSymbol(symbol){
  const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(symbol));
  const rows=search?.instrumentSearch;
@@ -104,15 +120,17 @@ async function checkSymbol(symbol){
 }
 $('run-basket').addEventListener('click',async()=>{
  const b=$('run-basket'),s=$('basket-status'),out=$('basket-results');
+ let symbols;
+ try{symbols=readSymbols();}catch(e){s.textContent=e.message;return;}
  b.disabled=true;out.textContent='';let ok=0,fail=0;const results=[];
- s.textContent='آزمایش ۱۹ نماد آغاز شد؛ درخواست‌ها به‌ترتیب و فقط خواندنی ارسال می‌شوند.';
- for(let i=0;i<basketSymbols.length;i++){
-  const symbol=basketSymbols[i];s.textContent='در حال بررسی '+(i+1)+' از ۱۹: '+symbol+' | موفق: '+ok+' | نیازمند بررسی: '+fail;
+ s.textContent='آزمایش '+fa(symbols.length)+' نماد آغاز شد؛ درخواست‌ها به‌ترتیب و فقط خواندنی ارسال می‌شوند.';
+ for(let i=0;i<symbols.length;i++){
+  const symbol=symbols[i];s.textContent='در حال بررسی '+fa(i+1)+' از '+fa(symbols.length)+': '+symbol+' | موفق: '+fa(ok)+' | نیازمند بررسی: '+fa(fail);
   try{const r=await checkSymbol(symbol);ok++;results.push({symbol,ok:true,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | '+fa(r.count)+' سابقه'});}
   catch(e){fail++;results.push({symbol,ok:false,detail:String(e?.message||e)});}
   const line=document.createElement('p');line.textContent=(results.at(-1).ok?'✓ ':'✕ ')+symbol+' — '+results.at(-1).detail;line.style.color=results.at(-1).ok?'#16834a':'#b45309';out.appendChild(line);
  }
- s.textContent='پایان آزمایش: '+ok+' از ۱۹ نماد قیمت و تاریخچه منطبق داشتند؛ '+fail+' نماد نیازمند بررسی‌اند. این آزمون فقط خواندنی بود و سبد شما را تغییر نداد.';
+ s.textContent='پایان آزمایش: '+fa(ok)+' از '+fa(symbols.length)+' نماد قیمت و تاریخچه منطبق داشتند؛ '+fa(fail)+' نماد نیازمند بررسی‌اند. این آزمون فقط خواندنی بود و سبد شما را تغییر نداد.';
  b.disabled=false;
 });
 
