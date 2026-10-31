@@ -426,7 +426,7 @@
    const snapshot={version:1,source:'TSETMC',receivedAt:new Date().toISOString(),quotes};
    // No quote-cache persistence in this pilot; never write to any browser storage.
    render(holdings,quotes,snapshot.receivedAt);
-   window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,marketDate:q.marketDate,history:q.history}))}}));
+   window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    say('دریافت قیمت جاری همه '+fmt(holdings.length)+' نماد موفق بود. نتیجه فقط روی همین صفحه محاسبه شد؛ هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد. تاریخ قیمت هر نماد در جدول مشخص است.');
   }catch(e){
    say('به‌روزرسانی انجام نشد: '+e.message+'. قیمت قبلی به‌عنوان قیمت جدید معرفی نمی‌شود و اطلاعات دارایی‌ها تغییر نمی‌کنند.');
