@@ -71,6 +71,8 @@
   const closing=Number(info.pClosing),last=Number(info.pDrCotVal);
   if(!Number.isFinite(closing)||closing<=0)throw Error('قیمت پایانی معتبر نیست.');
   const marketDate=validDate(info.dEven??info.date??info.lastDate);
+  const infoSectorCode=info.cSecVal??info.sector?.cSecVal??'';
+  const infoSectorName=info.lSecVal??info.sector?.lSecVal??'';
   const hasLast=Number.isFinite(last)&&last>0;
   // hEven is the market's HHMMSS clock when provided by this endpoint.
   // Do not confuse response receipt time with the last trade time.
@@ -81,7 +83,7 @@
    ?clock.slice(0,2)+':'+clock.slice(2,4)+':'+clock.slice(4,6):'نامشخص';
   return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,
    price:hasLast?last:closing,closingPrice:closing,
-   priceKind:hasLast?'آخرین معامله':'پایانی',lastTradePrice:hasLast?last:null,lastTradeTime:tradeTime,marketDate,history:null};
+   priceKind:hasLast?'آخرین معامله':'پایانی',lastTradePrice:hasLast?last:null,lastTradeTime:tradeTime,marketDate,sectorCode:String(infoSectorCode??'').trim(),sectorName:String(infoSectorName??'').trim(),history:null};
  }
  async function getOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
@@ -455,6 +457,7 @@
    // No quote-cache persistence in this pilot; never write to any browser storage.
    render(holdings,quotes,snapshot.receivedAt);
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
+   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
    say('دریافت قیمت جاری همه '+fmt(holdings.length)+' نماد موفق بود. نتیجه فقط روی همین صفحه محاسبه شد؛ هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد. تاریخ قیمت هر نماد در جدول مشخص است.');
   }catch(e){
    say('به‌روزرسانی انجام نشد: '+e.message+'. قیمت قبلی به‌عنوان قیمت جدید معرفی نمی‌شود و اطلاعات دارایی‌ها تغییر نمی‌کنند.');
