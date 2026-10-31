@@ -49,21 +49,24 @@ test('Broker import is local-only with separate storage and offline Excel parser
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
  assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v61'));
- assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.5'));
+ assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.6'));
   assert.ok(sw.includes('portfolio-pilot-v51.html'));
   assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
  assert.ok(sw.includes('technical-analysis-v50.js?v=50.20'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
- assert.ok(html.includes('portfolio-pilot-v61.js?v=61.5'));
+ assert.ok(html.includes('portfolio-pilot-v61.js?v=61.6'));
  assert.ok(html.includes('portfolioInsightsV613'));
  assert.ok(portfolioLive.includes('شاخص تمرکز HHI'));
  assert.ok(portfolioLive.includes('بهترین بازده'));
  assert.ok(portfolioLive.includes('آزمون تنش سبد'));
+ assert.ok(portfolioLive.includes('پوشش و کیفیت داده قیمت'));
+ assert.ok(portfolioLive.includes('قیمت پایانی'));
+ assert.ok(portfolioLive.includes('آخرین معامله'));
  assert.ok(portfolioLive.includes('[5,10,15,20]'));
  assert.ok(!portfolioLive.includes('localStorage.setItem(HOLDINGS_KEY'));
- assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.5'));
+ assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.6'));
  assert.ok(portfolioLive.includes("sahamban-broker-holdings-v1"));
  assert.ok(portfolioLive.includes("GetClosingPriceDailyList"));
  assert.ok(portfolioLive.includes('const checks=await Promise.all(candidates.map(async candidate=>')); 
