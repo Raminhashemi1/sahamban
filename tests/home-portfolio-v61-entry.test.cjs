@@ -6,5 +6,5 @@ assert.match(html,/id="portfolio-live-entry"/);
 assert.match(html,/href="#livePortfolioSection"/);
 assert.match(html,/portfolio-pilot-v61\.js\?v=61\.3/);
 assert.match(html,/قیمت دریافتی لزوماً لحظه‌ای نیست/);
-assert.match(pilot,/portfolio-pilot-v61\.js\?v=61\.0/);
+assert.match(pilot,/portfolio-pilot-v61\.js\?v=61\.1/);
 console.log('PASS homepage latest pilot entry');
