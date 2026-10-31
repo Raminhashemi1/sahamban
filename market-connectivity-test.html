@@ -38,13 +38,22 @@ const api='https://cdn.tsetmc.com/api';
 const fa=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
 const norm=s=>String(s??'').replace(/[\u200c\u200e\u200f\uFEFF\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
 async function get(path){
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),10000);
- try{
-  const r=await fetch(api+path,{cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
-  if(!r.ok)throw Error('HTTP '+r.status);
-  if(!(r.headers.get('content-type')||'').toLowerCase().includes('json'))throw Error('پاسخ JSON نیست؛ احتمال محدودیت شبکه یا جغرافیایی');
-  return await r.json();
- }finally{clearTimeout(timer);}
+ let lastError;
+ for(let attempt=0;attempt<2;attempt++){
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),18000);
+  try{
+   const r=await fetch(api+path,{cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
+   if(!r.ok)throw Error('HTTP '+r.status);
+   if(!(r.headers.get('content-type')||'').toLowerCase().includes('json'))throw Error('پاسخ JSON نیست؛ احتمال محدودیت شبکه یا جغرافیایی');
+   return await r.json();
+  }catch(e){
+   lastError=e;
+   if(attempt===0&&(e.name==='AbortError'||e instanceof TypeError))continue;
+   if(e.name==='AbortError')throw Error('مهلت پاسخ سرور تمام شد؛ دوباره آزمایش کنید.');
+   throw e;
+  }finally{clearTimeout(timer);}
+ }
+ throw lastError||Error('خطای ارتباط با منبع قیمت');
 }
 function dateOk(raw){
  const s=String(raw??'');
@@ -62,19 +71,29 @@ async function checkSymbol(symbol){
  const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(symbol));
  const rows=search?.instrumentSearch;
  if(!Array.isArray(rows))throw Error('ساختار جستجو نامعتبر');
- const codes=[...new Set(rows.filter(x=>norm(x.lVal18AFC)===norm(symbol)&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.insCode)))];
- if(codes.length!==1)throw Error('شناسه دقیق یکتا پیدا نشد ('+codes.length+')');
- const code=codes[0];
- const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
- const price=Number(info?.pClosing),date=dateOk(info?.dEven);
- if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر');
- const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
- if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
- const valid=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
- const matching=valid.filter(x=>String(x.dEven)===date&&Number(x.pClosing)===price);
- if(matching.length!==1)throw Error('قیمت با تاریخچه تطبیق نکرد');
- if(valid.length<2)throw Error('تعداد سوابق معتبر تاریخچه کافی نیست');
- return {symbol,price,date,count:valid.length};
+ const candidates=[...new Map(rows.filter(x=>norm(x.lVal18AFC)===norm(symbol)&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>[String(x.insCode),x])).values()];
+ if(!candidates.length)throw Error('شناسه دقیق پیدا نشد؛ نام نماد یا املای آن را باید بررسی کرد');
+ const valid=[],reasons=[];
+ for(const candidate of candidates){
+  const code=String(candidate.insCode);
+  try{
+   const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
+   const price=Number(info?.pClosing),date=dateOk(info?.dEven);
+   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر');
+   const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
+   if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
+   const validRows=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
+   const dayRows=validRows.filter(x=>String(x.dEven)===date);
+   if(!dayRows.length||!dayRows.some(x=>Number(x.pClosing)===price))throw Error('قیمت با تاریخچه تطبیق نکرد');
+   if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1)throw Error('سوابق همان روز متناقض‌اند');
+   const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
+   if(uniqueDays.size<2)throw Error('تعداد روزهای تاریخچه کافی نیست');
+   valid.push({symbol,price,date,count:uniqueDays.size,code});
+  }catch(e){reasons.push(String(e?.message||e));}
+ }
+ if(valid.length===1)return valid[0];
+ if(valid.length>1)throw Error('چند شناسه هم‌زمان قیمت و تاریخچه معتبر دارند؛ انتخاب خودکار انجام نشد');
+ throw Error(candidates.length>1?'هیچ‌یک از '+candidates.length+' شناسه نامزد تأیید نشد: '+[...new Set(reasons)].join('؛ '):(reasons[0]||'اطلاعات قیمت و تاریخچه معتبر نیست'));
 }
 $('run-basket').addEventListener('click',async()=>{
  const b=$('run-basket'),s=$('basket-status'),out=$('basket-results');
