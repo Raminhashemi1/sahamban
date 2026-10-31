@@ -300,7 +300,7 @@
      if(!/^\d{8}$/.test(date)||!Number.isFinite(close)||close<=0)return null;
      const y=+date.slice(0,4),m=+date.slice(4,6),d=+date.slice(6,8),dt=new Date(Date.UTC(y,m-1,d));
      if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;
-     return {date,close};
+     const rawValue=row?.qTotCap;const tradedValue=rawValue===null||rawValue===undefined||rawValue===''?null:Number(rawValue);return {date,close,tradedValue:Number.isFinite(tradedValue)&&tradedValue>=0?tradedValue:null};
     }).filter(Boolean).sort((x,y)=>x.date.localeCompare(y.date));
     const unique=new Set(history.map(x=>x.date));
     if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
