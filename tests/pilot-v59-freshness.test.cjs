@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const src=fs.readFileSync('portfolio-pilot-v59.js','utf8');
+const html=fs.readFileSync('portfolio-pilot-v59.html','utf8');
+assert.match(html,/portfolio-pilot-v59\.js\?v=59\.0/);
+assert.match(html,/وضعیت تاریخ بازار/);
+assert.match(src,/q\.marketDate===tehranToday\?'امروز تهران':'پیش از امروز'/);
+assert.match(src,/mode==='import'\?'نامشخص'/);
+assert.match(src,/i===14/);
+assert.match(src,/timeZone:'Asia\/Tehran'/);
+console.log('PASS v59 per-symbol market date freshness');
