@@ -399,6 +399,34 @@
    renderInstrumentMappingPanel();
    const quotes=outcomes.map(x=>x.ok?x.quote:{symbol:x.symbol,marketDate:null,history:null,error:x.error});
    window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes}}));
+   // Historical investor-flow sampling is opt-in and bounded to the selected recent sessions.
+   const flowDepth=Number($('investorFlowHistoryDepthV50')?.value||5);
+   if(![5,10,20].includes(flowDepth))throw Error('بازه تاریخچه جریان پول معتبر نیست.');
+   const historicalFlows=new Array(quotes.length);let flowNext=0,flowDone=0;
+   async function flowWorker(){while(true){
+    const index=flowNext++;if(index>=quotes.length)return;
+    const q=quotes[index];
+    if(!q.insCode||!Array.isArray(q.history)){historicalFlows[index]={symbol:q.symbol,error:'تاریخچه قیمت معتبر یا شناسه ابزار موجود نیست',observations:[]};flowDone++;continue;}
+    const dates=[...new Set(q.history.map(x=>x.date).filter(x=>/^\d{8}$/.test(String(x))))].sort().slice(-flowDepth);
+    const observations=[];
+    for(const date of dates){
+     try{
+      const response=await fetchJson('/ClientType/GetClientType/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(date));
+      const row=Array.isArray(response?.clientType)?response.clientType[0]:null;
+      const fields=['buy_I_Volume','buy_I_Value','buy_N_Value','buy_CountI','sell_I_Volume','sell_I_Value','sell_N_Value','sell_CountI'];
+      if(!row||fields.some(k=>!Number.isFinite(Number(row[k]))||Number(row[k])<0))throw Error('ساختار داده ناقص');
+      const buy=Number(row.buy_I_Value),sell=Number(row.sell_I_Value);
+      if(buy+sell<=0)throw Error('ارزش خرید و فروش حقیقی صفر است');
+      observations.push({date,buyIndividualValue:buy,sellIndividualValue:sell,buyCorporateValue:Number(row.buy_N_Value),sellCorporateValue:Number(row.sell_N_Value),buyIndividualVolume:Number(row.buy_I_Volume),sellIndividualVolume:Number(row.sell_I_Volume),individualBuyerCount:Number(row.buy_CountI),individualSellerCount:Number(row.sell_CountI),netIndividual:buy-sell,netRatio:(buy-sell)/(buy+sell)});
+     }catch(error){observations.push({date,error:error.message});}
+    }
+    historicalFlows[index]={symbol:q.symbol,insCode:q.insCode,observations};
+    flowDone++;
+    statusMessage('تاریخچه جریان پول: '+fmt(flowDone)+' از '+fmt(quotes.length)+' نماد؛ '+fmt(observations.filter(x=>!x.error).length)+' رکورد معتبر برای '+q.symbol+'.');
+   }}
+   await Promise.all(Array.from({length:Math.min(2,quotes.length)},()=>flowWorker()));
+   window.dispatchEvent(new CustomEvent('sahamban:verified-investor-flow-history-v50',{detail:{symbols:quotes.length,depth:flowDepth,series:historicalFlows}}));
+
    const good=outcomes.filter(x=>x.ok).length,failed=outcomes.filter(x=>!x.ok);
    statusMessage('تاریخچه معتبر برای '+fmt(good)+' از '+fmt(holdings.length)+' نماد دریافت شد.'+(failed.length?' ناموفق: '+failed.map(x=>x.symbol+': '+x.error).join('؛ '):'')+'؛ اطلاعات سبد تغییری نکرد.');
   }catch(e){statusMessage('دریافت تاریخچه انجام نشد: '+e.message+'؛ اطلاعات سبد دست‌نخورده ماند.');}
