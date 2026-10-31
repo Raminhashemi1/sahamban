@@ -430,6 +430,25 @@
    const sectorTitle=document.createElement('p');sectorTitle.textContent=dominant?'بزرگ‌ترین تمرکز صنعت: '+dominant[0]+' ('+fmt(dominant[1]*100)+'٪ از ارزش سبد) | زیان فرضی با افت ۱۵٪ این صنعت: '+fmt(sectorLoss)+' ریال':'اطلاعات صنعت برای محاسبه تمرکز در دسترس نیست.';box.append(sectorTitle);
    const sectorTable=document.createElement('table');sectorTable.style.cssText='width:100%;border-collapse:collapse;font-size:13px';const sh=document.createElement('tr');['صنعت','وزن از ارزش سبد'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';sh.append(th)});sectorTable.append(sh);
    concentration.forEach(([name,w])=>{const tr=document.createElement('tr');[name,fmt(w*100)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});sectorTable.append(tr)});box.append(sectorTable);
+   const pairCorr=[];
+   for(let i=0;i<weights.length;i++)for(let j=i+1;j<weights.length;j++){
+    const a=retMaps.get(weights[i].h.symbol)||new Map(),b=retMaps.get(weights[j].h.symbol)||new Map(),keys=[...a.keys()].filter(k=>b.has(k)).sort();
+    if(keys.length<15)continue;
+    const x=keys.map(k=>a.get(k)),y=keys.map(k=>b.get(k)),mx=x.reduce((u,v)=>u+v,0)/x.length,my=y.reduce((u,v)=>u+v,0)/y.length;
+    let cov=0,vx=0,vy=0;for(let k=0;k<x.length;k++){const dx=x[k]-mx,dy=y[k]-my;cov+=dx*dy;vx+=dx*dx;vy+=dy*dy;}
+    if(vx>0&&vy>0)pairCorr.push({a:weights[i].h.symbol,b:weights[j].h.symbol,corr:cov/Math.sqrt(vx*vy),n:keys.length});
+   }
+   const corrTitle=document.createElement('p');corrTitle.textContent='همبستگی زوجی: '+fmt(pairCorr.length)+' جفت با حداقل ۱۵ جلسه مشترک؛ میانگین قدرمطلق همبستگی: '+(pairCorr.length?fmt(pairCorr.reduce((u,v)=>u+Math.abs(v.corr),0)/pairCorr.length*100)+'٪':'داده ناکافی');box.append(corrTitle);
+   if(returns.length>=20){
+    const dailyReturns=returns.map(x=>x.ret).filter(Number.isFinite),mean=dailyReturns.reduce((u,v)=>u+v,0)/dailyReturns.length;
+    const variance=dailyReturns.reduce((u,v)=>u+(v-mean)**2,0)/(dailyReturns.length-1),annualVol=Math.sqrt(variance)*Math.sqrt(252);
+    let seed=20261031;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    const outcomes=[];for(let path=0;path<2000;path++){let equity=1;for(let day=0;day<20;day++)equity*=Math.max(.000001,1+dailyReturns[Math.floor(random()*dailyReturns.length)]);outcomes.push(equity-1);}
+    outcomes.sort((a,b)=>a-b);const q=(p)=>outcomes[Math.floor((outcomes.length-1)*p)],q05=q(.05),q50=q(.5),q95=q(.95),tail=outcomes.filter(x=>x<=q05),cvar=tail.reduce((u,v)=>u+v,0)/tail.length;
+    const mc=document.createElement('p');mc.textContent='شبیه‌سازی تاریخی مونت‌کارلو (بوت‌استرپ روزانه، ۲٬۰۰۰ مسیر، افق ۲۰ جلسه): نوسان سالانه‌شده سبد '+fmt(annualVol*100)+'٪ | صدک ۵٪ بازده '+fmt(q05*100)+'٪ | میانه '+fmt(q50*100)+'٪ | صدک ۹۵٪ '+fmt(q95*100)+'٪ | میانگین بدترین ۵٪ مسیرها (CVaR) '+fmt(cvar*100)+'٪.';box.append(mc);
+   }else{const mc=document.createElement('p');mc.textContent='شبیه‌سازی مونت‌کارلو انجام نشد: برای برآورد قابل اتکا حداقل ۲۰ بازده روزانه مشترک با پوشش حداقل ۸۰٪ وزن لازم است؛ داده فعلی '+fmt(returns.length)+' جلسه است.';box.append(mc);}
+   const methodology=document.createElement('p');methodology.textContent='ریسک ترکیبی با بازده روزانه سبد و وزن‌های فعلی محاسبه می‌شود؛ این تجمیع، هم‌حرکتی نمادها را در روزهای مشترک حفظ می‌کند. مونت‌کارلو از بازنمونه‌گیری تاریخی بازده روزانه سبد استفاده می‌کند، نه فرض توزیع نرمال؛ وابستگی زمانی، تغییر وزن، هزینه معامله و شوک‌های خارج از نمونه را مدل نمی‌کند. نتایج سناریویی‌اند، تضمین یا پیش‌بینی نیستند.';box.append(methodology);
+
   }catch(e){box.textContent='گزارش ریسک محاسبه نشد: '+e.message+'؛ از داده ناقص برآورد قطعی ساخته نمی‌شود.';}
  }
 
