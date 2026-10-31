@@ -66,8 +66,12 @@
   const daily=history?.closingPriceDaily;
   if(!Array.isArray(daily)||daily.length===0)throw Error('تاریخچه معتبر موجود نیست.');
   const matching=daily.filter(row=>String(row?.dEven??'')===date);
-  if(matching.length!==1)throw Error('تاریخ معامله در تاریخچه یکتا نیست.');
-  const historyPrice=Number(matching[0].pClosing);
+  if(!matching.length)throw Error('تاریخ قیمت روز در تاریخچه یافت نشد.');
+  // Some market responses repeat the same dated closing-price row. Repeated
+  // identical observations are harmless; conflicting prices are not.
+  const datedPrices=matching.map(row=>Number(row?.pClosing));
+  if(datedPrices.some(p=>!Number.isFinite(p)||p<=0)||new Set(datedPrices).size!==1)throw Error('قیمت‌های متناقض برای یک تاریخ در تاریخچه وجود دارد.');
+  const historyPrice=datedPrices[0];
   if(!Number.isFinite(historyPrice)||historyPrice<=0||Math.abs(historyPrice-price)>0.000001)throw Error('قیمت با تاریخچه تطبیق ندارد.');
   const historyRows=daily.map(row=>{const d=String(row?.dEven??''),p=Number(row?.pClosing);if(!/^\d{8}$/.test(d)||!Number.isFinite(p)||p<=0)return null;const y=+d.slice(0,4),m=+d.slice(4,6),day=+d.slice(6,8),dt=new Date(Date.UTC(y,m-1,day));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==day)return null;return {date:d,close:p};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
   const uniqueHistory=new Set(historyRows.map(row=>row.date));
