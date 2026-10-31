@@ -56,10 +56,11 @@ test('v49 rejects v61 rows with missing or unverified market date and price basi
   assert.equal(h.els.riskSummaryV49.textContent,'');
  }
 });
+
 test('v54 stress report receives the same validated daily-return maps used for portfolio correlation',()=>{
- assert.match(js,/renderStressReport\\(holdings,qmap,rowsOut,retMaps\\)/);
- assert.match(js,/function renderStressReport\\(holdings,qmap,rowsOut,retMaps\\)/);
+ assert.ok(js.includes('renderStressReport(holdings,qmap,rowsOut,retMaps)'));
+ assert.ok(js.includes('function renderStressReport(holdings,qmap,rowsOut,retMaps)'));
 });
 test('sector metadata arrival refreshes the integrated scorecard and stress report',()=>{
- assert.match(js,/scoreState\\.sectors=Array\\.isArray\\(event\\?\\.detail\\?\\.quotes\\)\\?event\\.detail\\.quotes:\\[\\];renderScorecard\\(\\)/);
-test('sector metadata arrival refreshes the integrated scorecard and stress report',()=>{assert.ok(js.includes("scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];renderScorecard();"));});
+ assert.ok(js.includes("scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];renderScorecard();"));
+});
