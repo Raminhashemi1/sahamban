@@ -68,7 +68,7 @@ function dateOk(raw){
  return s;
 }
 
-const defaultSymbols=['وساخت','وسایا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','پیوند','عیار','فروژ','استقلال','پرسپولیس'];
+const defaultSymbols=['وساخت','ولساپا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','بپیوند','عیار','فروژ','استقلال','پرسپولیس'];
 $('symbols-input').value=defaultSymbols.join('\\n');
 function readSymbols(){
  const raw=$('symbols-input').value.split(/[\\n،,;؛\\t]+/).map(x=>x.trim()).filter(Boolean);
