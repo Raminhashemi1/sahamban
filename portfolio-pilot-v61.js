@@ -69,6 +69,8 @@
   const info=result?.closingPriceInfo;
   if(!info||typeof info!=='object')throw Error('پاسخ قیمت نماد معتبر نیست.');
   const closing=Number(info.pClosing),last=Number(info.pDrCotVal);
+  const safeMarketCount=raw=>{if(raw===null||raw===undefined||raw==='')return null;const value=Number(raw);return Number.isSafeInteger(value)&&value>=0?value:null;};
+  const tradedValue=safeMarketCount(info.qTotCap),tradedVolume=safeMarketCount(info.qTotTran5J),tradeCount=safeMarketCount(info.zTotTran);
   if(!Number.isFinite(closing)||closing<=0)throw Error('قیمت پایانی معتبر نیست.');
   const marketDate=validDate(info.dEven??info.date??info.lastDate);
   const infoSectorCode=info.cSecVal??info.sector?.cSecVal??'';
@@ -83,7 +85,7 @@
    ?clock.slice(0,2)+':'+clock.slice(2,4)+':'+clock.slice(4,6):'نامشخص';
   return {symbol:holding.symbol,insCode,quantity:holding.quantity,buy:holding.buy,
    price:hasLast?last:closing,closingPrice:closing,
-   priceKind:hasLast?'آخرین معامله':'پایانی',lastTradePrice:hasLast?last:null,lastTradeTime:tradeTime,marketDate,sectorCode:String(infoSectorCode??'').trim(),sectorName:String(infoSectorName??'').trim(),history:null};
+   priceKind:hasLast?'آخرین معامله':'پایانی',lastTradePrice:hasLast?last:null,lastTradeTime:tradeTime,tradedValue,tradedVolume,tradeCount,marketDate,sectorCode:String(infoSectorCode??'').trim(),sectorName:String(infoSectorName??'').trim(),history:null};
  }
  async function getOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
@@ -179,10 +181,10 @@
    insight.append(stressTable);
    const qualityTitle=document.createElement('strong');qualityTitle.textContent='پوشش و کیفیت داده قیمت';qualityTitle.style.display='block';qualityTitle.style.marginTop='14px';insight.append(qualityTitle);
    const lastCount=quotes.filter(q=>q.priceKind==='آخرین معامله').length,closeCount=quotes.length-lastCount;
-   const qualitySummary=document.createElement('p');qualitySummary.textContent='مبنای آخرین قیمت: '+fmt(lastCount)+' نماد آخرین معامله و '+fmt(closeCount)+' نماد قیمت پایانی. تاریخ بازار و ساعت آخرین معامله برای هر نماد جداگانه درج شده است؛ این گزارش معیار نقدشوندگی یا حجم معاملات نیست.';insight.append(qualitySummary);
+   const qualitySummary=document.createElement('p');qualitySummary.textContent='مبنای آخرین قیمت: '+fmt(lastCount)+' نماد آخرین معامله و '+fmt(closeCount)+' نماد قیمت پایانی. ارزش، حجم و تعداد معاملات فقط در صورت وجود فیلد معتبر در پاسخ رسمی بازار نمایش داده می‌شوند؛ این آمار یک‌روزه به‌تنهایی رتبه نقدشوندگی نیست.';insight.append(qualitySummary);
    const qualityTable=document.createElement('table');qualityTable.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
-   const qualityHead=document.createElement('tr');['نماد','مبنای قیمت','تاریخ بازار','ساعت آخرین معامله'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';qualityHead.append(th)});qualityTable.append(qualityHead);
-   quotes.forEach(q=>{const tr=document.createElement('tr');[q.symbol,q.priceKind||'پایانی',q.marketDate||'نامشخص',q.lastTradeTime||'نامشخص'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});qualityTable.append(tr)});
+   const qualityHead=document.createElement('tr');['نماد','مبنای قیمت','تاریخ بازار','ساعت آخرین معامله','ارزش معاملات (ریال)','حجم معاملات','تعداد معاملات'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';qualityHead.append(th)});qualityTable.append(qualityHead);
+   quotes.forEach(q=>{const tr=document.createElement('tr');[q.symbol,q.priceKind||'پایانی',q.marketDate||'نامشخص',q.lastTradeTime||'نامشخص',q.tradedValue===null||q.tradedValue===undefined?'نامشخص':fmt(q.tradedValue),q.tradedVolume===null||q.tradedVolume===undefined?'نامشخص':fmt(q.tradedVolume),q.tradeCount===null||q.tradeCount===undefined?'نامشخص':fmt(q.tradeCount)].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});qualityTable.append(tr)});
    insight.append(qualityTable);
    const note=document.createElement('p');note.className='muted';note.textContent='رتبه‌بندی بر اساس بازده تحقق‌نیافته نسبت به بهای خرید است؛ این رتبه‌بندی توصیه خرید/فروش نیست. HHI و وزن‌ها فقط از قیمت‌های همین گزارش محاسبه شده‌اند.';insight.append(note);
    insight.hidden=false;
