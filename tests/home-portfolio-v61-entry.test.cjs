@@ -15,3 +15,6 @@ assert.ok(html.includes('portfolio-asset-allocation-v62.js?v=62.0'));
 
 assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.0'));
 assert.ok(html.includes('riskFundNavPremiumV63'));
+
+assert.ok(src.includes('qTotCap'));
+assert.ok(src.includes('qTotTran5J'));
