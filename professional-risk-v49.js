@@ -270,7 +270,7 @@
    if(!Array.isArray(series)||!series.length||series.length>100||![5,10,20].includes(depth))throw Error('ساختار تاریخچه معتبر نیست.');
    const rows=series.map(item=>{
     if(!item?.symbol||!Array.isArray(item.observations))throw Error('سری نماد نامعتبر است.');
-    const valid=item.observations.filter(x=>!x.error&&/^\\d{8}$/.test(String(x.date))&&Number.isFinite(x.netRatio)&&Number.isFinite(x.netIndividual)).sort((a,b)=>a.date.localeCompare(b.date));
+    const valid=item.observations.filter(x=>!x.error&&String(x.date).length===8&&[...String(x.date)].every(ch=>ch>='0'&&ch<='9')&&Number.isFinite(x.netRatio)&&Number.isFinite(x.netIndividual)).sort((a,b)=>a.date.localeCompare(b.date));
     if(new Set(valid.map(x=>x.date)).size!==valid.length)throw Error('تاریخ تکراری برای '+item.symbol);
     const latest=valid.at(-1),baseline=valid.slice(0,-1).slice(-10);
     if(!latest||baseline.length<5)return {symbol:item.symbol,latest,baselineCount:baseline.length,score:null,flag:false,net:latest?.netIndividual??null};
