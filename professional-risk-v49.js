@@ -366,6 +366,7 @@
     daily.append(rt);
    }
 
+   renderStressReport(holdings,qmap,rowsOut);
    const alertPanel=$('riskAlertsV53');
    if(alertPanel){
     alertPanel.replaceChildren();
@@ -400,4 +401,34 @@
  }
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{scoreState.quotes=event?.detail?.quotes;renderScorecard();});
  window.addEventListener('sahamban:verified-investor-flow-history-v50',event=>{scoreState.flows=event?.detail;renderScorecard();});
+
+ window.addEventListener('sahamban:verified-portfolio-sectors-v50',event=>{scoreState.sectors=Array.isArray(event?.detail?.quotes)?event.detail.quotes:[];});
+ function renderStressReport(holdings,qmap,rowsOut){
+  const box=$('riskStressV54');if(!box)return;
+  try{
+   const total=holdings.reduce((a,h)=>a+h.value,0);
+   if(!(total>0))throw Error('ارزش کل سبد معتبر نیست.');
+   const weights=holdings.map(h=>({h,w:h.value/total,q:qmap.get(h.symbol)}));
+   const sectors=new Map();
+   const sectorMap=new Map((scoreState.sectors||[]).map(x=>[x.symbol,x]));
+   weights.forEach(x=>{const info=sectorMap.get(x.h.symbol),name=String(info?.sectorName||info?.sectorCode||'نامشخص').trim()||'نامشخص';sectors.set(name,(sectors.get(name)||0)+x.w);});
+   const concentration=[...sectors].sort((a,b)=>b[1]-a[1]);
+   const sectorHHI=concentration.reduce((a,x)=>a+x[1]*x[1],0);
+   const dated=new Map();
+   weights.forEach(({h,q,w})=>{const hist=(q?.history||[]).filter(x=>x&&String(x.date||'').length===8&&Number.isFinite(Number(x.close))&&Number(x.close)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));for(let i=1;i<hist.length;i++){const date=hist[i].date,ret=Number(hist[i].close)/Number(hist[i-1].close)-1;if(!dated.has(date))dated.set(date,{sum:0,weight:0});const d=dated.get(date);d.sum+=w*ret;d.weight+=w;}});
+   const returns=[...dated].filter(([,v])=>v.weight>=.8).sort((a,b)=>a[0].localeCompare(b[0])).map(([date,v])=>({date,ret:v.sum/v.weight}));
+   let equity=1,peak=1,maxDrawdown=0;for(const x of returns){equity*=1+x.ret;peak=Math.max(peak,equity);maxDrawdown=Math.min(maxDrawdown,equity/peak-1);}
+   const shocks=[-5,-10,-20].map(pct=>({pct,loss:total*Math.abs(pct)/100}));
+   const dominant=concentration[0],sectorLoss=dominant?total*dominant[1]*.15:null;
+   box.replaceChildren();
+   const title=document.createElement('strong');title.textContent='ریسک سبد و سناریوهای تنش';box.append(title);
+   const note=document.createElement('p');note.textContent='افت سرمایه تاریخی با وزن‌های فعلی دارایی‌ها روی تاریخ‌های مشترک بازسازی شده و اثر معاملات و تغییر وزن تاریخی را لحاظ نمی‌کند. سناریوهای منفی، شوک یکنواخت فرضی به کل ارزش سبد هستند، نه پیش‌بینی. سناریوی صنعت، افت فرضی ۱۵٪ فقط برای بزرگ‌ترین صنعت است. داده ناقص حذف می‌شود و پوشش زمانی گزارش می‌شود.';box.append(note);
+   const summary=document.createElement('p');summary.textContent='ارزش سبد: '+fmt(total)+' | جلسات مشترک قابل محاسبه: '+fmt(returns.length)+' | پوشش وزن در جلسات: '+(returns.length?fmt(Math.min(...[...dated.values()].map(x=>x.weight))*100)+'٪':'ناموجود')+' | بیشینه افت تاریخی تقریبی: '+(returns.length>=2?fmt(Math.abs(maxDrawdown)*100)+'٪':'داده ناکافی؛ حداقل دو بازده مشترک لازم است')+' | HHI تمرکز صنعت: '+fmt(sectorHHI*10000);box.append(summary);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';const head=document.createElement('tr');['سناریو','افت فرضی','زیان برآوردی سبد'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+   shocks.forEach(x=>{const tr=document.createElement('tr');['شوک یکنواخت',x.pct+'٪-',fmt(x.loss)+' ریال'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});box.append(table);
+   const sectorTitle=document.createElement('p');sectorTitle.textContent=dominant?'بزرگ‌ترین تمرکز صنعت: '+dominant[0]+' ('+fmt(dominant[1]*100)+'٪ از ارزش سبد) | زیان فرضی با افت ۱۵٪ این صنعت: '+fmt(sectorLoss)+' ریال':'اطلاعات صنعت برای محاسبه تمرکز در دسترس نیست.';box.append(sectorTitle);
+   const sectorTable=document.createElement('table');sectorTable.style.cssText='width:100%;border-collapse:collapse;font-size:13px';const sh=document.createElement('tr');['صنعت','وزن از ارزش سبد'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';sh.append(th)});sectorTable.append(sh);
+   concentration.forEach(([name,w])=>{const tr=document.createElement('tr');[name,fmt(w*100)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});sectorTable.append(tr)});box.append(sectorTable);
+  }catch(e){box.textContent='گزارش ریسک محاسبه نشد: '+e.message+'؛ از داده ناقص برآورد قطعی ساخته نمی‌شود.';}
+ }
 })();
