@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const pilot=fs.readFileSync('portfolio-pilot-v61.html','utf8');
+const src=fs.readFileSync('portfolio-pilot-v61.js','utf8');
 assert.match(html,/id="portfolio-live-entry"/);
 assert.match(html,/href="#livePortfolioSection"/);
 assert.match(html,/portfolio-pilot-v61\.js\?v=61\.6/);
@@ -15,3 +16,6 @@ assert.ok(html.includes('portfolio-asset-allocation-v62.js?v=62.0'));
 
 assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.0'));
 assert.ok(html.includes('riskFundNavPremiumV63'));
+
+assert.ok(src.includes('qTotCap'));
+assert.ok(src.includes('qTotTran5J'));
