@@ -23,6 +23,22 @@
   if(result.length>100||result.some(x=>!Number.isSafeInteger(x.quantity)||!Number.isFinite(x.value)||!Number.isFinite(x.cost)||x.value>Number.MAX_SAFE_INTEGER||x.cost>Number.MAX_SAFE_INTEGER))throw Error('مقادیر از محدوده محاسبه امن خارج‌اند.');
   return result;
  }
+ let latestCsv='';
+ const exportButton=$('riskExportV49');
+ function csvCell(value){
+  let text=String(value??'');
+  if(/^[=+@\\-\\t\\r]/.test(text))text="'"+text;
+  return '"'+text.replace(/"/g,'""')+'"';
+ }
+ exportButton?.addEventListener('click',()=>{
+  if(!latestCsv)return;
+  try{
+   const blob=new Blob(['\\uFEFF'+latestCsv],{type:'text/csv;charset=utf-8'});
+   const url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='sahamban-risk-report.csv';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
+   $('riskStatusV49').textContent+=' فایل گزارش CSV آماده شد؛ داده‌ای در سرور ذخیره نشد.';
+  }catch(e){$('riskStatusV49').textContent+=' ساخت فایل گزارش ناموفق بود: '+e.message;}
+ });
  $('riskCalculateV49').addEventListener('click',()=>{
   try{
    const budget=Number(digits($('riskBudgetV49').value)),shock=Number($('riskShockV49').value);
@@ -37,6 +53,10 @@
    const table=document.createElement('table');table.style.width='100%';const head=document.createElement('tr');
    ['نماد','وزن از سبد','ارزش روز (ریال)','افت فرضی '+shock+'٪ (ریال)','سهم از تمرکز'].forEach(x=>{const th=document.createElement('th');th.textContent=x;th.style.padding='8px';head.append(th)});table.append(head);
    top.forEach(r=>{const tr=document.createElement('tr');[r.symbol,fmt(r.value/total*100)+'٪',fmt(r.value),fmt(r.value*shock/100),fmt((r.value/total)**2*10000)].forEach(x=>{const td=document.createElement('td');td.textContent=x;td.style.padding='8px';td.style.borderBottom='1px solid #34546d';tr.append(td)});table.append(tr)});
+   const csvRows=[['نماد','وزن سبد درصد','ارزش روز ریال','افت فرضی ریال','سهم تمرکز HHI']];
+   top.forEach(r=>csvRows.push([r.symbol,(r.value/total*100).toFixed(4),r.value.toFixed(0),(r.value*shock/100).toFixed(0),((r.value/total)**2*10000).toFixed(4)]));
+   latestCsv=csvRows.map(row=>row.map(csvCell).join(';')).join('\\r\\n');
+   if(exportButton)exportButton.disabled=false;
    $('riskDetailsV49').replaceChildren(table);
   }catch(e){fail('محاسبه انجام نشد: '+e.message);}
  });
