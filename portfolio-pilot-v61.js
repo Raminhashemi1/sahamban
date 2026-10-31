@@ -113,9 +113,7 @@
   }catch(_sectorError){quote.sectorCode='';quote.sectorName='';}
   quote.instrumentFlow=quote.instrumentFlow??quote.flow;
   quote.assetClass='unknown';quote.assetClassLabel='نامشخص';quote.fundNav=null;
-  if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
-  else if(quote.instrumentTypeCode==='301'){quote.assetClass='preemptive_right';quote.assetClassLabel='حق تقدم';}
-  else if(quote.instrumentFlow===18||quote.instrumentTypeCode){
+  if(quote.instrumentFlow===18){
    try{
     const fundResponse=await fetchJson('/Fund/GetETFByInsCode/'+encodeURIComponent(quote.insCode));
     const fund=fundResponse?.etf,nav=Number(fund?.pRedTran??fund?.pSubTran);
@@ -123,7 +121,8 @@
      quote.assetClass='fund_etf';quote.assetClassLabel='صندوق قابل معامله';quote.fundNav=nav;
     }
    }catch(_fundError){/* Unknown is safer than inferring from symbol text. */}
-  }
+  }else if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
+  else if(quote.instrumentTypeCode==='301'){quote.assetClass='preemptive_right';quote.assetClassLabel='حق تقدم';}
   return quote;
  }
  function render(holdings,quotes,receivedAt,mode='live'){
