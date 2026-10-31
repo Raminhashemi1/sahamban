@@ -70,7 +70,7 @@ async function checkSymbol(symbol){
  if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر');
  const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
  if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
- const valid=hist.filter(x=>/^\\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
+ const valid=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
  const matching=valid.filter(x=>String(x.dEven)===date&&Number(x.pClosing)===price);
  if(matching.length!==1)throw Error('قیمت با تاریخچه تطبیق نکرد');
  if(valid.length<2)throw Error('تعداد سوابق معتبر تاریخچه کافی نیست');
