@@ -262,4 +262,31 @@
    panel.append(table);
   }catch(e){panel.textContent='تحلیل جریان حقیقی و حقوقی انجام نشد: '+e.message+' داده ناقص به‌صورت جمع کل نمایش داده نمی‌شود.';}
  });
+
+ window.addEventListener('sahamban:verified-investor-flow-history-v50',event=>{
+  const panel=$('riskInvestorFlowHistoryV50');if(!panel)return;
+  try{
+   const series=event?.detail?.series,depth=event?.detail?.depth;
+   if(!Array.isArray(series)||!series.length||series.length>100||![5,10,20].includes(depth))throw Error('ساختار تاریخچه معتبر نیست.');
+   const rows=series.map(item=>{
+    if(!item?.symbol||!Array.isArray(item.observations))throw Error('سری نماد نامعتبر است.');
+    const valid=item.observations.filter(x=>!x.error&&/^\\d{8}$/.test(String(x.date))&&Number.isFinite(x.netRatio)&&Number.isFinite(x.netIndividual)).sort((a,b)=>a.date.localeCompare(b.date));
+    if(new Set(valid.map(x=>x.date)).size!==valid.length)throw Error('تاریخ تکراری برای '+item.symbol);
+    const latest=valid.at(-1),baseline=valid.slice(0,-1).slice(-10);
+    if(!latest||baseline.length<5)return {symbol:item.symbol,latest,baselineCount:baseline.length,score:null,flag:false,net:latest?.netIndividual??null};
+    const medianOf=a=>{const v=[...a].sort((x,y)=>x-y);return v.length%2?v[(v.length-1)/2]:(v[v.length/2-1]+v[v.length/2])/2;};
+    const median=medianOf(baseline.map(x=>x.netRatio)),mad=medianOf(baseline.map(x=>Math.abs(x.netRatio-median)));
+    const score=mad>0?0.6745*(latest.netRatio-median)/mad:null;
+    return {symbol:item.symbol,latest,baselineCount:baseline.length,score,flag:score!==null&&Math.abs(score)>=3.5,net:latest.netIndividual};
+   });
+   panel.replaceChildren();
+   const title=document.createElement('strong');title.textContent='روند تاریخی جریان پول حقیقی';panel.append(title);
+   const note=document.createElement('p');note.textContent='نسبت خالص جریان حقیقی به مجموع خرید و فروش حقیقی در آخرین جلسه با حداکثر ۱۰ مشاهده پیشین همان نماد مقایسه می‌شود. حداقل ۵ مشاهده پیشین لازم است. امتیاز مقاوم MAD با آستانه ۳٫۵ شاخص آماری است، نه سیگنال خرید یا فروش.';panel.append(note);
+   const summary=document.createElement('p');summary.textContent='نمادهای بررسی‌شده: '+fmt(rows.length)+' | دارای حداقل ۵ جلسه مبنا: '+fmt(rows.filter(x=>x.score!==null).length)+' | انحراف زمانی قوی: '+fmt(rows.filter(x=>x.flag).length)+' | بازه درخواستی: '+fmt(depth)+' جلسه';panel.append(summary);
+   const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const head=document.createElement('tr');['نماد','تاریخ','خالص حقیقی (ریال)','نسبت خالص','جلسات مبنا','امتیاز MAD','وضعیت'].forEach(v=>{const th=document.createElement('th');th.textContent=v;table.appendChild(head);th.style.padding='7px';head.append(th)});table.append(head);
+   rows.forEach(x=>{const tr=document.createElement('tr');[x.symbol,x.latest?.date||'ناموجود',x.net===null?'ناموجود':fmt(x.net),x.latest?fmt(x.latest.netRatio*100)+'٪':'ناموجود',fmt(x.baselineCount),x.score===null?'ناموجود':fmt(x.score),x.flag?'انحراف غیرعادی':x.score===null?'داده ناکافی':'در محدوده مبنا'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.padding='7px';tr.append(td)});table.append(tr)});
+   panel.append(table);
+  }catch(e){panel.textContent='تحلیل تاریخی جریان پول انجام نشد: '+e.message+'؛ داده ناقص به هشدار تبدیل نمی‌شود.';}
+ });
 })();
