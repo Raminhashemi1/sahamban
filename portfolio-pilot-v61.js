@@ -99,7 +99,17 @@
    catch(e){lastError=e.message;}
   }
   if(valid.length!==1)throw Error(valid.length?'چند شناسه تازه و معتبر برای '+holding.symbol+' وجود دارد؛ انتخاب خودکار ایمن نیست.':'هیچ شناسه‌ای برای '+holding.symbol+' با قیمت و تاریخ معتبر تأیید نشد. '+lastError);
-  return valid[0];
+  const quote=valid[0];
+  // Sector metadata is optional: a failure must not invalidate an otherwise verified quote.
+  try{
+   const response=await fetchJson('/Instrument/GetInstrumentInfo/'+encodeURIComponent(quote.insCode));
+   const meta=response?.instrumentInfo??response;
+   if(meta&&String(meta.insCode??quote.insCode)===String(quote.insCode)){
+    quote.sectorCode=String(meta.cSecVal??meta.sector?.cSecVal??'').trim();
+    quote.sectorName=String(meta.lSecVal??meta.sector?.lSecVal??'').trim();
+   }
+  }catch(_sectorError){quote.sectorCode='';quote.sectorName='';}
+  return quote;
  }
  function render(holdings,quotes,receivedAt,mode='live'){
   const body=$('livePortfolioRows');body.replaceChildren();
