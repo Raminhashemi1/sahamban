@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const src=fs.readFileSync('portfolio-pilot-v61.js','utf8');
+const html=fs.readFileSync('portfolio-pilot-v61.html','utf8');
+assert.match(html,/portfolio-pilot-v61\.js\?v=61\.0/);
+assert.match(src,/quotes\.filter\(q=>q\.priceKind==='آخرین معامله'\)\.length/);
+assert.match(src,/quotes\.filter\(q=>q\.priceKind==='پایانی'\)\.length/);
+assert.match(src,/quotes\.filter\(q=>q\.lastTradeTime==='نامشخص'\)\.length/);
+assert.match(src,/پوشش قیمت:/);
+assert.match(src,/if\(mode==='live'\)\{/);
+console.log('PASS v61 quote coverage counts');
