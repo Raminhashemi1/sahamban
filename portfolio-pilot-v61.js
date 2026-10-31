@@ -140,6 +140,11 @@
    const head=document.createElement('tr');['نماد','وزن سبد','سود/زیان (ریال)','بازده نسبت به خرید'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
    ranked.forEach(r=>{const tr=document.createElement('tr');[r.symbol,fmt(r.weight)+'٪',fmt(r.pnl),fmt(r.pct)+'٪'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
    insight.append(table);
+   const stressTitle=document.createElement('strong');stressTitle.textContent='آزمون تنش سبد (سناریو فرضی)';stressTitle.style.display='block';stressTitle.style.marginTop='14px';insight.append(stressTitle);
+   const stressTable=document.createElement('table');stressTable.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const stressHead=document.createElement('tr');['افت فرضی بازار','کاهش ارزش سبد','ارزش باقی‌مانده'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';stressHead.append(th)});stressTable.append(stressHead);
+   [5,10,15,20].forEach(shock=>{const loss=value*shock/100;const tr=document.createElement('tr');[fmt(shock)+'٪',fmt(loss)+' ریال',fmt(value-loss)+' ریال'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});stressTable.append(tr)});
+   insight.append(stressTable);
    const note=document.createElement('p');note.className='muted';note.textContent='رتبه‌بندی بر اساس بازده تحقق‌نیافته نسبت به بهای خرید است؛ این رتبه‌بندی توصیه خرید/فروش نیست. HHI و وزن‌ها فقط از قیمت‌های همین گزارش محاسبه شده‌اند.';insight.append(note);
    insight.hidden=false;
   }
