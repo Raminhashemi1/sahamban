@@ -20,3 +20,5 @@ assert.ok(src.includes("quote.instrumentTypeCode==='301'"));
 assert.ok(src.includes("'/Fund/GetETFByInsCode/'"));
 assert.ok(src.includes("String(fund.insCode??'')===String(quote.insCode)"));
 assert.ok(src.includes("verified-portfolio-asset-types-v62"));
+
+assert.ok(src.indexOf("if(quote.instrumentFlow===18)")<src.indexOf("else if(quote.instrumentTypeCode==='300')"));
