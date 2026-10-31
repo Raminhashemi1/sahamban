@@ -346,6 +346,25 @@
    ['رتبه','نماد','امتیاز','پوشش داده','تکنیکال','جریان پول','نقدشوندگی','تنوع','هم‌جهتی شاخص‌ها'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
    rowsOut.sort((a,b)=>(b.score??-1)-(a.score??-1)||b.coverage-a.coverage||b.value-a.value).forEach((x,index)=>{const m=Object.fromEntries(x.components.map(c=>[c.name,c.score]));const tr=document.createElement('tr');const rank=x.score===null?'—':String(index+1);const alignment=m['تکنیکال']!==undefined&&m['جریان پول']!==undefined&&m['تکنیکال']>=60&&m['جریان پول']>=60?'هم‌جهت مثبت':m['نقدشوندگی']!==undefined&&m['نقدشوندگی']<35?'ریسک نقدشوندگی':'خنثی/ناقص';[rank,x.symbol,x.score===null?'ناموجود':fmt(x.score),fmt(x.coverage)+'٪',m['تکنیکال']===undefined?'ناموجود':fmt(m['تکنیکال']),m['جریان پول']===undefined?'ناموجود':fmt(m['جریان پول']),m['نقدشوندگی']===undefined?'ناموجود':fmt(m['نقدشوندگی']),m['تنوع/همبستگی']===undefined?'ناموجود':fmt(m['تنوع/همبستگی']),alignment].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});
    panel.append(table);
+
+   const daily=$('riskDailyReportV52');
+   if(daily){
+    daily.replaceChildren();
+    const title=document.createElement('strong');title.textContent='گزارش تغییرات روزانه سبد';daily.append(title);
+    const note=document.createElement('p');note.textContent='تغییر قیمت نسبت به آخرین جلسه قبلی موجود در تاریخچه و تغییر پنج‌جلسه‌ای بر پایه قیمت‌های ثبت‌شده محاسبه می‌شود. جریان پول مربوط به آخرین تاریخ معتبر دریافت‌شده است؛ این گزارش جایگزین ذخیره امتیاز روزهای قبل نیست.';daily.append(note);
+    const reportRows=holdings.map(h=>{
+     const q=qmap.get(h.symbol),hist=(q.history||[]).filter(x=>x&&String(x.date||'').length===8&&Number.isFinite(Number(x.close))&&Number(x.close)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+     const last=hist.at(-1),prev=hist.at(-2),five=hist.length>=6?hist.at(-6):null;
+     const pct=(a,b)=>a&&b?((Number(a.close)/Number(b.close))-1)*100:null;
+     const flow=(flowMap.get(h.symbol)?.observations||[]).filter(x=>!x.error&&Number.isFinite(x.netIndividual)).sort((a,b)=>String(a.date).localeCompare(String(b.date))).at(-1);
+     return {symbol:h.symbol,date:last?.date,day:pct(last,prev),five:pct(last,five),net:flow?.netIndividual??null,flowDate:flow?.date??null};
+    });
+    const summary=document.createElement('p');summary.textContent='نمادهای سبد: '+fmt(reportRows.length)+' | دارای تغییر روزانه: '+fmt(reportRows.filter(x=>x.day!==null).length)+' | دارای جریان پول معتبر: '+fmt(reportRows.filter(x=>x.net!==null).length);daily.append(summary);
+    const rt=document.createElement('table');rt.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+    const rh=document.createElement('tr');['نماد','تاریخ قیمت','تغییر جلسه‌ای','تغییر ۵ جلسه‌ای','خالص پول حقیقی','تاریخ جریان پول'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';rh.append(th)});rt.append(rh);
+    reportRows.forEach(x=>{const tr=document.createElement('tr');[x.symbol,x.date||'ناموجود',x.day===null?'ناموجود':fmt(x.day)+'٪',x.five===null?'داده ناکافی':fmt(x.five)+'٪',x.net===null?'ناموجود':fmt(x.net),x.flowDate||'ناموجود'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});rt.append(tr)});
+    daily.append(rt);
+   }
   }catch(e){panel.textContent='امتیازدهی انجام نشد: '+e.message+'؛ داده ناقص به‌عنوان امتیاز معتبر نمایش داده نمی‌شود.';}
  }
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{scoreState.quotes=event?.detail?.quotes;renderScorecard();});
