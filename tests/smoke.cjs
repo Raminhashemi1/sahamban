@@ -48,8 +48,10 @@ test('Broker import is local-only with separate storage and offline Excel parser
 });
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
- assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v'+v));
+ assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v51'));
  assert.ok(sw.includes('portfolio-pilot-v48.js?v=49.5'));
+  assert.ok(sw.includes('portfolio-pilot-v51.html'));
+  assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
  assert.ok(sw.includes('technical-analysis-v50.js?v=50.19'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
