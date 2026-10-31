@@ -365,6 +365,37 @@
     reportRows.forEach(x=>{const tr=document.createElement('tr');[x.symbol,x.date||'ناموجود',x.day===null?'ناموجود':fmt(x.day)+'٪',x.five===null?'داده ناکافی':fmt(x.five)+'٪',x.net===null?'ناموجود':fmt(x.net),x.flowDate||'ناموجود'].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});rt.append(tr)});
     daily.append(rt);
    }
+
+   const alertPanel=$('riskAlertsV53');
+   if(alertPanel){
+    alertPanel.replaceChildren();
+    const at=document.createElement('strong');at.textContent='هشدارهای تحلیلی سبد';alertPanel.append(at);
+    const alerts=[];
+    rowsOut.forEach(x=>{
+     const m=Object.fromEntries(x.components.map(c=>[c.name,c.score]));
+     const q=qmap.get(x.symbol),hist=(q.history||[]).filter(v=>v&&String(v.date||'').length===8&&Number.isFinite(Number(v.close))&&Number(v.close)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+     const latest=hist.at(-1),previous=hist.at(-2);
+     const dayChange=latest&&previous?(Number(latest.close)/Number(previous.close)-1)*100:null;
+     const obs=(flowMap.get(x.symbol)?.observations||[]).filter(v=>!v.error&&Number.isFinite(v.netRatio)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+     let flowZ=null;
+     if(obs.length>=6){
+      const base=obs.slice(0,-1).slice(-10).map(v=>v.netRatio).sort((a,b)=>a-b),mid=base.length%2?base[(base.length-1)/2]:(base[base.length/2-1]+base[base.length/2])/2;
+      const deviations=base.map(v=>Math.abs(v-mid)).sort((a,b)=>a-b),mad=deviations.length%2?deviations[(deviations.length-1)/2]:(deviations[deviations.length/2-1]+deviations[deviations.length/2])/2;
+      if(mad>0)flowZ=.6745*(obs.at(-1).netRatio-mid)/mad;
+     }
+     if(dayChange!==null&&dayChange<=-5)alerts.push({symbol:x.symbol,level:'زیاد',message:'افت قیمت حداقل ۵٪ نسبت به جلسه قبل'});
+     if(m['نقدشوندگی']!==undefined&&m['نقدشوندگی']<35)alerts.push({symbol:x.symbol,level:'زیاد',message:'امتیاز نقدشوندگی پایین است'});
+     if(m['تکنیکال']!==undefined&&m['تکنیکال']<35)alerts.push({symbol:x.symbol,level:'متوسط',message:'امتیاز تکنیکال پایین است'});
+     if(flowZ!==null&&flowZ<=-3.5)alerts.push({symbol:x.symbol,level:'زیاد',message:'خروج پول حقیقی به‌شدت غیرعادی نسبت به سابقه نماد'});
+     if(m['تکنیکال']!==undefined&&m['جریان پول']!==undefined&&m['تکنیکال']<40&&m['جریان پول']<40)alerts.push({symbol:x.symbol,level:'زیاد',message:'ضعف هم‌زمان تکنیکال و جریان پول'});
+    });
+    const summary=document.createElement('p');summary.textContent='تعداد هشدارها: '+fmt(alerts.length)+' | نمادهای دارای هشدار: '+fmt(new Set(alerts.map(a=>a.symbol)).size)+' از '+fmt(rowsOut.length)+'. آستانه افت قیمت: ۵٪ در یک جلسه؛ سایر آستانه‌ها طبق امتیازهای ۰ تا ۱۰۰ و MAD تعریف شده‌اند.';alertPanel.append(summary);
+    if(!alerts.length){const none=document.createElement('p');none.textContent='با داده‌های معتبر فعلی، هیچ‌یک از آستانه‌های هشدار تعریف‌شده فعال نشده است. این نتیجه به معنی نبود ریسک نیست.';alertPanel.append(none);}
+    const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+    const head=document.createElement('tr');['نماد','شدت','دلیل هشدار'].forEach(v=>{const th=document.createElement('th');th.textContent=v;th.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #49627a';head.append(th)});table.append(head);
+    alerts.forEach(a=>{const tr=document.createElement('tr');[a.symbol,a.level,a.message].forEach(v=>{const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px;text-align:right;border-bottom:1px solid #34546d';tr.append(td)});table.append(tr)});alertPanel.append(table);
+    const disclaimer=document.createElement('p');disclaimer.textContent='این هشدارها صرفاً غربالگر داده‌محورند؛ ممکن است به‌علت تأخیر داده یا شرایط بازار کامل نباشند و توصیه معاملاتی محسوب نمی‌شوند.';alertPanel.append(disclaimer);
+   }
   }catch(e){panel.textContent='امتیازدهی انجام نشد: '+e.message+'؛ داده ناقص به‌عنوان امتیاز معتبر نمایش داده نمی‌شود.';}
  }
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{scoreState.quotes=event?.detail?.quotes;renderScorecard();});
