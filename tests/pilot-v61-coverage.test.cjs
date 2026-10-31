@@ -11,3 +11,7 @@ assert.ok(src.includes("quotes.filter(q=>q.lastTradeTime==='نامشخص').lengt
 assert.ok(src.includes('پوشش قیمت:'));
 assert.ok(src.includes("دریافت تاریخچه مستقل برای '+fmt(holdings.length)+' نماد آغاز شد"));
 console.log('PASS v61 variable-size portfolio and quote coverage');
+
+assert.ok(src.includes('const outliers=ranked.filter(r=>Math.abs(r.pct)>=50)'));
+assert.ok(src.includes('نیازمند بررسی قیمت خرید/تعدیل'));
+assert.ok(src.includes('سامانه هیچ قیمت یا تعداد سهمی را خودکار اصلاح نمی‌کند'));
