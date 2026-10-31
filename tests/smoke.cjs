@@ -146,3 +146,5 @@ require('./pilot-v55-quote.test.cjs');
 require('./pilot-v56-display.test.cjs');
 
 require('./pilot-v57-freshness.test.cjs');
+
+require('./pilot-v58-price-basis.test.cjs');
