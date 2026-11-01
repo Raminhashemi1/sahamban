@@ -30,6 +30,11 @@ async function main(){
   const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
+  // v100: fast task-first navigation uses existing routes, not portfolio data.
+  assert.equal(await page.locator('.sb100-path a').count(),3);
+  assert.equal(await page.locator('.sb100-path a').nth(0).getAttribute('href'),'#brokerImportSection');
+  assert.equal(await page.locator('.sb100-path a').nth(1).getAttribute('href'),'#livePortfolioSection');
+  assert.equal(await page.locator('.sb100-path a').nth(2).getAttribute('href'),'#portfolioSection');
   // v96: shared card rhythm and touch targets apply without hiding modules.
   assert.equal(await page.locator('main>section.card').first().evaluate(el=>getComputedStyle(el).borderRadius!=='0px'),true);
   assert.equal(await page.locator('main>section.card button').first().evaluate(el=>parseFloat(getComputedStyle(el).minHeight)>=44),true);
@@ -96,12 +101,14 @@ async function main(){
   });
   await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===1);
   await page.locator('#livePortfolioTable .sb99-mode').first().click();
+  assert.equal(await page.locator('#livePortfolioTable .sb98-view-controls').isVisible(),false);
   assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),1);
   assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),4);
   await page.locator('#livePortfolioTable .sb99-more summary').click();
   assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd:visible').count(),11);
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table th').count(),15);
   await page.locator('#livePortfolioTable .sb99-mode').last().click();
+  assert.equal(await page.locator('#livePortfolioTable .sb98-view-controls').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-scroll').isVisible(),true);
   await page.locator('#livePortfolioRows').evaluate(body=>body.replaceChildren());
   await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===0);
