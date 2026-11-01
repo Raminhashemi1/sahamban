@@ -72,6 +72,8 @@
  let queued=false;
  function sync(){
   if(mode==='cards'){
+   // Update navigation state synchronously; defer only expensive DOM cloning.
+   showMode();
    if(queued)return;
    queued=true;
    const schedule=typeof requestAnimationFrame==='function'?requestAnimationFrame:callback=>callback();
