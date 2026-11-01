@@ -31,6 +31,6 @@ test('v80 public Iyar probes ETF by exact verified insCode without inferring fro
 test('v71 is read-only and offline integrated',()=>{
  assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);
  assert.match(html,/fundNavSourceAuditV71/);
- assert.match(html,/fund-nav-source-audit-v71\.js\?v=71\.1/);
- assert.match(sw,/fund-nav-source-audit-v71\.js\?v=71\.1/);
+ assert.match(html,/fund-nav-source-audit-v71\.js\?v=71\.2/);
+ assert.match(sw,/fund-nav-source-audit-v71\.js\?v=71\.2/);
 });
