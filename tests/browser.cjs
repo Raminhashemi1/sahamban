@@ -28,6 +28,9 @@ async function main(){
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
+  // v103: no update is announced before a service-worker controller actually changes.
+  assert.equal(await page.locator('#sb103UpdateNotice').count(),1);
+  assert.equal(await page.locator('#sb103UpdateNotice').isVisible(),false);
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
   // v100: fast task-first navigation uses existing routes, not portfolio data.
