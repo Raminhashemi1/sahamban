@@ -88,6 +88,23 @@ async function main(){
   assert.equal(await page.locator('#livePortfolioTable .sb98-view-button').first().getAttribute('aria-pressed'),'true');
   await page.locator('#livePortfolioTable .sb98-view-button').last().click();
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table thead th:visible').count(),15);
+  // v99: a synthetic rendered row is mirrored as one card without changing values.
+  await page.locator('#livePortfolioRows').evaluate(body=>{
+   const tr=document.createElement('tr');
+   for(let i=0;i<15;i++){const td=document.createElement('td');td.textContent=i===0?'نماد آزمایشی':String(i);tr.append(td);}
+   body.append(tr);
+  });
+  await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===1);
+  await page.locator('#livePortfolioTable .sb99-mode').first().click();
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),1);
+  assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),4);
+  await page.locator('#livePortfolioTable .sb99-more summary').click();
+  assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd:visible').count(),11);
+  assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table th').count(),15);
+  await page.locator('#livePortfolioTable .sb99-mode').last().click();
+  assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-scroll').isVisible(),true);
+  await page.locator('#livePortfolioRows').evaluate(body=>body.replaceChildren());
+  await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===0);
   await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=true;});
   await page.locator('#sb88-tab-overview').click();
   assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
