@@ -1,0 +1,37 @@
+/* v99: mobile holdings cards mirror existing rendered cells without editing source table. */
+#livePortfolioTable .sb99-controls{
+ display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;
+ background:#102d44;border:1px solid #487c91;border-radius:12px;margin:10px 0;
+}
+#livePortfolioTable .sb99-mode{
+ min-height:44px;flex:1 1 100px;border-radius:10px;
+ border:1px solid #568b9b;background:#20445a;color:#eef8ff;
+ font-weight:700;padding:9px 12px;
+}
+#livePortfolioTable .sb99-mode[aria-pressed="true"]{
+ background:#35c7aa;color:#062b31;border-color:#42deb7;
+}
+#livePortfolioTable .sb99-status{flex-basis:100%;margin:0;color:#cfe5ef;font-size:12px;line-height:1.8}
+#livePortfolioTable .sb99-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;margin:12px 0}
+#livePortfolioTable .sb99-card{
+ min-width:0;padding:13px;border:1px solid #486d82;
+ border-radius:14px;background:#102942;color:#edf8ff;overflow-wrap:anywhere;
+}
+#livePortfolioTable .sb99-card h4{margin:0 0 12px;color:#bbffeb;font-size:16px}
+#livePortfolioTable .sb99-fields{
+ display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,1.3fr);
+ gap:8px 10px;margin:0;
+}
+#livePortfolioTable .sb99-fields dt{font-size:12px;color:#c1d7e4;line-height:1.7}
+#livePortfolioTable .sb99-fields dd{margin:0;font-size:13px;font-weight:650;color:#fff;line-height:1.7;overflow-wrap:anywhere}
+#livePortfolioTable .sb99-more{margin-top:12px;border-top:1px solid #42677e;padding-top:8px}
+#livePortfolioTable .sb99-more summary{min-height:44px;cursor:pointer;align-content:center;color:#b9ffe9;font-weight:700;font-size:13px}
+#livePortfolioTable .sb99-extra{padding-top:9px}
+#livePortfolioTable .sb99-cards[hidden],
+#livePortfolioTable .portfolio-v61-scroll[hidden]{display:none!important}
+#livePortfolioTable .sb99-mode:focus-visible,
+#livePortfolioTable .sb99-more summary:focus-visible{outline:3px solid #ffcf76;outline-offset:2px}
+@media(max-width:520px){
+ #livePortfolioTable .sb99-cards{grid-template-columns:minmax(0,1fr)}
+ #livePortfolioTable .sb99-controls{gap:7px}
+}
