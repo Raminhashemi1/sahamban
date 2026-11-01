@@ -27,7 +27,7 @@ test('technical selector supports arbitrary dynamic basket sizes, including 1, 1
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.2/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.20/);
- assert.match(sw,/sahamban-static-v82-0/);
+ assert.match(sw,/sahamban-static-v83-0/);
  assert.match(sw,/broker-import\.js\?v=48\.2/);
  assert.match(sw,/technical-analysis-v50\.js\?v=50\.20/);
 });
@@ -52,7 +52,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
  assert.match(html,/technical-analysis-v50\.js\?v=50\.20/);
- assert.match(sw,/sahamban-static-v82-0/);
+ assert.match(sw,/sahamban-static-v83-0/);
 });
 
 test('history failure reasons are visible in both selector labels and status details',()=>{
