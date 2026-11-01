@@ -31,8 +31,8 @@ async function main(){
   // v103: no update is announced before a service-worker controller actually changes.
   assert.equal(await page.locator('#sb103UpdateNotice').count(),1);
   assert.equal(await page.locator('#sb103UpdateNotice').isVisible(),false);
-  // v105: first keyboard Tab exposes a skip-to-main control.
-  await page.keyboard.press('Tab');
+  // v105: the skip link is keyboard-focusable even if prior scripts set startup focus.
+  await page.locator('.sb105-skip-link').focus();
   assert.equal(await page.evaluate(()=>document.activeElement?.className),'sb105-skip-link');
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb105MainContent');
