@@ -1,0 +1,58 @@
+/* Sahamban v96 — shared visual rhythm across existing modules.
+   Styling only: no selectors depend on data values or alter financial semantics. */
+:root{
+ --sb96-radius-card:16px;
+ --sb96-radius-control:11px;
+ --sb96-space-card:16px;
+ --sb96-control-border:#587894;
+ --sb96-focus:#a1ecff;
+ --sb96-text:#edf6ff;
+ --sb96-muted:#c0d3e4;
+}
+main>section.card{
+ border-radius:var(--sb96-radius-card);
+ padding:var(--sb96-space-card);
+}
+main>section.card>h2{margin:0 0 12px;line-height:1.65;letter-spacing:0}
+main>section.card>h3{line-height:1.65}
+main>section.card label{font-size:13px;line-height:1.7;font-weight:600}
+main>section.card input:not([type=checkbox]):not([type=radio]),
+main>section.card select,
+main>section.card textarea{
+ min-height:45px;
+ border-radius:var(--sb96-radius-control);
+ border-color:var(--sb96-control-border);
+ line-height:1.6;
+}
+main>section.card input[type=checkbox],main>section.card input[type=radio]{accent-color:#27d6b0}
+main>section.card .row{align-items:center;gap:9px}
+main>section.card .row>button{min-height:44px;border-radius:11px;padding:10px 15px}
+main>section.card .result{
+ border-radius:12px;
+ line-height:1.95;
+ overflow-wrap:anywhere;
+}
+main>section.card .notice{border-radius:0 11px 11px 0}
+main>section.card details>summary{min-height:44px;line-height:1.8}
+main>section.card button:focus-visible,
+main>section.card a:focus-visible,
+main>section.card input:focus-visible,
+main>section.card select:focus-visible,
+main>section.card textarea:focus-visible,
+main>section.card summary:focus-visible{
+ outline:3px solid var(--sb96-focus);
+ outline-offset:2px;
+}
+@media(max-width:719px){
+ main>section.card{margin:12px 0;padding:14px}
+ main>section.card .grid{column-gap:10px}
+ main>section.card .row>button{flex:0 1 auto;max-width:100%}
+ main>section.card .result{padding:12px;font-size:13px}
+}
+@media(max-width:360px){
+ main>section.card{padding:12px}
+ main>section.card .row>button{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){
+ main>section.card *,main>section.card *::before,main>section.card *::after{scroll-behavior:auto!important;transition:none!important}
+}
