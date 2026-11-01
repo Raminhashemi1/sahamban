@@ -44,6 +44,15 @@ jobs:
       - run: npm install --no-save playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser.cjs
+      - run: node tests/android-lowend-v110.cjs
+      - name: Save Android low-end proxy timing samples
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-android-lowend-v110
+          path: test-artifacts/android-lowend-v110.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save Chromium failure evidence
         if: failure()
         uses: actions/upload-artifact@v6
