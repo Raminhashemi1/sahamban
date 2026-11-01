@@ -1,0 +1,10 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const src=fs.readFileSync('portfolio-liquidity-history-v65.js','utf8'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
+function el(text=''){return {textContent:text,children:[],style:{},append(...x){this.children.push(...x)},replaceChildren(...x){this.children=[...x]}}}
+function textOf(n){return [n.textContent||'',...(n.children||[]).map(textOf)].join(' ')}
+function run(quotes){const panel=el(),listeners={},document={getElementById:id=>id==='portfolioLiquidityHistoryV65'?panel:null,createElement:()=>el()};vm.runInNewContext(src,{document,window:{addEventListener:(n,f)=>(listeners[n]??=[]).push(f)},Intl,Number,String,Math,Error,Object});listeners['sahamban:verified-historical-quotes-v50'][0]({detail:{quotes}});return textOf(panel)}
+test('v65 calculates average over valid traded-value observations only',()=>{const s=run([{symbol:'AAA',history:[{date:'20261028',tradedValue:100},{date:'20261029',tradedValue:null},{date:'20261030',tradedValue:300}]}]);assert.match(s,/میانگین ارزش معاملات/);assert.match(s,/۲۰۰/);assert.match(s,/جلسات دارای ارزش معتبر/);});
+test('v65 excludes invalid, negative and unsafe values',()=>{const s=run([{symbol:'BBB',history:[{date:'20261028',tradedValue:-5},{date:'20261029',tradedValue:9007199254740992},{date:'20261030',tradedValue:null}]}]);assert.match(s,/نامشخص/);});
+test('v65 limits average window to last twenty unique dated sessions',()=>{const history=Array.from({length:25},(_,i)=>({date:'202610'+String(i+1).padStart(2,'0'),tradedValue:i+1}));const s=run([{symbol:'CCC',history}]);assert.match(s,/۲۰/);assert.match(s,/جلسات بررسی‌شده/);});
+test('v65 is integrated and included in offline cache',()=>{assert.ok(html.includes('portfolioLiquidityHistoryV65'));assert.ok(html.includes('portfolio-liquidity-history-v65.js?v=65.0'));assert.ok(sw.includes('sahamban-static-v65-0'));assert.ok(sw.includes('portfolio-liquidity-history-v65.js?v=65.0'));});
