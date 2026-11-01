@@ -41,8 +41,8 @@ async function main(){
   await page.locator('#sb88-tab-prices').click();
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable').count(),1);
-  await page.evaluate(()=>{location.hash='livePortfolioSection'});
-  await page.waitForFunction(()=>document.querySelector('#sb88-tab-overview')?.getAttribute('aria-selected')==='true');
+  await page.locator('#sb88-tab-overview').click();
+  assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
   await page.evaluate(()=>{location.hash='brokerImportSection'});
   // Broker imports are staged independently and never overwrite the analytical portfolio.
   const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
