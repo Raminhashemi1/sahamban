@@ -35,3 +35,6 @@ assert.ok(src.includes('verified-portfolio-concentration-v68'));
 
 assert.ok(html.includes('portfolioTopThreeStressV69'));
 assert.ok(html.includes('portfolio-top-three-stress-v69.js?v=69.0'));
+
+assert.ok(html.includes('fundNavQualityV70'));
+assert.ok(html.includes('fund-nav-quality-v70.js?v=70.0'));
