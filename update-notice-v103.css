@@ -1,0 +1,15 @@
+/* v103: user-controlled update notice, not a forced page reload. */
+.sb103-update-notice{
+ position:fixed;z-index:1000;inset-inline:12px;bottom:max(12px,env(safe-area-inset-bottom));
+ max-width:600px;margin-inline:auto;padding:13px 15px;
+ border:2px solid #56ddbd;border-radius:15px;
+ background:#102e45;color:#f0ffff;
+ box-shadow:0 9px 28px rgba(0,0,0,.45);
+ display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+}
+.sb103-update-notice[hidden]{display:none!important}
+.sb103-update-notice p{flex:1 1 100%;margin:0;font-size:13px;line-height:1.9}
+.sb103-update-notice button{min-height:44px;flex:1 1 125px;border-radius:10px}
+.sb103-update-notice button:focus-visible{outline:3px solid #ffd27a;outline-offset:2px}
+@media(max-width:375px){.sb103-update-notice{padding:11px;inset-inline:8px}.sb103-update-notice button{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.sb103-update-notice{transition:none}}
