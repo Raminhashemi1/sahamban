@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/smoke.cjs
-      - run: node --test tests/compact-dashboard-v92.test.cjs tests/beginner-experience-v93.test.cjs tests/module-finder-v94.test.cjs tests/beginner-reading-v95.test.cjs
+      - run: node --test tests/compact-dashboard-v92.test.cjs tests/beginner-experience-v93.test.cjs tests/module-finder-v94.test.cjs tests/beginner-reading-v95.test.cjs tests/visual-consistency-v96.test.cjs
       - run: node tests/sw-offline.cjs
       - run: node tests/market-validation.cjs
       - run: node tests/live-market-connectivity.cjs
