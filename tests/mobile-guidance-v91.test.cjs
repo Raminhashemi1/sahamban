@@ -25,7 +25,7 @@ test('v91 includes responsive, keyboard-accessible guides and is loaded offline'
  assert.match(css,/@media\(max-width:375px\)/);
  assert.ok(html.indexOf('brand-theme-v90.css')<html.indexOf('mobile-guidance-v91.css'));
  assert.ok(html.indexOf('module-hub-v87.js')<html.indexOf('module-guidance-v91.js'));
- assert.match(sw,/sahamban-static-v93-0/);
+ assert.match(sw,/sahamban-static-v103-0/);
  assert.match(sw,/mobile-guidance-v91\.css\?v=91\.0/);
  assert.match(sw,/module-guidance-v91\.js\?v=91\.0/);
 });
