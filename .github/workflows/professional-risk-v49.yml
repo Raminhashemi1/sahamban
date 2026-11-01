@@ -15,6 +15,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check professional-risk-v49.js && node --check portfolio-asset-allocation-v62.js && node --check portfolio-fund-nav-v63.js && node --check portfolio-liquidity-history-v65.js && node --check portfolio-pilot-v61.js
-      - run: node --test tests/professional-risk-v49.test.cjs tests/portfolio-asset-allocation-v62.test.cjs tests/portfolio-fund-nav-v63.test.cjs tests/portfolio-trading-activity-v64.test.cjs tests/portfolio-liquidity-history-v65.test.cjs tests/home-portfolio-v61-entry.test.cjs tests/pilot-v61-coverage.test.cjs
+      - run: node --check professional-risk-v49.js && node --check portfolio-asset-allocation-v62.js && node --check portfolio-fund-nav-v63.js && node --check portfolio-trading-trend-v66.js && node --check portfolio-liquidity-history-v65.js && node --check portfolio-pilot-v61.js
+      - run: node --test tests/professional-risk-v49.test.cjs tests/portfolio-asset-allocation-v62.test.cjs tests/portfolio-fund-nav-v63.test.cjs tests/portfolio-trading-activity-v64.test.cjs tests/portfolio-liquidity-history-v65.test.cjs tests/portfolio-trading-trend-v66.test.cjs tests/home-portfolio-v61-entry.test.cjs tests/pilot-v61-coverage.test.cjs
       - run: node tests/smoke.cjs
