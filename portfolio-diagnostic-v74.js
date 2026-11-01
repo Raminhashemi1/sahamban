@@ -1,15 +1,15 @@
 'use strict';
-/* Voluntary on-device diagnosis. Never access holdings storage or export identifiers/prices.
- * A user may copy only fixed categorical statuses after a direct button click.
+/* Opt-in categorical diagnostics. No holdings storage, network or identifier export.
+ * "dashboard verified" requires the same symbol/price/date snapshot for both events.
  */
 (()=>{
  const panel=document.getElementById('portfolioDiagnosticV74');
  if(!panel)return;
  const report=document.createElement('pre'),status=document.createElement('p'),copy=document.createElement('button');
  const state={quotes:'not-run',nav:'not-run',dashboard:'not-run'};
- const safeValues=['not-run','verified','incomplete','unavailable','inconsistent'];
+ let navQuotes=null,positions=null;
  const text=()=>[
-  'Sahamban technical status v74',
+  'Sahamban technical status v75',
   'quote_validation='+state.quotes,
   'nav_validation='+state.nav,
   'dashboard_validation='+state.dashboard,
@@ -17,34 +17,61 @@
   'note=not-proof-of-live-network-connectivity'
  ].join('\n');
  const render=()=>{report.textContent=text();};
- copy.type='button';copy.textContent='کپی گزارش فنی بدون اطلاعات سبد';
- status.textContent='هیچ گزارشی به‌طور خودکار ارسال یا ذخیره نمی‌شود. کپی فقط با انتخاب شما انجام می‌شود.';
- panel.append(copy,report,status);
- const update=(key,value)=>{if(!safeValues.includes(value))return;state[key]=value;render();};
- window.addEventListener('sahamban:verified-fund-nav-premium-v63',event=>{
-  const quotes=event?.detail?.quotes;
-  update('quotes','not-run');update('dashboard','not-run');
-  if(!Array.isArray(quotes)||!quotes.length||quotes.length>100){update('nav','incomplete');return;}
-  const funds=quotes.filter(q=>q?.fundNavChecked===true||q?.assetClass==='fund_etf');
-  if(!funds.length){update('nav','unavailable');return;}
-  let valid=0;
-  for(const q of funds){
-   if(q.assetClass==='fund_etf'&&typeof q.fundNav==='number'&&Number.isFinite(q.fundNav)&&q.fundNav>0&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>0&&/^\d{8}$/.test(String(q.marketDate??''))&&q.marketDate===q.fundNavDate)valid++;
+ const validList=xs=>Array.isArray(xs)&&xs.length>0&&xs.length<=100;
+ const validPos=p=>p&&typeof p.symbol==='string'&&p.symbol.trim()&&Number.isSafeInteger(p.quantity)&&p.quantity>0&&Number.isSafeInteger(p.price)&&p.price>0&&Number.isSafeInteger(p.quantity*p.price);
+ function validPositions(xs){
+  if(!validList(xs)||!xs.every(validPos))return false;
+  const symbols=new Set(xs.map(x=>x.symbol.trim()));
+  return symbols.size===xs.length;
+ }
+ function assessDashboard(){
+  if(!positions){state.dashboard='not-run';return;}
+  if(!validPositions(positions)){state.dashboard='inconsistent';return;}
+  if(!navQuotes){state.dashboard='not-run';return;}
+  if(!validList(navQuotes)||navQuotes.length!==positions.length){state.dashboard='inconsistent';return;}
+  const bySymbol=new Map(positions.map(p=>[p.symbol.trim(),p]));
+  const seen=new Set();
+  for(const q of navQuotes){
+   const symbol=typeof q?.symbol==='string'?q.symbol.trim():'';
+   const p=bySymbol.get(symbol);
+   if(!symbol||seen.has(symbol)||!p||typeof q.price!=='number'||q.price!==p.price||String(q.marketDate??'')!==String(p.marketDate??'')){state.dashboard='inconsistent';return;}
+   seen.add(symbol);
   }
-  update('nav',valid===funds.length?'verified':valid>0?'incomplete':'unavailable');
+  state.dashboard='verified';
+ }
+ function assessNav(quotes){
+  if(!validList(quotes)){state.nav='incomplete';return;}
+  const funds=quotes.filter(q=>q?.fundNavChecked===true||q?.assetClass==='fund_etf');
+  if(!funds.length){state.nav='unavailable';return;}
+  let verified=0;
+  for(const q of funds){
+   if(q.assetClass==='fund_etf'&&typeof q.fundNav==='number'&&Number.isFinite(q.fundNav)&&q.fundNav>0&&typeof q.price==='number'&&Number.isFinite(q.price)&&q.price>0&&/^\d{8}$/.test(String(q.marketDate??''))&&q.marketDate===q.fundNavDate)verified++;
+  }
+  state.nav=verified===funds.length?'verified':verified>0?'incomplete':'unavailable';
+ }
+ copy.type='button';copy.textContent='کپی گزارش فنی بدون اطلاعات سبد';
+ status.textContent='گزارش فقط وضعیت‌های کلی را نشان می‌دهد. کپی و ارسال کاملاً اختیاری است؛ هیچ داده‌ای خودکار ارسال یا ذخیره نمی‌شود.';
+ panel.append(copy,report,status);
+ window.addEventListener('sahamban:verified-fund-nav-premium-v63',event=>{
+  navQuotes=event?.detail?.quotes??null;
+  positions=null;
+  state.quotes='not-run';
+  assessNav(navQuotes);
+  assessDashboard();
+  render();
  });
  window.addEventListener('sahamban:verified-portfolio-concentration-v68',event=>{
-  const positions=event?.detail?.positions;
-  const valid=Array.isArray(positions)&&positions.length>0&&positions.length<=100&&positions.every(p=>p&&typeof p.symbol==='string'&&p.symbol.trim()&&Number.isSafeInteger(p.quantity)&&p.quantity>0&&Number.isSafeInteger(p.price)&&p.price>0);
-  update('quotes',valid?'verified':'incomplete');
-  update('dashboard',valid?'verified':'inconsistent');
+  positions=event?.detail?.positions??null;
+  state.quotes=validPositions(positions)?'verified':'incomplete';
+  assessDashboard();
+  render();
  });
  copy.addEventListener('click',async()=>{
   try{
    if(!navigator.clipboard||typeof navigator.clipboard.writeText!=='function')throw Error('clipboard');
    await navigator.clipboard.writeText(text());
-   status.textContent='گزارش بدون اطلاعات سبد کپی شد. فقط در صورت تمایل آن را ارسال کنید.';
-  }catch(_){status.textContent='کپی خودکار ممکن نشد. متن گزارش فنی را می‌توانید انتخاب و دستی کپی کنید.';}
+   status.textContent='گزارش فنی کپی شد. تنها در صورت تمایل آن را ارسال کنید.';
+  }catch(_){status.textContent='کپی خودکار ممکن نشد؛ متن گزارش را می‌توانید دستی انتخاب و کپی کنید.';}
  });
  render();
 })();
