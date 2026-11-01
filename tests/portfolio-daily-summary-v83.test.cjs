@@ -65,7 +65,7 @@ test('v85 displays market price, holding value and weight as separate readable c
  assert.match(ayar.children[0].textContent,/عیار.*۱۰۰ ریال/);
  assert.match(ayar.children[1].textContent,/ارزش دارایی: ۹۰۰ ریال/);
  assert.match(ayar.children[1].textContent,/وزن سبد:/);
- assert.match(ayar.children[2].textContent,/۲۰۲۶۱۱۰۱/);
+ assert.match(ayar.children[2].textContent,/20261101/);
  assert.match(foolad.children[1].textContent,/۴۰۰ ریال/);
  assert.match(a.text(),/۱٬۳۰۰/);
 });
