@@ -22,5 +22,5 @@ test('v93 retains accessible education and mobile targets',()=>{
  assert.match(html,/beginner-experience-v93\.css\?v=93\.0/);
  assert.match(sw,/beginner-experience-v93\.js\?v=93\.0/);
  assert.match(sw,/beginner-experience-v93\.css\?v=93\.0/);
- assert.match(sw,/sahamban-static-v93-0/);
+ assert.match(sw,/sahamban-static-v103-0/);
 });
