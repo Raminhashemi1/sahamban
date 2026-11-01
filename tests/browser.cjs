@@ -132,7 +132,7 @@ async function main(){
   await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===100);
   assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),400);
   assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd').count(),1100);
-  assert.equal(await page.locator('#livePortfolioTable .sb99-card').last().locator('h4').innerText(),'نماد 99');
+  assert.match(await page.locator('#livePortfolioTable .sb99-card').last().locator('h4').innerText(),/^نماد [۹9]{2}$/);
   await page.locator('#livePortfolioRows').evaluate(body=>{
    body.replaceChildren();
    const row=document.createElement('tr');
