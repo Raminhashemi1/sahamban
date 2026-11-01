@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const src=fs.readFileSync('portfolio-daily-summary-v83.js','utf8'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
-const el=(tag='')=>({tag,textContent:'',children:[],href:'',value:'',hidden:false,handlers:{},addEventListener(n,f){this.handlers[n]=f},append(...x){this.children.push(...x)},replaceChildren(...x){this.children=x}});
+const el=(tag='')=>({tag,textContent:'',children:[],href:'',value:'',hidden:false,handlers:{},setAttribute(name,value){this[name]=value},addEventListener(n,f){this.handlers[n]=f},append(...x){this.children.push(...x)},replaceChildren(...x){this.children=x}});
 function run(){
  const panel=el(),listeners={},document={getElementById:id=>id==='portfolioDailySummaryV83'?panel:null,createElement:tag=>el(tag)};
  vm.runInNewContext(src,{document,window:{addEventListener:(name,f)=>(listeners[name]??=[]).push(f)},Intl,Number,String,Array,Map,Set,Date,Error});
