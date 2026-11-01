@@ -51,6 +51,12 @@ async function main(){
   await page.evaluate(()=>{location.hash='livePortfolioSection'});
   await page.waitForFunction(()=>document.querySelector('#sb88-tab-overview')?.getAttribute('aria-selected')==='true');
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),false);
+  // v95: guidance stays independent from portfolio calculations and navigation.
+  assert.equal(await page.locator('#sb88-panel-overview .sb95-reading-note').count(),1);
+  assert.equal(await page.locator('#sb88-panel-help .sb95-reading-detail').count(),4);
+  await page.locator('#sb88-panel-overview .sb95-reading-link').click();
+  await page.waitForFunction(()=>document.querySelector('#sb88-tab-prices')?.getAttribute('aria-selected')==='true');
+  await page.locator('#sb88-tab-overview').click();
   await page.locator('#sb88-tab-help').click();
   assert.equal(await page.locator('#sb88-panel-help').isVisible(),true);
   assert.equal(await page.locator('#sb88-panel-help .sb88-steps li').count(),3);
