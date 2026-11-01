@@ -5,7 +5,7 @@ function el(text=''){return {textContent:text,children:[],style:{},append(...x){
 function deepText(n){return [n.textContent||'',...(n.children||[]).map(deepText)].join(' ')}
 function run(quotes){
  const panel=el(),listeners={},document={getElementById:id=>id==='riskFundNavPremiumV63'?panel:null,createElement:()=>el()};
- vm.runInNewContext(src,{document,window:{addEventListener:(n,f)=>(listeners[n]??=[]).push(f)},Intl,Number,String,Math,Error,Object});
+ vm.runInNewContext(src,{Date,document,window:{addEventListener:(n,f)=>(listeners[n]??=[]).push(f)},Intl,Number,String,Math,Error,Object});
  listeners['sahamban:verified-fund-nav-premium-v63'][0]({detail:{quotes}});
  return deepText(panel);
 }
@@ -25,7 +25,14 @@ test('v63 does not compare non-funds or missing NAV values',()=>{
  const s=run([{symbol:'STK',assetClass:'equity',price:110,marketDate:'20261030',fundNav:100,fundNavDate:'20261030'},{symbol:'ETF4',assetClass:'fund_etf',price:110,marketDate:'20261030',fundNav:null,fundNavDate:''}]);
  assert.match(s,/قابل مقایسه با تاریخ یکسان: ۰/);assert.match(s,/قیمت یا NAV معتبر/);
 });
+test('v79 excludes impossible, future and old NAV comparison dates',()=>{
+ for(const date of ['20260230','20991231','20200101']){
+  const s=run([{symbol:'عیار',assetClass:'fund_etf',price:110,marketDate:date,fundNav:100,fundNavDate:date}]);
+  assert.match(s,/قابل مقایسه با تاریخ یکسان: ۰/);
+  assert.match(s,/نامعتبر است|بیش از ۷ روز/);
+ }
+});
 test('v63 is integrated and cached offline',()=>{
- assert.ok(html.includes('riskFundNavPremiumV63'));assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.0'));
- assert.ok(sw.includes('sahamban-static-v78-0'));assert.ok(sw.includes('portfolio-fund-nav-v63.js?v=63.0'));
+ assert.ok(html.includes('riskFundNavPremiumV63'));assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.1'));
+ assert.ok(sw.includes('sahamban-static-v79-0'));assert.ok(sw.includes('portfolio-fund-nav-v63.js?v=63.1'));
 });
