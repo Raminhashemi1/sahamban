@@ -32,3 +32,6 @@ assert.ok(html.includes('portfolio-relative-turnover-v67.js?v=67.0'));
 assert.ok(html.includes('portfolioConcentrationV68'));
 assert.ok(html.includes('portfolio-concentration-v68.js?v=68.0'));
 assert.ok(src.includes('verified-portfolio-concentration-v68'));
+
+assert.ok(html.includes('portfolioTopThreeStressV69'));
+assert.ok(html.includes('portfolio-top-three-stress-v69.js?v=69.0'));
