@@ -18,8 +18,15 @@ test('v71 pilot accepts only strict positive numeric redemption NAV and verifies
  assert.match(pilot,/validDate\(fund\.deven\)/);
  assert.match(pilot,/fund\.hEven/);
  assert.match(pilot,/quote\.fundNavStatus=/);
- assert.match(pilot,/fundNavChecked:q\.instrumentFlow===18/);
+ assert.match(pilot,/fundNavChecked:q\.fundNavChecked===true/);
  assert.doesNotMatch(pilot,/Number\(fund\.pRedTran\)/);
+});
+test('v80 public Iyar probes ETF by exact verified insCode without inferring from ticker name',()=>{
+ assert.match(pilot,/quote\.fundNavChecked=quote\.instrumentFlow===18\|\|norm\(holding\.symbol\)===norm\('عیار'\)/);
+ assert.match(pilot,/if\(quote\.fundNavChecked\)/);
+ assert.match(pilot,/String\(fund\.insCode\?\?'\'\)===String\(quote\.insCode\)/);
+ assert.match(pilot,/fundNavChecked:q\.fundNavChecked===true/);
+ assert.doesNotMatch(pilot,/quote\.assetClass='fund_etf';quote\.assetClassLabel='صندوق قابل معامله';\s*quote\.fundNavChecked/);
 });
 test('v71 is read-only and offline integrated',()=>{
  assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);

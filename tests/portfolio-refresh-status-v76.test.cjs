@@ -36,10 +36,10 @@ test('v76 pilot dispatches sanitized statuses before any holdings read and on bo
  assert.match(pilot,/detail:\{status,reason\}/);
 });
 test('v76 bundled as a new offline release and remains privacy-safe',()=>{
- assert.ok(html.includes('portfolio-pilot-v61.js?v=61.10'));
+ assert.ok(html.includes('portfolio-pilot-v61.js?v=61.11'));
  assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.3'));
- assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.10'));
+ assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.11'));
  assert.ok(sw.includes('portfolio-diagnostic-v74.js?v=74.3'));
- assert.ok(sw.includes('sahamban-static-v79-0'));
+ assert.ok(sw.includes('sahamban-static-v80-0'));
  assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);
 });

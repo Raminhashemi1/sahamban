@@ -125,7 +125,11 @@
   }catch(_sectorError){quote.sectorCode='';quote.sectorName='';}
   quote.instrumentFlow=quote.instrumentFlow??quote.flow;
   quote.assetClass='unknown';quote.assetClassLabel='نامشخص';quote.fundNav=null;quote.fundNavDate='';quote.fundNavTime='';quote.fundNavStatus='شناسه صندوق هنوز از منبع رسمی تأیید نشده';
-  if(quote.instrumentFlow===18){
+  // Targeted v80 recovery: the user's public عیار ticker may have a non-ETF flow.
+  // Its name ONLY triggers a single official ETF endpoint check; it never proves ETF identity.
+  // All candidate responses must still match the verified exact insCode.
+  quote.fundNavChecked=quote.instrumentFlow===18||norm(holding.symbol)===norm('عیار');
+  if(quote.fundNavChecked){
    quote.fundNavStatus='در انتظار پاسخ معتبر صندوق از TSETMC';
    try{
     const fundResponse=await fetchJson('/Fund/GetETFByInsCode/'+encodeURIComponent(quote.insCode));
@@ -545,7 +549,7 @@
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
-    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,lastTradeTime:q.lastTradeTime,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavChecked:q.instrumentFlow===18}))}}));
+    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,lastTradeTime:q.lastTradeTime,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavChecked:q.fundNavChecked===true}))}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-concentration-v68',{detail:{positions:holdings.map((h,i)=>({symbol:h.symbol,quantity:h.quantity,price:quotes[i].price,marketDate:quotes[i].marketDate,assetClass:quotes[i].assetClass}))}}));
    refreshStatus('completed','none');
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
