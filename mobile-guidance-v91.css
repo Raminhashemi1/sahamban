@@ -1,0 +1,27 @@
+/* Sahamban v91 — progressive help and calm mobile forms */
+.sb91-guide{margin:10px 0 16px;border:1px solid #517a91;background:linear-gradient(115deg,#123b50,#192f4d);border-radius:13px;overflow:hidden;color:#eef6ff}
+.sb91-guide summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;min-height:48px;font-size:14px;font-weight:700;color:#b9fff0}
+.sb91-guide summary::-webkit-details-marker{display:none}
+.sb91-guide summary::after{content:'+';font-size:22px;line-height:1;color:#ffcf76}
+.sb91-guide[open] summary::after{content:'−'}
+.sb91-guide[open] summary{border-bottom:1px solid #416982}
+.sb91-guide ol{counter-reset:step;list-style:none;margin:14px 12px 7px;padding:0}
+.sb91-guide li{position:relative;padding:0 39px 12px 4px;line-height:1.9;font-size:14px;color:#e3edf7}
+.sb91-guide li::before{counter-increment:step;content:counter(step);position:absolute;right:0;top:4px;width:26px;height:26px;display:grid;place-items:center;border-radius:9px;background:#214b60;color:#b2fff0;font-weight:bold}
+.sb91-guide-note{font-size:12px;line-height:1.8;color:#bcd2e2;margin:0 14px 14px}
+.sb91-guide summary:focus-visible{outline:3px solid #8cd8ff;outline-offset:-3px}
+@media(min-width:430px) and (max-width:719px){
+ main>section.card .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ main>section.card .grid>.full{grid-column:1/-1}
+}
+@media(max-width:719px){
+ main>section.card{overflow-wrap:anywhere}
+ main>section.card .row{gap:8px}
+ main>section.card .row>button{max-width:100%}
+ main>section.card input,main>section.card select,main>section.card textarea{font-size:16px;min-height:45px}
+ main>section.card .result{line-height:1.85;padding:12px}
+ main>section.card .grid{row-gap:11px}
+ main>section.card label{line-height:1.6}
+}
+@media(max-width:375px){.sb91-guide summary{padding:12px}.sb91-guide li{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.sb91-guide{scroll-behavior:auto}}
