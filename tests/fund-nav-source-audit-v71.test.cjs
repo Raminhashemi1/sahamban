@@ -31,6 +31,22 @@ test('v80 public Iyar probes ETF by exact verified insCode without inferring fro
 test('v71 is read-only and offline integrated',()=>{
  assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);
  assert.match(html,/fundNavSourceAuditV71/);
- assert.match(html,/fund-nav-source-audit-v71\.js\?v=71\.1/);
- assert.match(sw,/fund-nav-source-audit-v71\.js\?v=71\.1/);
+ assert.match(html,/fund-nav-source-audit-v71\.js\?v=71\.2/);
+ assert.match(sw,/fund-nav-source-audit-v71\.js\?v=71\.2/);
+});
+
+test('v81 audit distinguishes ETF probe failures without inventing NAV',()=>{
+ const cases=[
+  ['request-failed','دریافت پاسخ ETF ناموفق بود'],
+  ['identity-mismatch','شناسه ETF یا ساختار پاسخ تطبیق نداشت'],
+  ['etf-verified-nav-missing','NAV بازخرید معتبر موجود نیست'],
+  ['nav-date-invalid','تاریخ یا ساعت NAV رد شد'],
+  ['nav-verified','NAV دارای تاریخ معتبر']
+ ];
+ for(const [fundNavProbeStatus,expected] of cases){
+  const out=run([{symbol:'عیار',assetClass:fundNavProbeStatus==='identity-mismatch'?'unknown':'fund_etf',fundNavChecked:true,fundNav:null,fundNavDate:'',fundNavProbeStatus}]);
+  assert.match(out,new RegExp(expected));
+ }
+ assert.match(pilot,/fundNavProbeStatus:q\.fundNavProbeStatus/);
+ assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);
 });

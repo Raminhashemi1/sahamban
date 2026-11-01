@@ -7,6 +7,17 @@
  const panel=document.getElementById('fundNavSourceAuditV71');if(!panel)return;
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:0}).format(n);
  const append=(parent,tag,v)=>{const node=document.createElement(tag);node.textContent=String(v);parent.append(node);return node};
+ const categories={
+  'not-attempted':'آزمایش ETF انجام نشده',
+  'pending':'در انتظار آزمایش ETF',
+  'in-progress':'در حال بررسی منبع NAV',
+  'nav-verified':'پاسخ ETF منطبق و NAV دارای تاریخ معتبر',
+  'etf-verified-nav-missing':'شناسه ETF تأیید شد؛ NAV بازخرید معتبر موجود نیست',
+  'nav-date-invalid':'شناسه ETF تأیید شد؛ تاریخ یا ساعت NAV رد شد',
+  'identity-mismatch':'شناسه ETF یا ساختار پاسخ تطبیق نداشت',
+  'request-failed':'دریافت پاسخ ETF ناموفق بود'
+ };
+ const probeLabel=q=>categories[q?.fundNavProbeStatus]||'نتیجه آزمایش مشخص نیست';
  window.addEventListener('sahamban:verified-fund-nav-premium-v63',e=>{
   try{
    const quotes=e?.detail?.quotes;
@@ -22,13 +33,13 @@
    let valid=0;
    const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
    const head=document.createElement('tr');
-   ['نماد','وضعیت شناسایی صندوق','NAV بازخرید (ریال)','تاریخ NAV','ساعت آخرین معامله','ساعت NAV','گزارش اعتبار'].forEach(x=>append(head,'th',x));table.append(head);
+   ['نماد','وضعیت شناسایی صندوق','نتیجه بررسی ETF','NAV بازخرید (ریال)','تاریخ NAV','ساعت آخرین معامله','ساعت NAV','گزارش اعتبار'].forEach(x=>append(head,'th',x));table.append(head);
    for(const q of funds){
     const verified=q.assetClass==='fund_etf';
     const nav=typeof q.fundNav==='number'&&Number.isFinite(q.fundNav)&&q.fundNav>0?q.fundNav:null;
     if(verified&&nav!==null&&/^\d{8}$/.test(String(q.fundNavDate||'')))valid++;
     const tr=document.createElement('tr');
-    [String(q.symbol||'نامشخص'),verified?'شناسه ETF تطبیق یافت':'پاسخ ETF تأیید نشد',nav===null?'ناموجود':fmt(nav),q.fundNavDate||'نامشخص',q.lastTradeTime&&q.lastTradeTime!=='نامشخص'?q.lastTradeTime:'نامشخص',q.fundNavTime||'نامشخص',String(q.fundNavStatus||'دلیل عدم تأیید مشخص نیست')].forEach(x=>append(tr,'td',x));
+    [String(q.symbol||'نامشخص'),verified?'شناسه ETF تطبیق یافت':'پاسخ ETF تأیید نشد',probeLabel(q),nav===null?'ناموجود':fmt(nav),q.fundNavDate||'نامشخص',q.lastTradeTime&&q.lastTradeTime!=='نامشخص'?q.lastTradeTime:'نامشخص',q.fundNavTime||'نامشخص',String(q.fundNavStatus||'دلیل عدم تأیید مشخص نیست')].forEach(x=>append(tr,'td',x));
     table.append(tr);
    }
    append(panel,'p','پوشش NAV بازخرید معتبر: '+fmt(valid)+' از '+fmt(funds.length)+' تلاشِ مربوط به صندوق. اگر داده موجود نباشد، حباب صفر محسوب نمی‌شود.');

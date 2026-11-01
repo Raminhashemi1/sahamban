@@ -129,13 +129,16 @@
   // Its name ONLY triggers a single official ETF endpoint check; it never proves ETF identity.
   // All candidate responses must still match the verified exact insCode.
   quote.fundNavChecked=quote.instrumentFlow===18||norm(holding.symbol)===norm('عیار');
+  quote.fundNavProbeStatus=quote.fundNavChecked?'pending':'not-attempted';
   if(quote.fundNavChecked){
    quote.fundNavStatus='در انتظار پاسخ معتبر صندوق از TSETMC';
+   quote.fundNavProbeStatus='in-progress';
    try{
     const fundResponse=await fetchJson('/Fund/GetETFByInsCode/'+encodeURIComponent(quote.insCode));
     const fund=fundResponse?.etf;
     if(fund&&String(fund.insCode??'')===String(quote.insCode)){
      quote.assetClass='fund_etf';quote.assetClassLabel='صندوق قابل معامله';
+     quote.fundNavProbeStatus='etf-verified-nav-missing';
      quote.fundNavStatus='NAV بازخرید موجود نیست یا عدد معتبر ندارد';
      // Only TSETMC redemption NAV pRedTran; never substitute subscription NAV.
      const nav=typeof fund.pRedTran==='number'?fund.pRedTran:null;
@@ -144,11 +147,12 @@
        const navDate=validDate(fund.deven);
        const navClock=parseFundNavClock(fund.hEven);
        quote.fundNav=nav;quote.fundNavDate=navDate;quote.fundNavTime=navClock;
+       quote.fundNavProbeStatus='nav-verified';
        quote.fundNavStatus='NAV بازخرید با تاریخ معتبر تأیید شد؛ هم‌زمانی لحظه‌ای با قیمت بازار تأیید نشده';
-      }catch(_invalidNavDate){quote.fundNavStatus='تاریخ یا ساعت NAV نامعتبر، آینده یا قدیمی است';}
+      }catch(_invalidNavDate){quote.fundNavProbeStatus='nav-date-invalid';quote.fundNavStatus='تاریخ یا ساعت NAV نامعتبر، آینده یا قدیمی است';}
      }
-    }else{quote.fundNavStatus='ساختار پاسخ یا شناسه صندوق با درخواست تطبیق نداشت';}
-   }catch(_fundError){quote.fundNavStatus='سرویس NAV در دسترس نبود یا پاسخ معتبر نداد';}
+    }else{quote.fundNavProbeStatus='identity-mismatch';quote.fundNavStatus='ساختار پاسخ یا شناسه صندوق با درخواست تطبیق نداشت';}
+   }catch(_fundError){quote.fundNavProbeStatus='request-failed';quote.fundNavStatus='سرویس NAV در دسترس نبود یا پاسخ معتبر نداد';}
   }else if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
   else if(quote.instrumentTypeCode==='301'){quote.assetClass='preemptive_right';quote.assetClassLabel='حق تقدم';}
   return quote;
@@ -549,7 +553,7 @@
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
-    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,lastTradeTime:q.lastTradeTime,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavChecked:q.fundNavChecked===true}))}}));
+    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,lastTradeTime:q.lastTradeTime,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavProbeStatus:q.fundNavProbeStatus,fundNavChecked:q.fundNavChecked===true}))}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-concentration-v68',{detail:{positions:holdings.map((h,i)=>({symbol:h.symbol,quantity:h.quantity,price:quotes[i].price,marketDate:quotes[i].marketDate,assetClass:quotes[i].assetClass}))}}));
    refreshStatus('completed','none');
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.

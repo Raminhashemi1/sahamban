@@ -6,7 +6,7 @@
  const panel=document.getElementById('portfolioDiagnosticV74');
  if(!panel)return;
  const report=document.createElement('pre'),status=document.createElement('p'),copy=document.createElement('button');
- const state={probe:'not-run',refresh:'not-run',quotes:'not-run',nav:'not-run',dashboard:'not-run'};
+ const state={probe:'not-run',refresh:'not-run',quotes:'not-run',nav:'not-run',navProbe:'not-run',dashboard:'not-run'};
  let navQuotes=null,positions=null;
  const text=()=>[
   'Sahamban technical status v77',
@@ -14,6 +14,7 @@
   'market_refresh='+state.refresh,
   'quote_validation='+state.quotes,
   'nav_validation='+state.nav,
+  'etf_probe='+state.navProbe,
   'dashboard_validation='+state.dashboard,
   'scope=categorical-only;no-symbols;no-quantities;no-prices;no-holdings;no-identifiers',
   'note=public-probe-is-not-proof-of-portfolio-refresh-or-etf-nav'
@@ -66,10 +67,10 @@
   const reason=event?.detail?.reason;
   if(stage==='started'){
    navQuotes=null;positions=null;
-   state.refresh='in-progress';state.quotes='not-run';state.nav='not-run';state.dashboard='not-run';
+   state.refresh='in-progress';state.quotes='not-run';state.nav='not-run';state.navProbe='not-run';state.dashboard='not-run';
   }else if(stage==='failed'&&(reason==='partial'||reason==='exception')){
    navQuotes=null;positions=null;
-   state.refresh='failed';state.quotes='incomplete';state.nav='not-run';state.dashboard='not-run';
+   state.refresh='failed';state.quotes='incomplete';state.nav='not-run';state.navProbe='not-run';state.dashboard='not-run';
   }else if(stage==='completed'&&state.refresh==='in-progress'&&state.dashboard==='verified'){
    state.refresh='completed';
   }
@@ -80,6 +81,16 @@
   positions=null;
   state.quotes='not-run';
   assessNav(navQuotes);
+  // Export only a coarse categorical status, never individual positions or prices.
+  const checked=Array.isArray(navQuotes)?navQuotes.filter(q=>q?.fundNavChecked===true):[];
+  const outcomes=['nav-verified','etf-verified-nav-missing','nav-date-invalid','identity-mismatch','request-failed'];
+  if(!checked.length)state.navProbe='not-run';
+  else if(checked.some(q=>!outcomes.includes(q?.fundNavProbeStatus)))state.navProbe='incomplete';
+  else if(checked.every(q=>q.fundNavProbeStatus==='nav-verified'))state.navProbe='verified';
+  else if(checked.some(q=>q.fundNavProbeStatus==='nav-verified'))state.navProbe='mixed';
+  else if(checked.every(q=>q.fundNavProbeStatus==='request-failed'))state.navProbe='request-failed';
+  else if(checked.every(q=>q.fundNavProbeStatus==='identity-mismatch'))state.navProbe='identity-mismatch';
+  else state.navProbe='unavailable';
   assessDashboard();
   render();
  });
