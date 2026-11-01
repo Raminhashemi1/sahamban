@@ -23,7 +23,7 @@ test('v98 defaults to simple on mobile and allows restoring all original columns
  const {root,scroll,controls}=boot(true),simple=controls.children[1],full=controls.children[2],hint=controls.children[3];
  assert.equal(root.classList.classes.has('sb98-compact'),true);
  assert.equal(simple.attrs['aria-pressed'],'true');
- assert.match(hint.textContent,/۱۵ ستون/);
+ assert.match(hint.textContent,/نمای ساده/);
  full.listeners.click();
  assert.equal(root.classList.classes.has('sb98-compact'),false);
  assert.equal(full.attrs['aria-pressed'],'true');
