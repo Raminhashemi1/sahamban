@@ -25,5 +25,5 @@ test('v72 bumps cache version for refreshed NAV source and pilot script',()=>{
  assert.ok(html.includes('fund-nav-source-audit-v71.js?v=71.2'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
  assert.ok(sw.includes('fund-nav-source-audit-v71.js?v=71.2'));
- assert.ok(sw.includes('sahamban-static-v87-0'));
+ assert.ok(sw.includes('sahamban-static-v88-0'));
 });
