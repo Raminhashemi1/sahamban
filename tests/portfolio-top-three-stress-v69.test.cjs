@@ -6,11 +6,11 @@ function flatten(n){return [n.textContent||'',...(n.children||[]).map(flatten)].
 function render(positions){const panel=el(),listeners={},document={getElementById:id=>id==='portfolioTopThreeStressV69'?panel:null,createElement:()=>el()};vm.runInNewContext(src,{document,window:{addEventListener:(n,f)=>(listeners[n]??=[]).push(f)},Intl,Number,String,Math,Set,Error,Object});listeners['sahamban:verified-portfolio-concentration-v68'][0]({detail:{positions}});return flatten(panel)}
 const data=[{symbol:'عیار',quantity:7,price:100,marketDate:'20261030'},{symbol:'فولاد',quantity:2,price:100,marketDate:'20261030'},{symbol:'خودرو',quantity:1,price:50,marketDate:'20261030'},{symbol:'وبملت',quantity:1,price:50,marketDate:'20261030'}];
 test('v69 calculates top-three value and simultaneous portfolio losses',()=>{
- const s=render(data);assert.match(s,/۹۵٪/);assert.match(s,/آزمون تنش هم‌زمان/);assert.match(s,/۱۰۰/);assert.match(s,/۱۹٪/);
+ const s=render(data);assert.match(s,/۹۵٪/);assert.match(s,/آزمون تنش هم‌زمان/);assert.match(s,/۸۱۰/);assert.match(s,/۱۹٪/);
 });
 test('v69 reports remaining value and supports one-holding portfolios',()=>{
  const s=render([{symbol:'عیار',quantity:10,price:100,marketDate:'20261030'}]);
- assert.match(s,/۱٬۰۰۰/);assert.match(s,/۸۰۰/);assert.match(s,/همه دارایی‌های موجود/);
+ assert.match(s,/۱۰۰٪/);assert.match(s,/۸۰۰/);assert.match(s,/همه دارایی‌های موجود/);
 });
 test('v69 is fail-closed for duplicate symbols and unsafe values',()=>{
  assert.match(render([{symbol:'عیار',quantity:1,price:100},{symbol:'عیار',quantity:1,price:100}]),/معتبر نیست/);
