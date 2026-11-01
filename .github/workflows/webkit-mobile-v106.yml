@@ -19,6 +19,7 @@ jobs:
       - run: npm install --no-save playwright@1.56.1
       - run: npx playwright install --with-deps webkit
       - run: node tests/webkit-mobile-v106.cjs
+      - run: node tests/webkit-a11y-proxy-v109.cjs
       - name: Save WebKit failure evidence
         if: failure()
         uses: actions/upload-artifact@v6
