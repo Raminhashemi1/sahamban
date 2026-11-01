@@ -114,6 +114,7 @@ async function main(){
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table th').count(),15);
   await page.locator('#livePortfolioTable .sb99-mode').last().click();
   assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
+  assert.equal(await page.locator('#sb104CardSearch').isVisible(),false);
   assert.equal(await page.locator('#livePortfolioTable .sb98-view-controls').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-scroll').isVisible(),true);
   // v102: verify the maximum 100-row UI report and a burst of replacements.
@@ -136,6 +137,20 @@ async function main(){
   assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),400);
   assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd').count(),1100);
   assert.match(await page.locator('#livePortfolioTable .sb99-card').last().locator('h4').innerText(),/^نماد [۹9]{2}$/);
+  // v104: filter only displayed symbols; all 100 rows in the source table remain.
+  assert.equal(await page.locator('#sb104CardSearch').isVisible(),true);
+  await page.locator('#sb104CardSearch').fill('نماد 99');
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),1);
+  assert.equal(await page.locator('#livePortfolioRows tr').count(),100);
+  await page.locator('#sb104CardSearch').fill('نماد ناشناخته');
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),0);
+  assert.match(await page.locator('#sb104CardSearchStatus').innerText(),/پیدا نشد/);
+  await page.locator('#sb104CardSearch').press('Escape');
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),100);
+  await page.locator('#sb104CardSearch').fill('نماد 99');
+  await page.locator('#livePortfolioTable .sb104-filter-row button').click();
+  assert.equal(await page.locator('#sb104CardSearch').inputValue(),'');
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),100);
   await page.locator('#livePortfolioRows').evaluate(body=>{
    body.replaceChildren();
    const row=document.createElement('tr');
