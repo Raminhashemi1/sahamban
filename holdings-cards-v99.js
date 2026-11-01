@@ -68,9 +68,14 @@
   list.replaceChildren(fragment);
   showMode();
  }
- cardsButton.addEventListener('click',()=>{mode='cards';showMode();});
- tableButton.addEventListener('click',()=>{mode='table';showMode();});
- const observer=typeof MutationObserver==='function'?new MutationObserver(render):null;
+ // Build duplicate card DOM only while needed; table mode keeps zero copied rows.
+ function sync(){
+  if(mode==='cards')render();
+  else{list.replaceChildren();showMode();}
+ }
+ cardsButton.addEventListener('click',()=>{mode='cards';sync();});
+ tableButton.addEventListener('click',()=>{mode='table';sync();});
+ const observer=typeof MutationObserver==='function'?new MutationObserver(sync):null;
  if(observer)observer.observe(rows,{childList:true});
- render();
+ sync();
 })();
