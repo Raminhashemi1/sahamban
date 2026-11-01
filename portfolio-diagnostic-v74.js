@@ -6,16 +6,17 @@
  const panel=document.getElementById('portfolioDiagnosticV74');
  if(!panel)return;
  const report=document.createElement('pre'),status=document.createElement('p'),copy=document.createElement('button');
- const state={refresh:'not-run',quotes:'not-run',nav:'not-run',dashboard:'not-run'};
+ const state={probe:'not-run',refresh:'not-run',quotes:'not-run',nav:'not-run',dashboard:'not-run'};
  let navQuotes=null,positions=null;
  const text=()=>[
-  'Sahamban technical status v75',
+  'Sahamban technical status v77',
+  'public_network_probe='+state.probe,
   'market_refresh='+state.refresh,
   'quote_validation='+state.quotes,
   'nav_validation='+state.nav,
   'dashboard_validation='+state.dashboard,
   'scope=categorical-only;no-symbols;no-quantities;no-prices;no-holdings;no-identifiers',
-  'note=not-proof-of-live-network-connectivity'
+  'note=public-probe-is-not-proof-of-portfolio-refresh-or-etf-nav'
  ].join('\n');
  const render=()=>{report.textContent=text();};
  const validList=xs=>Array.isArray(xs)&&xs.length>0&&xs.length<=100;
@@ -53,6 +54,13 @@
  copy.type='button';copy.textContent='کپی گزارش فنی بدون اطلاعات سبد';
  status.textContent='گزارش فقط وضعیت‌های کلی را نشان می‌دهد. کپی و ارسال کاملاً اختیاری است؛ هیچ داده‌ای خودکار ارسال یا ذخیره نمی‌شود.';
  panel.append(copy,report,status);
+ window.addEventListener('sahamban:public-network-probe-v77',event=>{
+  const status=event?.detail?.status;
+  if(status==='started')state.probe='in-progress';
+  else if(status==='verified'&&state.probe==='in-progress')state.probe='verified';
+  else if(status==='failed'&&state.probe==='in-progress')state.probe='failed';
+  render();
+ });
  window.addEventListener('sahamban:portfolio-refresh-status-v76',event=>{
   const stage=event?.detail?.status;
   const reason=event?.detail?.reason;

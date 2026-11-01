@@ -486,12 +486,16 @@
   const button=$('livePortfolioNetworkTest');
   if(running)return;
   running=true;button.disabled=true;
+  const probeStatus=status=>window.dispatchEvent(new CustomEvent('sahamban:public-network-probe-v77',{detail:{status}}));
+  probeStatus('started');
   $('livePortfolioNetworkStatus').textContent='در حال آزمون اتصال مستقل با نماد عمومی فولاد. اطلاعات سبد شما ارسال نمی‌شود...';
   try{
    // Synthetic public ticker only: same strict resolver as portfolio quotes, no user holdings.
    const quote=await getOne({symbol:'فولاد',key:norm('فولاد'),quantity:1,buy:1});
+   probeStatus('verified');
    $('livePortfolioNetworkStatus').textContent='اتصال و تطبیق قیمت نماد عمومی فولاد موفق بود. تاریخ بازار: '+quote.marketDate.replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)])+'؛ قیمت پایانی: '+fmt(quote.price)+' ریال. این نتیجه فقط آزمون شبکه همین مرورگر است و به معنی به‌روزشدن سبد شما نیست.';
   }catch(e){
+   probeStatus('failed');
    $('livePortfolioNetworkStatus').textContent='آزمون اتصال از این مرورگر ناموفق یا تأییدنشده بود: '+(e.name==='AbortError'?'مهلت اتصال تمام شد':e.message)+'. اطلاعات سبد ارسال یا تغییر نکرد.';
   }finally{running=false;button.disabled=false;}
  });

@@ -5,7 +5,7 @@ const pilot=fs.readFileSync('portfolio-pilot-v61.html','utf8');
 const src=fs.readFileSync('portfolio-pilot-v61.js','utf8');
 assert.match(html,/id="portfolio-live-entry"/);
 assert.match(html,/href="#livePortfolioSection"/);
-assert.match(html,/portfolio-pilot-v61\.js\?v=61\.9/);
+assert.match(html,/portfolio-pilot-v61\.js\?v=61\.10/);
 assert.match(html,/قیمت دریافتی لزوماً لحظه‌ای نیست/);
 assert.match(pilot,/portfolio-pilot-v61\.js\?v=61\.2/);
 assert.match(pilot,/دریافت و بررسی تاریخچه همه نمادهای سبد/);
@@ -46,4 +46,4 @@ assert.ok(html.includes('portfolioStatusDashboardV73'));
 assert.ok(html.includes('portfolio-status-dashboard-v73.js?v=73.0'));
 
 assert.ok(html.includes('portfolioDiagnosticV74'));
-assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.2'));
+assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.3'));
