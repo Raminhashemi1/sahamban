@@ -35,7 +35,7 @@ test('v83 clears previous values on a new refresh and failed requests',()=>{
 test('v83 does not access storage or network, and is offline bundled',()=>{
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest/);
  assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.3/);
- assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.3/);assert.match(sw,/sahamban-static-v86-0/);
+ assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.3/);assert.match(sw,/sahamban-static-v87-0/);
 });
 
 test('v84 sorts quick quote rows by market value and searches locally without changing totals',()=>{

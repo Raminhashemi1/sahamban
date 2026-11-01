@@ -28,6 +28,11 @@ async function main(){
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
+  // Verify compact launcher and a beginner's guide before starting the existing workflows.
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
+  await page.getByRole('button',{name:'آموزش سبد من'}).click();
+  assert.equal(await page.locator('#sahambanGuideStepsV87 li').count(),3);
+  await page.evaluate(()=>{location.hash='brokerImportSection'});
   // Broker imports are staged independently and never overwrite the analytical portfolio.
   const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
   await page.locator('#brokerFile').setInputFiles({name:'brokers.csv',mimeType:'text/csv',buffer:Buffer.from(
@@ -84,6 +89,7 @@ async function main(){
   // Simulate an existing user recording; portfolio actions must never overwrite it.
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const recordedBefore=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
+  await page.evaluate(()=>{location.hash='portfolioSection'});
   await page.locator('#portfolioAnalyze').click();
   assert.match(await page.locator('#portfolioSummary').innerText(),/ارزش روز سبد/u);
   console.log('PASS: portfolio report renders in Chromium');
@@ -176,6 +182,7 @@ async function main(){
    else throw Error('Unexpected market API route: '+endpoint);
    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
   });
+  await page.evaluate(()=>{location.hash='marketSection'});
   await page.locator('#marketCode').fill('46348559193224090');
   await page.locator('#marketSymbol').fill('فولاد');
   await page.locator('#liveStop').fill('2000');
@@ -208,8 +215,10 @@ async function main(){
   const beforeNineteen=JSON.stringify({version:2,created:new Date().toISOString(),holdings:nineteen});
   await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),beforeNineteen);
   await page.reload({waitUntil:'load'});
+  await page.evaluate(()=>{location.hash='livePortfolioSection'});
   const analysisBeforeIntegrated=await page.locator('#portfolioData').inputValue();
   await page.getByText('۱۹ نماد',{exact:false}).first().waitFor({timeout:10000});
+  await page.evaluate(()=>{location.hash='livePortfolioSection'});
   await page.locator('#livePortfolioImported').click();
   assert.match(await page.locator('#livePortfolioSummary').innerText(),/ارزش بر اساس قیمت فایل/);
   assert.match(await page.locator('#livePortfolioMeta').innerText(),/قیمت روز یا به‌روزرسانی خودکار نیست/);
@@ -224,6 +233,7 @@ async function main(){
    const snapshot=JSON.stringify({version:2,created:new Date().toISOString(),holdings:sample});
    await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),snapshot);
    await page.reload({waitUntil:'load'});
+   await page.evaluate(()=>{location.hash='livePortfolioSection'});
    await page.locator('#livePortfolioImported').click();
    assert.equal(await page.locator('#livePortfolioRows tr').count(),count);
    const persianCount=String(count).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
@@ -236,6 +246,7 @@ async function main(){
   await page.evaluate(data=>localStorage.setItem('sahamban-broker-holdings-v1',data),restoreNineteen);
   await page.reload({waitUntil:'load'});
 
+  await page.evaluate(()=>{location.hash='brokerImportSection'});
   const beforeDownload=await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1'));
   const pendingBackup=page.waitForEvent('download');
   await page.locator('#brokerExportBackup').click();
