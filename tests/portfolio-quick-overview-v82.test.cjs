@@ -31,5 +31,5 @@ test('v82 refuses stale, mismatched or nonexistent NAV and portfolio values',()=
 test('v82 uses no network, storage or trade automation and is cached',()=>{
  assert.doesNotMatch(src,/localStorage|sessionStorage|navigator\.clipboard|fetch\(/);
  assert.match(html,/id="portfolioQuickOverviewV82"/);assert.match(html,/portfolio-quick-overview-v82\.js\?v=82\.0/);
- assert.match(sw,/portfolio-quick-overview-v82\.js\?v=82\.0/);assert.match(sw,/sahamban-static-v92-0/);
+ assert.match(sw,/portfolio-quick-overview-v82\.js\?v=82\.0/);assert.match(sw,/sahamban-static-v93-0/);
 });

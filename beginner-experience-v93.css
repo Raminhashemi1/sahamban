@@ -1,0 +1,16 @@
+/* v93: comfortable touch targets and compact, readable beginner education. */
+.sb92-home .sahamban-module-link-v87{min-height:72px}
+.sb92-home .sahamban-module-help-v87{min-height:44px;font-size:12px}
+.sb92-home .sahamban-module-link-v87 small{font-size:11px;line-height:1.55}
+.sb92-quick{border-color:#527f96}
+.sb93-glossary{background:#102b43;color:#e4f4f7;border:1px solid #527f96;border-radius:14px;margin:0 0 12px;padding:12px 15px}
+.sb93-glossary summary{color:#a9ffe7;cursor:pointer;font-weight:700;line-height:1.8;min-height:40px;display:list-item}
+.sb93-glossary-title{font-size:15px;color:#fff;margin:12px 0 8px}
+.sb93-glossary dl{display:grid;grid-template-columns:minmax(80px,1fr) 4fr;column-gap:12px;row-gap:9px;margin:0}
+.sb93-glossary dt{font-weight:700;color:#94f9df}
+.sb93-glossary dd{margin:0;line-height:1.8;font-size:13px}
+.sb93-tour-progress{display:flex;gap:7px;margin:12px 0 3px;direction:rtl}
+.sb93-tour-dot{display:block;flex:1;height:5px;background:#496076;border-radius:5px}
+.sb93-tour-dot.sb93-done{background:#27d6b0}
+.sb93-glossary summary:focus-visible{outline:3px solid #ffcf76;outline-offset:3px}
+@media(max-width:400px){.sb93-glossary dl{grid-template-columns:1fr;row-gap:3px}.sb93-glossary dd{margin-bottom:10px}}
