@@ -31,6 +31,11 @@ async function main(){
   // v103: no update is announced before a service-worker controller actually changes.
   assert.equal(await page.locator('#sb103UpdateNotice').count(),1);
   assert.equal(await page.locator('#sb103UpdateNotice').isVisible(),false);
+  // v105: first keyboard Tab exposes a skip-to-main control.
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(()=>document.activeElement?.className),'sb105-skip-link');
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb105MainContent');
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
   // v100: fast task-first navigation uses existing routes, not portfolio data.
@@ -132,8 +137,10 @@ async function main(){
    body.replaceChildren(fragment);
   });
   assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
+  const start100=Date.now();
   await page.locator('#livePortfolioTable .sb99-mode').first().click();
   await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===100);
+  console.log('INFO: 100-card Chromium UI roundtrip '+(Date.now()-start100)+' ms (CI diagnostic, not a device benchmark)');
   assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),400);
   assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd').count(),1100);
   assert.match(await page.locator('#livePortfolioTable .sb99-card').last().locator('h4').innerText(),/^نماد [۹9]{2}$/);
