@@ -33,7 +33,7 @@ async function main(){
   await page.getByRole('button',{name:'آموزش سبد من'}).click();
   assert.equal(await page.locator('#sahambanGuideStepsV87 li').count(),3);
   await page.evaluate(()=>{location.hash='livePortfolioSection'});
-  assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
+  await page.waitForFunction(()=>document.querySelector('#sb88-tab-overview')?.getAttribute('aria-selected')==='true');
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),false);
   await page.locator('#sb88-tab-help').click();
   assert.equal(await page.locator('#sb88-panel-help').isVisible(),true);
@@ -42,7 +42,7 @@ async function main(){
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable').count(),1);
   await page.evaluate(()=>{location.hash='livePortfolioSection'});
-  assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
+  await page.waitForFunction(()=>document.querySelector('#sb88-tab-overview')?.getAttribute('aria-selected')==='true');
   await page.evaluate(()=>{location.hash='brokerImportSection'});
   // Broker imports are staged independently and never overwrite the analytical portfolio.
   const portfolioBeforeImport=await page.locator('#portfolioData').inputValue();
