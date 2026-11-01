@@ -1,5 +1,5 @@
 'use strict';
-/* v85: daily read-only summary and in-memory mobile symbol search. Never persists portfolio data or makes requests. */
+/* v86: daily read-only summary and in-memory mobile symbol search. Never persists portfolio data or makes requests. */
 (()=>{
  const panel=document.getElementById('portfolioDailySummaryV83');
  if(!panel)return;
@@ -49,13 +49,32 @@
     const marketDate=document.createElement('span');marketDate.className='portfolio-mobile-quote-date-v85';marketDate.textContent='تاریخ بازار: '+p.marketDate;li.append(marketDate);
     list.append(li);items.push({symbol,li});
    }
-   search.addEventListener('input',()=>{
+   // v86: avoid a nested scrolling list on small screens. Start with five
+   // cards; expand on demand or search the complete in-memory symbol set.
+   let expanded=false;
+   const showMore=document.createElement('button');showMore.type='button';
+   showMore.className='portfolio-quote-toggle-v86';
+   const updateVisible=()=>{
     const term=String(search.value??'').trim().toLocaleLowerCase('fa-IR');
+    const matches=items.filter(row=>row.symbol.toLocaleLowerCase('fa-IR').includes(term));
     let visible=0;
-    for(const row of items){const found=row.symbol.toLocaleLowerCase('fa-IR').includes(term);row.li.hidden=!found;if(found)visible++;}
-    help.textContent=visible?format(visible)+' نماد از '+format(items.length)+' نماد نمایش داده می‌شود.':'نمادی با این نام در فهرست فعلی پیدا نشد.';
-   });
-   details.append(list);panel.append(details);
+    for(const row of items){
+     const rank=matches.indexOf(row);
+     const show=rank!==-1&&(term!==''||expanded||rank<5);
+     row.li.hidden=!show;
+     if(show)visible++;
+    }
+    help.textContent=matches.length
+     ?format(visible)+' نماد از '+format(items.length)+' نماد نمایش داده می‌شود'+(term?' (نتیجه جست‌وجو)':'؛ مرتب‌شده بر اساس ارزش دارایی')+'.'
+     :'نمادی با این نام در فهرست فعلی پیدا نشد.';
+    showMore.hidden=term!==''||items.length<=5;
+    showMore.textContent=expanded?'نمایش فقط ۵ نماد اول':'نمایش همه '+format(items.length)+' نماد';
+    showMore.setAttribute('aria-expanded',expanded?'true':'false');
+   };
+   search.addEventListener('input',updateVisible);
+   showMore.addEventListener('click',()=>{expanded=!expanded;updateVisible()});
+   details.append(list);details.append(showMore);panel.append(details);
+   updateVisible();
    add(panel,'p','مبنای قیمت: آخرین معامله در صورت وجود، وگرنه قیمت پایانی؛ ارزش‌گذاری توصیفی و بدون کارمزد و مالیات.');
   }catch(_){
    panel.replaceChildren();
