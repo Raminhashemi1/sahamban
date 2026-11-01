@@ -21,9 +21,9 @@ test('v72 connects clock parsing and verified source to the audit event',()=>{
  assert.match(audit,/هم‌زمانی مؤثر برای معامله را تضمین نمی‌کند/);
 });
 test('v72 bumps cache version for refreshed NAV source and pilot script',()=>{
- assert.match(html,/portfolio-pilot-v61\\.js\\?v=61\\.8/);
- assert.match(html,/fund-nav-source-audit-v71\\.js\\?v=71\\.1/);
- assert.match(sw,/portfolio-pilot-v61\\.js\\?v=61\\.8/);
- assert.match(sw,/fund-nav-source-audit-v71\\.js\\?v=71\\.1/);
- assert.match(sw,/sahamban-static-v72-0/);
+ assert.ok(html.includes('portfolio-pilot-v61.js?v=61.8'));
+ assert.ok(html.includes('fund-nav-source-audit-v71.js?v=71.1'));
+ assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.8'));
+ assert.ok(sw.includes('fund-nav-source-audit-v71.js?v=71.1'));
+ assert.ok(sw.includes('sahamban-static-v72-0'));
 });
