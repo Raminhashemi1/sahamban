@@ -25,3 +25,6 @@ assert.ok(html.includes('portfolio-liquidity-history-v65.js?v=65.0'));
 
 assert.ok(html.includes('portfolioTradingTrendV66'));
 assert.ok(html.includes('portfolio-trading-trend-v66.js?v=66.0'));
+
+assert.ok(html.includes('portfolioRelativeTurnoverV67'));
+assert.ok(html.includes('portfolio-relative-turnover-v67.js?v=67.0'));
