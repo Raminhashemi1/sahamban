@@ -7,7 +7,7 @@ test('v101 only constructs cards while card view is selected',()=>{
  new vm.Script(source);
  assert.match(source,/function sync\(\)/);
  assert.match(source,/if\(mode==='cards'\)\{/);
- assert.match(source,/else\{list\.replaceChildren\(\);showMode\(\);\}/);
+ assert.match(source,/else\s*\{\s*list\.replaceChildren\(\);\s*showMode\(\);\s*\}/);
  assert.match(source,/MutationObserver\(sync\)/);
 });
 test('v101 keeps display copy isolated from financial data and persistent state',()=>{
