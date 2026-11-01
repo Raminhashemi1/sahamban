@@ -18,8 +18,17 @@ jobs:
       - run: node tests/smoke.cjs
       - run: node --test tests/compact-dashboard-v92.test.cjs tests/beginner-experience-v93.test.cjs tests/module-finder-v94.test.cjs tests/beginner-reading-v95.test.cjs tests/visual-consistency-v96.test.cjs tests/mobile-table-v97.test.cjs tests/holdings-view-v98.test.cjs tests/holdings-cards-v99.test.cjs tests/ux-milestone-v100.test.cjs tests/mobile-performance-v101.test.cjs tests/browser-perf-v102.test.cjs tests/update-notice-v103.test.cjs tests/cache-refresh-v103.test.cjs tests/card-search-v104.test.cjs tests/keyboard-access-v105.test.cjs
       - run: node tests/sw-offline.cjs
+      - run: node --test tests/market-connectivity-page.test.cjs
       - run: node tests/market-validation.cjs
       - run: node tests/live-market-connectivity.cjs
+      - name: Preserve explicit live-market status (including network skip)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-live-market-outcome
+          path: test-artifacts/live-market-v109.json
+          if-no-files-found: warn
+          retention-days: 14
       - run: node --check portfolio-pilot-v61.js
       - run: node --test tests/pilot-v61-coverage.test.cjs tests/home-portfolio-v61-entry.test.cjs
   browser:

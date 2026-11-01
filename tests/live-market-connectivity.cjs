@@ -2,9 +2,21 @@
 // Live, read-only smoke test against the public TSETMC API.
 // It uses one public instrument only and never reads browser storage or user holdings.
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
 
 const API='https://cdn.tsetmc.com/api';
 const symbol='فولاد';
+function recordOutcome(status,details={}){
+ const output={
+  status,checked_at:new Date().toISOString(),timezone:'Asia/Tehran',
+  source:API,symbol,
+  scope:'Read-only automated public quote diagnostic. Not field acceptance, a physical-device test, or a trading-hour market validation.',
+  ...details
+ };
+ fs.mkdirSync('test-artifacts',{recursive:true});
+ fs.writeFileSync('test-artifacts/live-market-v109.json',JSON.stringify(output,null,2)+'\n');
+ console.log('LIVE_MARKET_STATUS: '+status);
+}
 const norm=s=>String(s??'').replace(/[\u200c\u200e\u200f\uFEFF\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
 const number=v=>Number(v);
 async function get(path){
@@ -71,13 +83,16 @@ function dateAge(date){
   }
  }catch(error){console.log('INFO investor-flow endpoint unavailable: '+String(error.message||error));}
  console.log('SUCCESS: read-only live TSETMC connectivity and data-integrity test');
+ recordOutcome('AUTOMATED_QUOTE_CHECK_PASSED',{market_date:q.date,price_rial:q.price,age_tehran_calendar_days:q.age,history_rows:q.historyCount});
 })().catch(error=>{
  const cause=error?.cause;
  const code=cause?.code||error?.code;
  if(['UND_ERR_CONNECT_TIMEOUT','ECONNREFUSED','ENETUNREACH','EHOSTUNREACH','ENOTFOUND'].includes(code)){
+  recordOutcome('UNVERIFIED_NETWORK',{network_error_code:code});
   console.log('SKIP live TSETMC test: GitHub Actions runner cannot establish outbound connectivity to the public market-data host ('+code+'). This is an environment/network restriction, not a quote-validation pass or a confirmed market-data failure.');
   process.exitCode=0;
  }else{
+  recordOutcome('AUTOMATED_QUOTE_CHECK_FAILED',{error_code:code||null,error_message:String(error?.message||error)});
   console.error('FAIL live TSETMC test:',error);
   process.exitCode=1;
  }
