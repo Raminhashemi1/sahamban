@@ -44,9 +44,15 @@ async function validate(browser,profile,base){
     assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb105MainContent');
     result.checks.push('keyboard skip to main content');
 
+    // The portfolio section starts behind the module launcher and a prices tab.
+    // Open it through the same navigation path as the established Chromium suite.
+    await page.evaluate(()=>{location.hash='livePortfolioSection';});
+    await page.waitForFunction(()=>document.querySelector('#sb88-tab-overview')?.getAttribute('aria-selected')==='true');
+    await page.locator('#sb88-tab-prices').click();
+    await page.waitForFunction(()=>document.querySelector('#sb88-tab-prices')?.getAttribute('aria-selected')==='true');
     const root=page.locator('#livePortfolioTable');
-    assert.equal(await root.locator('.sb99-card-mode').count(),0); // root itself owns the mode class
-    assert.equal(await root.getAttribute('class')?.then(s=>s.includes('sb99-card-mode')),true);
+    assert.equal(await root.isVisible(),true);
+    assert.equal((await root.getAttribute('class')).includes('sb99-card-mode'),true);
     assert.equal(await page.locator('#livePortfolioRows').count(),1);
     await page.evaluate(()=>{
       const source=document.getElementById('livePortfolioRows');
