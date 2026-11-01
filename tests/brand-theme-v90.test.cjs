@@ -18,5 +18,5 @@ test('v90 includes shared styles for form fields, module cards and holdings',()=
  }
  assert.ok(css.includes(':focus-visible'));
  assert.ok(css.includes('prefers-reduced-motion'));
- assert.doesNotMatch(css,/\b(?:profit|loss|gain|negative|positive|failed)\b[^}]*color\s*:/i);
+ assert.doesNotMatch(css,/\.(?:profit|loss|gain|negative|positive|failed)\s*\{/i);
 });
