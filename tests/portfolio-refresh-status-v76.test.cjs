@@ -40,6 +40,6 @@ test('v76 bundled as a new offline release and remains privacy-safe',()=>{
  assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.3'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.10'));
  assert.ok(sw.includes('portfolio-diagnostic-v74.js?v=74.3'));
- assert.ok(sw.includes('sahamban-static-v77-0'));
+ assert.ok(sw.includes('sahamban-static-v78-0'));
  assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);
 });
