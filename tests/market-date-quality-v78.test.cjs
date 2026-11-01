@@ -28,5 +28,5 @@ test('v78 never treats stale events as current and stores or fetches nothing',()
 test('v78 is versioned and precached',()=>{
  assert.match(html,/market-date-quality-v78\.js\?v=78\.0/);
  assert.match(sw,/market-date-quality-v78\.js\?v=78\.0/);
- assert.match(sw,/sahamban-static-v93-0/);
+ assert.match(sw,/sahamban-static-v103-0/);
 });
