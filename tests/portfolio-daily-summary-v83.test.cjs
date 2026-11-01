@@ -1,12 +1,12 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const src=fs.readFileSync('portfolio-daily-summary-v83.js','utf8'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
-const el=()=>({textContent:'',children:[],href:'',append(...x){this.children.push(...x)},replaceChildren(...x){this.children=x}});
+const el=(tag='')=>({tag,textContent:'',children:[],href:'',value:'',hidden:false,handlers:{},addEventListener(n,f){this.handlers[n]=f},append(...x){this.children.push(...x)},replaceChildren(...x){this.children=x}});
 function run(){
- const panel=el(),listeners={},document={getElementById:id=>id==='portfolioDailySummaryV83'?panel:null,createElement:()=>el()};
+ const panel=el(),listeners={},document={getElementById:id=>id==='portfolioDailySummaryV83'?panel:null,createElement:tag=>el(tag)};
  vm.runInNewContext(src,{document,window:{addEventListener:(name,f)=>(listeners[name]??=[]).push(f)},Intl,Number,String,Array,Map,Set,Date,Error});
  const flat=x=>[x.textContent,...x.children.map(flat)].join(' ');
- return {send:(name,detail)=>(listeners[name]||[]).forEach(f=>f({detail})),text:()=>flat(panel),panel};
+ const find=(node,match)=>match(node)?node:node.children.map(x=>find(x,match)).find(Boolean);return {send:(name,detail)=>(listeners[name]||[]).forEach(f=>f({detail})),text:()=>flat(panel),panel,find:match=>find(panel,match)};
 }
 const nav='sahamban:verified-fund-nav-premium-v63',pos='sahamban:verified-portfolio-concentration-v68',refresh='sahamban:portfolio-refresh-status-v76';
 const quotes=[{symbol:'عیار',price:100,marketDate:'20261101'},{symbol:'فولاد',price:200,marketDate:'20261101'}];
@@ -34,6 +34,24 @@ test('v83 clears previous values on a new refresh and failed requests',()=>{
 });
 test('v83 does not access storage or network, and is offline bundled',()=>{
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest/);
- assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.0/);
- assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.0/);assert.match(sw,/sahamban-static-v83-0/);
+ assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.1/);
+ assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.1/);assert.match(sw,/sahamban-static-v84-0/);
+});
+
+test('v84 sorts quick quote rows by market value and searches locally without changing totals',()=>{
+ const a=run();a.send(refresh,{status:'started'});a.send(nav,{quotes});a.send(pos,{positions});a.send(refresh,{status:'completed'});
+ const list=a.find(x=>x.tag==='ul');assert.ok(list);assert.match(list.children[0].textContent,/عیار/);
+ const input=a.find(x=>x.tag==='input');assert.ok(input);assert.equal(input.type,'search');
+ input.value='فولاد';input.handlers.input();
+ assert.equal(list.children[0].hidden,true);assert.equal(list.children[1].hidden,false);
+ assert.match(a.text(),/۱٬۳۰۰/);
+ input.value='نماد-ناموجود';input.handlers.input();
+ assert.equal(list.children.every(x=>x.hidden),true);
+ assert.match(a.text(),/پیدا نشد/);
+});
+test('v84 search control is reset on a failed or new refresh',()=>{
+ const a=run();a.send(refresh,{status:'started'});a.send(nav,{quotes});a.send(pos,{positions});a.send(refresh,{status:'completed'});
+ assert.ok(a.find(x=>x.tag==='input'));
+ a.send(refresh,{status:'started'});assert.equal(a.find(x=>x.tag==='input'),undefined);
+ a.send(refresh,{status:'failed'});assert.match(a.text(),/نتیجه قبلی پاک/);
 });
