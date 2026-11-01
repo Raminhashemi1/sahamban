@@ -28,3 +28,7 @@ assert.ok(html.includes('portfolio-trading-trend-v66.js?v=66.0'));
 
 assert.ok(html.includes('portfolioRelativeTurnoverV67'));
 assert.ok(html.includes('portfolio-relative-turnover-v67.js?v=67.0'));
+
+assert.ok(html.includes('portfolioConcentrationV68'));
+assert.ok(html.includes('portfolio-concentration-v68.js?v=68.0'));
+assert.ok(src.includes('verified-portfolio-concentration-v68'));
