@@ -34,8 +34,8 @@ test('v83 clears previous values on a new refresh and failed requests',()=>{
 });
 test('v83 does not access storage or network, and is offline bundled',()=>{
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest/);
- assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.2/);
- assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.2/);assert.match(sw,/sahamban-static-v85-0/);
+ assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.3/);
+ assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.3/);assert.match(sw,/sahamban-static-v86-0/);
 });
 
 test('v84 sorts quick quote rows by market value and searches locally without changing totals',()=>{
@@ -68,4 +68,37 @@ test('v85 displays market price, holding value and weight as separate readable c
  assert.match(ayar.children[2].textContent,/20261101/);
  assert.match(foolad.children[1].textContent,/۴۰۰ ریال/);
  assert.match(a.text(),/۱٬۳۰۰/);
+});
+
+test('v86 previews five cards without nested scroll and expands all verified results',()=>{
+ const a=run();
+ const sixQuotes=Array.from({length:7},(_,i)=>({symbol:'نماد'+i,price:100+i,marketDate:'20261101'}));
+ const sixPositions=sixQuotes.map((q,i)=>({symbol:q.symbol,quantity:10-i,price:q.price,marketDate:q.marketDate}));
+ a.send(refresh,{status:'started'});a.send(nav,{quotes:sixQuotes});a.send(pos,{positions:sixPositions});a.send(refresh,{status:'completed'});
+ const list=a.find(x=>x.tag==='ul'),button=a.find(x=>x.tag==='button');
+ assert.equal(list.children.length,7);
+ assert.equal(list.children.filter(li=>!li.hidden).length,5);
+ assert.equal(button.hidden,false);assert.equal(button.textContent,'نمایش همه ۷ نماد');
+ button.handlers.click();assert.equal(list.children.filter(li=>!li.hidden).length,7);
+ assert.equal(button.textContent,'نمایش فقط ۵ نماد اول');
+ button.handlers.click();assert.equal(list.children.filter(li=>!li.hidden).length,5);
+});
+test('v86 searches all symbols including initially hidden cards and resets view',()=>{
+ const a=run();
+ const qs=Array.from({length:7},(_,i)=>({symbol:'نماد'+i,price:100+i,marketDate:'20261101'}));
+ const ps=qs.map((q,i)=>({symbol:q.symbol,quantity:10-i,price:q.price,marketDate:q.marketDate}));
+ a.send(refresh,{status:'started'});a.send(nav,{quotes:qs});a.send(pos,{positions:ps});a.send(refresh,{status:'completed'});
+ const list=a.find(x=>x.tag==='ul'),button=a.find(x=>x.tag==='button'),input=a.find(x=>x.tag==='input');
+ input.value='نماد6';input.handlers.input();
+ assert.equal(list.children.filter(li=>!li.hidden).length,1);
+ assert.match(list.children.find(li=>!li.hidden).children[0].textContent,/نماد6/);
+ assert.equal(button.hidden,true);
+ input.value='';input.handlers.input();
+ assert.equal(list.children.filter(li=>!li.hidden).length,5);
+ assert.equal(button.hidden,false);
+ a.send(refresh,{status:'started'});assert.equal(a.find(x=>x.tag==='button'),undefined);
+});
+test('v86 list removes nested scroll and keeps card display',()=>{
+ assert.match(html,/#portfolioDailySummaryV83 details ul\{max-height:none;overflow:visible\}/);
+ assert.match(html,/portfolio-quote-toggle-v86/);
 });
