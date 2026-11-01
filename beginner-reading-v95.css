@@ -1,0 +1,15 @@
+/* v95: comfortable reading, clear educational disclosures, no numerical styling changes. */
+.sb95-reading-note{margin:12px 0 14px;padding:13px 15px;border:1px solid #4ca2a0;border-inline-start:4px solid #37dab7;border-radius:12px;background:#0c303e;color:#ecfffa;line-height:1.85}
+.sb95-reading-note strong{font-size:15px;color:#b2ffea}
+.sb95-reading-note p{margin:6px 0 10px;font-size:13px}
+.sb95-reading-link{display:inline-block;border:1px solid #6addc4;border-radius:9px;padding:9px 12px;min-height:44px;color:#c3ffec;font-size:13px;font-weight:700;text-underline-offset:3px}
+.sb95-reading-guide{border:1px solid #426e89;border-radius:12px;background:#102a42;margin:15px 0;padding:12px 14px}
+.sb95-reading-guide h3{margin:2px 0 12px;color:#b5ffe9;font-size:16px}
+.sb95-reading-detail{border-top:1px solid #395b73;padding:7px 0}
+.sb95-reading-detail summary{cursor:pointer;min-height:44px;display:list-item;align-content:center;color:#edf9ff;font-size:14px;font-weight:700;line-height:1.8;padding:7px 2px}
+.sb95-reading-detail p{color:#d0e5f0;font-size:13px;line-height:2;margin:4px 0 12px}
+#livePortfolioSection .sb88-panel .result{max-width:100%;overflow-wrap:anywhere;line-height:1.95}
+#livePortfolioSection .sb88-panel p{overflow-wrap:anywhere}
+.sb95-reading-link:focus-visible,.sb95-reading-detail summary:focus-visible{outline:3px solid #ffd37a;outline-offset:2px}
+@media(max-width:520px){.sb95-reading-note,.sb95-reading-guide{padding:11px 12px}.sb95-reading-note p,.sb95-reading-detail p{font-size:13px;line-height:1.95}.sb95-reading-link{width:100%;text-align:center}#livePortfolioSection .sb88-panel .result{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.sb95-reading-note,.sb95-reading-guide{scroll-behavior:auto}}
