@@ -1,0 +1,29 @@
+/* v92: one-screen module dashboard, using the established bright navy palette */
+.sb92-home{max-width:100%}
+.sb92-home .sahamban-hub-intro-v87{margin-bottom:10px;padding:13px 15px 11px}
+.sb92-home .sahamban-hub-intro-v87 h2{font-size:20px;line-height:1.4}
+.sb92-home .sahamban-hub-intro-v87 p{font-size:12px;line-height:1.7;margin:0}
+.sb92-quick{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin:0 0 12px;padding:10px 12px;border:1px solid #466b83;border-radius:13px;background:#102b43}
+.sb92-quick-path{margin:0;color:#d5e8f2;font-size:12px;line-height:1.75;flex:1 1 220px}
+button.sb92-tour-start{background:#2c486b;color:#f5efff;border:1px solid #8273ad;min-height:40px;padding:8px 11px;font-size:12px;font-weight:700}
+.sb92-home .sahamban-modules-v87{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sb92-home .sahamban-module-v87{border-radius:12px;min-width:0;box-shadow:none}
+.sb92-home .sahamban-module-link-v87{display:grid;grid-template-columns:26px minmax(0,1fr);grid-template-rows:auto auto;align-content:center;align-items:center;column-gap:8px;row-gap:1px;min-height:64px;padding:9px 9px 6px}
+.sb92-home .sahamban-module-icon-v87{grid-row:1/3;font-size:20px}
+.sb92-home .sahamban-module-link-v87 strong{font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.sb92-home .sahamban-module-link-v87 small{font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.sb92-home .sahamban-module-help-v87{font-size:11px;line-height:1.4;min-height:32px;padding:5px 8px;text-align:center}
+.sb92-tour[hidden]{display:none!important}
+.sb92-tour{background:linear-gradient(145deg,#142e4f,#14273f);border:1px solid #7f73b3;border-radius:14px;padding:14px;margin:0 0 12px}
+.sb92-tour-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sb92-tour-count{color:#f2d89b;font-size:12px;font-weight:bold}
+button.sb92-tour-close{background:#2c405e;color:#f1f7ff;padding:7px 11px;font-size:12px;min-height:36px}
+.sb92-tour h3{font-size:17px;margin:12px 0 6px;color:#fff}
+.sb92-tour-desc{font-size:14px;line-height:1.85;color:#e4edf6;margin:0 0 13px}
+.sb92-tour-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sb92-tour-actions button{padding:9px 12px;min-height:42px;font-size:13px}
+.sb92-tour-go{background:#27d6b0;color:#082d31;text-decoration:none;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:bold;line-height:1.6}
+.sb92-tour button:focus-visible,.sb92-tour a:focus-visible,.sb92-quick button:focus-visible{outline:3px solid #ffcf76;outline-offset:2px}
+@media(min-width:720px){.sb92-home .sahamban-modules-v87{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:360px){.sb92-home .sahamban-module-link-v87{grid-template-columns:21px minmax(0,1fr);column-gap:5px;padding:8px 6px}.sb92-home .sahamban-module-link-v87 strong{font-size:12px}.sb92-home .sahamban-module-link-v87 small{font-size:9px}.sb92-quick-path{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.sb92-home *{scroll-behavior:auto!important}}
