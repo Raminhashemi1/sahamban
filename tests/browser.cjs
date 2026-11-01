@@ -14,7 +14,7 @@ async function main(){
   if(!full.startsWith(process.cwd()+path.sep)){res.writeHead(403).end();return;}
   fs.readFile(full,(err,data)=>{
    if(err){res.writeHead(404).end();return;}
-   const type=full.endsWith('.js')?'text/javascript':full.endsWith('.webmanifest')?'application/manifest+json':full.endsWith('.svg')?'image/svg+xml':full.endsWith('.html')?'text/html;charset=utf-8':'application/octet-stream';
+   const type=full.endsWith('.js')?'text/javascript':full.endsWith('.css')?'text/css':full.endsWith('.webmanifest')?'application/manifest+json':full.endsWith('.svg')?'image/svg+xml':full.endsWith('.html')?'text/html;charset=utf-8':'application/octet-stream';
    res.writeHead(200,{'Content-Type':type});res.end(data);
   });
  });
@@ -30,6 +30,14 @@ async function main(){
   const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
+  assert.equal(await page.locator('#sb92Tour').isVisible(),false);
+  await page.getByRole('button',{name:'آموزش اولین استفاده (۴ قدم)'}).click();
+  assert.equal(await page.locator('#sb92Tour').isVisible(),true);
+  assert.match(await page.locator('#sb92TourTitle').innerText(),/سبدتان/);
+  await page.locator('#sb92Tour .sb92-tour-actions button').last().click();
+  assert.match(await page.locator('#sb92TourTitle').innerText(),/قیمت‌ها/);
+  await page.getByRole('button',{name:'بستن راهنما'}).click();
+  assert.equal(await page.locator('#sb92Tour').isVisible(),false);
   await page.getByRole('button',{name:'آموزش سبد من'}).click();
   assert.equal(await page.locator('#sahambanGuideStepsV87 li').count(),3);
   await page.evaluate(()=>{location.hash='livePortfolioSection'});

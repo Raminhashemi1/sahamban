@@ -6,7 +6,7 @@ const sw=fs.readFileSync('sw.js','utf8');
 test('v90 unified palette loads last and works offline',()=>{
  assert.ok(html.indexOf('joyful-theme-v89.css')<html.indexOf('brand-theme-v90.css'));
  assert.ok(html.indexOf('brand-theme-v90.css')<html.indexOf('</head>'));
- assert.match(sw,/sahamban-static-v91-0/);
+ assert.match(sw,/sahamban-static-v92-0/);
  assert.match(sw,/brand-theme-v90\.css\?v=90\.0/);
 });
 test('v90 includes shared styles for form fields, module cards and holdings',()=>{
