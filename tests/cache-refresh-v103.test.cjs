@@ -43,5 +43,5 @@ test('v103 navigation remains network first and falls back to offline index only
  const request=async(path,mode)=>{let pending;events.fetch({request:{method:'GET',mode,url:root+path},respondWith:p=>pending=p});return pending};
  assert.equal((await request('index.html?version=103','navigate')).from,'offline-index');
  assert.equal((await request('update-notice-v103.js?v=103.0','no-cors')).from,'offline-update-script');
- assert.equal(await request('unavailable.js?v=103','no-cors'),undefined);
+ await assert.rejects(request('unavailable.js?v=103','no-cors'),/offline/);
 });
