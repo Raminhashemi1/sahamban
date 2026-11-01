@@ -80,6 +80,15 @@ async function main(){
   await page.locator('#sb88-tab-prices').click();
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable').count(),1);
+  // v98: mobile-friendly compact view affects only the visibility of table columns.
+  await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=false;});
+  assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table thead th:visible').count(),15);
+  await page.locator('#livePortfolioTable .sb98-view-button').first().click();
+  assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table thead th:visible').count(),4);
+  assert.equal(await page.locator('#livePortfolioTable .sb98-view-button').first().getAttribute('aria-pressed'),'true');
+  await page.locator('#livePortfolioTable .sb98-view-button').last().click();
+  assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table thead th:visible').count(),15);
+  await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=true;});
   await page.locator('#sb88-tab-overview').click();
   assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
   await page.evaluate(()=>{location.hash='brokerImportSection'});
