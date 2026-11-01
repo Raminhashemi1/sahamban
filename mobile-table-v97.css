@@ -1,0 +1,46 @@
+/* v97: improve mobile holdings table navigation without modifying financial data. */
+#livePortfolioTable{max-width:100%;min-width:0}
+#livePortfolioTable .portfolio-v61-scroll{
+ max-width:100%;width:100%;overflow-x:auto;overflow-y:visible;
+ overscroll-behavior-inline:contain;
+ -webkit-overflow-scrolling:touch;
+ scroll-padding-inline:72px;
+ scrollbar-width:thin;
+ scrollbar-color:#76b6c4 #102b43;
+ border:1px solid #53758b;border-radius:12px;
+ background:#10243d;
+}
+#livePortfolioTable .portfolio-v61-table{
+ width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;
+ font-variant-numeric:tabular-nums;
+}
+#livePortfolioTable .portfolio-v61-table th,
+#livePortfolioTable .portfolio-v61-table td{
+ padding:10px 12px;line-height:1.7;
+ border-bottom:1px solid #36526b;white-space:nowrap;
+}
+#livePortfolioTable .portfolio-v61-table th{
+ font-weight:700;background:#173550;color:#edf8ff;
+}
+#livePortfolioTable .portfolio-v61-table th:first-child,
+#livePortfolioTable .portfolio-v61-table td:first-child{
+ position:sticky;right:0;z-index:2;
+ background:#14344c;border-left:2px solid #56b4ab;
+ box-shadow:-3px 0 7px #07111f70;
+}
+#livePortfolioTable .portfolio-v61-table th:first-child{z-index:3;background:#1d4760}
+#livePortfolioTable .portfolio-v61-table tbody tr:focus-within td{background-color:#1e3b53}
+#livePortfolioTable .portfolio-v61-scroll:focus-visible{outline:3px solid #ffcf76;outline-offset:2px}
+#livePortfolioTable .portfolio-v61-scroll::-webkit-scrollbar{height:10px}
+#livePortfolioTable .portfolio-v61-scroll::-webkit-scrollbar-track{background:#102b43;border-radius:10px}
+#livePortfolioTable .portfolio-v61-scroll::-webkit-scrollbar-thumb{background:#76b6c4;border-radius:10px}
+@media(max-width:520px){
+ #livePortfolioTable .portfolio-v61-table th,
+ #livePortfolioTable .portfolio-v61-table td{padding:10px 9px;font-size:12px}
+ #livePortfolioTable .portfolio-v61-table th:first-child,
+ #livePortfolioTable .portfolio-v61-table td:first-child{min-width:68px}
+ #livePortfolioTable .portfolio-v61-scroll{scrollbar-width:auto}
+}
+@media(prefers-reduced-motion:reduce){
+ #livePortfolioTable .portfolio-v61-scroll{scroll-behavior:auto}
+}
