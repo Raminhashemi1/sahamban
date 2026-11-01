@@ -38,3 +38,6 @@ assert.ok(html.includes('portfolio-top-three-stress-v69.js?v=69.0'));
 
 assert.ok(html.includes('fundNavQualityV70'));
 assert.ok(html.includes('fund-nav-quality-v70.js?v=70.0'));
+
+assert.ok(html.includes('fundNavSourceAuditV71'));
+assert.ok(html.includes('fund-nav-source-audit-v71.js?v=71.0'));
