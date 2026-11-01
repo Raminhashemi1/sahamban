@@ -1,5 +1,5 @@
 'use strict';
-/* v84: daily read-only summary and in-memory mobile symbol search. Never persists portfolio data or makes requests. */
+/* v85: daily read-only summary and in-memory mobile symbol search. Never persists portfolio data or makes requests. */
 (()=>{
  const panel=document.getElementById('portfolioDailySummaryV83');
  if(!panel)return;
@@ -43,7 +43,10 @@
    const list=document.createElement('ul'),items=[];
    const ordered=[...bySymbol.entries()].sort((a,b)=>b[1].value-a[1].value);
    for(const [symbol,p] of ordered){
-    const li=document.createElement('li');li.textContent=symbol+' — '+format(p.price)+' ریال · تاریخ بازار: '+p.marketDate;
+    const li=document.createElement('li');li.className='portfolio-mobile-quote-v85';
+    const primary=document.createElement('span');primary.className='portfolio-mobile-quote-primary-v85';primary.textContent=symbol+' — '+format(p.price)+' ریال';li.append(primary);
+    const secondary=document.createElement('span');secondary.className='portfolio-mobile-quote-secondary-v85';secondary.textContent='ارزش دارایی: '+format(p.value)+' ریال · وزن سبد: '+format(p.value/total*100)+'٪';li.append(secondary);
+    const marketDate=document.createElement('span');marketDate.className='portfolio-mobile-quote-date-v85';marketDate.textContent='تاریخ بازار: '+p.marketDate;li.append(marketDate);
     list.append(li);items.push({symbol,li});
    }
    search.addEventListener('input',()=>{
