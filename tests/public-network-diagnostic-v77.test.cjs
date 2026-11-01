@@ -40,6 +40,6 @@ test('v77 pilot emits only sanitized probe statuses and uses public synthetic ti
 test('v77 scripts refresh in offline cache and diagnostic remains offline-only',()=>{
  assert.ok(html.includes('portfolio-pilot-v61.js?v=61.12'));assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.4'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));assert.ok(sw.includes('portfolio-diagnostic-v74.js?v=74.4'));
- assert.ok(sw.includes('sahamban-static-v82-0'));
+ assert.ok(sw.includes('sahamban-static-v83-0'));
  assert.doesNotMatch(diagnostic,/\bfetch\s*\(|localStorage|sessionStorage/);
 });
