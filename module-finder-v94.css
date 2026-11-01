@@ -1,0 +1,11 @@
+/* v94 home-only discovery without changing the financial module layout. */
+.sb94-finder{background:#102b43;border:1px solid #527f96;border-radius:14px;margin:0 0 12px;padding:12px 14px;color:#e4f4f7}
+.sb94-finder label{display:block;font-size:14px;font-weight:700;color:#a9ffe7;margin-bottom:8px}
+.sb94-finder-controls{display:flex;align-items:stretch;gap:8px}
+.sb94-finder input[type="search"]{flex:1;min-width:0;min-height:44px;border:1px solid #779ab2;border-radius:10px;background:#f7fbff;color:#102b43;font-size:14px;padding:9px 12px}
+.sb94-finder input[type="search"]::placeholder{color:#526477;opacity:1}
+.sb94-clear{min-height:44px;min-width:72px;padding:8px 12px;color:#fff}
+.sb94-finder-status{color:#e4f4f7;font-size:12px;line-height:1.7;margin:7px 0 0}
+.sb94-finder input:focus-visible,.sb94-finder button:focus-visible{outline:3px solid #ffcf76;outline-offset:2px}
+.sb92-home .sahamban-module-v87[hidden],.sb94-finder [hidden]{display:none!important}
+@media(max-width:360px){.sb94-finder{padding:10px}.sb94-finder-controls{gap:5px}.sb94-clear{min-width:64px;padding:8px 6px}}
