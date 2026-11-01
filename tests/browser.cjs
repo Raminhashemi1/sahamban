@@ -33,6 +33,20 @@ async function main(){
   // v96: shared card rhythm and touch targets apply without hiding modules.
   assert.equal(await page.locator('main>section.card').first().evaluate(el=>getComputedStyle(el).borderRadius!=='0px'),true);
   assert.equal(await page.locator('main>section.card button').first().evaluate(el=>parseFloat(getComputedStyle(el).minHeight)>=44),true);
+  // v97: verify 320/390/768px viewports and the original sticky symbol column.
+  for(const width of [320,390,768]){
+   await page.setViewportSize({width,height:800});
+   const status=await page.evaluate(()=>{
+    const scroll=document.querySelector('#livePortfolioTable .portfolio-v61-scroll');
+    const symbol=document.querySelector('#livePortfolioTable .portfolio-v61-table th:first-child');
+    const grid=document.getElementById('sahambanModulesV87');
+    return {overflow:getComputedStyle(scroll).overflowX,sticky:getComputedStyle(symbol).position,columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length};
+   });
+   assert.equal(status.overflow,'auto');
+   assert.equal(status.sticky,'sticky');
+   assert.equal(status.columns,width>=720?5:2);
+  }
+  await page.setViewportSize({width:1280,height:800});
   assert.equal(await page.locator('#sb92Tour').isVisible(),false);
   // v94: search is UI-only and restores all ten modules when cleared.
   await page.locator('#sb94ModuleSearch').fill('nav');
