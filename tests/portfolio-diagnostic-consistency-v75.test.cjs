@@ -31,6 +31,6 @@ test('v75 never copies holdings identifiers or numbers',async()=>{
  assert.doesNotMatch(a.copied[0],/عیار|20261030|95|100|12/);assert.match(a.copied[0],/dashboard_validation=verified/);
 });
 test('v75 module is versioned, cached and does not access network or storage',()=>{
- assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.2'));assert.ok(sw.includes('portfolio-diagnostic-v74.js?v=74.2'));
- assert.ok(sw.includes('sahamban-static-v76-0'));assert.doesNotMatch(source,/\bfetch\s*\(|localStorage|sessionStorage/);
+ assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.3'));assert.ok(sw.includes('portfolio-diagnostic-v74.js?v=74.3'));
+ assert.ok(sw.includes('sahamban-static-v77-0'));assert.doesNotMatch(source,/\bfetch\s*\(|localStorage|sessionStorage/);
 });
