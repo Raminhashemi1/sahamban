@@ -26,5 +26,5 @@ test('v62 fails closed on missing symbol classification',()=>{
 });
 test('v62 page and offline cache include the module and new cache namespace',()=>{
  assert.match(html,/id="riskAssetAllocationV62"/);assert.match(html,/portfolio-asset-allocation-v62\.js\?v=62\.0/);
- assert.match(sw,/sahamban-static-v89-0/);assert.match(sw,/portfolio-asset-allocation-v62\.js\?v=62\.0/);
+ assert.match(sw,/sahamban-static-v90-0/);assert.match(sw,/portfolio-asset-allocation-v62\.js\?v=62\.0/);
 });
