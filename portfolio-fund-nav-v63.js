@@ -6,6 +6,19 @@
  const panel=document.getElementById('riskFundNavPremiumV63');
  if(!panel)return;
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
+ // Defensive calendar validation at the final comparison boundary.
+ // Matching dates alone do not establish NAV/market synchronization.
+ const marketDay=value=>{
+  const s=String(value??'').trim();
+  if(!/^\\d{8}$/.test(s))return null;
+  const y=+s.slice(0,4),m=+s.slice(4,6),d=+s.slice(6,8);
+  const epoch=Date.UTC(y,m-1,d),dt=new Date(epoch);
+  return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d?epoch:null;
+ };
+ const tehranDay=()=>{
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
+  return Date.UTC(p.year,p.month-1,p.day);
+ };
  window.addEventListener('sahamban:verified-fund-nav-premium-v63',event=>{
   try{
    const quotes=event?.detail?.quotes;
@@ -20,6 +33,10 @@
     const price=Number(q.price),nav=Number(q.fundNav);
     if(!Number.isFinite(price)||price<=0||!Number.isFinite(nav)||nav<=0||!/^\d{8}$/.test(String(q.marketDate||''))||!/^\d{8}$/.test(String(q.fundNavDate||''))){stale.push({q,reason:'قیمت یا NAV معتبر/دارای تاریخ نیست'});continue;}
     if(q.marketDate!==q.fundNavDate){stale.push({q,reason:'تاریخ قیمت بازار و NAV یکسان نیست'});continue;}
+    const md=marketDay(q.marketDate),nd=marketDay(q.fundNavDate),today=tehranDay();
+    if(md===null||nd===null){stale.push({q,reason:'تاریخ تقویمی قیمت یا NAV نامعتبر است'});continue;}
+    const marketAge=Math.floor((today-md)/86400000),navAge=Math.floor((today-nd)/86400000);
+    if(marketAge<0||navAge<0||marketAge>7||navAge>7){stale.push({q,reason:'تاریخ قیمت یا NAV در آینده است یا بیش از ۷ روز قدمت دارد'});continue;}
     const premium=(price/nav-1)*100;
     if(!Number.isFinite(premium)){stale.push({q,reason:'محاسبه حباب معتبر نیست'});continue;}
     comparable.push({symbol:String(q.symbol),price,nav,difference:price-nav,premium,priceKind:String(q.priceKind||'قیمت بازار'),date:q.marketDate});
