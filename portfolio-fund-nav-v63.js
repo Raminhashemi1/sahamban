@@ -10,7 +10,7 @@
  // Matching dates alone do not establish NAV/market synchronization.
  const marketDay=value=>{
   const s=String(value??'').trim();
-  if(!/^\\d{8}$/.test(s))return null;
+  if(!/^\d{8}$/.test(s))return null;
   const y=+s.slice(0,4),m=+s.slice(4,6),d=+s.slice(6,8);
   const epoch=Date.UTC(y,m-1,d),dt=new Date(epoch);
   return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d?epoch:null;
