@@ -31,6 +31,14 @@ async function main(){
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
   assert.equal(await page.locator('#sb92Tour').isVisible(),false);
+  // v94: search is UI-only and restores all ten modules when cleared.
+  await page.locator('#sb94ModuleSearch').fill('nav');
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),1);
+  await page.locator('#sb94ModuleSearch').fill('بدون تطابق');
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),0);
+  assert.match(await page.locator('#sb94ModuleSearchStatus').innerText(),/پیدا نشد/);
+  await page.getByRole('button',{name:'پاک کردن'}).click();
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),10);
   await page.getByRole('button',{name:'آموزش اولین استفاده (۴ قدم)'}).click();
   assert.equal(await page.locator('#sb92Tour').isVisible(),true);
   assert.match(await page.locator('#sb92TourTitle').innerText(),/سبدتان/);
