@@ -43,7 +43,7 @@ test('v92 is safe, keyboard navigable and offline-ready',()=>{
  assert.match(css,/:focus-visible/);
  assert.match(html,/compact-dashboard-v92\.js\?v=92\.0/);
  assert.match(html,/compact-dashboard-v92\.css\?v=92\.0/);
- assert.match(sw,/sahamban-static-v92-0/);
+ assert.match(sw,/sahamban-static-v93-0/);
  assert.match(sw,/compact-dashboard-v92\.js\?v=92\.0/);
  assert.match(sw,/compact-dashboard-v92\.css\?v=92\.0/);
 });
