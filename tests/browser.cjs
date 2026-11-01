@@ -30,6 +30,9 @@ async function main(){
   const voiceBeforeBrokerImport=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),10);
+  // v96: shared card rhythm and touch targets apply without hiding modules.
+  assert.equal(await page.locator('main>section.card').first().evaluate(el=>getComputedStyle(el).borderRadius!=='0px'),true);
+  assert.equal(await page.locator('main>section.card button').first().evaluate(el=>parseFloat(getComputedStyle(el).minHeight)>=44),true);
   assert.equal(await page.locator('#sb92Tour').isVisible(),false);
   // v94: search is UI-only and restores all ten modules when cleared.
   await page.locator('#sb94ModuleSearch').fill('nav');
