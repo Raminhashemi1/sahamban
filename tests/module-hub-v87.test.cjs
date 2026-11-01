@@ -44,5 +44,5 @@ test('v87 supports deep links directly and all module ids are backed by HTML',()
  assert.match(html,/id="sahambanHubV87"/);assert.match(html,/id="sahambanModulesV87"/);
  assert.match(html,/module-hub-v87\.js\?v=87\.0/);
  for(const id of ['livePortfolioSection','brokerImportSection','portfolioSection','technicalAnalysisV50','marketSection','watchlistSection','professionalRiskV49'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(sw,/module-hub-v87\.js\?v=87\.0/);assert.match(sw,/sahamban-static-v89-0/);
+ assert.match(sw,/module-hub-v87\.js\?v=87\.0/);assert.match(sw,/sahamban-static-v90-0/);
 });
