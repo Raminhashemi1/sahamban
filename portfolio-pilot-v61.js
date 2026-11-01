@@ -520,6 +520,7 @@
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
     window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,fundNav:q.fundNav,fundNavDate:q.fundNavDate}))}}));
+   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-concentration-v68',{detail:{positions:holdings.map((h,i)=>({symbol:h.symbol,quantity:h.quantity,price:quotes[i].price,marketDate:quotes[i].marketDate,assetClass:quotes[i].assetClass}))}}));
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
    const investorFlow=await Promise.all(quotes.map(async q=>{
     try{
