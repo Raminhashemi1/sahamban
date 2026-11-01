@@ -83,9 +83,9 @@
   assessNav(navQuotes);
   // Export only a coarse categorical status, never individual positions or prices.
   const checked=Array.isArray(navQuotes)?navQuotes.filter(q=>q?.fundNavChecked===true):[];
-  const outcomes=new Set(['nav-verified','etf-verified-nav-missing','nav-date-invalid','identity-mismatch','request-failed']);
+  const outcomes=['nav-verified','etf-verified-nav-missing','nav-date-invalid','identity-mismatch','request-failed'];
   if(!checked.length)state.navProbe='not-run';
-  else if(checked.some(q=>!outcomes.has(q?.fundNavProbeStatus)))state.navProbe='incomplete';
+  else if(checked.some(q=>!outcomes.includes(q?.fundNavProbeStatus)))state.navProbe='incomplete';
   else if(checked.every(q=>q.fundNavProbeStatus==='nav-verified'))state.navProbe='verified';
   else if(checked.some(q=>q.fundNavProbeStatus==='nav-verified'))state.navProbe='mixed';
   else if(checked.every(q=>q.fundNavProbeStatus==='request-failed'))state.navProbe='request-failed';
