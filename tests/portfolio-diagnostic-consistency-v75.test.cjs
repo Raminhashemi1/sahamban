@@ -32,5 +32,5 @@ test('v75 never copies holdings identifiers or numbers',async()=>{
 });
 test('v75 module is versioned, cached and does not access network or storage',()=>{
  assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.4'));assert.ok(sw.includes('portfolio-diagnostic-v74.js?v=74.4'));
- assert.ok(sw.includes('sahamban-static-v83-0'));assert.doesNotMatch(source,/\bfetch\s*\(|localStorage|sessionStorage/);
+ assert.ok(sw.includes('sahamban-static-v84-0'));assert.doesNotMatch(source,/\bfetch\s*\(|localStorage|sessionStorage/);
 });
