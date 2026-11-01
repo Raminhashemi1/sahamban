@@ -63,6 +63,16 @@
   if(age>7)throw Error('قیمت قدیمی است؛ تاریخ آخرین بازار '+fmt(age)+' روز پیش است.');
   return s;
  }
+ // Parse optional ETF NAV HHMMSS as a strict clock; never claim time sync from a date alone.
+ function parseFundNavClock(raw){
+  if(raw===null||raw===undefined||raw==='')return '';
+  const value=String(raw).trim();
+  if(!/^\d{1,6}$/.test(value))throw Error('ساعت NAV معتبر نیست');
+  const hms=value.padStart(6,'0');
+  const h=Number(hms.slice(0,2)),m=Number(hms.slice(2,4)),s=Number(hms.slice(4,6));
+  if(h>=24||m>=60||s>=60)throw Error('ساعت NAV معتبر نیست');
+  return hms.slice(0,2)+':'+hms.slice(2,4)+':'+hms.slice(4,6);
+ }
  async function verifiedCode(holding,insCode){
   // The current-price endpoint is independent of delayed daily history.
   const result=await fetchJson('/ClosingPrice/GetClosingPriceInfo/'+insCode);
@@ -128,15 +138,7 @@
      if(Number.isFinite(nav)&&nav>0){
       try{
        const navDate=validDate(fund.deven);
-       let navClock='';
-       if(fund.hEven!==null&&fund.hEven!==undefined&&fund.hEven!==''){
-        const rawClock=String(fund.hEven).trim();
-        if(!/^\\d{1,6}$/.test(rawClock))throw Error('ساعت NAV معتبر نیست');
-        const clock=rawClock.padStart(6,'0');
-        const hh=Number(clock.slice(0,2)),mm=Number(clock.slice(2,4)),ss=Number(clock.slice(4,6));
-        if(hh>23||mm>59||ss>59)throw Error('ساعت NAV معتبر نیست');
-        navClock=clock.slice(0,2)+':'+clock.slice(2,4)+':'+clock.slice(4,6);
-       }
+       const navClock=parseFundNavClock(fund.hEven);
        quote.fundNav=nav;quote.fundNavDate=navDate;quote.fundNavTime=navClock;
        quote.fundNavStatus='NAV بازخرید با تاریخ معتبر تأیید شد؛ هم‌زمانی لحظه‌ای با قیمت بازار تأیید نشده';
       }catch(_invalidNavDate){quote.fundNavStatus='تاریخ یا ساعت NAV نامعتبر، آینده یا قدیمی است';}
@@ -535,7 +537,7 @@
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
-    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavChecked:q.instrumentFlow===18}))}}));
+    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,lastTradeTime:q.lastTradeTime,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavChecked:q.instrumentFlow===18}))}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-concentration-v68',{detail:{positions:holdings.map((h,i)=>({symbol:h.symbol,quantity:h.quantity,price:quotes[i].price,marketDate:quotes[i].marketDate,assetClass:quotes[i].assetClass}))}}));
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
    const investorFlow=await Promise.all(quotes.map(async q=>{

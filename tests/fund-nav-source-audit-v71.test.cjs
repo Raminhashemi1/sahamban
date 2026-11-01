@@ -24,6 +24,6 @@ test('v71 pilot accepts only strict positive numeric redemption NAV and verifies
 test('v71 is read-only and offline integrated',()=>{
  assert.doesNotMatch(src,/\bfetch\s*\(|localStorage|sessionStorage/);
  assert.match(html,/fundNavSourceAuditV71/);
- assert.match(html,/fund-nav-source-audit-v71\.js\?v=71\.0/);
- assert.match(sw,/fund-nav-source-audit-v71\.js\?v=71\.0/);
+ assert.match(html,/fund-nav-source-audit-v71\.js\?v=71\.1/);
+ assert.match(sw,/fund-nav-source-audit-v71\.js\?v=71\.1/);
 });
