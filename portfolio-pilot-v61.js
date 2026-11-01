@@ -114,19 +114,35 @@
    }
   }catch(_sectorError){quote.sectorCode='';quote.sectorName='';}
   quote.instrumentFlow=quote.instrumentFlow??quote.flow;
-  quote.assetClass='unknown';quote.assetClassLabel='نامشخص';quote.fundNav=null;
+  quote.assetClass='unknown';quote.assetClassLabel='نامشخص';quote.fundNav=null;quote.fundNavDate='';quote.fundNavTime='';quote.fundNavStatus='شناسه صندوق هنوز از منبع رسمی تأیید نشده';
   if(quote.instrumentFlow===18){
+   quote.fundNavStatus='در انتظار پاسخ معتبر صندوق از TSETMC';
    try{
     const fundResponse=await fetchJson('/Fund/GetETFByInsCode/'+encodeURIComponent(quote.insCode));
     const fund=fundResponse?.etf;
     if(fund&&String(fund.insCode??'')===String(quote.insCode)){
      quote.assetClass='fund_etf';quote.assetClassLabel='صندوق قابل معامله';
-     const nav=Number(fund.pRedTran);
-     quote.fundNav=Number.isFinite(nav)&&nav>0?nav:null;
-     quote.fundNavDate='';
-     if(quote.fundNav!==null){try{quote.fundNavDate=validDate(fund.deven);}catch(_navDateError){quote.fundNav=null;}}
-    }
-   }catch(_fundError){/* Unknown is safer than inferring from symbol text. */}
+     quote.fundNavStatus='NAV بازخرید موجود نیست یا عدد معتبر ندارد';
+     // Only TSETMC redemption NAV pRedTran; never substitute subscription NAV.
+     const nav=typeof fund.pRedTran==='number'?fund.pRedTran:null;
+     if(Number.isFinite(nav)&&nav>0){
+      try{
+       const navDate=validDate(fund.deven);
+       let navClock='';
+       if(fund.hEven!==null&&fund.hEven!==undefined&&fund.hEven!==''){
+        const rawClock=String(fund.hEven).trim();
+        if(!/^\\d{1,6}$/.test(rawClock))throw Error('ساعت NAV معتبر نیست');
+        const clock=rawClock.padStart(6,'0');
+        const hh=Number(clock.slice(0,2)),mm=Number(clock.slice(2,4)),ss=Number(clock.slice(4,6));
+        if(hh>23||mm>59||ss>59)throw Error('ساعت NAV معتبر نیست');
+        navClock=clock.slice(0,2)+':'+clock.slice(2,4)+':'+clock.slice(4,6);
+       }
+       quote.fundNav=nav;quote.fundNavDate=navDate;quote.fundNavTime=navClock;
+       quote.fundNavStatus='NAV بازخرید با تاریخ معتبر تأیید شد؛ هم‌زمانی لحظه‌ای با قیمت بازار تأیید نشده';
+      }catch(_invalidNavDate){quote.fundNavStatus='تاریخ یا ساعت NAV نامعتبر، آینده یا قدیمی است';}
+     }
+    }else{quote.fundNavStatus='ساختار پاسخ یا شناسه صندوق با درخواست تطبیق نداشت';}
+   }catch(_fundError){quote.fundNavStatus='سرویس NAV در دسترس نبود یا پاسخ معتبر نداد';}
   }else if(quote.instrumentTypeCode==='300'){quote.assetClass='equity';quote.assetClassLabel='سهام شرکت';}
   else if(quote.instrumentTypeCode==='301'){quote.assetClass='preemptive_right';quote.assetClassLabel='حق تقدم';}
   return quote;
@@ -519,7 +535,7 @@
    window.dispatchEvent(new CustomEvent('sahamban:portfolio-symbols-v50',{detail:{symbols:quotes.map(q=>q.symbol)}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-sectors-v50',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,sectorCode:q.sectorCode,sectorName:q.sectorName}))}}));
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
-    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,fundNav:q.fundNav,fundNavDate:q.fundNavDate}))}}));
+    window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus}))}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-concentration-v68',{detail:{positions:holdings.map((h,i)=>({symbol:h.symbol,quantity:h.quantity,price:quotes[i].price,marketDate:quotes[i].marketDate,assetClass:quotes[i].assetClass}))}}));
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
    const investorFlow=await Promise.all(quotes.map(async q=>{
