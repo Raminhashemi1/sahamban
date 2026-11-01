@@ -22,18 +22,18 @@
    let valid=0;
    const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
    const head=document.createElement('tr');
-   ['نماد','وضعیت شناسایی صندوق','NAV بازخرید (ریال)','تاریخ NAV','زمان NAV','گزارش اعتبار'].forEach(x=>append(head,'th',x));table.append(head);
+   ['نماد','وضعیت شناسایی صندوق','NAV بازخرید (ریال)','تاریخ NAV','ساعت آخرین معامله','ساعت NAV','گزارش اعتبار'].forEach(x=>append(head,'th',x));table.append(head);
    for(const q of funds){
     const verified=q.assetClass==='fund_etf';
     const nav=typeof q.fundNav==='number'&&Number.isFinite(q.fundNav)&&q.fundNav>0?q.fundNav:null;
     if(verified&&nav!==null&&/^\d{8}$/.test(String(q.fundNavDate||'')))valid++;
     const tr=document.createElement('tr');
-    [String(q.symbol||'نامشخص'),verified?'شناسه ETF تطبیق یافت':'پاسخ ETF تأیید نشد',nav===null?'ناموجود':fmt(nav),q.fundNavDate||'نامشخص',q.fundNavTime||'نامشخص',String(q.fundNavStatus||'دلیل عدم تأیید مشخص نیست')].forEach(x=>append(tr,'td',x));
+    [String(q.symbol||'نامشخص'),verified?'شناسه ETF تطبیق یافت':'پاسخ ETF تأیید نشد',nav===null?'ناموجود':fmt(nav),q.fundNavDate||'نامشخص',q.lastTradeTime&&q.lastTradeTime!=='نامشخص'?q.lastTradeTime:'نامشخص',q.fundNavTime||'نامشخص',String(q.fundNavStatus||'دلیل عدم تأیید مشخص نیست')].forEach(x=>append(tr,'td',x));
     table.append(tr);
    }
    append(panel,'p','پوشش NAV بازخرید معتبر: '+fmt(valid)+' از '+fmt(funds.length)+' تلاشِ مربوط به صندوق. اگر داده موجود نباشد، حباب صفر محسوب نمی‌شود.');
    panel.append(table);
-   append(panel,'p','توجه: این گزارش اتصال به سرویس TSETMC را از طرف شما شبیه‌سازی نمی‌کند. تا پیش از مشاهده پاسخ معتبر روی مرورگر و تاریخ برابر با قیمت بازار، هیچ حبابی نباید مبنای معامله قرار گیرد.');
+   append(panel,'p','توجه: یکسان بودن ساعت آخرین معامله و ساعت NAV نیز به‌تنهایی هم‌زمانی مؤثر برای معامله را تضمین نمی‌کند. این گزارش اتصال به سرویس TSETMC را از طرف شما شبیه‌سازی نمی‌کند. تا پیش از مشاهده پاسخ معتبر روی مرورگر و تاریخ برابر با قیمت بازار، هیچ حبابی نباید مبنای معامله قرار گیرد.');
   }catch(error){panel.textContent='گزارش منبع NAV آماده نشد: '+error.message+'؛ نتیجه تخمینی نمایش داده نمی‌شود.';}
  });
 })();
