@@ -20,7 +20,7 @@
     symbols.add(symbol);
     const value=p.quantity*p.price;total+=value;
     if(!Number.isSafeInteger(value)||!Number.isSafeInteger(total))throw Error('ارزش سبد از محدوده ایمن محاسبه خارج است');
-    return {symbol,value,marketDate:String(p.marketDate??'')};
+    return {symbol,value,price:p.price,marketDate:String(p.marketDate??'')};
    }).sort((a,b)=>b.value-a.value);
    const largest=rows[0],top=rows.slice(0,3),topSum=top.reduce((a,b)=>a+b.value,0);
    const pct=100*largest.value/total,concentration=100*topSum/total;
@@ -42,6 +42,7 @@
     fundSymbols.add(symbol);
     const position=rows.find(x=>x.symbol===symbol);
     if(String(q.marketDate??'')!==position.marketDate)throw Error('تاریخ NAV و سبد فعلی با هم مطابقت ندارند');
+    if(typeof q.price!=='number'||q.price!==position.price)throw Error('قیمت NAV و قیمت سبد فعلی با هم مطابقت ندارند');
     if(q.assetClass==='fund_etf'||q.fundNavChecked===true)funds.push(q);
    }
    let valid=0,unknown=0;
