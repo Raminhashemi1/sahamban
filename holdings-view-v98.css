@@ -1,0 +1,35 @@
+/* v98 presentation-only simple/full holdings view; no new financial computations. */
+#livePortfolioTable .sb98-view-controls{
+ display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+ padding:11px 12px;margin:12px 0 9px;border:1px solid #487c91;
+ border-radius:12px;background:#102d44;color:#effaff;
+}
+#livePortfolioTable .sb98-view-lead{flex:1 1 100%;font-size:13px;line-height:1.8;margin:0;color:#cfe7f0}
+#livePortfolioTable .sb98-view-button{
+ min-height:44px;min-width:106px;padding:9px 14px;
+ border:1px solid #568b9b;border-radius:10px;
+ background:#1b4355;color:#dcf7ef;font-weight:700;font-size:13px;
+}
+#livePortfolioTable .sb98-view-button[aria-pressed="true"]{
+ border-color:#42deb7;background:#35c7aa;color:#062c30;
+}
+#livePortfolioTable .sb98-view-button:focus-visible{outline:3px solid #ffcf76;outline-offset:3px}
+#livePortfolioTable .sb98-view-hint{flex:1 1 100%;font-size:12px;line-height:1.8;color:#d0e7f1;margin:0}
+#livePortfolioTable.sb98-compact .portfolio-v61-table tr > :not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(5)):not(:nth-child(10)){
+ display:none;
+}
+#livePortfolioTable.sb98-compact .portfolio-v61-table{width:100%;min-width:100%}
+#livePortfolioTable.sb98-compact .portfolio-v61-table th,
+#livePortfolioTable.sb98-compact .portfolio-v61-table td{
+ white-space:normal;overflow-wrap:anywhere;
+}
+@media(max-width:520px){
+ #livePortfolioTable .sb98-view-controls{padding:10px;gap:7px}
+ #livePortfolioTable .sb98-view-button{flex:1 1 0;min-width:0}
+ #livePortfolioTable.sb98-compact .portfolio-v61-table th,
+ #livePortfolioTable.sb98-compact .portfolio-v61-table td{font-size:11px;padding:9px 6px}
+}
+@media(max-width:360px){
+ #livePortfolioTable.sb98-compact .portfolio-v61-table th,
+ #livePortfolioTable.sb98-compact .portfolio-v61-table td{font-size:10px;padding:8px 4px}
+}
