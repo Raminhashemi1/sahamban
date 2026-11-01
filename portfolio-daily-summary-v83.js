@@ -1,5 +1,5 @@
 'use strict';
-/* v83: daily read-only summary. Never persists portfolio data or makes requests. */
+/* v84: daily read-only summary and in-memory mobile symbol search. Never persists portfolio data or makes requests. */
 (()=>{
  const panel=document.getElementById('portfolioDailySummaryV83');
  if(!panel)return;
@@ -35,8 +35,23 @@
    add(panel,'p',dates.size===1?'تاریخ بازار نمادها: '+[...dates][0]+'؛ قیمت‌ها الزاماً لحظه‌ای نیستند.':'هشدار: تاریخ بازار نمادها متفاوت است؛ هر ردیف باید جداگانه بررسی شود.');
    const jump=document.createElement('a');jump.href='#livePortfolioTable';jump.textContent='رفتن به جدول کامل قیمت‌ها';panel.append(jump);
    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='نمایش فهرست سریع '+format(seen.size)+' نماد و قیمت مبنا';details.append(summary);
-   const list=document.createElement('ul');
-   for(const [symbol,p] of bySymbol){const li=document.createElement('li');li.textContent=symbol+' — '+format(p.price)+' ریال (تاریخ '+p.marketDate+')';list.append(li);}
+   const searchLabel=document.createElement('label');searchLabel.textContent='جست‌وجوی نماد در فهرست (فقط همین گوشی)';
+   searchLabel.htmlFor='portfolioQuickSearchV84';details.append(searchLabel);
+   const search=document.createElement('input');search.id='portfolioQuickSearchV84';search.type='search';
+   search.autocomplete='off';search.placeholder='مثلاً عیار یا فولاد';details.append(search);
+   const help=document.createElement('p');help.textContent='مرتب‌شده بر اساس ارزش روز هر دارایی، از بیشتر به کمتر. '+format(bySymbol.size)+' نماد نمایش داده می‌شود.';details.append(help);
+   const list=document.createElement('ul'),items=[];
+   const ordered=[...bySymbol.entries()].sort((a,b)=>b[1].value-a[1].value);
+   for(const [symbol,p] of ordered){
+    const li=document.createElement('li');li.textContent=symbol+' — '+format(p.price)+' ریال · تاریخ بازار: '+p.marketDate;
+    list.append(li);items.push({symbol,li});
+   }
+   search.addEventListener('input',()=>{
+    const term=String(search.value??'').trim().toLocaleLowerCase('fa-IR');
+    let visible=0;
+    for(const row of items){const found=row.symbol.toLocaleLowerCase('fa-IR').includes(term);row.li.hidden=!found;if(found)visible++;}
+    help.textContent=visible?format(visible)+' نماد از '+format(items.length)+' نماد نمایش داده می‌شود.':'نمادی با این نام در فهرست فعلی پیدا نشد.';
+   });
    details.append(list);panel.append(details);
    add(panel,'p','مبنای قیمت: آخرین معامله در صورت وجود، وگرنه قیمت پایانی؛ ارزش‌گذاری توصیفی و بدون کارمزد و مالیات.');
   }catch(_){
