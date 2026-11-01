@@ -68,10 +68,23 @@
   list.replaceChildren(fragment);
   showMode();
  }
- // Build duplicate card DOM only while needed; table mode keeps zero copied rows.
+ // Coalesce bursts of row updates into a single frame. Never alter source rows.
+ let queued=false;
  function sync(){
-  if(mode==='cards')render();
-  else{list.replaceChildren();showMode();}
+  if(mode==='cards'){
+   // Update navigation state synchronously; defer only expensive DOM cloning.
+   showMode();
+   if(queued)return;
+   queued=true;
+   const schedule=typeof requestAnimationFrame==='function'?requestAnimationFrame:callback=>callback();
+   schedule(()=>{
+    queued=false;
+    if(mode==='cards')render();
+   });
+  }else{
+   list.replaceChildren();
+   showMode();
+  }
  }
  cardsButton.addEventListener('click',()=>{mode='cards';sync();});
  tableButton.addEventListener('click',()=>{mode='table';sync();});
