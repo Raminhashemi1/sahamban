@@ -27,5 +27,5 @@ test('v63 does not compare non-funds or missing NAV values',()=>{
 });
 test('v63 is integrated and cached offline',()=>{
  assert.ok(html.includes('riskFundNavPremiumV63'));assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.0'));
- assert.ok(sw.includes('sahamban-static-v75-0'));assert.ok(sw.includes('portfolio-fund-nav-v63.js?v=63.0'));
+ assert.ok(sw.includes('sahamban-static-v76-0'));assert.ok(sw.includes('portfolio-fund-nav-v63.js?v=63.0'));
 });

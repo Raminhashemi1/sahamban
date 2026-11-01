@@ -6,10 +6,11 @@
  const panel=document.getElementById('portfolioDiagnosticV74');
  if(!panel)return;
  const report=document.createElement('pre'),status=document.createElement('p'),copy=document.createElement('button');
- const state={quotes:'not-run',nav:'not-run',dashboard:'not-run'};
+ const state={refresh:'not-run',quotes:'not-run',nav:'not-run',dashboard:'not-run'};
  let navQuotes=null,positions=null;
  const text=()=>[
   'Sahamban technical status v75',
+  'market_refresh='+state.refresh,
   'quote_validation='+state.quotes,
   'nav_validation='+state.nav,
   'dashboard_validation='+state.dashboard,
@@ -52,6 +53,20 @@
  copy.type='button';copy.textContent='کپی گزارش فنی بدون اطلاعات سبد';
  status.textContent='گزارش فقط وضعیت‌های کلی را نشان می‌دهد. کپی و ارسال کاملاً اختیاری است؛ هیچ داده‌ای خودکار ارسال یا ذخیره نمی‌شود.';
  panel.append(copy,report,status);
+ window.addEventListener('sahamban:portfolio-refresh-status-v76',event=>{
+  const stage=event?.detail?.status;
+  const reason=event?.detail?.reason;
+  if(stage==='started'){
+   navQuotes=null;positions=null;
+   state.refresh='in-progress';state.quotes='not-run';state.nav='not-run';state.dashboard='not-run';
+  }else if(stage==='failed'&&(reason==='partial'||reason==='exception')){
+   navQuotes=null;positions=null;
+   state.refresh='failed';state.quotes='incomplete';state.nav='not-run';state.dashboard='not-run';
+  }else if(stage==='completed'&&state.refresh==='in-progress'&&state.dashboard==='verified'){
+   state.refresh='completed';
+  }
+  render();
+ });
  window.addEventListener('sahamban:verified-fund-nav-premium-v63',event=>{
   navQuotes=event?.detail?.quotes??null;
   positions=null;

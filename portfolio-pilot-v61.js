@@ -507,7 +507,10 @@
  });
  async function refreshLiveQuotes(){
   if(running)return;
-  running=true;$('livePortfolioRefresh').disabled=true;$('livePortfolioTable').hidden=true;
+  running=true;
+  // Diagnostic lifecycle contains fixed categories only: never send holdings or quote details.
+  const refreshStatus=(status,reason)=>window.dispatchEvent(new CustomEvent('sahamban:portfolio-refresh-status-v76',{detail:{status,reason}}));
+  refreshStatus('started','none');$('livePortfolioRefresh').disabled=true;$('livePortfolioTable').hidden=true;
   $('livePortfolioSummary').textContent='';$('livePortfolioMeta').textContent='';
   try{
    const holdings=readHoldings();
@@ -525,6 +528,7 @@
    const failed=outcomes.filter(x=>!x.ok);
    if(failed.length){
     const list=failed.map(x=>x.symbol+': '+x.error).join('؛ ');
+    refreshStatus('failed','partial');
     say('به‌روزرسانی کامل نشد ('+fmt(failed.length)+' از '+fmt(holdings.length)+' نماد). برای جلوگیری از جمع ناقص یا قیمت گمراه‌کننده، ارزش کل جدید محاسبه نشد. '+list+' هیچ تعداد یا میانگین خریدی تغییر نکرد.');
     return;
    }
@@ -539,6 +543,7 @@
   window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-asset-types-v62',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,assetClassLabel:q.assetClassLabel,fundNav:q.fundNav}))}}));
     window.dispatchEvent(new CustomEvent('sahamban:verified-fund-nav-premium-v63',{detail:{quotes:quotes.map(q=>({symbol:q.symbol,insCode:q.insCode,assetClass:q.assetClass,price:q.price,priceKind:q.priceKind,marketDate:q.marketDate,lastTradeTime:q.lastTradeTime,fundNav:q.fundNav,fundNavDate:q.fundNavDate,fundNavTime:q.fundNavTime,fundNavStatus:q.fundNavStatus,fundNavChecked:q.instrumentFlow===18}))}}));
    window.dispatchEvent(new CustomEvent('sahamban:verified-portfolio-concentration-v68',{detail:{positions:holdings.map((h,i)=>({symbol:h.symbol,quantity:h.quantity,price:quotes[i].price,marketDate:quotes[i].marketDate,assetClass:quotes[i].assetClass}))}}));
+   refreshStatus('completed','none');
    // Investor-type flow is fetched separately; a failure never invalidates verified prices.
    const investorFlow=await Promise.all(quotes.map(async q=>{
     try{
@@ -553,6 +558,7 @@
 
    say('دریافت قیمت جاری همه '+fmt(holdings.length)+' نماد موفق بود. نتیجه فقط روی همین صفحه محاسبه شد؛ هیچ داده‌ای در حافظه مرورگر ذخیره یا تغییر نکرد. تاریخ قیمت هر نماد در جدول مشخص است.');
   }catch(e){
+   refreshStatus('failed','exception');
    say('به‌روزرسانی انجام نشد: '+e.message+'. قیمت قبلی به‌عنوان قیمت جدید معرفی نمی‌شود و اطلاعات دارایی‌ها تغییر نمی‌کنند.');
   }finally{running=false;$('livePortfolioRefresh').disabled=false;}
  }
