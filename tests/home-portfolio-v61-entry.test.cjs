@@ -46,4 +46,4 @@ assert.ok(html.includes('portfolioStatusDashboardV73'));
 assert.ok(html.includes('portfolio-status-dashboard-v73.js?v=73.0'));
 
 assert.ok(html.includes('portfolioDiagnosticV74'));
-assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.0'));
+assert.ok(html.includes('portfolio-diagnostic-v74.js?v=74.1'));
