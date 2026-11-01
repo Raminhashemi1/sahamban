@@ -21,7 +21,7 @@ test('v99 preserves a complete table and 15 pre-existing column labels',()=>{
  assert.match(css,/min-height:44px/);
 });
 test('v99 JS and CSS are served and precached for offline access',()=>{
- for(const asset of ['holdings-cards-v99.js?v=99.0','holdings-cards-v99.css?v=99.0']){
+ for(const asset of ['holdings-cards-v99.js?v=99.1','holdings-cards-v99.css?v=99.0']){
   assert.ok(html.includes(asset));assert.ok(sw.includes(asset));
  }
 });

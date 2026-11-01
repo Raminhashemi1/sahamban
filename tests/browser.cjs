@@ -99,8 +99,10 @@ async function main(){
    for(let i=0;i<15;i++){const td=document.createElement('td');td.textContent=i===0?'نماد آزمایشی':String(i);tr.append(td);}
    body.append(tr);
   });
-  await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===1);
+  // v101: while in table mode, duplicate card elements are not constructed.
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
   await page.locator('#livePortfolioTable .sb99-mode').first().click();
+  await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===1);
   assert.equal(await page.locator('#livePortfolioTable .sb98-view-controls').isVisible(),false);
   assert.equal(await page.locator('#livePortfolioTable .sb99-card:visible').count(),1);
   assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),4);
@@ -108,6 +110,7 @@ async function main(){
   assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd:visible').count(),11);
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table th').count(),15);
   await page.locator('#livePortfolioTable .sb99-mode').last().click();
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
   assert.equal(await page.locator('#livePortfolioTable .sb98-view-controls').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-scroll').isVisible(),true);
   await page.locator('#livePortfolioRows').evaluate(body=>body.replaceChildren());
