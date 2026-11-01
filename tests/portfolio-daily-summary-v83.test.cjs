@@ -34,13 +34,13 @@ test('v83 clears previous values on a new refresh and failed requests',()=>{
 });
 test('v83 does not access storage or network, and is offline bundled',()=>{
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest/);
- assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.1/);
- assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.1/);assert.match(sw,/sahamban-static-v84-0/);
+ assert.match(html,/id="portfolioDailySummaryV83"/);assert.match(html,/portfolio-daily-summary-v83\.js\?v=83\.2/);
+ assert.match(sw,/portfolio-daily-summary-v83\.js\?v=83\.2/);assert.match(sw,/sahamban-static-v85-0/);
 });
 
 test('v84 sorts quick quote rows by market value and searches locally without changing totals',()=>{
  const a=run();a.send(refresh,{status:'started'});a.send(nav,{quotes});a.send(pos,{positions});a.send(refresh,{status:'completed'});
- const list=a.find(x=>x.tag==='ul');assert.ok(list);assert.match(list.children[0].textContent,/عیار/);
+ const list=a.find(x=>x.tag==='ul');assert.ok(list);assert.match(a.text(),/عیار/);assert.match(list.children[0].children[0].textContent,/عیار/);
  const input=a.find(x=>x.tag==='input');assert.ok(input);assert.equal(input.type,'search');
  input.value='فولاد';input.handlers.input();
  assert.equal(list.children[0].hidden,true);assert.equal(list.children[1].hidden,false);
@@ -54,4 +54,18 @@ test('v84 search control is reset on a failed or new refresh',()=>{
  assert.ok(a.find(x=>x.tag==='input'));
  a.send(refresh,{status:'started'});assert.equal(a.find(x=>x.tag==='input'),undefined);
  a.send(refresh,{status:'failed'});assert.match(a.text(),/نتیجه قبلی پاک/);
+});
+
+test('v85 displays market price, holding value and weight as separate readable card lines',()=>{
+ const a=run();a.send(refresh,{status:'started'});a.send(nav,{quotes});a.send(pos,{positions});a.send(refresh,{status:'completed'});
+ const list=a.find(x=>x.tag==='ul');
+ assert.equal(list.children.length,2);
+ const ayar=list.children[0],foolad=list.children[1];
+ assert.equal(ayar.className,'portfolio-mobile-quote-v85');
+ assert.match(ayar.children[0].textContent,/عیار.*۱۰۰ ریال/);
+ assert.match(ayar.children[1].textContent,/ارزش دارایی: ۹۰۰ ریال/);
+ assert.match(ayar.children[1].textContent,/وزن سبد:/);
+ assert.match(ayar.children[2].textContent,/۲۰۲۶۱۱۰۱/);
+ assert.match(foolad.children[1].textContent,/۴۰۰ ریال/);
+ assert.match(a.text(),/۱٬۳۰۰/);
 });
