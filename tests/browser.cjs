@@ -113,8 +113,38 @@ async function main(){
   assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
   assert.equal(await page.locator('#livePortfolioTable .sb98-view-controls').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-scroll').isVisible(),true);
+  // v102: verify the maximum 100-row UI report and a burst of replacements.
+  await page.locator('#livePortfolioRows').evaluate(body=>{
+   const fragment=document.createDocumentFragment();
+   for(let i=0;i<100;i++){
+    const row=document.createElement('tr');
+    for(let j=0;j<15;j++){
+     const cell=document.createElement('td');
+     cell.textContent=j===0?'نماد '+i:String(i)+'-'+j;
+     row.append(cell);
+    }
+    fragment.append(row);
+   }
+   body.replaceChildren(fragment);
+  });
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
+  await page.locator('#livePortfolioTable .sb99-mode').first().click();
+  await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===100);
+  assert.equal(await page.locator('#livePortfolioTable .sb99-fields:not(.sb99-extra) dd').count(),400);
+  assert.equal(await page.locator('#livePortfolioTable .sb99-extra dd').count(),1100);
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card').last().locator('h4').innerText(),'نماد 99');
+  await page.locator('#livePortfolioRows').evaluate(body=>{
+   body.replaceChildren();
+   const row=document.createElement('tr');
+   for(let i=0;i<15;i++){const td=document.createElement('td');td.textContent=i===0?'آخرین تغییر':String(i);row.append(td);}
+   body.append(row);
+  });
+  await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===1);
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card h4').innerText(),'آخرین تغییر');
   await page.locator('#livePortfolioRows').evaluate(body=>body.replaceChildren());
   await page.waitForFunction(()=>document.querySelectorAll('#livePortfolioTable .sb99-card').length===0);
+  await page.locator('#livePortfolioTable .sb99-mode').last().click();
+  assert.equal(await page.locator('#livePortfolioTable .sb99-card').count(),0);
   await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=true;});
   await page.locator('#sb88-tab-overview').click();
   assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
