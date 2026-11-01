@@ -41,3 +41,6 @@ assert.ok(html.includes('fund-nav-quality-v70.js?v=70.0'));
 
 assert.ok(html.includes('fundNavSourceAuditV71'));
 assert.ok(html.includes('fund-nav-source-audit-v71.js?v=71.1'));
+
+assert.ok(html.includes('portfolioStatusDashboardV73'));
+assert.ok(html.includes('portfolio-status-dashboard-v73.js?v=73.0'));
