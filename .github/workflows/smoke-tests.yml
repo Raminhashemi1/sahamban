@@ -43,3 +43,33 @@ jobs:
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 7
+
+  webkit-mobile-preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps webkit
+      - run: node tests/ios-webkit-v106.cjs
+      - name: Save simulated WebKit results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-webkit-mobile-preflight
+          path: test-artifacts/webkit-v106-report.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Save WebKit failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-webkit-failure
+          path: test-artifacts/webkit-*.png
+          if-no-files-found: ignore
+          retention-days: 7
