@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/smoke.cjs
-      - run: node --test tests/compact-dashboard-v92.test.cjs tests/beginner-experience-v93.test.cjs tests/module-finder-v94.test.cjs tests/beginner-reading-v95.test.cjs tests/visual-consistency-v96.test.cjs tests/mobile-table-v97.test.cjs tests/holdings-view-v98.test.cjs tests/holdings-cards-v99.test.cjs tests/ux-milestone-v100.test.cjs tests/mobile-performance-v101.test.cjs tests/browser-perf-v102.test.cjs
+      - run: node --test tests/compact-dashboard-v92.test.cjs tests/beginner-experience-v93.test.cjs tests/module-finder-v94.test.cjs tests/beginner-reading-v95.test.cjs tests/visual-consistency-v96.test.cjs tests/mobile-table-v97.test.cjs tests/holdings-view-v98.test.cjs tests/holdings-cards-v99.test.cjs tests/ux-milestone-v100.test.cjs tests/mobile-performance-v101.test.cjs tests/browser-perf-v102.test.cjs tests/update-notice-v103.test.cjs tests/cache-refresh-v103.test.cjs
       - run: node tests/sw-offline.cjs
       - run: node tests/market-validation.cjs
       - run: node tests/live-market-connectivity.cjs
