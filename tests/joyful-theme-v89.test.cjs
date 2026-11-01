@@ -14,6 +14,6 @@ test('v89 keeps palette distinct and does not recolor semantic P/L values',()=>{
 test('v89 theme loads after base style and remains available offline',()=>{
  assert.ok(html.indexOf('</style>')<html.indexOf('joyful-theme-v89.css'));
  assert.ok(html.indexOf('joyful-theme-v89.css')<html.indexOf('</head>'));
- assert.match(sw,/sahamban-static-v91-0/);
+ assert.match(sw,/sahamban-static-v92-0/);
  assert.match(sw,/joyful-theme-v89\.css\?v=89\.0/);
 });
