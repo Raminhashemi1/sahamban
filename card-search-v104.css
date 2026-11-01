@@ -1,0 +1,17 @@
+/* v104: accessible, privacy-preserving search of already-rendered holdings cards. */
+#livePortfolioTable .sb104-card-filter{
+ display:grid;gap:8px;margin:10px 0;padding:12px;
+ border:1px solid #487c91;border-radius:13px;background:#102d44;
+}
+#livePortfolioTable:not(.sb99-card-mode) .sb104-card-filter{display:none!important}
+#livePortfolioTable .sb104-card-filter label{margin:0;line-height:1.7;font-size:13px;color:#d6ebf1}
+#livePortfolioTable .sb104-filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#livePortfolioTable .sb104-filter-row input{min-width:0;flex:1 1 155px;min-height:44px}
+#livePortfolioTable .sb104-filter-row button{min-height:44px;flex:0 1 auto;padding:10px 13px}
+#livePortfolioTable .sb104-filter-status{font-size:12px;line-height:1.8;margin:0;color:#cce3ef}
+#livePortfolioTable .sb99-card[hidden]{display:none!important}
+#livePortfolioTable .sb104-filter-row :focus-visible{outline:3px solid #ffcf76;outline-offset:2px}
+@media(max-width:360px){
+ #livePortfolioTable .sb104-card-filter{padding:10px}
+ #livePortfolioTable .sb104-filter-row button{flex:1 1 100%}
+}
