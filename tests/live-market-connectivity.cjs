@@ -11,7 +11,7 @@ function recordOutcome(status,details={}){
  const output={
   status,checked_at:new Date().toISOString(),timezone:'Asia/Tehran',
   source:API,symbol,
-  scope:'Read-only public quote diagnostic. A PASS requires the active Tehran session, today's market date, a trade within 15 minutes and matching daily history; this is not physical-device field acceptance.',
+  scope:'Read-only public quote diagnostic. A PASS requires the active Tehran session, the current Tehran market date, a trade within 15 minutes and matching daily history; this is not physical-device field acceptance.',
   ...details
  };
  fs.mkdirSync('test-artifacts',{recursive:true});
