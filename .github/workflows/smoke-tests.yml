@@ -45,10 +45,19 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - run: npm install --no-save playwright@1.56.1
+      - run: npm install --no-save playwright@1.56.1 axe-core@4.10.3
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser.cjs
       - run: node tests/holdings-ui-matrix-v117.cjs
+      - run: node tests/portfolio-axe-v118.cjs
+      - name: Preserve WCAG audit Chromium findings
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-a11y-chromium-v118
+          path: test-artifacts/a11y-v118-chromium.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save synthetic Chromium holdings UI matrix result
         if: always()
         uses: actions/upload-artifact@v6
