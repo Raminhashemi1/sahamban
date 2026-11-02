@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1830">
+<meta name="description" content="راهنمای نصب وب‌اپ سهام‌بان روی اندروید و آیفون">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="سهام‌بان">
+<title>نصب سهام‌بان روی گوشی | وب‌اپ رسمی</title>
+<style>
+:root{color-scheme:dark;font-family:Tahoma,Arial,sans-serif;background:#081326;color:#eff8fd}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(150deg,#081326,#15334b)}
+main{max-width:720px;margin:auto;padding:24px 18px 70px}
+header{display:flex;align-items:center;gap:14px;margin:0 0 24px}
+header img{width:60px;height:60px;border-radius:14px}
+h1{font-size:clamp(24px,6vw,33px);margin:0 0 5px}
+h2{font-size:19px;margin:0 0 12px}
+p,li{line-height:2}
+p{margin:8px 0}
+.muted{color:#bfd6e3}
+.panel{padding:18px;border:1px solid #416b81;background:#112c44;border-radius:18px;margin:16px 0}
+ol{padding-inline-start:26px;margin:8px 0 0}
+li{padding:6px 0}
+a,button{font:inherit;font-weight:700;min-height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;text-decoration:none}
+.action{background:#35c7aa;color:#062e30;border:1px solid #35c7aa}
+.secondary{background:#254761;color:#f1faff;border:1px solid #628ba2}
+nav{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{cursor:pointer}
+button[hidden]{display:none}
+a:focus-visible,button:focus-visible{outline:3px solid #ffcf76;outline-offset:3px}
+.note{border-inline-start:4px solid #ffcf76;padding:8px 14px;background:#232b3b}
+#installStatus{min-height:2em}
+@media(max-width:360px){main{padding-inline:12px}.panel{padding:14px}nav>a,button{width:100%}}
+</style>
+</head>
+<body>
+<main id="mainContent">
+<header><img src="./icon-192.png" alt="" width="60" height="60"><div><h1>نصب سهام‌بان</h1><p class="muted">وب‌اپ رسمی سهام‌بان — نصب روی صفحهٔ اصلی گوشی</p></div></header>
+<section class="panel" aria-labelledby="installTitle">
+<h2 id="installTitle">آمادهٔ نصب بدون فایل APK</h2>
+<p>سهام‌بان یک وب‌اپ نصب‌شونده (PWA) است. با افزودن آن به صفحهٔ اصلی، می‌توانید مانند یک برنامهٔ مستقل بازش کنید.</p>
+<p id="installStatus" role="status" aria-live="polite">اگر دکمهٔ نصب خودکار نمایش داده نشد، مراحل مرورگر را در پایین انجام دهید.</p>
+<button id="installAction" type="button" class="action" hidden>نصب سهام‌بان</button>
+<nav aria-label="پیوندهای اصلی"><a class="action" href="./index.html">باز کردن سهام‌بان</a><a class="secondary" href="https://github.com/Raminhashemi1/sahamban" rel="noopener noreferrer">مخزن رسمی پروژه</a></nav>
+</section>
+<section class="panel" aria-labelledby="androidTitle">
+<h2 id="androidTitle">نصب روی اندروید (Chrome)</h2>
+<ol><li>همین صفحه را در Chrome باز کنید.</li><li>اگر دکمهٔ «نصب سهام‌بان» بالا ظاهر شد، آن را بزنید و نصب را تأیید کنید.</li><li>در غیر این صورت، منوی سه‌نقطهٔ Chrome را باز کنید و «Install app / نصب برنامه» یا «Add to Home screen / افزودن به صفحهٔ اصلی» را انتخاب کنید.</li><li>از آیکون سهام‌بان روی صفحهٔ اصلی گوشی وارد برنامه شوید.</li></ol>
+</section>
+<section class="panel" aria-labelledby="iosTitle">
+<h2 id="iosTitle">نصب روی آیفون (Safari)</h2>
+<ol><li>این لینک را در Safari باز کنید.</li><li>دکمهٔ اشتراک‌گذاری (Share) را بزنید.</li><li>گزینهٔ «Add to Home Screen / افزودن به صفحهٔ اصلی» را انتخاب کنید و سپس Add را بزنید.</li><li>از آیکون سهام‌بان در صفحهٔ اصلی وارد شوید.</li></ol>
+</section>
+<section class="panel" aria-labelledby="privacyTitle">
+<h2 id="privacyTitle">پیش از استفاده</h2>
+<p>سهام‌بان یک ابزار آزمایشی مدیریت ریسک و مشاهدهٔ سبد است؛ قیمت‌های جاری و تاریخچه همیشه در دسترس یا تأییدشده نیستند و هشدارها در پس‌زمینه به‌صورت دائمی اجرا نمی‌شوند.</p>
+<p class="note">اطلاعات سبد روی همان مرورگر/دستگاه ذخیره می‌شود. قبل از تغییر گوشی، پاک‌کردن داده‌های مرورگر یا نصب مجدد، از اطلاعات خود نسخهٔ پشتیبان بگیرید. نصب روی صفحهٔ اصلی به معنی انتقال خودکار داده‌های قبلی نیست.</p>
+</section>
+</main>
+<script>
+'use strict';
+(()=>{
+ const button=document.getElementById('installAction');
+ const status=document.getElementById('installStatus');
+ let pending=null;
+ const standalone=()=>window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true;
+ if(standalone()){status.textContent='سهام‌بان از حالت نصب‌شده اجرا شده است.';}
+ window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  if(standalone())return;
+  pending=event;
+  button.hidden=false;
+  status.textContent='امکان نصب مستقیم در این مرورگر فراهم است؛ دکمهٔ نصب را بزنید.';
+ });
+ button.addEventListener('click',async()=>{
+  if(!pending)return;
+  const event=pending;pending=null;button.hidden=true;
+  try{
+   await event.prompt();
+   const choice=await event.userChoice;
+   status.textContent=choice?.outcome==='accepted'
+    ?'درخواست نصب پذیرفته شد؛ تکمیل نصب را در مرورگر بررسی کنید.'
+    :'نصب لغو شد؛ می‌توانید از منوی مرورگر استفاده کنید.';
+  }catch(e){
+   status.textContent='نصب خودکار در این مرورگر ممکن نشد؛ از منوی مرورگر استفاده کنید.';
+  }
+ });
+ window.addEventListener('appinstalled',()=>{
+  pending=null;button.hidden=true;
+  status.textContent='نصب برنامه توسط مرورگر گزارش شد. آیکون سهام‌بان را در صفحهٔ اصلی بررسی کنید.';
+ });
+ if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+   navigator.serviceWorker.register('./sw.js').catch(()=>{
+    status.textContent='ثبت حالت آفلاین در این مرورگر ممکن نشد؛ برای استفاده به اتصال اینترنت نیاز دارید.';
+   });
+  });
+ }
+})();
+</script>
+</body>
+</html>
