@@ -3,6 +3,7 @@
 // It uses one public instrument only and never reads browser storage or user holdings.
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const {classifyTehranQuoteFreshness}=require('./market-freshness-v111.cjs');
 
 const API='https://cdn.tsetmc.com/api';
 const symbol='فولاد';
@@ -23,7 +24,7 @@ async function get(path){
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),12000);
  try{
-  const response=await fetch(API+path,{method:'GET',cache:'no-store',signal:controller.signal,headers:{accept:'application/json'}});
+  const response=await fetch(API+path,{method:'GET',cache:'no-store',signal:controller.signal,headers:{accept:'application/json','user-agent':'Mozilla/5.0'}});
   assert.equal(response.ok,true,'TSETMC HTTP '+response.status+' for '+path);
   assert.match(response.headers.get('content-type')||'',/json/i,'TSETMC response is not JSON');
   return await response.json();
@@ -65,12 +66,28 @@ function dateAge(date){
    const rows=history.filter(x=>String(x?.dEven??'')===date&&number(x?.pClosing)===price);
    const clean=history.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(number(x?.pClosing))&&number(x.pClosing)>0);
    const unique=new Set(clean.map(x=>String(x.dEven)));
-   if(rows.length===1&&clean.length>=15&&unique.size===clean.length)valid.push({code,price,date,age,historyCount:clean.length});
+   if(rows.length===1&&clean.length>=15&&unique.size===clean.length)valid.push({code,price,date,age,historyCount:clean.length,lastTradeTime:info?.lastHEven,finalLastDate:info?.finalLastDate});
   }catch(error){console.log('Candidate rejected '+code+': '+String(error.message||error));}
  }
  assert.equal(valid.length,1,'expected exactly one candidate with fresh matching price and >=15 unique history rows; got '+valid.length);
  const q=valid[0];
- console.log('PASS live quote: '+symbol+' '+q.price+' rial, market date '+q.date+', age '+q.age+' Tehran calendar days');
+ const freshness=classifyTehranQuoteFreshness({
+  marketDate:q.finalLastDate||q.date,
+  lastTradeTime:q.lastTradeTime,
+  now:new Date(),
+  maxAgeMinutes:15
+ });
+ if(freshness.status!=='FRESH'){
+  console.log('UNVERIFIED live freshness: '+freshness.status+' ('+freshness.reason+')');
+  recordOutcome(freshness.status,{
+   market_date:q.date,price_rial:q.price,age_tehran_calendar_days:q.age,
+   history_rows:q.historyCount,last_trade_time:q.lastTradeTime??null,
+   freshness
+  });
+  return;
+ }
+ console.log('PASS live quote: '+symbol+' '+q.price+' rial, market date '+q.date+', last trade '+freshness.lastTradeTime+' Tehran time');
+ console.log('PASS live freshness: last trade is '+freshness.ageMinutes+' minutes old during the regular Tehran session');
  console.log('PASS live history: '+q.historyCount+' valid unique daily rows; closing price matches quote date');
  try{
   const flow=await get('/ClientType/GetClientType/'+q.code+'/'+q.date);
@@ -82,8 +99,12 @@ function dateAge(date){
    console.log('INFO investor-flow row unavailable or incomplete for latest session; price/history test remains valid');
   }
  }catch(error){console.log('INFO investor-flow endpoint unavailable: '+String(error.message||error));}
- console.log('SUCCESS: read-only live TSETMC connectivity and data-integrity test');
- recordOutcome('AUTOMATED_QUOTE_CHECK_PASSED',{market_date:q.date,price_rial:q.price,age_tehran_calendar_days:q.age,history_rows:q.historyCount});
+ console.log('SUCCESS: read-only live TSETMC connectivity, freshness and data-integrity test');
+ recordOutcome('AUTOMATED_QUOTE_CHECK_PASSED',{
+  market_date:q.date,price_rial:q.price,age_tehran_calendar_days:q.age,
+  last_trade_time:freshness.lastTradeTime,last_trade_age_minutes:freshness.ageMinutes,
+  history_rows:q.historyCount
+ });
 })().catch(error=>{
  const cause=error?.cause;
  const code=cause?.code||error?.code;
