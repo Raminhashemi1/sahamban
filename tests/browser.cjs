@@ -93,6 +93,52 @@ async function main(){
   await page.locator('#sb88-tab-prices').click();
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable').count(),1);
+  // v115: synthetic wide insight tables stay readable at 320px without modifying cells.
+  await page.setViewportSize({width:320,height:800});
+  await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=false;});
+  await page.locator('#portfolioInsightsV613').evaluate(panel=>{
+   const heading=document.createElement('strong');
+   heading.textContent='گزارش آزمایشی';
+   const table=document.createElement('table');
+   table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+   const head=document.createElement('tr'),data=document.createElement('tr');
+   for(let i=0;i<7;i++){
+    const th=document.createElement('th');th.textContent='ستون آزمایشی '+i;head.append(th);
+    const td=document.createElement('td');td.textContent='مقدار آزمایشی '+i;data.append(td);
+   }
+   table.append(head,data);
+   panel.replaceChildren(heading,table);
+   panel.hidden=false;
+  });
+  await page.waitForFunction(()=>document.querySelector('#portfolioInsightsV613 .sb115-insight-scroll > table'));
+  const insightLayout=await page.locator('#portfolioInsightsV613 .sb115-insight-scroll').evaluate(region=>{
+   const table=region.querySelector('table');
+   return {
+    scrollWidth:region.scrollWidth,clientWidth:region.clientWidth,
+    regionWidth:region.getBoundingClientRect().width,
+    role:region.getAttribute('role'),tabindex:region.tabIndex,
+    name:region.getAttribute('aria-label'),cols:table.querySelectorAll('tr:first-child th').length,
+    cells:table.querySelectorAll('tr:last-child td').length,
+    sticky:getComputedStyle(table.querySelector('td')).position,
+    overflow:getComputedStyle(region).overflowX,
+    text:table.innerText
+   };
+  });
+  assert.ok(insightLayout.scrollWidth>insightLayout.clientWidth,'v115 insight table should scroll horizontally on 320px');
+  assert.ok(insightLayout.regionWidth<=320,'v115 insight region must fit 320px viewport');
+  assert.equal(insightLayout.role,'region');
+  assert.equal(insightLayout.tabindex,0);
+  assert.match(insightLayout.name,/گزارش آزمایشی/);
+  assert.equal(insightLayout.cols,7);
+  assert.equal(insightLayout.cells,7);
+  assert.equal(insightLayout.sticky,'sticky');
+  assert.equal(insightLayout.overflow,'auto');
+  assert.match(insightLayout.text,/مقدار آزمایشی 6/);
+  await page.locator('#portfolioInsightsV613 .sb115-insight-scroll').focus();
+  assert.equal(await page.evaluate(()=>document.activeElement?.classList.contains('sb115-insight-scroll')),true);
+  // The real portfolio renderer owns this panel; remove synthetic test fixtures only.
+  await page.locator('#portfolioInsightsV613').evaluate(panel=>{panel.replaceChildren();panel.hidden=true;});
+  await page.setViewportSize({width:1280,height:800});
   // v98: mobile-friendly compact view affects only the visibility of table columns.
   await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=false;});
   assert.equal(await page.locator('#livePortfolioTable .portfolio-v61-table thead th:visible').count(),15);
