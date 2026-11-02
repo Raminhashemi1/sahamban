@@ -190,7 +190,7 @@ $('run').addEventListener('click',async()=>{
   if(!Array.isArray(rows))throw Error('ساختار پاسخ جستجوی نماد معتبر نیست.');
   const codes=[...new Set(rows.filter(x=>norm(x.lVal18AFC)==norm('فولاد')&&/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.insCode)))];
   if(!codes.length||codes.length>5)throw Error('تعداد شناسه‌های دقیق نماد غیرمنتظره است: '+fa(codes.length));
-  const valid=[];
+  const valid=[],rejectionReasons=[];
   for(const code of codes){
    try{
     const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
@@ -201,9 +201,19 @@ $('run').addEventListener('click',async()=>{
     const matching=hist.filter(x=>String(x?.dEven??'')===date);
     if(matching.length!==1||Number(matching[0].pClosing)!==price)throw Error('قیمت با تاریخچه تطبیق ندارد');
     valid.push({code,price,date,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
-   }catch(e){/* reject this candidate; never guess */}
+   }catch(e){
+    // Preserve why a public instrument was rejected, but never guess its price.
+    const reason=e?.name==='AbortError'
+     ?'مهلت اتصال به منبع رسمی تمام شد'
+     :String(e?.message||e).slice(0,180);
+    rejectionReasons.push(reason);
+   }
   }
-  if(valid.length!==1)throw Error('تعداد شناسه‌های دارای قیمت و تاریخچه معتبر دقیقاً یک نیست: '+fa(valid.length));
+  if(valid.length!==1){
+   const reasons=[...new Set(rejectionReasons)].slice(0,3).join('؛ ');
+   throw Error('تعداد شناسه‌های دارای قیمت و تاریخچه معتبر دقیقاً یک نیست: '+fa(valid.length)+
+    (reasons?' | علت‌های گزارش‌شده: '+reasons:' | پاسخ معتبر از منبع دریافت نشد.'));
+  }
   const q=valid[0];
   if(q.freshness.status!=='FRESH'){
    s.textContent='UNVERIFIED — تاریخچه با قیمت پایانی تطبیق دارد، اما تازگی قیمت زنده تأیید نشد.\nوضعیت: '+q.freshness.status+'\n'+q.freshness.message+'\nنماد: فولاد | قیمت پایانی: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\nبرای PASS باید تاریخ امروز تهران و زمان آخرین معامله حداکثر ۱۵ دقیقه قدیمی باشد. سبد شخصی بررسی یا تغییر نشده است.';
