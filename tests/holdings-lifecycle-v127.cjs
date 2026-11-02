@@ -25,12 +25,12 @@ async function main(){
  let browser;
  try{
   browser=await chromium.launch({headless:true});
-  const context=await browser.newContext({locale:'fa-IR',serviceWorkers:'block',viewport:{width:390,height:8100}});
+  const context=await browser.newContext({locale:'fa-IR',serviceWorkers:'block',viewport:{width:390,height:810}});
   const page=await context.newPage();
   const errors=[],marketRequests=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('request',request=>{if(request.url().includes('tsetmc.com'))marketRequests.push(request.url());});
-  const entries=Array.from({length:100},(_,i)=>({symbol:'آزمایشی'+String(i+1).padStart(2,'0'),quantity:i+1,buy:1000+i*100,current:11000+i*100}));
+  const entries=Array.from({length:100},(_,i)=>({symbol:'آزمایشی'+String(i+1).padStart(2,'0'),quantity:i+1,buy:1000+i*100,current:1200+i*100}));
   const expectedValue=entries.reduce((n,p)=>n+p.quantity*p.current,0);
   const expectedCost=entries.reduce((n,p)=>n+p.quantity*p.buy,0);
   const csv=['نماد,تعداد,میانگین خرید,قیمت پایانی',...entries.map(p=>[p.symbol,p.quantity,p.buy,p.current].join(','))].join('\n');
@@ -39,7 +39,7 @@ async function main(){
   assert.equal(await page.locator('#brokerImportSection').isVisible(),true);
   await page.locator('#brokerFile').setInputFiles({name:'synthetic-100.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
   await page.locator('#brokerPreview').click();
-  assert.match(await page.locator('#brokerReviewStatus').innerText(),/100 ردیف پیدا شد|۲۰ ردیف پیدا شد/);
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/100 ردیف پیدا شد|۱۰۰ ردیف پیدا شد/);
   assert.equal(await page.locator('#brokerRows tr').count(),100);
   assert.match(await page.locator('#brokerReviewStatus').innerText(),/0 ردیف تکراری|۰ ردیف تکراری/);
   pass('100 unique CSV holdings imported with no excluded rows');
@@ -51,7 +51,7 @@ async function main(){
   await page.reload({waitUntil:'load'});
   await page.locator('#brokerLoad').click();
   assert.equal(await page.locator('#brokerRows tr').count(),100);
-  assert.match(await page.locator('#brokerReviewStatus').innerText(),/100 سهم|۲۰ سهم/);
+  assert.match(await page.locator('#brokerReviewStatus').innerText(),/100 سهم|۱۰۰ سهم/);
   pass('all 100 holdings recovered after a full reload');
   await page.evaluate(()=>{location.hash='livePortfolioSection';});
   await page.waitForFunction(()=>document.getElementById('livePortfolioSection')?.hidden===false);
