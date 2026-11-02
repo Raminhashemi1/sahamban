@@ -27,6 +27,7 @@ async function main(){
   const module=page.locator('#sahambanModulesV87 a[href="#livePortfolioSection"]');
   assert.match(await module.getAttribute('aria-label'),/سبد من/);
   await module.click();
+  await page.waitForFunction(()=>document.getElementById('livePortfolioSection')?.hasAttribute('aria-labelledby'));
   assert.equal(await page.locator('#livePortfolioSection').getAttribute('aria-labelledby'),
    await page.locator('#livePortfolioSection h2').first().getAttribute('id'));
   await page.waitForFunction(()=>document.activeElement?.tagName==='H2');
