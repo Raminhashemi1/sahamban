@@ -93,9 +93,19 @@ async function main(){
   await page.locator('#sb88-tab-prices').click();
   assert.equal(await page.locator('#sb88-panel-prices').isVisible(),true);
   assert.equal(await page.locator('#livePortfolioTable').count(),1);
+  // v116: a new-page visit to the price tab must explain why cards are not visible.
+  assert.equal(await page.locator('#sb116PriceEmpty').isVisible(),true);
+  assert.match(await page.locator('#sb116PriceEmpty').innerText(),/ارزش‌گذاری با قیمت فایل/);
+  assert.equal(await page.locator('#livePortfolioTable').isVisible(),false);
+  await page.locator('#sb116PriceEmpty button').click();
+  assert.equal(await page.locator('#sb88-tab-overview').getAttribute('aria-selected'),'true');
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb88-tab-overview');
+  await page.locator('#sb88-tab-prices').click();
   // v115: synthetic wide insight tables stay readable at 320px without modifying cells.
   await page.setViewportSize({width:320,height:800});
   await page.locator('#livePortfolioTable').evaluate(el=>{el.hidden=false;});
+  await page.waitForFunction(()=>document.getElementById('sb116PriceEmpty')?.hidden===true);
+  assert.equal(await page.locator('#sb116PriceEmpty').isVisible(),false);
   await page.locator('#portfolioInsightsV613').evaluate(panel=>{
    const heading=document.createElement('strong');
    heading.textContent='گزارش آزمایشی';
