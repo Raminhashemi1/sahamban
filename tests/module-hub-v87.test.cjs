@@ -9,7 +9,7 @@ function elt(id){
 }
 function boot(initialHash=''){
  const ids={};for(const id of ['sahambanHubV87','sahambanGuideV87','sahambanGuideTitleV87','sahambanGuideStepsV87','sahambanGuideOpenV87','sahambanModulesV87','sahambanHomeControlV87','sahambanActiveTitleV87','calculate','check'])ids[id]=elt(id);
- const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50'];
+ const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV128'];
  const sections=keys.map(id=>{const e=elt(id);e.closest=()=>e;e.querySelector=()=>null;ids[id]=e;return e});
  ids.calculate.closest=()=>ids.positionSizeSectionV87;ids.check.closest=()=>ids.manualAlertsSectionV87;
  const host={querySelectorAll:()=>sections},listeners={},location={hash:initialHash};
@@ -17,8 +17,8 @@ function boot(initialHash=''){
  vm.runInNewContext(src,{document,location,window:{addEventListener:(n,fn)=>listeners[n]=fn},requestAnimationFrame:fn=>fn()});
  return {ids,sections,location,change:hash=>{location.hash=hash;listeners.hashchange()},buttons:ids.sahambanModulesV87.children};
 }
-test('v87 creates an at-a-glance 10 module home and guides with no extra traffic',()=>{
- const a=boot();assert.equal(a.buttons.length,10);assert.equal(a.ids.sahambanHubV87.hidden,false);
+test('v87 creates an at-a-glance 11 module home and guides with no extra traffic',()=>{
+ const a=boot();assert.equal(a.buttons.length,11);assert.equal(a.ids.sahambanHubV87.hidden,false);
  assert.ok(a.sections.every(x=>x.hidden));assert.equal(a.ids.sahambanHomeControlV87.hidden,true);
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|navigator\.sendBeacon/);
 });
@@ -32,7 +32,7 @@ test('v87 opens only selected module and returns home',()=>{
  a.change('#home');assert.equal(a.ids.sahambanHubV87.hidden,false);
 });
 test('v87 shows contextual guidance, step list, and a link to selected module',()=>{
- const a=boot(),button=a.buttons[0].children[1];
+ const a=boot(),button=a.buttons[1].children[1];
  button.handlers.click();
  assert.equal(a.ids.sahambanGuideV87.hidden,false);
  assert.equal(a.ids.sahambanGuideStepsV87.children.length,3);
