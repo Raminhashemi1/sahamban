@@ -112,8 +112,9 @@ async function main(){
    ]);
    return registered.active?.state;
   });
-  assert.equal(active,'activated');
-  await page.waitForFunction(()=>navigator.serviceWorker.controller!==null,null,{timeout:15000});
+  assert.ok(['activating','activated'].includes(active),'unexpected service worker state: '+active);
+  // serviceWorker.ready may resolve while activation is still finishing.
+  await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated',null,{timeout:15000});
   const installed=await page.evaluate(async()=>{
    const keys=await caches.keys();
    const cache=await caches.match('./install.html');
