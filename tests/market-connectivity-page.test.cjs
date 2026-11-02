@@ -35,6 +35,14 @@ assert.match(html,/closingPriceDaily/);
 assert.ok(html.includes('for(const candidate of candidates)'));
 assert.match(html,/مهلت پاسخ سرور تمام شد/);
 assert.match(html,/const valid=\[\],rejectionReasons=\[\]/);
+assert.match(html,/const freshness=quoteFreshness\(info\?\.finalLastDate\|\|date,info\?\.lastHEven\)/);
+assert.match(html,/قیمت پاسخ رسمی:/);
+assert.match(html,/آخرین معامله:/);
+assert.match(html,/تازگی پاسخ قیمت:/);
+assert.match(html,/تاریخچه جداگانه تأیید نشد:/);
+assert.match(html,/valid\.push\(\{code,price,date,freshness\}\)/);
+assert.ok(html.indexOf('const freshness=quoteFreshness(info?.finalLastDate||date,info?.lastHEven);') < html.indexOf('verifyPublicClosingHistory(date,price,hist);'));
+
 assert.match(html,/rejectionReasons\.push\(reason\)/);
 assert.match(html,/علت‌های گزارش‌شده/);
 assert.match(html,/مهلت اتصال به منبع رسمی تمام شد/);
