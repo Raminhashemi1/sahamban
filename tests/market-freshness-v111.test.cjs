@@ -27,7 +27,7 @@ assert.equal(classifyTehranQuoteFreshness({
 }).status, 'UNVERIFIED_MISSING_TRADE_TIME');
 
 assert.equal(classifyTehranQuoteFreshness({
-  marketDate: '20261102', lastTradeTime: 112100,
+  marketDate: '20261102', lastTradeTime: 115500,
   now: new Date('2026-11-02T08:30:00.000Z') // Monday 12:00 Tehran
 }).status, 'FRESH');
 
