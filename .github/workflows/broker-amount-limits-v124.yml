@@ -1,0 +1,30 @@
+name: Sahamban broker safe amounts v124
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  broker-amount-boundaries:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node --check tests/broker-amount-limits-v124.cjs
+      - run: node tests/broker-amount-limits-v124.cjs
+      - name: Preserve monetary boundary test
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-broker-limits-v124
+          path: test-artifacts/broker-amount-limits-v124.json
+          if-no-files-found: warn
+          retention-days: 14
