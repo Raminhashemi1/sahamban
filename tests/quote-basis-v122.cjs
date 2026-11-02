@@ -19,7 +19,7 @@ assert.equal(cost,605000);
 assert.equal(market,636070);
 assert.equal(closing,631720);
 assert.equal(market-closing,4350);
-const digits=s=>String(s).replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٬,\s]/g,'');
+const digits=s=>String(s).replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٬,\s\u200e\u200f\u061c]/g,'').replace(/[−﹣－]/g,'-');
 const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
 const marketDate=parts.year+parts.month+parts.day;
 async function main(){
