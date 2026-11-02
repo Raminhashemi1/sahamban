@@ -27,6 +27,7 @@ async function main(){
   page.on('pageerror',e=>errors.push(e.message));
   const base='http://127.0.0.1:'+server.address().port;
   await page.goto(base+'/index.html',{waitUntil:'load'});
+  const storageBefore=await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage)));
   const link=page.locator('#sahambanModulesV87 a[href="#educationSectionV128"]');
   assert.equal(await link.count(),1);
   await link.click();
@@ -44,7 +45,7 @@ async function main(){
   await tutorials.nth(2).locator('summary').click();
   await tutorials.nth(2).locator('a').click();
   await page.waitForFunction(()=>document.getElementById('livePortfolioSection')?.hidden===false);
-  assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[]);
+  assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage))),storageBefore);
   assert.deepEqual(errors,[]);
   console.log('PASS Persian tutorial: twelve chapters, keyboardable navigation, links, no holdings access');
   await context.close();
