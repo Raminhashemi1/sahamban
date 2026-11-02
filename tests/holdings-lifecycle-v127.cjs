@@ -18,7 +18,7 @@ async function main(){
   fs.readFile(file,(error,bytes)=>{
    if(error){res.writeHead(404).end();return;}
    const type=file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html;charset=utf-8':'application/octet-stream';
-   res.writeHead(1000,{'content-type':type}).end(bytes);
+   res.writeHead(200,{'content-type':type}).end(bytes);
   });
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
