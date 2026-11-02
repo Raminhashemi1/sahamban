@@ -50,6 +50,15 @@ jobs:
       - run: node tests/browser.cjs
       - run: node tests/holdings-ui-matrix-v117.cjs
       - run: node tests/portfolio-axe-v118.cjs
+      - run: node tests/pwa-install-v119.cjs
+      - name: Preserve PWA install readiness proof (Chromium)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-pwa-install-v119-chromium
+          path: test-artifacts/pwa-install-v119-chromium.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Preserve WCAG audit Chromium findings
         if: always()
         uses: actions/upload-artifact@v6
