@@ -1,0 +1,31 @@
+name: Sahamban published PWA deployment smoke
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 6 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/public-deployment-v120.cjs'
+      - '.github/workflows/public-deployment-v120.yml'
+jobs:
+  public-deployment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate public check syntax
+        run: node --check tests/public-deployment-v120.cjs
+      - name: Check deployed HTTPS PWA assets (not PR preview)
+        if: github.event_name != 'pull_request'
+        run: node tests/public-deployment-v120.cjs
+      - name: Preserve public-only evidence
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-public-deployment-v120
+          path: test-artifacts/public-deployment-v120.json
+          if-no-files-found: warn
+          retention-days: 30
