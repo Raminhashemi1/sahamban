@@ -22,6 +22,15 @@ jobs:
       - run: node tests/webkit-a11y-proxy-v109.cjs
       - run: SAHAMBAN_UI_ENGINE=webkit node tests/holdings-ui-matrix-v117.cjs
       - run: SAHAMBAN_A11Y_ENGINE=webkit node tests/portfolio-axe-v118.cjs
+      - run: SAHAMBAN_INSTALL_ENGINE=webkit node tests/pwa-install-v119.cjs
+      - name: Preserve PWA install readiness proof (WebKit)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-pwa-install-v119-webkit
+          path: test-artifacts/pwa-install-v119-webkit.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Preserve WCAG audit WebKit findings
         if: always()
         uses: actions/upload-artifact@v6
