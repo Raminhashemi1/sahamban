@@ -1,0 +1,30 @@
+name: Sahamban 20-holding lifecycle v121
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  synthetic-20-holdings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node --check tests/holdings-lifecycle-v121.cjs
+      - run: node tests/holdings-lifecycle-v121.cjs
+      - name: Preserve synthetic 20-holding acceptance results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-synthetic-holdings-v121
+          path: test-artifacts/holdings-lifecycle-v121.json
+          if-no-files-found: warn
+          retention-days: 14
