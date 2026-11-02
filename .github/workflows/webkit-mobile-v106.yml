@@ -20,6 +20,15 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - run: node tests/webkit-mobile-v106.cjs
       - run: node tests/webkit-a11y-proxy-v109.cjs
+      - run: SAHAMBAN_UI_ENGINE=webkit node tests/holdings-ui-matrix-v117.cjs
+      - name: Save synthetic WebKit holdings UI matrix result
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-webkit-holdings-ui-v117
+          path: test-artifacts/holdings-ui-matrix-v117-webkit.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save WebKit failure evidence
         if: failure()
         uses: actions/upload-artifact@v6
