@@ -130,12 +130,22 @@ function previewRows(){
   const clean=normal(symbol);let issue='';
   if(!symbol||symbol.length>35||/[\r\n,;\t]/.test(symbol))issue='نماد نامعتبر';
   else if(!Number.isSafeInteger(quantity)||quantity<=0||!Number.isFinite(buy)||buy<=0||!Number.isFinite(current)||current<=0)issue='تعداد یا قیمت نامعتبر';
+  else if(buy>Number.MAX_SAFE_INTEGER||current>Number.MAX_SAFE_INTEGER||quantity*buy>Number.MAX_SAFE_INTEGER||quantity*current>Number.MAX_SAFE_INTEGER)issue='مبلغ دارایی خارج از محدوده محاسبه مطمئن';
   else if(found.has(clean)){issue='ردیف تکراری — کنار گذاشته می‌شود';duplicate.add(clean)}
   else found.add(clean);
   if(issue)errors++;
   return {symbol,quantity,buy,current,issue,row:i+2};
  }).filter(Boolean);
  if(preview.length>100)throw Error('حداکثر ۱۰۰ ردیف پشتیبانی می‌شود.');
+ // Reject an aggregate outside JS safe monetary bounds before it can be persisted.
+ let totalBuy=0,totalCurrent=0;
+ for(const p of preview){
+  if(p.issue)continue;
+  totalBuy+=p.quantity*p.buy;
+  totalCurrent+=p.quantity*p.current;
+  if(!Number.isFinite(totalBuy)||!Number.isFinite(totalCurrent)||totalBuy>Number.MAX_SAFE_INTEGER||totalCurrent>Number.MAX_SAFE_INTEGER)
+   throw Error('جمع ارزش یا بهای خرید سبد خارج از محدوده محاسبه مطمئن است؛ هیچ داده‌ای ذخیره نشد.');
+ }
  if(!preview.length)throw Error('هیچ دارایی معتبری پیدا نشد.');
  // First valid occurrence is preserved; later repetitions and zero-price entries are excluded.
  const body=el('brokerRows');body.replaceChildren();
