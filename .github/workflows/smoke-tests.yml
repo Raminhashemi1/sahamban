@@ -48,6 +48,15 @@ jobs:
       - run: npm install --no-save playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser.cjs
+      - run: node tests/holdings-ui-matrix-v117.cjs
+      - name: Save synthetic Chromium holdings UI matrix result
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-chromium-holdings-ui-v117
+          path: test-artifacts/holdings-ui-matrix-v117-chromium.json
+          if-no-files-found: warn
+          retention-days: 14
       - run: node tests/android-lowend-v110.cjs
       - name: Save Android low-end proxy timing samples
         if: always()
