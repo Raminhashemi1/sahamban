@@ -133,7 +133,7 @@ async function main(){
   assert.equal(insightLayout.cells,7);
   assert.equal(insightLayout.sticky,'sticky');
   assert.equal(insightLayout.overflow,'auto');
-  assert.match(insightLayout.text,/مقدار آزمایشی 6/);
+  assert.match(insightLayout.text,/مقدار آزمایشی [۶6]/);
   await page.locator('#portfolioInsightsV613 .sb115-insight-scroll').focus();
   assert.equal(await page.evaluate(()=>document.activeElement?.classList.contains('sb115-insight-scroll')),true);
   // The real portfolio renderer owns this panel; remove synthetic test fixtures only.
