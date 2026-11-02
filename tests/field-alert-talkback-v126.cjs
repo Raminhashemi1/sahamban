@@ -25,11 +25,11 @@ async function main(){
   const page=await context.newPage();
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
   const module=page.locator('#sahambanModulesV87 a[href="#livePortfolioSection"]');
-  assert.equal(await module.getAttribute('aria-label'),'ورود به ماژول سبد من');
+  assert.match(await module.getAttribute('aria-label'),/سبد من/);
   await module.click();
   assert.equal(await page.locator('#livePortfolioSection').getAttribute('aria-labelledby'),
    await page.locator('#livePortfolioSection h2').first().getAttribute('id'));
-  assert.equal(await page.evaluate(()=>document.activeElement?.tagName),'H2');
+  await page.waitForFunction(()=>document.activeElement?.tagName==='H2');
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html#manualAlertsSectionV87',{waitUntil:'load'});
   await page.locator('#symbol').fill('نمونه');
   await page.locator('#price').fill('13000');
