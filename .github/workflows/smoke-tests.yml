@@ -20,13 +20,14 @@ jobs:
       - run: node tests/sw-offline.cjs
       - run: node --test tests/market-connectivity-page.test.cjs
       - run: node tests/market-validation.cjs
+      - run: node tests/market-freshness-v111.test.cjs
       - run: node tests/live-market-connectivity.cjs
       - name: Preserve explicit live-market status (including network skip)
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: sahamban-live-market-outcome
-          path: test-artifacts/live-market-v109.json
+          name: sahamban-live-market-v111-outcome
+          path: test-artifacts/live-market-v111.json
           if-no-files-found: warn
           retention-days: 14
       - run: node --check portfolio-pilot-v61.js

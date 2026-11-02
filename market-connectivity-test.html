@@ -67,6 +67,33 @@ function dateOk(raw){
  if(age<0||age>7)throw Error('قیمت قدیمی یا تاریخ آینده است؛ فاصله روز تقویمی: '+fa(age));
  return s;
 }
+function tehranMarketNow(){
+ const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
+  timeZone:'Asia/Tehran',weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',
+  hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+ }).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ return {
+  date:p.year+p.month+p.day,weekday:p.weekday,
+  hour:Number(p.hour),minute:Number(p.minute),second:Number(p.second),
+  secondsOfDay:Number(p.hour)*3600+Number(p.minute)*60+Number(p.second)
+ };
+}
+function quoteFreshness(marketDate,lastHEven){
+ const now=tehranMarketNow();
+ const session=['Sat','Sun','Mon','Tue','Wed'].includes(now.weekday)&&
+  now.secondsOfDay>=9*3600&&now.secondsOfDay<12*3600+30*60;
+ if(!session)return {status:'UNVERIFIED_OUTSIDE_SESSION',message:'خارج از ساعات معمول معاملات تهران؛ فقط تطبیق تاریخی ممکن است.'};
+ if(String(marketDate??'')!==now.date)return {status:'UNVERIFIED_STALE_SESSION_DATE',message:'تاریخ آخرین معامله مربوط به امروز تهران نیست.'};
+ const raw=String(lastHEven??'');
+ if(!/^\d{1,6}$/.test(raw))return {status:'UNVERIFIED_MISSING_TRADE_TIME',message:'زمان آخرین معامله در پاسخ رسمی وجود ندارد یا معتبر نیست.'};
+ const digits=raw.padStart(6,'0');
+ const hour=Number(digits.slice(0,2)),minute=Number(digits.slice(2,4)),second=Number(digits.slice(4,6));
+ if(hour>23||minute>59||second>59)return {status:'UNVERIFIED_MISSING_TRADE_TIME',message:'قالب زمان آخرین معامله معتبر نیست.'};
+ const age=now.secondsOfDay-(hour*3600+minute*60+second);
+ const lastTradeTime=digits.slice(0,2)+':'+digits.slice(2,4)+':'+digits.slice(4,6);
+ if(age<0||age>15*60)return {status:'UNVERIFIED_STALE_TRADE',message:'آخرین معامله بیش از ۱۵ دقیقه فاصله دارد یا زمان آن در آینده است.',lastTradeTime,ageMinutes:age/60};
+ return {status:'FRESH',message:'آخرین معامله در بازهٔ ۱۵ دقیقه‌ای ثبت شده است.',lastTradeTime,ageMinutes:age/60};
+}
 
 const defaultSymbols=['وساخت','ولساپا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','بپیوند','عیار','فروژ','استقلال','پرسپولیس'];
 $('symbols-input').value=defaultSymbols.join('\\n');
@@ -116,7 +143,7 @@ async function checkSymbol(symbol){
    if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1)throw Error('سوابق همان روز متناقض‌اند');
    const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
    if(uniqueDays.size<2)throw Error('تعداد روزهای تاریخچه کافی نیست');
-   valid.push({symbol,price,date,count:uniqueDays.size,code});
+   valid.push({symbol,price,date,count:uniqueDays.size,code,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
   }catch(e){reasons.push(String(e?.message||e));}
  }
  if(valid.length===1)return valid[0];
@@ -127,15 +154,31 @@ $('run-basket').addEventListener('click',async()=>{
  const b=$('run-basket'),s=$('basket-status'),out=$('basket-results');
  let symbols;
  try{symbols=readSymbols();}catch(e){s.textContent=e.message;return;}
- b.disabled=true;out.textContent='';let ok=0,fail=0;const results=[];
+ b.disabled=true;out.textContent='';let ok=0,unverified=0,fail=0;const results=[];
  s.textContent='آزمایش '+fa(symbols.length)+' نماد آغاز شد؛ درخواست‌ها به‌ترتیب و فقط خواندنی ارسال می‌شوند.';
  for(let i=0;i<symbols.length;i++){
-  const symbol=symbols[i];s.textContent='در حال بررسی '+fa(i+1)+' از '+fa(symbols.length)+': '+symbol+' | موفق: '+fa(ok)+' | نیازمند بررسی: '+fa(fail);
-  try{const r=await checkSymbol(symbol);ok++;results.push({symbol,ok:true,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | '+fa(r.count)+' سابقه'});}
-  catch(e){fail++;results.push({symbol,ok:false,detail:String(e?.message||e)});}
-  const line=document.createElement('p');line.textContent=(results.at(-1).ok?'✓ ':'✕ ')+symbol+' — '+results.at(-1).detail;line.style.color=results.at(-1).ok?'#16834a':'#b45309';out.appendChild(line);
+  const symbol=symbols[i];
+  s.textContent='در حال بررسی '+fa(i+1)+' از '+fa(symbols.length)+': '+symbol+' | زنده: '+fa(ok)+' | تأییدنشده: '+fa(unverified)+' | خطا: '+fa(fail);
+  try{
+   const r=await checkSymbol(symbol);
+   if(r.freshness.status==='FRESH'){
+    ok++;
+    results.push({symbol,ok:true,unverified:false,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | آخرین معامله '+r.freshness.lastTradeTime});
+   }else{
+    unverified++;
+    results.push({symbol,ok:false,unverified:true,detail:'تاریخچه منطبق؛ تأیید زنده نشد ('+r.freshness.status+'): '+r.freshness.message});
+   }
+  }catch(e){
+   fail++;
+   results.push({symbol,ok:false,unverified:false,detail:String(e?.message||e)});
+  }
+  const item=results.at(-1);
+  const line=document.createElement('p');
+  line.textContent=(item.ok?'✓ ':item.unverified?'? ':'✕ ')+symbol+' — '+item.detail;
+  line.style.color=item.ok?'#16834a':item.unverified?'#a16207':'#b45309';
+  out.appendChild(line);
  }
- s.textContent='پایان آزمایش: '+fa(ok)+' از '+fa(symbols.length)+' نماد قیمت و تاریخچه منطبق داشتند؛ '+fa(fail)+' نماد نیازمند بررسی‌اند. این آزمون فقط خواندنی بود و سبد شما را تغییر نداد.';
+ s.textContent='پایان آزمایش: '+fa(ok)+' نماد با تازگی زنده تأیید شد؛ '+fa(unverified)+' نماد فقط تطبیق تاریخی داشتند/تأیید زنده نشد؛ '+fa(fail)+' خطای بررسی. این آزمون فقط خواندنی بود و سبد شما را تغییر نداد.';
  b.disabled=false;
 });
 
@@ -157,12 +200,16 @@ $('run').addEventListener('click',async()=>{
     if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
     const matching=hist.filter(x=>String(x?.dEven??'')===date);
     if(matching.length!==1||Number(matching[0].pClosing)!==price)throw Error('قیمت با تاریخچه تطبیق ندارد');
-    valid.push({code,price,date});
+    valid.push({code,price,date,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
    }catch(e){/* reject this candidate; never guess */}
   }
   if(valid.length!==1)throw Error('تعداد شناسه‌های دارای قیمت و تاریخچه معتبر دقیقاً یک نیست: '+fa(valid.length));
   const q=valid[0];
-  s.textContent='موفق: مرورگر توانست قیمت و تاریخچه را دریافت و تطبیق دهد.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار (میلادی): '+q.date+'\nاین نتیجه فقط دسترسی شبکه را تأیید می‌کند؛ سبد شخصی شما بررسی یا تغییر نشده است.';
+  if(q.freshness.status!=='FRESH'){
+   s.textContent='UNVERIFIED — تاریخچه با قیمت پایانی تطبیق دارد، اما تازگی قیمت زنده تأیید نشد.\nوضعیت: '+q.freshness.status+'\n'+q.freshness.message+'\nنماد: فولاد | قیمت پایانی: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\nبرای PASS باید تاریخ امروز تهران و زمان آخرین معامله حداکثر ۱۵ دقیقه قدیمی باشد. سبد شخصی بررسی یا تغییر نشده است.';
+   return;
+  }
+  s.textContent='PASS — قیمت و تاریخچه منطبق و آخرین معامله تازه است.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
  }catch(e){
   s.textContent='ناموفق یا تأییدنشده: '+(e?.name==='AbortError'?'مهلت اتصال ۱۰ ثانیه‌ای تمام شد':String(e?.message||e))+'\nهیچ اطلاعات سبدی خوانده یا تغییر داده نشده است.';
  }finally{b.disabled=false;}
