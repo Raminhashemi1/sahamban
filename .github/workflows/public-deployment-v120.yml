@@ -3,6 +3,18 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '20 6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'install.html'
+      - 'manifest.webmanifest'
+      - 'icon-192.png'
+      - 'icon-512.png'
+      - 'sw.js'
+      - 'app.js'
+      - 'tests/public-deployment-v120.cjs'
+      - '.github/workflows/public-deployment-v120.yml'
   pull_request:
     branches: [main]
     paths:
