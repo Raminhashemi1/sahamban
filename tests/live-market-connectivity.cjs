@@ -11,11 +11,11 @@ function recordOutcome(status,details={}){
  const output={
   status,checked_at:new Date().toISOString(),timezone:'Asia/Tehran',
   source:API,symbol,
-  scope:'Read-only automated public quote diagnostic. Not field acceptance, a physical-device test, or a trading-hour market validation.',
+  scope:'Read-only public quote diagnostic. A PASS requires the active Tehran session, today's market date, a trade within 15 minutes and matching daily history; this is not physical-device field acceptance.',
   ...details
  };
  fs.mkdirSync('test-artifacts',{recursive:true});
- fs.writeFileSync('test-artifacts/live-market-v109.json',JSON.stringify(output,null,2)+'\n');
+ fs.writeFileSync('test-artifacts/live-market-v111.json',JSON.stringify(output,null,2)+'\n');
  console.log('LIVE_MARKET_STATUS: '+status);
 }
 const norm=s=>String(s??'').replace(/[\u200c\u200e\u200f\uFEFF\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
