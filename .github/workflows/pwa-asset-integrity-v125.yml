@@ -1,0 +1,34 @@
+name: Sahamban PWA asset inventory v125
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '35 6 * * *'
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: node --check tests/pwa-asset-integrity-v125.cjs
+      - name: Check all local first-party asset references
+        run: node tests/pwa-asset-integrity-v125.cjs
+      - name: Check published HTTPS references (main or schedule only)
+        if: github.event_name != 'pull_request'
+        run: node tests/pwa-asset-integrity-v125.cjs --public
+      - name: Save asset inventory
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-pwa-assets-v125
+          path: test-artifacts/pwa-asset-integrity-v125.json
+          if-no-files-found: warn
+          retention-days: 14
