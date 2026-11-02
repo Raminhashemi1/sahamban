@@ -1,0 +1,30 @@
+name: Sahamban quote-basis and atomicity v122
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  mocked-market-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node --check tests/quote-basis-v122.cjs
+      - run: node tests/quote-basis-v122.cjs
+      - name: Preserve synthetic market basis evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-mocked-quote-v122
+          path: test-artifacts/quote-basis-v122.json
+          if-no-files-found: warn
+          retention-days: 14
