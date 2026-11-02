@@ -46,7 +46,7 @@
  }
  for(const spec of specs){
   const card=document.createElement('div');card.className='sahamban-module-v87';
-  const link=document.createElement('a');link.href='#'+spec.id;link.className='sahamban-module-link-v87';
+  const link=document.createElement('a');link.href='#'+spec.id;link.className='sahamban-module-link-v87';link.setAttribute('aria-label','ورود به ماژول '+spec.name);
   const ico=document.createElement('span');ico.className='sahamban-module-icon-v87';ico.setAttribute('aria-hidden','true');ico.textContent=spec.icon;
   const heading=document.createElement('strong');heading.textContent=spec.name;
   const small=document.createElement('small');small.textContent=spec.desc;
@@ -62,10 +62,11 @@
   let chosen=target?.closest?.('section.card')||null;
   if(chosen&&!linkById.has(chosen.id))chosen=null;
   const spec=chosen?linkById.get(chosen.id):null;
+  if(chosen){const heading=chosen.querySelector('h2, h3');if(heading){if(!heading.id)heading.id='sb126ModuleHeading'+specs.indexOf(spec);heading.tabIndex=-1;chosen.setAttribute('aria-labelledby',heading.id);}}
   home.hidden=!!spec;guides.hidden=true;
   for(const section of sections)section.hidden=section!==chosen;
   homeControl.hidden=!spec;title.textContent=spec?'ماژول: '+spec.name:'';
-  if(spec){requestAnimationFrame(()=>{if(target&&target!==chosen)target.scrollIntoView({block:'start'});else chosen.scrollIntoView({block:'start'});});}
+  if(spec){requestAnimationFrame(()=>{if(target&&target!==chosen)target.scrollIntoView({block:'start'});else chosen.scrollIntoView({block:'start'});const heading=chosen.querySelector('h2, h3');if(heading)heading.focus({preventScroll:true});});}
   else if(!hash||hash==='home')requestAnimationFrame(()=>home.scrollIntoView({block:'start'}));
  }
  window.addEventListener('hashchange',activate);
