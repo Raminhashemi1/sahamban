@@ -56,7 +56,11 @@ async function main(){
   await page.evaluate(()=>{location.hash='livePortfolioSection';});
   await page.waitForFunction(()=>document.getElementById('livePortfolioSection')?.hidden===false);
   await page.locator('#livePortfolioImported').click();
-  assert.equal(await page.locator('#livePortfolioTable').isVisible(),true);
+  assert.equal(await page.locator('#livePortfolioTable').getAttribute('hidden'),null,
+    'offline valuation must populate and unhide the table');
+  await page.locator('#sb88-tab-prices').click();
+  assert.equal(await page.locator('#livePortfolioTable').isVisible(),true,
+    'full prices tab must display the populated table');
   assert.equal(await page.locator('#livePortfolioRows tr').count(),20);
   const summary=await page.locator('#livePortfolioSummary').innerText();
   const normalizeNumbers=s=>s.replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٬,\s]/g,'');
