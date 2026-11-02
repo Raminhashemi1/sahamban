@@ -127,14 +127,30 @@ async function main(){
   report.checks.push('real service worker activation and offline install page cache');
 
   await context.setOffline(true);
-  const offlineInstall=await page.goto(origin+'/install.html',{waitUntil:'domcontentloaded'});
-  assert.equal(offlineInstall?.status(),200);
-  assert.match(await page.title(),/نصب سهام‌بان/);
-  report.checks.push('offline install page navigation');
-  const offlineApp=await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
-  assert.equal(offlineApp?.status(),200);
-  assert.match(await page.title(),/سهام‌بان/);
-  report.checks.push('offline application shell navigation');
+  if(engine==='chromium'){
+   // Chromium proxy can verify full offline navigations through the SW.
+   const offlineInstall=await page.goto(origin+'/install.html',{waitUntil:'domcontentloaded'});
+   assert.equal(offlineInstall?.status(),200);
+   assert.match(await page.title(),/نصب سهام‌بان/);
+   report.checks.push('real offline install page navigation in Chromium');
+   const offlineApp=await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
+   assert.equal(offlineApp?.status(),200);
+   assert.match(await page.title(),/سهام‌بان/);
+   report.checks.push('real offline application shell navigation in Chromium');
+  }else{
+   // Playwright Linux WebKit currently fails offline page.goto with an internal
+   // engine error. Verify cached document bytes instead, and explicitly do NOT
+   // claim WebKit offline navigation or physical Safari offline acceptance.
+   const entries=await page.evaluate(async()=>{
+    const install=await caches.match('./install.html');
+    const app=await caches.match('./index.html');
+    return {install:install?await install.text():null,app:app?await app.text():null};
+   });
+   assert.match(entries.install||'',/نصب سهام‌بان/);
+   assert.match(entries.app||'',/سهام‌بان/);
+   report.checks.push('offline WebKit cached install/app documents (navigation unverified)');
+   report.webkit_offline_navigation_verified=false;
+  }
   await context.setOffline(false);
   assert.deepEqual(external,[],'installation page must not request external services');
   assert.deepEqual(pageErrors,[],'uncaught JavaScript errors');
