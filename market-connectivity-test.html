@@ -210,15 +210,28 @@ $('run').addEventListener('click',async()=>{
     const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
     const price=Number(info?.pClosing),date=dateOk(info?.dEven);
     if(!Number.isFinite(price)||price<=0)throw Error('قیمت نامعتبر');
-    const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
-    if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
-    verifyPublicClosingHistory(date,price,hist);
-    valid.push({code,price,date,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
+    // The quote and last-trade timestamp are independent evidence; daily history
+    // may be published later. Neither alone is permission for a full PASS.
+    const freshness=quoteFreshness(info?.finalLastDate||date,info?.lastHEven);
+    const quoteEvidence='قیمت پاسخ رسمی: '+fa(price)+' ریال | تاریخ: '+date+
+     ' | آخرین معامله: '+(freshness.lastTradeTime||'نامشخص')+
+     ' | تازگی پاسخ قیمت: '+freshness.status;
+    try{
+     const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
+     if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
+     verifyPublicClosingHistory(date,price,hist);
+    }catch(historyError){
+     const why=historyError?.name==='AbortError'
+      ?'مهلت دریافت تاریخچه تمام شد'
+      :String(historyError?.message||historyError);
+     throw Error(quoteEvidence+' | تاریخچه جداگانه تأیید نشد: '+why);
+    }
+    valid.push({code,price,date,freshness});
    }catch(e){
     // Preserve why a public instrument was rejected, but never guess its price.
     const reason=e?.name==='AbortError'
      ?'مهلت اتصال به منبع رسمی تمام شد'
-     :String(e?.message||e).slice(0,280);
+     :String(e?.message||e).slice(0,480);
     rejectionReasons.push(reason);
    }
   }
