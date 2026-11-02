@@ -49,6 +49,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser.cjs
       - run: node tests/field-alert-talkback-v126.cjs
+      - run: node tests/learning-v128.cjs
       - run: node tests/holdings-ui-matrix-v117.cjs
       - run: node tests/portfolio-axe-v118.cjs
       - run: node tests/pwa-install-v119.cjs
