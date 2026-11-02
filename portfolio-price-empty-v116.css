@@ -1,0 +1,6 @@
+/* v116: scoped message for the hidden price table, not a replacement quote. */
+#sb116PriceEmpty{padding:14px 16px;border:1px solid #447f93;border-radius:12px;background:#103348;margin:12px 0;line-height:1.95}
+#sb116PriceEmpty[hidden]{display:none!important}
+#sb116PriceEmpty p{margin:0 0 12px;color:#e2f0f2}
+#sb116PriceEmpty .sb116-price-empty-action{min-height:44px;padding:10px 14px;max-width:100%;white-space:normal;background:#35c7aa;color:#062d2f;font-weight:700;border:1px solid #35c7aa;border-radius:9px}
+#sb116PriceEmpty .sb116-price-empty-action:focus-visible{outline:3px solid #ffcf76;outline-offset:3px}
