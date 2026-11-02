@@ -67,6 +67,20 @@ function dateOk(raw){
  if(age<0||age>7)throw Error('قیمت قدیمی یا تاریخ آینده است؛ فاصله روز تقویمی: '+fa(age));
  return s;
 }
+function verifyPublicClosingHistory(date,price,history){
+ if(!Array.isArray(history))throw Error('پاسخ تاریخچه معتبر نیست.');
+ const matching=history.filter(x=>String(x?.dEven??'')===String(date));
+ if(matching.length!==1){
+  const sample=[...new Set(history.slice(0,8).map(x=>String(x?.dEven??'')).filter(x=>/^\d{8}$/.test(x)))].slice(0,3);
+  throw Error('تاریخ قیمت: '+date+' | تعداد سوابق همان روز: '+fa(matching.length)+
+   ' | تاریخ‌های موجود در تاریخچه: '+(sample.join('، ')||'نامشخص'));
+ }
+ const historyPrice=Number(matching[0]?.pClosing);
+ if(!Number.isFinite(historyPrice)||historyPrice!==price){
+  throw Error('اختلاف قیمت پایانی: پاسخ اصلی '+fa(price)+' ریال | تاریخچه '+(Number.isFinite(historyPrice)?fa(historyPrice):'نامعتبر')+' ریال | تاریخ '+date);
+ }
+ return true;
+}
 function tehranMarketNow(){
  const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
   timeZone:'Asia/Tehran',weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',
@@ -198,14 +212,13 @@ $('run').addEventListener('click',async()=>{
     if(!Number.isFinite(price)||price<=0)throw Error('قیمت نامعتبر');
     const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
     if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
-    const matching=hist.filter(x=>String(x?.dEven??'')===date);
-    if(matching.length!==1||Number(matching[0].pClosing)!==price)throw Error('قیمت با تاریخچه تطبیق ندارد');
+    verifyPublicClosingHistory(date,price,hist);
     valid.push({code,price,date,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
    }catch(e){
     // Preserve why a public instrument was rejected, but never guess its price.
     const reason=e?.name==='AbortError'
      ?'مهلت اتصال به منبع رسمی تمام شد'
-     :String(e?.message||e).slice(0,180);
+     :String(e?.message||e).slice(0,280);
     rejectionReasons.push(reason);
    }
   }
