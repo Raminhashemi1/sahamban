@@ -30,6 +30,6 @@ test('parses namespaced XML and decodes numeric entities',()=>{
 test('rejects empty, malformed and unrelated responses',()=>{
  assert.throws(()=>parse('','application/json'),/خالی/);
  assert.throws(()=>parse('{bad','application/json'),/JSON/);
- assert.throws(()=>parse('<html>blocked</html>','text/html'),/ساختار پاسخ/);
+ assert.throws(()=>parse('<html>blocked</html>','text/html'),/ساختار XML/);
  assert.throws(()=>parse('plain text','text/plain'),/نه JSON است و نه XML/);
 });
