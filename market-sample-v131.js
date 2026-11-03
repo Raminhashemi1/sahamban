@@ -40,7 +40,7 @@
     const quote=globalThis.SahambanDiscoveryV130.parseHistory(data,c);
     const report=globalThis.SahambanDecisionV129.analyze(quote,{today,maxAgeDays:7});
     let historical=null;
-    try{historical=globalThis.SahambanSignalAuditV131.audit(quote);}
+    try{historical=globalThis.SahambanSignalAuditV132.audit(quote);}
     catch(e){historical={error:e.message};}
     results.push({symbol:c.symbol,ok:true,report,historical});
    }catch(e){results.push({symbol:c.symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به بورس پایان یافت':e.message});}
