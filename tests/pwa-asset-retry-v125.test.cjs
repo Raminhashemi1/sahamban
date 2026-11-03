@@ -16,6 +16,14 @@ test('retries one transient HTTP 503 and succeeds on second attempt',async()=>{
  assert.equal(waits,1);
 });
 
+test('does not retry HTTP 429 rate limits',async()=>{
+ let calls=0;
+ await assert.rejects(fetchWithRetry(async()=>{calls++;return response(429);},'https://example.test/a.js',{},{
+  wait:async()=>{throw Error('must not wait');}
+ }),/HTTP 429/);
+ assert.equal(calls,1);
+});
+
 test('does not retry permanent HTTP 404',async()=>{
  let calls=0;
  await assert.rejects(fetchWithRetry(async()=>{calls++;return response(404);},'https://example.test/missing.js',{},{
