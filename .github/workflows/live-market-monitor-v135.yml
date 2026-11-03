@@ -4,8 +4,8 @@ on:
   schedule:
     # Tehran market session is normally 09:00–12:30; UTC+3:30.
     # Two read-only samples reduce the chance of a single stale response.
-    - cron: '15 6 * * 6-3'
-    - cron: '0 8 * * 6-3'
+    - cron: '15 6 * * 6,0-3'
+    - cron: '0 8 * * 6,0-3'
   push:
     branches: [main]
     paths:
