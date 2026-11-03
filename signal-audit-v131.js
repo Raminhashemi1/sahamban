@@ -8,6 +8,7 @@
  function audit(quote,{holdingDays=10,minHistory=110}={}){
   if(!quote||!Array.isArray(quote.history)||quote.history.length<minHistory)throw new RangeError('برای آزمون تاریخی دست‌کم ۱۱۰ جلسه معتبر لازم است.');
   if(holdingDays!==10)throw new RangeError('در این نسخه افق محاسبه فقط ۱۰ جلسه معاملاتی است.');
+  if(!globalThis.SahambanDecisionV129?.analyze)throw new Error('موتور قواعد ورود بارگذاری نشده است.');
   const dates=quote.history.map(x=>String(x?.date||'')),prices=quote.history.map(x=>Number(x?.close));
   if(dates.some((d,i)=>!/^\d{8}$/.test(d)||(i>0&&d<=dates[i-1]))||prices.some(p=>!Number.isFinite(p)||p<=0))throw new RangeError('ترتیب تاریخ یا قیمت تاریخچه نامعتبر است.');
   const marks=[],firstSignal=59,lastSignal=quote.history.length-2-holdingDays;
