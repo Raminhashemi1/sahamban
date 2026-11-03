@@ -12,6 +12,7 @@ on:
       - 'tests/live-market-connectivity.cjs'
       - 'tests/market-freshness-v111.cjs'
       - '.github/workflows/live-market-monitor-v135.yml'
+      - 'DATA-VALIDATION-PIPELINE.md'
 jobs:
   verify:
     runs-on: ubuntu-24.04
