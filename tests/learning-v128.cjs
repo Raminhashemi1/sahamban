@@ -33,7 +33,7 @@ async function main(){
   await link.click();
   await page.waitForFunction(()=>document.getElementById('educationSectionV128')&&!document.getElementById('educationSectionV128').hidden);
   const tutorials=page.locator('#sahambanLearningChaptersV128 details');
-  assert.equal(await tutorials.count(),12);
+  assert.equal(await tutorials.count(),13);
   assert.equal(await page.locator('#sahambanLearningChaptersV128 details summary').count(),13);
   await page.locator('#sahambanLearningIndexV128 button').nth(2).click();
   assert.equal(await tutorials.nth(2).getAttribute('open'),'');
