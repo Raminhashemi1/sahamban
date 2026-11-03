@@ -63,6 +63,31 @@ small{opacity:.75}
   if(!body||!Array.isArray(body.Letters)||!Number.isFinite(Number(body.Total))||Number(body.Total)<0)throw Error('ساختار پاسخ کدال با قالب جست‌وجو تطبیق ندارد.');
   return {Total:Number(body.Total),Page:Number(body.Page||1),Letters:body.Letters.map(x=>({TracingNo:x.TracingNo??'',Symbol:x.Symbol??'',CompanyName:x.CompanyName??'',Title:x.Title??'',SentDateTime:x.SentDateTime??'',PublishDateTime:x.PublishDateTime??x.SentDateTime??'',HasExcel:Boolean(x.HasExcel),HasPdf:Boolean(x.HasPdf),Url:x.Url??'',ExcelUrl:x.ExcelUrl??''}))};
  }
+ function codalValidMetadata(body,target){
+  const normalize=v=>String(v??'').replace(/[\s\u200c\u200e\u200f\ufeff]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
+  const ascii=v=>String(v??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632));
+  const expected=normalize(target),total=Number(body?.Total),page=Number(body?.Page??1);
+  if(!expected||!Number.isSafeInteger(total)||total<0||!Number.isSafeInteger(page)||page<1||
+     !Array.isArray(body?.Letters)||body.Letters.length>100||body.Letters.length>total)
+     return {status:'UNVERIFIED_SEARCH_SCHEMA',items:[],rejected:[]};
+  const items=[],rejected=[],seen=new Set();
+  for(const x of body.Letters){
+   const symbol=normalize(x?.Symbol),title=String(x?.Title??'').trim(),tracing=ascii(x?.TracingNo).trim();
+   const publication=ascii(x?.PublishDateTime||x?.SentDateTime||'').trim();
+   const date=publication.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+\d\d?:\d\d(?::\d\d)?)?$/);
+   const month=Number(date?.[2]),day=Number(date?.[3]);
+   const dateValid=Boolean(date&&month>=1&&month<=12&&day>=1&&day<=(month<=6?31:30));
+   let reason='';
+   if(symbol!==expected)reason='SYMBOL_MISMATCH';
+   else if(!title||title.length>500)reason='INVALID_TITLE';
+   else if(!/^\d{1,20}$/.test(tracing)||BigInt(tracing)<=0n)reason='INVALID_TRACING';
+   else if(!dateValid)reason='INVALID_PUBLICATION_DATE';
+   else if(seen.has(tracing))reason='DUPLICATE_TRACING';
+   if(reason)rejected.push(reason);
+   else{seen.add(tracing);items.push(x);}
+  }
+  return {status:items.length?'SEARCH_METADATA_VALIDATED':body.Letters.length?'UNVERIFIED_NO_VALID_LETTERS':'UNVERIFIED_EMPTY_SEARCH',items,rejected};
+ }
  const button=document.getElementById('codal-run');
  const status=document.getElementById('codal-status');
  const results=document.getElementById('codal-results');
@@ -82,8 +107,13 @@ small{opacity:.75}
    if(!response.ok)throw Error('کدال HTTP '+response.status+' برگرداند.');
    const raw=await response.text();
    const body=parseCodalSearchPayload(raw,type);
-   const items=body.Letters.slice(0,5);
-   status.textContent='پاسخ جست‌وجوی کدال از نظر شبکه و ساختار معتبر است. تعداد کل نتیجه‌های اعلام‌شده: '+Number(body.Total)+'؛ نمونه‌های نمایش‌داده‌شده: '+items.length+'. این موفقیت به معنی خواندن یا تحلیل صورت‌های مالی نیست.';
+   const quality=codalValidMetadata(body,symbol);
+   const items=quality.items.slice(0,5);
+   if(quality.status!=='SEARCH_METADATA_VALIDATED'){
+    status.textContent='پاسخ دریافت شد اما اطلاعیه با هویت، تاریخ و شناسه معتبر برای نماد تأیید نشد. وضعیت: '+quality.status+'؛ ردیف‌های ردشده: '+quality.rejected.length+'. این نتیجه به معنی نبود اطلاعیه نیست.';
+    return;
+   }
+   status.textContent='جست‌وجوی کدال و اطلاعات هویتی '+quality.items.length+' اطلاعیه تأیید شد. تعداد کل نتیجه‌های اعلام‌شده: '+Number(body.Total)+'؛ نمونه‌های نمایش‌داده‌شده: '+items.length+'. توجه: اصل فایل مالی هنوز دریافت یا راستی‌آزمایی نشده و تحلیل بنیادی تأیید نشده است.';
    for(const item of items){
     const row=document.createElement('p');
     const title=document.createElement('strong');title.textContent=String(item.Title||'بدون عنوان');
