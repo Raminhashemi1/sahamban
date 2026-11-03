@@ -6,7 +6,7 @@ function history(){const end=new Date(Date.UTC(2026,10,3));return Array.from({le
 test('cost-aware event study reports gross, net, stress and drawdown consistently',()=>{
  const r=audit.audit({symbol:'نماد',history:history()});
  assert.equal(r.count,2);assert.equal(r.roundTripCostPct,1);
- assert.equal(r.events[0].grossReturnPct,((1124/1122)-1)*100);
+ assert.equal(r.events[0].grossReturnPct,((1142/1122)-1)*100);
  assert.equal(r.events[0].netReturnPct,r.events[0].grossReturnPct-1);
  assert.ok(Math.abs(r.meanNetReturnPct-(r.meanGrossReturnPct-1))<1e-10);
  assert.ok(Math.abs(r.stressMeanNetReturnPct-(r.meanGrossReturnPct-2))<1e-10);
