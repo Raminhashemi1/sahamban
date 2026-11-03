@@ -15,7 +15,7 @@ async function main(){
   page.on('pageerror',e=>errors.push(e.message));
   const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
   const end=new Date(Date.UTC(+p.year,+p.month-1,+p.day));
-  const history=Array.from({length:150},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(149-i));return {dEven:Number(d.toISOString().slice(0,10).replaceAll('-','')),pClosing:1000+3*i+Math.sin(i*1.7)*12,qTotCap:1000000000+i*10000};});
+  const history=Array.from({length:250},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(249-i));return {dEven:Number(d.toISOString().slice(0,10).replaceAll('-','')),pClosing:1000+3*i+Math.sin(i*1.7)*12,qTotCap:1000000000+i*10000};});
   const top={tradeTop:Array.from({length:19},(_,i)=>({instrument:{lVal18AFC:'آزمایشی'+i,insCode:String(300000000000+i)}}))};
   await page.route('https://cdn.tsetmc.com/api/**',async route=>{const url=route.request().url();requests.push(url);const data=url.includes('GetTradeTop')?top:{closingPriceDaily:history};await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});});
   await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
@@ -32,6 +32,7 @@ async function main(){
   assert.match(await page.locator('#marketSampleResultsV131').innerText(),/نمونه بررسی‌شده/);
   await page.locator('#marketSampleResultsV131 details summary').first().click();
   assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/بررسی گذشته‌نگر/);
+  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/ارزیابی زمانی مستقل/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),storage);
   assert.deepEqual(errors,[]);
   await context.close();
