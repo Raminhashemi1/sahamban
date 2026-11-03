@@ -35,6 +35,18 @@
     else if(h){audit.textContent='بررسی گذشته‌نگر ۱۰جلسه‌ای: '+fmt(h.count)+' رویداد غیرهمپوشان از '+fmt(h.testedSignals)+' روز قابل ارزیابی؛ '+(h.count?'میانگین ناخالص: '+fmt(h.meanGrossReturnPct)+'٪؛ میانگین خالص با هزینه فرضی رفت‌وبرگشت ۱٪: '+fmt(h.meanNetReturnPct)+'٪؛ رویداد مثبت پس از هزینه: '+fmt(h.netWinRatePct)+'٪؛ افت سرمایه متوالی: '+fmt(h.netMaxDrawdownPct)+'٪؛ سناریوی هزینه ۲٪: میانگین '+fmt(h.stressMeanNetReturnPct)+'٪ و رویداد مثبت '+fmt(h.stressNetWinRatePct)+'٪.':'هیچ نامزد ورود قابل ارزیابی مشاهده نشد.')+(h.adequateSample?'':' نمونه کمتر از ۱۰ رویداد است و برای نتیجه‌گیری آماری کافی نیست.');}
     else{audit.textContent='آزمون تاریخی انجام نشد.';}
     d.append(audit);
+    const hold=x.holdout,holdPanel=document.createElement('p');
+    if(hold?.error){holdPanel.textContent='بررسی زمانی مجزا قابل محاسبه نیست: '+hold.error;}
+    else if(hold){
+     const metric=(name,v)=>v===null?'ناموجود':fmt(v)+'٪';
+     holdPanel.textContent='ارزیابی زمانی مستقل با قواعد ثابت، ۶۰٪ دوره نخست / ۴۰٪ دوره انتهایی؛ آغاز دوره انتهایی: '+hold.splitDate+'. '+
+      'بخش نخست: '+fmt(hold.training.count)+' رویداد و میانگین خالص '+metric('training',hold.training.meanNetReturnPct)+'. '+
+      'بخش انتهایی: '+fmt(hold.holdout.count)+' رویداد؛ میانگین خالص پس از هزینه فرضی ۱٪ '+metric('holdout',hold.holdout.meanNetReturnPct)+
+      '؛ سهم رویدادهای مثبت '+metric('positive',hold.holdout.netPositivePct)+'. '+
+      (hold.holdout.adequateSample?'نمونه انتهایی حداقل ۱۰ رویداد دارد، اما اعتبار پیش‌بینی را اثبات نمی‌کند.':'کمتر از ۱۰ رویداد در دوره انتهایی؛ برای ارزیابی قابل اتکا کافی نیست. ')+
+      ' رویدادهای عبوری از مرز زمانی حذف شده‌اند؛ پارامترها با این تقسیم بازتنظیم نشده‌اند.';
+    }else{holdPanel.textContent='ارزیابی زمانی مجزا اجرا نشد.';}
+    holdPanel.className='muted';d.append(holdPanel);
     const warning=document.createElement('p');warning.className='muted';warning.textContent='آزمون گذشته‌نگر فقط از قیمت‌های پایانی استفاده می‌کند: سیگنال در پایان روز، ورود فرضی در قیمت پایانی جلسه بعد و خروج فرضی پس از ۱۰ جلسه دیگر؛ هزینه رفت‌وبرگشت ۱٪ و سناریوی تنش ۲٪ صرفاً فرض‌های قابل‌تغییر برای حساسیت‌سنجی‌اند، نه تعرفه رسمی کارگزاری. صف، لغزش واقعی، توقف نماد، تعدیل افزایش سرمایه و تضمین اجرا شبیه‌سازی نشده‌اند. عملکرد گذشته قابل تعمیم به آینده نیست.';d.append(warning);results.append(d);
    }
    for(const x of bad){const p=document.createElement('p');p.className='notice';p.textContent=x.symbol+': داده معتبر نبود — '+x.error;results.append(p);}

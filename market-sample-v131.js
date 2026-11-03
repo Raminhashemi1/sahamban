@@ -42,7 +42,10 @@
     let historical=null;
     try{historical=globalThis.SahambanSignalAuditV132.audit(quote);}
     catch(e){historical={error:e.message};}
-    results.push({symbol:c.symbol,ok:true,report,historical,quote});
+    let holdout=null;
+    try{holdout=globalThis.SahambanHoldoutV134.evaluate(quote);}
+    catch(e){holdout={error:e.message};}
+    results.push({symbol:c.symbol,ok:true,report,historical,holdout,quote});
    }catch(e){results.push({symbol:c.symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به بورس پایان یافت':e.message});}
    onProgress?.(idx+1,list.length);
   }
