@@ -45,6 +45,23 @@ small{opacity:.75}
 </section>
 <script>
 (()=>{
+ function xmlDecode(value){return String(value??'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));}
+ function parseCodalSearchPayload(raw,contentType=''){
+  const source=String(raw??'').replace(/^\uFEFF/,'').trim();
+  if(!source)throw Error('پاسخ کدال خالی است.');
+  let body;
+  if(/json/i.test(contentType)||source.startsWith('{')){
+   try{body=JSON.parse(source);}catch(_){throw Error('پاسخ JSON کدال قابل تجزیه نیست.');}
+  }else if(source.startsWith('<')){
+   const tag=(chunk,name)=>{const re=new RegExp('<(?:[\\w.-]+:)?'+name+'(?:\\s[^>]*)?>([\\s\\S]*?)</(?:[\\w.-]+:)?'+name+'\\s*>','i');const m=chunk.match(re);return m?xmlDecode(m[1].replace(/<[^>]+>/g,'').trim()):'';};
+   const matches=[...source.matchAll(/<(?:[\w.-]+:)?CodalLetterHeaderDto(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?CodalLetterHeaderDto\s*>/gi)];
+   const letters=matches.map(m=>{const x=m[1];return {TracingNo:tag(x,'TracingNo'),Symbol:tag(x,'Symbol'),CompanyName:tag(x,'CompanyName'),Title:tag(x,'Title'),SentDateTime:tag(x,'SentDateTime'),PublishDateTime:tag(x,'PublishDateTime'),HasExcel:/^true$/i.test(tag(x,'HasExcel')),HasPdf:/^true$/i.test(tag(x,'HasPdf')),Url:tag(x,'Url'),ExcelUrl:tag(x,'ExcelUrl')}});
+   const total=tag(source,'Total');
+   body={Total:total===''?letters.length:Number(total),Page:Number(tag(source,'Page')||1),Letters:letters};
+  }else throw Error('قالب پاسخ کدال نه JSON است و نه XML شناخته‌شده.');
+  if(!body||!Array.isArray(body.Letters)||!Number.isFinite(Number(body.Total))||Number(body.Total)<0)throw Error('ساختار پاسخ کدال با قالب جست‌وجو تطبیق ندارد.');
+  return {Total:Number(body.Total),Page:Number(body.Page||1),Letters:body.Letters.map(x=>({TracingNo:x.TracingNo??'',Symbol:x.Symbol??'',CompanyName:x.CompanyName??'',Title:x.Title??'',SentDateTime:x.SentDateTime??'',PublishDateTime:x.PublishDateTime??x.SentDateTime??'',HasExcel:Boolean(x.HasExcel),HasPdf:Boolean(x.HasPdf),Url:x.Url??'',ExcelUrl:x.ExcelUrl??''}))};
+ }
  const button=document.getElementById('codal-run');
  const status=document.getElementById('codal-status');
  const results=document.getElementById('codal-results');
@@ -58,13 +75,12 @@ small{opacity:.75}
   endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   try{
-   const response=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
+   const response=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json','User-Agent':'Mozilla/5.0'}});
    const type=response.headers.get('content-type')||'';
-   if(response.status===429)throw Error('کدال محدودیت تعداد درخواست (HTTP 429) برگرداند. بعداً دوباره امتحان کنید.');
+   if(response.status===429)throw Error('کدال محدودیت تعداد درخواست (HTTP 429) برگرداند. درخواست جدید را متوقف کنید و بعداً با فاصله دوباره امتحان کنید.');
    if(!response.ok)throw Error('کدال HTTP '+response.status+' برگرداند.');
-   if(!/json/i.test(type))throw Error('پاسخ JSON نیست؛ ممکن است سرویس پاسخ متفاوت یا صفحه محدودیت برگردانده باشد.');
-   const body=await response.json();
-   if(!Array.isArray(body.Letters)||!Number.isFinite(Number(body.Total)))throw Error('ساختار پاسخ کدال با قالب مورد انتظار تطبیق ندارد.');
+   const raw=await response.text();
+   const body=parseCodalSearchPayload(raw,type);
    const items=body.Letters.slice(0,5);
    status.textContent='پاسخ جست‌وجوی کدال از نظر شبکه و ساختار معتبر است. تعداد کل نتیجه‌های اعلام‌شده: '+Number(body.Total)+'؛ نمونه‌های نمایش‌داده‌شده: '+items.length+'. این موفقیت به معنی خواندن یا تحلیل صورت‌های مالی نیست.';
    for(const item of items){
