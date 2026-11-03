@@ -48,13 +48,24 @@ function save(status, details = {}) {
       save('UNVERIFIED_HTTP', { http_status: response.status, content_type: contentType });
       return;
     }
-    if (!/json/i.test(contentType)) {
-      save('UNVERIFIED_NON_JSON', { http_status: response.status, content_type: contentType });
+    const raw = await response.text();
+    let body;
+    if (/json/i.test(contentType) || raw.trim().startsWith('{')) {
+      try { body = JSON.parse(raw); }
+      catch { save('UNVERIFIED_JSON_PARSE', { http_status: response.status, content_type: contentType }); return; }
+    } else if (raw.trim().startsWith('<')) {
+      const decode = value => String(value || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+      const tag = (chunk, name) => { const m = chunk.match(new RegExp('<(?:[\\\\w.-]+:)?' + name + '(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)</(?:[\\\\w.-]+:)?' + name + '\\\\s*>', 'i')); return m ? decode(m[1].replace(/<[^>]+>/g, '').trim()) : ''; };
+      const matches = [...raw.matchAll(/<(?:[\\w.-]+:)?CodalLetterHeaderDto(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?CodalLetterHeaderDto\\s*>/gi)];
+      const letters = matches.map(m => { const x = m[1]; return { TracingNo: tag(x, 'TracingNo'), Symbol: tag(x, 'Symbol'), Title: tag(x, 'Title'), PublishDateTime: tag(x, 'PublishDateTime'), SentDateTime: tag(x, 'SentDateTime'), HasExcel: /^true$/i.test(tag(x, 'HasExcel')), HasPdf: /^true$/i.test(tag(x, 'HasPdf')) }; });
+      const total = tag(raw, 'Total');
+      body = { Total: total === '' ? letters.length : Number(total), Page: Number(tag(raw, 'Page') || 1), Letters: letters };
+    } else {
+      save('UNVERIFIED_RESPONSE_FORMAT', { http_status: response.status, content_type: contentType, body_prefix: raw.slice(0, 120) });
       return;
     }
-    const body = await response.json();
     if (!body || !Array.isArray(body.Letters) || !Number.isFinite(Number(body.Total))) {
-      save('UNVERIFIED_SCHEMA', { http_status: response.status, top_level_keys: Object.keys(body || {}) });
+      save('UNVERIFIED_SCHEMA', { http_status: response.status, content_type: contentType, top_level_keys: Object.keys(body || {}) });
       return;
     }
     const letters = body.Letters.slice(0, 5).map(x => ({
