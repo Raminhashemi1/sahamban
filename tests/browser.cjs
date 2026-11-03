@@ -37,7 +37,7 @@ async function main(){
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb105MainContent');
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
-  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),12);
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),13);
   // v129: synthetic verified history exercises the decision assistant without touching holdings.
   assert.equal(await page.locator('#decisionSupportV129').count(),1);
   await page.locator('#sahambanModulesV87 a[href="#decisionSupportV129"]').click();
@@ -80,14 +80,14 @@ async function main(){
   }
   await page.setViewportSize({width:1280,height:800});
   assert.equal(await page.locator('#sb92Tour').isVisible(),false);
-  // v94: search is UI-only and restores all twelve modules when cleared.
+  // v94: search is UI-only and restores all thirteen modules when cleared.
   await page.locator('#sb94ModuleSearch').fill('nav');
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),1);
   await page.locator('#sb94ModuleSearch').fill('بدون تطابق');
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),0);
   assert.match(await page.locator('#sb94ModuleSearchStatus').innerText(),/پیدا نشد/);
   await page.getByRole('button',{name:'پاک کردن'}).click();
-  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),12);
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),13);
   await page.getByRole('button',{name:'آموزش اولین استفاده (۴ قدم)'}).click();
   assert.equal(await page.locator('#sb92Tour').isVisible(),true);
   assert.match(await page.locator('#sb92TourTitle').innerText(),/سبدتان/);

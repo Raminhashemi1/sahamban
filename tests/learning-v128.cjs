@@ -19,8 +19,8 @@ async function main(){
   assert.doesNotMatch(source,/localStorage|sessionStorage|indexedDB|fetch\s*\(|XMLHttpRequest|sendBeacon/);
   const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
   assert.match(html,/lang="fa"/);
-  assert.match(html,/learning-v128.js\?v=129\.0/);
-  assert.match(sw,/learning-v128.js\?v=129\.0/);
+  assert.match(html,/learning-v128.js\?v=130\.0/);
+  assert.match(sw,/learning-v128.js\?v=130\.0/);
   browser=await chromium.launch({headless:true});
   const context=await browser.newContext({viewport:{width:390,height:790},locale:'fa-IR',serviceWorkers:'block'});
   const page=await context.newPage(),errors=[];
@@ -33,13 +33,13 @@ async function main(){
   await link.click();
   await page.waitForFunction(()=>document.getElementById('educationSectionV128')&&!document.getElementById('educationSectionV128').hidden);
   const tutorials=page.locator('#sahambanLearningChaptersV128 details');
-  assert.equal(await tutorials.count(),13);
-  assert.equal(await page.locator('#sahambanLearningChaptersV128 details summary').count(),13);
+  assert.equal(await tutorials.count(),14);
+  assert.equal(await page.locator('#sahambanLearningChaptersV128 details summary').count(),14);
   await page.locator('#sahambanLearningIndexV128 button').nth(2).click();
   assert.equal(await tutorials.nth(2).getAttribute('open'),'');
   assert.equal(await tutorials.nth(1).getAttribute('open'),null);
   await page.locator('#sb128ExpandAll').click();
-  assert.equal(await page.locator('#sahambanLearningChaptersV128 details[open]').count(),13);
+  assert.equal(await page.locator('#sahambanLearningChaptersV128 details[open]').count(),14);
   await page.locator('#sb128CollapseAll').click();
   assert.equal(await page.locator('#sahambanLearningChaptersV128 details[open]').count(),0);
   await tutorials.nth(2).locator('summary').click();
