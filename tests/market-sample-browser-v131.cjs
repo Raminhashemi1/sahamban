@@ -28,6 +28,7 @@ async function main(){
   assert.equal(requests.length,7);
   assert.equal(requests.filter(x=>x.includes('GetTradeTop')).length,1);
   assert.match(await page.locator('#marketSampleResultsV131').innerText(),/نمونه بررسی‌شده/);
+  await page.locator('#marketSampleResultsV131 details summary').first().click();
   assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/بررسی گذشته‌نگر/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),storage);
   assert.deepEqual(errors,[]);
