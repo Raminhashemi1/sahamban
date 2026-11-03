@@ -1,0 +1,37 @@
+name: Sahamban scheduled live-market verification v135
+on:
+  workflow_dispatch:
+  schedule:
+    # Tehran market session is normally 09:00–12:30; UTC+3:30.
+    # Two read-only samples reduce the chance of a single stale response.
+    - cron: '15 6 * * 6-3'
+    - cron: '0 8 * * 6-3'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/live-market-connectivity.cjs'
+      - 'tests/market-freshness-v111.cjs'
+      - '.github/workflows/live-market-monitor-v135.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Validate test scripts
+        run: node --check tests/live-market-connectivity.cjs && node --check tests/market-freshness-v111.cjs
+      - name: Check live public quote (read-only; never reads portfolio)
+        run: node tests/live-market-connectivity.cjs
+      - name: Preserve explicit outcome, including network unavailability
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-live-market-v135
+          path: test-artifacts/live-market-v111.json
+          if-no-files-found: warn
+          retention-days: 30
