@@ -25,7 +25,7 @@
   const hist=payload.closingPriceDaily.map(x=>{const date=String(x?.dEven??''),close=Number(x?.pClosing);if(!validDate(date)||!Number.isFinite(close)||close<=0)return null;return {date,close};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
   if(hist.length<60)throw new Error('کمتر از ۶۰ قیمت پایانی معتبر دریافت شد.');
   if(new Set(hist.map(x=>x.date)).size!==hist.length)throw new Error('تاریخچه دارای تاریخ تکراری است؛ تحلیل متوقف شد.');
-  if(hist.length>2500)throw new Error('حجم تاریخچه خارج از محدوده امن است.');
+  if(hist.length>12000)throw new Error('حجم تاریخچه خارج از محدوده امن است.');
   const history=hist.slice(-250);
   return {symbol:identity.symbol,insCode:identity.insCode,marketDate:history.at(-1).date,history};
  }
