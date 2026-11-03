@@ -1,7 +1,7 @@
 'use strict';
 /* v129 transparent decision-support rules. Verified daily closes only; no trading, prediction, storage or network. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SahambanDecisionV129=api;})(typeof globalThis!=='undefined'?globalThis:null,function(){
- const validDate=s=>/^\\d{8}$/.test(String(s||''))&&(()=>{const x=String(s),d=new Date(Date.UTC(+x.slice(0,4),+x.slice(4,6)-1,+x.slice(6,8)));return d.getUTCFullYear()===+x.slice(0,4)&&d.getUTCMonth()+1===+x.slice(4,6)&&d.getUTCDate()===+x.slice(6,8);})();
+ const validDate=s=>/^\d{8}$/.test(String(s||''))&&(()=>{const x=String(s),d=new Date(Date.UTC(+x.slice(0,4),+x.slice(4,6)-1,+x.slice(6,8)));return d.getUTCFullYear()===+x.slice(0,4)&&d.getUTCMonth()+1===+x.slice(4,6)&&d.getUTCDate()===+x.slice(6,8);})();
  const dayNumber=s=>Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8))/86400000;
  const sma=(a,n)=>a.slice(-n).reduce((x,y)=>x+y,0)/n;
  function analyze(q,{today,maxAgeDays=7}={}){
