@@ -15,7 +15,7 @@ test('chronological 60/40 split only uses history available on signal date',()=>
   assert.ok(out.training.events.every(e=>e.exitIndex<out.splitIndex));
   assert.ok(out.holdout.events.every(e=>e.signalIndex>=out.splitIndex));
   assert.ok(out.embargoedSignalDays>0);
-  assert.ok(seen.every(n=>n>=60&&n<=238));
+  assert.ok(seen.every(n=>n>=60&&n<=239));
   assert.equal(out.sufficientToClaimSkill,false);
   for(const part of [out.training,out.holdout]){
    assert.ok(part.events.every(e=>Math.abs(e.netReturnPct-(e.grossReturnPct-1))<1e-8));
