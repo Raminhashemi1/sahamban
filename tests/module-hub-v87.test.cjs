@@ -9,7 +9,7 @@ function elt(id){
 }
 function boot(initialHash=''){
  const ids={};for(const id of ['sahambanHubV87','sahambanGuideV87','sahambanGuideTitleV87','sahambanGuideStepsV87','sahambanGuideOpenV87','sahambanModulesV87','sahambanHomeControlV87','sahambanActiveTitleV87','calculate','check'])ids[id]=elt(id);
- const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV128','decisionSupportV129'];
+ const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV129','decisionSupportV129'];
  const sections=keys.map(id=>{const e=elt(id);e.closest=()=>e;e.querySelector=()=>null;ids[id]=e;return e});
  ids.calculate.closest=()=>ids.positionSizeSectionV87;ids.check.closest=()=>ids.manualAlertsSectionV87;
  const host={querySelectorAll:()=>sections},listeners={},location={hash:initialHash};
@@ -42,7 +42,7 @@ test('v87 shows contextual guidance, step list, and a link to selected module',(
 test('v87 supports deep links directly and all module ids are backed by HTML',()=>{
  const a=boot('#professionalRiskV49');assert.equal(a.ids.professionalRiskV49.hidden,false);
  assert.match(html,/id="sahambanHubV87"/);assert.match(html,/id="sahambanModulesV87"/);
- assert.match(html,/module-hub-v87\.js\?v=128\.0/);
+ assert.match(html,/module-hub-v87\.js\?v=129\.0/);
  for(const id of ['livePortfolioSection','brokerImportSection','portfolioSection','technicalAnalysisV50','marketSection','watchlistSection','professionalRiskV49'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(sw,/module-hub-v87\.js\?v=128\.0/);assert.match(sw,/sahamban-static-v103-0/);
+ assert.match(sw,/module-hub-v87\.js\?v=129\.0/);assert.match(sw,/sahamban-static-v103-0/);
 });
