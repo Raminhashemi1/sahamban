@@ -67,6 +67,13 @@
 - [Pages deployment](https://github.com/Raminhashemi1/sahamban/actions/runs/41693434234)، smoke tests، آزمون‌های چرخه سبد، ریسک، اندیکاتورها، مبنای قیمت، مبالغ کارگزاری، دارایی‌های PWA و WebKit proxy روی commit مستندات/اعتبارسنجی با نتیجه موفق پایان یافتند.
 - این مرحله فقط کیفیت کنترل متادیتا و انتشار صفحه آزمایش را بهتر می‌کند؛ اصل گزارش مالی دریافت نشده و EPS/NAV/نسبت بنیادی یا سیگنال معاملاتی تأیید نشده است.
 
+## انتشار تفکیک وضعیت اتصال و تازگی — commit `97431b5d2b09883b5f0c10a38925a93220f14e5d`
+- تغییر متن صفحه تشخیص برای جداسازی موفقیت اتصال/دریافت، تطبیق تاریخی و تأیید تازگی زنده در GitHub Pages منتشر شد.
+- [Pages build/deploy](https://github.com/Raminhashemi1/sahamban/actions/runs/41695442465): هر سه job موفق.
+- [Smoke و Browser](https://github.com/Raminhashemi1/sahamban/actions/runs/41695442840): هر دو job موفق؛ شامل تست صفحه تشخیص بازار، اعتبارسنجی تاریخ و مرورگر Chromium.
+- [WebKit mobile proxy](https://github.com/Raminhashemi1/sahamban/actions/runs/41695442621)، [ریسک](https://github.com/Raminhashemi1/sahamban/actions/runs/41695442659)، [اندیکاتورها](https://github.com/Raminhashemi1/sahamban/actions/runs/41695442688)، چرخه سبد ۲۰/۱۰۰ نماد، مبنای قیمت و آزمون دارایی‌های PWA همگی موفق.
+- [آخرین اجرای زمان‌بندی‌شده TSETMC](https://github.com/Raminhashemi1/sahamban/actions/runs/41695442896) از GitHub runner همچنان `UNVERIFIED_NETWORK` با `UND_ERR_CONNECT_TIMEOUT` ثبت کرد. این نتیجه با شاهد مرورگر گوشی کاربر (اتصال و تطبیق تاریخی موفق، اما خارج از جلسه) متفاوت است؛ بنابراین دسترسی وابسته به شبکه است و تازگی قیمت زنده هنوز تأیید نشده است.
+
 ## موارد پذیرش باز
 1. تأیید پایدار منبع داده در ساعات معامله تهران و تطبیق قیمت/تاریخچه با مرجع مستقل.
 2. آزمون VoiceOver فارسی روی iPhone فیزیکی.
