@@ -37,7 +37,22 @@ async function main(){
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb105MainContent');
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
-  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),11);
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),12);
+  // v129: synthetic verified history exercises the decision assistant without touching holdings.
+  assert.equal(await page.locator('#decisionSupportV129').count(),1);
+  await page.evaluate(()=>{
+   const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+   const today=p.year+p.month+p.day,base=new Date(Date.UTC(+p.year,+p.month-1,+p.day));
+   const history=Array.from({length:100},(_,i)=>{const d=new Date(base);d.setUTCDate(d.getUTCDate()-(99-i));return {date:d.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2+Math.sin(i*1.7)*18,tradedValue:100000+i*1000};});
+   window.dispatchEvent(new CustomEvent('sahamban:verified-historical-quotes-v50',{detail:{quotes:[{symbol:'آزمایشی',marketDate:today,history}]}}));
+  });
+  await page.locator('#decisionRunV129').click();
+  assert.equal(await page.locator('#decisionTableV129 tbody tr').count(),1);
+  assert.match(await page.locator('#decisionSummaryV129').innerText(),/۱/);
+  assert.equal(await page.locator('#decisionSymbolV129 option').count(),1);
+  assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.includes('holdings'))),[]);
+  console.log('PASS v129: decision assistant consumes synthetic verified history without holdings writes');
+
   // v100: fast task-first navigation uses existing routes, not portfolio data.
   assert.equal(await page.locator('.sb100-path a').count(),3);
   assert.equal(await page.locator('.sb100-path a').nth(0).getAttribute('href'),'#brokerImportSection');
