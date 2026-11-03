@@ -59,6 +59,10 @@ function save(status, details = {}) {
       const matches = [...raw.matchAll(/<(?:[\\w.-]+:)?CodalLetterHeaderDto(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?CodalLetterHeaderDto\\s*>/gi)];
       const letters = matches.map(m => { const x = m[1]; return { TracingNo: tag(x, 'TracingNo'), Symbol: tag(x, 'Symbol'), Title: tag(x, 'Title'), PublishDateTime: tag(x, 'PublishDateTime'), SentDateTime: tag(x, 'SentDateTime'), HasExcel: /^true$/i.test(tag(x, 'HasExcel')), HasPdf: /^true$/i.test(tag(x, 'HasPdf')) }; });
       const total = tag(raw, 'Total');
+      if (!/<(?:[\\w.-]+:)?SearchReportListDto(?:\\s|>)/i.test(raw) && matches.length === 0) {
+        save('UNVERIFIED_XML_SCHEMA', { http_status: response.status, content_type: contentType });
+        return;
+      }
       body = { Total: total === '' ? letters.length : Number(total), Page: Number(tag(raw, 'Page') || 1), Letters: letters };
     } else {
       save('UNVERIFIED_RESPONSE_FORMAT', { http_status: response.status, content_type: contentType, body_prefix: raw.slice(0, 120) });
