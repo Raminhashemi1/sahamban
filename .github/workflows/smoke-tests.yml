@@ -25,6 +25,7 @@ jobs:
       - run: node --test tests/market-history-v113.test.cjs
       - run: node tests/market-validation.cjs
       - run: node tests/market-freshness-v111.test.cjs
+      - run: node --test tests/market-date-tehran-v127.test.cjs
       - run: node tests/live-market-connectivity.cjs
       - name: Preserve explicit live-market status (including network skip)
         if: always()
