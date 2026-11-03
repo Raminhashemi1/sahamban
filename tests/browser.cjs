@@ -40,6 +40,8 @@ async function main(){
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),12);
   // v129: synthetic verified history exercises the decision assistant without touching holdings.
   assert.equal(await page.locator('#decisionSupportV129').count(),1);
+  await page.locator('#sahambanModulesV87 a[href="#decisionSupportV129"]').click();
+  await page.waitForFunction(()=>document.getElementById('decisionSupportV129')?.hidden===false);
   await page.evaluate(()=>{
    const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
    const today=p.year+p.month+p.day,base=new Date(Date.UTC(+p.year,+p.month-1,+p.day));
@@ -52,6 +54,8 @@ async function main(){
   assert.equal(await page.locator('#decisionSymbolV129 option').count(),1);
   assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.includes('holdings'))),[]);
   console.log('PASS v129: decision assistant consumes synthetic verified history without holdings writes');
+  await page.evaluate(()=>{location.hash='';});
+  await page.waitForFunction(()=>document.getElementById('sahambanHubV87')?.hidden===false);
 
   // v100: fast task-first navigation uses existing routes, not portfolio data.
   assert.equal(await page.locator('.sb100-path a').count(),3);
