@@ -14,7 +14,7 @@
   if(age<0||age>maxAgeDays)throw new RangeError('آخرین داده بازار بیش از حد قدیمی یا دارای تاریخ آینده است؛ سیگنال صادر نشد.');
   const closes=h.map(x=>x.close),ind=globalThis.SahambanTechnicalV50?.calculate(closes,{smaPeriod:20,rsiPeriod:14,macd:{fast:12,slow:26,signal:9}});
   if(!ind)throw new Error('کتابخانه اندیکاتورهای معتبر در دسترس نیست.');
-  const last=closes.at(-1),s20=ind.sma.at(-1),s50=sma(closes.slice(0,-1),50),rsi=ind.rsi.at(-1),macd=ind.macd.macd.at(-1),hist=ind.macd.histogram.at(-1),prevHist=ind.macd.histogram.at(-2),momentum=(last/closes.at(-21)-1)*100,priorHigh=Math.max(...closes.slice(-21,-1)),priorLow=Math.min(...closes.slice(-21,-1));
+  const last=closes.at(-1),s20=ind.sma.at(-1),s50=sma(closes,50),rsi=ind.rsi.at(-1),macd=ind.macd.macd.at(-1),hist=ind.macd.histogram.at(-1),prevHist=ind.macd.histogram.at(-2),momentum=(last/closes.at(-21)-1)*100,priorHigh=Math.max(...closes.slice(-21,-1)),priorLow=Math.min(...closes.slice(-21,-1));
   if([s20,s50,rsi,macd,hist,prevHist,momentum,priorHigh,priorLow].some(x=>!Number.isFinite(x)))throw new RangeError('برای محاسبه همه مؤلفه‌ها داده کافی وجود ندارد.');
   const trend=last>s20&&s20>s50,healthyRsi=rsi>=50&&rsi<=68,positiveMacd=hist>0&&hist>prevHist,positiveMomentum=momentum>0,breakout=last>priorHigh;
   const points={trend:trend?30:0,rsi:healthyRsi?15:0,macd:positiveMacd?25:0,momentum:positiveMomentum?15:0,breakout:breakout?15:0};
