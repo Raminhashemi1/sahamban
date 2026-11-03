@@ -78,10 +78,7 @@ small{opacity:.75}
   }finally{clearTimeout(timer);button.disabled=false;}
  });
 })();
-</script>
 
-</main>
-<script>
 'use strict';
 const $=id=>document.getElementById(id);
 const api='https://cdn.tsetmc.com/api';
@@ -298,6 +295,10 @@ $('run').addEventListener('click',async()=>{
   s.textContent='ناموفق یا تأییدنشده: '+(e?.name==='AbortError'?'مهلت اتصال ۱۰ ثانیه‌ای تمام شد':String(e?.message||e))+'\nهیچ اطلاعات سبدی خوانده یا تغییر داده نشده است.';
  }finally{b.disabled=false;}
 });
+
 </script>
+
+</main>
+
 </body>
 </html>
