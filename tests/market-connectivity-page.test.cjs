@@ -15,6 +15,8 @@ assert.match(html,/UNVERIFIED_STALE_SESSION_DATE/);
 assert.match(html,/UNVERIFIED_STALE_TRADE/);
 assert.match(html,/۱۵ دقیقه/);
 assert.match(html,/q\.freshness\.status!=='FRESH'/);
+assert.match(html,/اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق/);
+assert.match(html,/تأیید تازگی قیمت زنده: انجام نشد/);
 assert.match(html,/ریال/);
 assert.match(html,/آزمایش نمادهای سبد/);
 assert.ok(html.includes("const defaultSymbols=['وساخت'"));
