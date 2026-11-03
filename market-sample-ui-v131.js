@@ -20,10 +20,10 @@
     const factors=document.createElement('ul');for(const [name,ok] of r.reasons){const li=document.createElement('li');li.textContent=(ok?'✓ ':'✗ ')+name;factors.append(li);}d.append(factors);
     const audit=document.createElement('p');
     if(h&&h.error){audit.textContent='آزمون گذشته قابل محاسبه نیست: '+h.error;}
-    else if(h){audit.textContent='بررسی گذشته‌نگر ۱۰جلسه‌ای: '+fmt(h.count)+' رویداد غیرهمپوشان از '+fmt(h.testedSignals)+' روز قابل ارزیابی؛ '+(h.count?'میانگین بازده فرضی: '+fmt(h.meanReturnPct)+'٪؛ درصد رویداد مثبت: '+fmt(h.winRatePct)+'٪.':'هیچ نامزد ورود قابل ارزیابی مشاهده نشد.')+(h.adequateSample?'':' نمونه کمتر از ۱۰ رویداد است و برای نتیجه‌گیری آماری کافی نیست.');}
+    else if(h){audit.textContent='بررسی گذشته‌نگر ۱۰جلسه‌ای: '+fmt(h.count)+' رویداد غیرهمپوشان از '+fmt(h.testedSignals)+' روز قابل ارزیابی؛ '+(h.count?'میانگین ناخالص: '+fmt(h.meanGrossReturnPct)+'٪؛ میانگین خالص با هزینه فرضی رفت‌وبرگشت ۱٪: '+fmt(h.meanNetReturnPct)+'٪؛ رویداد مثبت پس از هزینه: '+fmt(h.netWinRatePct)+'٪؛ افت سرمایه متوالی: '+fmt(h.netMaxDrawdownPct)+'٪؛ سناریوی هزینه ۲٪: میانگین '+fmt(h.stressMeanNetReturnPct)+'٪ و رویداد مثبت '+fmt(h.stressNetWinRatePct)+'٪.':'هیچ نامزد ورود قابل ارزیابی مشاهده نشد.')+(h.adequateSample?'':' نمونه کمتر از ۱۰ رویداد است و برای نتیجه‌گیری آماری کافی نیست.');}
     else{audit.textContent='آزمون تاریخی انجام نشد.';}
     d.append(audit);
-    const warning=document.createElement('p');warning.className='muted';warning.textContent='آزمون گذشته‌نگر فقط از قیمت‌های پایانی استفاده می‌کند: سیگنال در پایان روز، ورود فرضی در قیمت پایانی جلسه بعد و خروج فرضی پس از ۱۰ جلسه دیگر؛ بدون کارمزد، صف، لغزش، توقف نماد، تعدیل افزایش سرمایه یا تضمین اجرا. عملکرد گذشته قابل تعمیم به آینده نیست.';d.append(warning);results.append(d);
+    const warning=document.createElement('p');warning.className='muted';warning.textContent='آزمون گذشته‌نگر فقط از قیمت‌های پایانی استفاده می‌کند: سیگنال در پایان روز، ورود فرضی در قیمت پایانی جلسه بعد و خروج فرضی پس از ۱۰ جلسه دیگر؛ هزینه رفت‌وبرگشت ۱٪ و سناریوی تنش ۲٪ صرفاً فرض‌های قابل‌تغییر برای حساسیت‌سنجی‌اند، نه تعرفه رسمی کارگزاری. صف، لغزش واقعی، توقف نماد، تعدیل افزایش سرمایه و تضمین اجرا شبیه‌سازی نشده‌اند. عملکرد گذشته قابل تعمیم به آینده نیست.';d.append(warning);results.append(d);
    }
    for(const x of bad){const p=document.createElement('p');p.className='notice';p.textContent=x.symbol+': داده معتبر نبود — '+x.error;results.append(p);}
    status.textContent='بررسی نمونه پربازدیدها پایان یافت. '+fmt(good.length)+' نماد با داده قابل قبول؛ هیچ دارایی ذخیره یا تغییر نکرد.';
