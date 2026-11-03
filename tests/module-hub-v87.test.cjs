@@ -9,7 +9,7 @@ function elt(id){
 }
 function boot(initialHash=''){
  const ids={};for(const id of ['sahambanHubV87','sahambanGuideV87','sahambanGuideTitleV87','sahambanGuideStepsV87','sahambanGuideOpenV87','sahambanModulesV87','sahambanHomeControlV87','sahambanActiveTitleV87','calculate','check'])ids[id]=elt(id);
- const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV128'];
+ const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV128','decisionSupportV129'];
  const sections=keys.map(id=>{const e=elt(id);e.closest=()=>e;e.querySelector=()=>null;ids[id]=e;return e});
  ids.calculate.closest=()=>ids.positionSizeSectionV87;ids.check.closest=()=>ids.manualAlertsSectionV87;
  const host={querySelectorAll:()=>sections},listeners={},location={hash:initialHash};
