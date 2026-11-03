@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --check tests/pwa-asset-integrity-v125.cjs
+      - run: node --test tests/pwa-asset-retry-v125.test.cjs
       - name: Check all local first-party asset references
         run: node tests/pwa-asset-integrity-v125.cjs
       - name: Check published HTTPS references (main or schedule only)
