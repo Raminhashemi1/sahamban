@@ -53,7 +53,7 @@ small{opacity:.75}
   if(/json/i.test(contentType)||source.startsWith('{')){
    try{body=JSON.parse(source);}catch(_){throw Error('پاسخ JSON کدال قابل تجزیه نیست.');}
   }else if(source.startsWith('<')){
-   const tag=(chunk,name)=>{const re=new RegExp('<(?:[\w.-]+:)?'+name+'(?:\s[^>]*)?>([\s\\S]*?)</(?:[\w.-]+:)?'+name+'\s*>','i');const m=chunk.match(re);return m?xmlDecode(m[1].replace(/<[^>]+>/g,'').trim()):'';};
+   const tag=(chunk,name)=>{const re=new RegExp('<(?:[\\w.-]+:)?'+name+'(?:\\s[^>]*)?>([\\s\\S]*?)</(?:[\\w.-]+:)?'+name+'\\s*>','i');const m=chunk.match(re);return m?xmlDecode(m[1].replace(/<[^>]+>/g,'').trim()):'';};
    const matches=[...source.matchAll(/<(?:[\w.-]+:)?CodalLetterHeaderDto(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?CodalLetterHeaderDto\s*>/gi)];
    const letters=matches.map(m=>{const x=m[1];return {TracingNo:tag(x,'TracingNo'),Symbol:tag(x,'Symbol'),CompanyName:tag(x,'CompanyName'),Title:tag(x,'Title'),SentDateTime:tag(x,'SentDateTime'),PublishDateTime:tag(x,'PublishDateTime'),HasExcel:/^true$/i.test(tag(x,'HasExcel')),HasPdf:/^true$/i.test(tag(x,'HasPdf')),Url:tag(x,'Url'),ExcelUrl:tag(x,'ExcelUrl')}});
    const total=tag(source,'Total');
