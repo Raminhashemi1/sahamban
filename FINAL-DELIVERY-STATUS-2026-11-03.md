@@ -38,7 +38,8 @@ https://github.com/Raminhashemi1/sahamban/actions/runs/41673458753
 - کلید فایل `app.js` در HTML و Service Worker به `v127.0` تغییر کرد. برای سازگاری با آزمون‌های قبلی، namespace کش ثابت `sahamban-static-v103-0` حفظ شده است.
 - آزمون جدید `tests/market-date-tehran-v127.test.cjs` در اجرای [Smoke tests](https://github.com/Raminhashemi1/sahamban/actions/runs/41689744516) موفق شد؛ کل job آزمون‌های Node در همان workflow نیز موفق است.
 - build و deploy مربوط به همین commit در [Pages deployment](https://github.com/Raminhashemi1/sahamban/actions/runs/41689743749) موفق شده‌اند.
-- آزمون مرورگر Chromium و آزمون WebKit در زمان ثبت این سند هنوز در حال اجرا هستند؛ موفقیت آزمون موبایل فیزیکی از این CI قابل استنتاج نیست.
+- آزمون مرورگر Chromium در [Smoke workflow](https://github.com/Raminhashemi1/sahamban/actions/runs/41689744516) موفق شد.
+- آزمون خودکار WebKit در [WebKit mobile acceptance proxy](https://github.com/Raminhashemi1/sahamban/actions/runs/41689743934) موفق شد؛ این شبیه‌سازی/پروکسی CI است و جای آزمون روی iPhone یا Android فیزیکی را نمی‌گیرد.
 
 ## موارد پذیرش باز
 1. تأیید پایدار منبع داده در ساعات معامله تهران و تطبیق قیمت/تاریخچه با مرجع مستقل.
