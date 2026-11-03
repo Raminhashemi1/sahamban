@@ -34,12 +34,12 @@ async function main(){
   await page.waitForFunction(()=>document.getElementById('educationSectionV128')&&!document.getElementById('educationSectionV128').hidden);
   const tutorials=page.locator('#sahambanLearningChaptersV128 details');
   assert.equal(await tutorials.count(),12);
-  assert.equal(await page.locator('#sahambanLearningChaptersV128 details summary').count(),12);
+  assert.equal(await page.locator('#sahambanLearningChaptersV128 details summary').count(),13);
   await page.locator('#sahambanLearningIndexV128 button').nth(2).click();
   assert.equal(await tutorials.nth(2).getAttribute('open'),'');
   assert.equal(await tutorials.nth(1).getAttribute('open'),null);
   await page.locator('#sb128ExpandAll').click();
-  assert.equal(await page.locator('#sahambanLearningChaptersV128 details[open]').count(),12);
+  assert.equal(await page.locator('#sahambanLearningChaptersV128 details[open]').count(),13);
   await page.locator('#sb128CollapseAll').click();
   assert.equal(await page.locator('#sahambanLearningChaptersV128 details[open]').count(),0);
   await tutorials.nth(2).locator('summary').click();
