@@ -26,7 +26,8 @@ async function fetchWithRetry(fetchImpl, url, options = {}, config = {}) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let response;
     try {
-      response = await fetchImpl(url, options);
+      const requestOptions = typeof options === 'function' ? options(attempt) : options;
+      response = await fetchImpl(url, requestOptions);
     } catch (error) {
       lastError = error;
       if (attempt < maxAttempts && retryableNetworkError(error)) {
