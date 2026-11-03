@@ -33,7 +33,7 @@
  }
  async function sample({fetcher=fetch,today,onProgress,limit=6}={}){
   if(!/^\d{8}$/.test(String(today??'')))throw new Error('تاریخ مبنای بازار نامعتبر است.');
-  const list=candidates(await json(BASE+TOP,fetcher),{limit}),results=[];
+  const feed=await json(BASE+TOP,fetcher),list=candidates(feed,{limit}),results=[];
   for(const [idx,c] of list.entries()){
    try{
     const data=await json(BASE+'/ClosingPrice/GetClosingPriceDailyList/'+encodeURIComponent(c.insCode)+'/0',fetcher);
@@ -46,7 +46,7 @@
    }catch(e){results.push({symbol:c.symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به بورس پایان یافت':e.message});}
    onProgress?.(idx+1,list.length);
   }
-  return {source:'MostVisited',poolSize:40,sampled:list.length,results};
+  return {source:'MostVisited',poolSize:feed.tradeTop.length,sampled:list.length,results};
  }
  return Object.freeze({candidates,sample});
 });
