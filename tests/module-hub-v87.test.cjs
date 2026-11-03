@@ -32,7 +32,7 @@ test('v87 opens only selected module and returns home',()=>{
  a.change('#home');assert.equal(a.ids.sahambanHubV87.hidden,false);
 });
 test('v87 shows contextual guidance, step list, and a link to selected module',()=>{
- const a=boot(),button=a.buttons[1].children[1];
+ const a=boot(),button=a.buttons[2].children[1];
  button.handlers.click();
  assert.equal(a.ids.sahambanGuideV87.hidden,false);
  assert.equal(a.ids.sahambanGuideStepsV87.children.length,3);
