@@ -1,0 +1,34 @@
+name: Sahamban Codal read-only verification v136
+on:
+  workflow_dispatch:
+  schedule:
+    # One low-frequency probe per Tehran trading day; avoid aggressive polling.
+    - cron: '30 6 * * 6,0-3'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/codal-connectivity-v136.cjs'
+      - '.github/workflows/codal-monitor-v136.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Validate diagnostic
+        run: node --check tests/codal-connectivity-v136.cjs
+      - name: Check one public Codal filing search (read-only)
+        run: node tests/codal-connectivity-v136.cjs
+      - name: Preserve outcome, including block or network failure
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-codal-v136
+          path: test-artifacts/codal-v136.json
+          if-no-files-found: warn
+          retention-days: 30
