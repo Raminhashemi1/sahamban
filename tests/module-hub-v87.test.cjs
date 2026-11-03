@@ -17,8 +17,8 @@ function boot(initialHash=''){
  vm.runInNewContext(src,{document,location,window:{addEventListener:(n,fn)=>listeners[n]=fn},requestAnimationFrame:fn=>fn()});
  return {ids,sections,location,change:hash=>{location.hash=hash;listeners.hashchange()},buttons:ids.sahambanModulesV87.children};
 }
-test('v87 creates an at-a-glance 11 module home and guides with no extra traffic',()=>{
- const a=boot();assert.equal(a.buttons.length,11);assert.equal(a.ids.sahambanHubV87.hidden,false);
+test('v87 creates an at-a-glance 12 module home and guides with no extra traffic',()=>{
+ const a=boot();assert.equal(a.buttons.length,12);assert.equal(a.ids.sahambanHubV87.hidden,false);
  assert.ok(a.sections.every(x=>x.hidden));assert.equal(a.ids.sahambanHomeControlV87.hidden,true);
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|navigator\.sendBeacon/);
 });
