@@ -19,8 +19,8 @@ async function main(){
   assert.doesNotMatch(source,/localStorage|sessionStorage|indexedDB|fetch\s*\(|XMLHttpRequest|sendBeacon/);
   const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
   assert.match(html,/lang="fa"/);
-  assert.match(html,/learning-v128.js\?v=128\.0/);
-  assert.match(sw,/learning-v128.js\?v=128\.0/);
+  assert.match(html,/learning-v128.js\?v=129\.0/);
+  assert.match(sw,/learning-v128.js\?v=129\.0/);
   browser=await chromium.launch({headless:true});
   const context=await browser.newContext({viewport:{width:390,height:790},locale:'fa-IR',serviceWorkers:'block'});
   const page=await context.newPage(),errors=[];
