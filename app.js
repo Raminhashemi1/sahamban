@@ -408,7 +408,9 @@ function marketDateCheck(raw){
  const year=Number(value.slice(0,4)),month=Number(value.slice(4,6)),day=Number(value.slice(6,8));
  const date=new Date(Date.UTC(year,month-1,day));
  if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return {ok:false,text:'تاریخ بازار نامعتبر است'};
- const today=new Date(),todayUTC=Date.UTC(today.getFullYear(),today.getMonth(),today.getDate());
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const local=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ const todayUTC=Date.UTC(Number(local.year),Number(local.month)-1,Number(local.day));
  const age=Math.round((todayUTC-date.getTime())/86400000);
  if(age<0)return {ok:false,text:'تاریخ بازار در آینده است'};
  if(age>7)return {ok:false,text:'داده قدیمی است ('+fmt(age)+' روز پیش)'};
