@@ -22,7 +22,7 @@
  function parseHistory(payload,identity){
   if(!Array.isArray(payload?.closingPriceDaily))throw new Error('ساختار تاریخچه بازار معتبر نیست.');
   const validDate=s=>/^\d{8}$/.test(s)&&(()=>{const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8)));return d.getUTCFullYear()===+s.slice(0,4)&&d.getUTCMonth()+1===+s.slice(4,6)&&d.getUTCDate()===+s.slice(6,8);})();
-  const hist=payload.closingPriceDaily.map(x=>{const date=String(x?.dEven??''),close=Number(x?.pClosing);if(!validDate(date)||!Number.isFinite(close)||close<=0)return null;return {date,close};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
+  const hist=payload.closingPriceDaily.map(x=>{const date=String(x?.dEven??''),close=Number(x?.pClosing);if(!validDate(date)||!Number.isFinite(close)||close<=0)return null;const tradedValue=x?.qTotCap==null?null:Number(x.qTotCap);return {date,close,tradedValue:Number.isFinite(tradedValue)&&tradedValue>0?tradedValue:null};}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
   if(hist.length<60)throw new Error('کمتر از ۶۰ قیمت پایانی معتبر دریافت شد.');
   if(new Set(hist.map(x=>x.date)).size!==hist.length)throw new Error('تاریخچه دارای تاریخ تکراری است؛ تحلیل متوقف شد.');
   if(hist.length>12000)throw new Error('حجم تاریخچه خارج از محدوده امن است.');
