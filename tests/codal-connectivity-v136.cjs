@@ -2,6 +2,7 @@
 // Low-frequency, read-only CODAL connectivity diagnostic.
 // Uses one known listed issuer only. Does not download reports or read user holdings.
 const fs = require('node:fs');
+const {verifySearchMetadata}=require('./codal-search-quality.cjs');
 const url = new URL('https://search.codal.ir/api/search/v2/q');
 url.search = new URLSearchParams({
   Symbol: 'ونوین',
@@ -72,20 +73,24 @@ function save(status, details = {}) {
       save('UNVERIFIED_SCHEMA', { http_status: response.status, content_type: contentType, top_level_keys: Object.keys(body || {}) });
       return;
     }
-    const letters = body.Letters.slice(0, 5).map(x => ({
-      title: String(x.Title || '').slice(0, 240),
-      symbol: String(x.Symbol || ''),
-      publish_date: String(x.PublishDateTime || x.SentDateTime || ''),
-      tracing_no: Number.isFinite(Number(x.TracingNo)) ? Number(x.TracingNo) : null,
-      has_excel: Boolean(x.HasExcel),
-      has_pdf: Boolean(x.HasPdf)
-    }));
-    save('SEARCH_RESPONSE_VALIDATED', {
-      http_status: response.status,
-      total_results: Number(body.Total),
-      page: Number(body.Page),
-      returned_letters: letters.length,
-      sample: letters
+    const quality = verifySearchMetadata(body,'ونوین');
+    if (!quality.ok) {
+      save(quality.status,{
+        http_status:response.status,total_results:quality.total??null,
+        returned_letters:body.Letters.length,
+        rejection_reasons:quality.rejected.map(x=>x.reason)
+      });
+      return;
+    }
+    save(quality.status,{
+      http_status:response.status,
+      total_results:quality.total,
+      page:quality.page,
+      returned_letters:body.Letters.length,
+      validated_letters:quality.accepted.length,
+      rejected_letters:quality.rejected.length,
+      rejection_reasons:quality.rejected.map(x=>x.reason),
+      sample:quality.accepted.slice(0,5)
     });
   } catch (error) {
     const code = error?.cause?.code || error?.code || error?.name || 'UNKNOWN';
