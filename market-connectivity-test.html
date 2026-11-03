@@ -76,7 +76,7 @@ small{opacity:.75}
   endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   try{
-   const response=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json','User-Agent':'Mozilla/5.0'}});
+   const response=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
    const type=response.headers.get('content-type')||'';
    if(response.status===429)throw Error('کدال محدودیت تعداد درخواست (HTTP 429) برگرداند. درخواست جدید را متوقف کنید و بعداً با فاصله دوباره امتحان کنید.');
    if(!response.ok)throw Error('کدال HTTP '+response.status+' برگرداند.');
