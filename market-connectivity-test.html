@@ -32,6 +32,54 @@ small{opacity:.75}
 <p id="basket-status" role="status" aria-live="polite">هنوز آزمایش سبد اجرا نشده است.</p>
 <div id="basket-results"></div>
 <small>منبع آزمایش: API عمومی TSETMC؛ این آزمون به‌تنهایی مجوز استفاده یا پایداری منبع را تضمین نمی‌کند.</small>
+
+<section style="margin-top:28px;padding-top:18px;border-top:1px solid #8886">
+<h2>آزمون اتصال کدال</h2>
+<p>این آزمون فقط جست‌وجوی عمومی اطلاعیه‌های نماد واردشده را انجام می‌دهد. فایل گزارش را دانلود نمی‌کند و به سبد یا اطلاعات شخصی شما دسترسی ندارد.</p>
+<label for="codal-symbol">نماد بورسی</label>
+<input id="codal-symbol" value="ونوین" maxlength="20" autocomplete="off" style="display:block;width:100%;font:inherit;padding:10px;margin:8px 0 12px;border:1px solid #8888;border-radius:10px;direction:rtl">
+<button id="codal-run" type="button">آزمون اتصال کدال</button>
+<p id="codal-status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
+<div id="codal-results"></div>
+<small>منبع: جست‌وجوی عمومی search.codal.ir. این API مستند رسمی عمومی ندارد؛ خطای شبکه، CORS، محدودیت نرخ درخواست یا تغییر قالب پاسخ ممکن است رخ دهد. خطا به معنی نبود اطلاعیه نیست.</small>
+</section>
+<script>
+(()=>{
+ const button=document.getElementById('codal-run');
+ const status=document.getElementById('codal-status');
+ const results=document.getElementById('codal-results');
+ button.addEventListener('click',async()=>{
+  const symbol=document.getElementById('codal-symbol').value.trim();
+  results.replaceChildren();
+  if(!symbol||symbol.length>20){status.textContent='نماد معتبر وارد کنید.';return;}
+  button.disabled=true;
+  status.textContent='در حال بررسی اتصال کدال؛ نتیجه هنوز تأیید نشده است...';
+  const endpoint=new URL('https://search.codal.ir/api/search/v2/q');
+  endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
+  try{
+   const response=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
+   const type=response.headers.get('content-type')||'';
+   if(response.status===429)throw Error('کدال محدودیت تعداد درخواست (HTTP 429) برگرداند. بعداً دوباره امتحان کنید.');
+   if(!response.ok)throw Error('کدال HTTP '+response.status+' برگرداند.');
+   if(!/json/i.test(type))throw Error('پاسخ JSON نیست؛ ممکن است سرویس پاسخ متفاوت یا صفحه محدودیت برگردانده باشد.');
+   const body=await response.json();
+   if(!Array.isArray(body.Letters)||!Number.isFinite(Number(body.Total)))throw Error('ساختار پاسخ کدال با قالب مورد انتظار تطبیق ندارد.');
+   const items=body.Letters.slice(0,5);
+   status.textContent='پاسخ جست‌وجوی کدال از نظر شبکه و ساختار معتبر است. تعداد کل نتیجه‌های اعلام‌شده: '+Number(body.Total)+'؛ نمونه‌های نمایش‌داده‌شده: '+items.length+'. این موفقیت به معنی خواندن یا تحلیل صورت‌های مالی نیست.';
+   for(const item of items){
+    const row=document.createElement('p');
+    const title=document.createElement('strong');title.textContent=String(item.Title||'بدون عنوان');
+    const meta=document.createElement('small');meta.style.display='block';meta.textContent='نماد: '+String(item.Symbol||symbol)+' | انتشار: '+String(item.PublishDateTime||item.SentDateTime||'نامشخص')+' | شناسه رهگیری: '+String(item.TracingNo||'نامشخص');
+    row.append(title,meta);results.appendChild(row);
+   }
+  }catch(error){
+   status.textContent='اتصال کدال تأیید نشد: '+(error.name==='AbortError'?'مهلت پاسخ تمام شد.':error.message)+' خطا را با نبود اطلاعیه اشتباه نگیرید.';
+  }finally{clearTimeout(timer);button.disabled=false;}
+ });
+})();
+</script>
+
 </main>
 <script>
 'use strict';
