@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - 'tests/codal-connectivity-v136.cjs'
+      - 'tests/codal-response-v137.test.cjs'
+      - 'market-connectivity-test.html'
       - '.github/workflows/codal-monitor-v136.yml'
 jobs:
   verify:
@@ -22,6 +24,8 @@ jobs:
           node-version: '22'
       - name: Validate diagnostic
         run: node --check tests/codal-connectivity-v136.cjs
+      - name: Test Codal JSON/XML parser against offline fixtures
+        run: node --test tests/codal-response-v137.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
