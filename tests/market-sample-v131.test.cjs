@@ -34,3 +34,10 @@ test('opt-in market sample makes one top-list request and no more than six histo
  urls=[];const stale=await market.sample({fetcher:async url=>{urls.push(url);return {ok:true,headers:{get:()=> 'application/json'},json:async()=>url.includes('GetTradeTop')?feed:{closingPriceDaily:h.map(x=>({...x,dEven:x.dEven-10000}))}};},today:'20261103',limit:2});
  assert.equal(urls.length,3);assert.ok(stale.results.every(x=>!x.ok));assert.match(stale.results[0].error,/قدیمی/);
 });
+
+test('long-listed stock histories above 2500 records still yield last 250 verified observations',()=>{
+ const end=Date.UTC(2026,10,3);
+ const rows=Array.from({length:3500},(_,i)=>({dEven:Number(new Date(end-(3499-i)*86400000).toISOString().slice(0,10).replaceAll('-','')),pClosing:1000+i}));
+ const quote=globalThis.SahambanDiscoveryV130.parseHistory({closingPriceDaily:rows},{symbol:'قدیمی',insCode:'123456789012'});
+ assert.equal(quote.history.length,250);assert.equal(quote.history.at(-1).date,'20261103');assert.equal(quote.history.at(0).close,4250);
+});
