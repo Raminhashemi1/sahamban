@@ -36,7 +36,9 @@ https://github.com/Raminhashemi1/sahamban/actions/runs/41673458753
 - مقایسه تاریخ quote با تاریخ محلی دستگاه به منطقه زمانی `Asia/Tehran` منتقل شد تا اختلاف روز در بازه نیمه‌شب UTC باعث تشخیص اشتباه آینده/قدیمی بودن قیمت نشود.
 - آزمون‌های رگرسیون برای عبور از نیمه‌شب UTC، روز قبل تهران و رد تاریخ آینده/قدیمی اضافه شد: `tests/market-date-tehran-v127.test.cjs`.
 - کلید فایل `app.js` در HTML و Service Worker به `v127.0` تغییر کرد. برای سازگاری با آزمون‌های قبلی، namespace کش ثابت `sahamban-static-v103-0` حفظ شده است.
-- اجرای CI و انتشار این commit در زمان ثبت این سند در صف/در حال اجرا است؛ تا تکمیل آن، این اصلاح در مخزن ثبت شده اما نباید ادعای قبولی CI یا انتشار عمومی v127 کرد.
+- آزمون جدید `tests/market-date-tehran-v127.test.cjs` در اجرای [Smoke tests](https://github.com/Raminhashemi1/sahamban/actions/runs/41689744516) موفق شد؛ کل job آزمون‌های Node در همان workflow نیز موفق است.
+- build و deploy مربوط به همین commit در [Pages deployment](https://github.com/Raminhashemi1/sahamban/actions/runs/41689743749) موفق شده‌اند.
+- آزمون مرورگر Chromium و آزمون WebKit در زمان ثبت این سند هنوز در حال اجرا هستند؛ موفقیت آزمون موبایل فیزیکی از این CI قابل استنتاج نیست.
 
 ## موارد پذیرش باز
 1. تأیید پایدار منبع داده در ساعات معامله تهران و تطبیق قیمت/تاریخچه با مرجع مستقل.
