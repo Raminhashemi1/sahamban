@@ -9,6 +9,8 @@ on:
     paths:
       - 'tests/codal-connectivity-v136.cjs'
       - 'tests/codal-response-v137.test.cjs'
+      - 'tests/codal-search-quality.cjs'
+      - 'tests/codal-search-quality.test.cjs'
       - 'market-connectivity-test.html'
       - '.github/workflows/codal-monitor-v136.yml'
 jobs:
@@ -26,6 +28,8 @@ jobs:
         run: node --check tests/codal-connectivity-v136.cjs
       - name: Test Codal JSON/XML parser against offline fixtures
         run: node --test tests/codal-response-v137.test.cjs
+      - name: Validate filing identity and dates with synthetic fixtures
+        run: node --test tests/codal-search-quality.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
