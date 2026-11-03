@@ -55,11 +55,11 @@ function save(status, details = {}) {
       catch { save('UNVERIFIED_JSON_PARSE', { http_status: response.status, content_type: contentType }); return; }
     } else if (raw.trim().startsWith('<')) {
       const decode = value => String(value || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
-      const tag = (chunk, name) => { const m = chunk.match(new RegExp('<(?:[\\\\w.-]+:)?' + name + '(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)</(?:[\\\\w.-]+:)?' + name + '\\\\s*>', 'i')); return m ? decode(m[1].replace(/<[^>]+>/g, '').trim()) : ''; };
-      const matches = [...raw.matchAll(/<(?:[\\w.-]+:)?CodalLetterHeaderDto(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?CodalLetterHeaderDto\\s*>/gi)];
+      const tag = (chunk, name) => { const m = chunk.match(new RegExp('<(?:[\\\w.-]+:)?' + name + '(?:\\\s[^>]*)?>([\\\s\\\\S]*?)</(?:[\\\w.-]+:)?' + name + '\\\s*>', 'i')); return m ? decode(m[1].replace(/<[^>]+>/g, '').trim()) : ''; };
+      const matches = [...raw.matchAll(/<(?:[\w.-]+:)?CodalLetterHeaderDto(?:\s[^>]*)?>([\s\\S]*?)<\\/(?:[\w.-]+:)?CodalLetterHeaderDto\s*>/gi)];
       const letters = matches.map(m => { const x = m[1]; return { TracingNo: tag(x, 'TracingNo'), Symbol: tag(x, 'Symbol'), Title: tag(x, 'Title'), PublishDateTime: tag(x, 'PublishDateTime'), SentDateTime: tag(x, 'SentDateTime'), HasExcel: /^true$/i.test(tag(x, 'HasExcel')), HasPdf: /^true$/i.test(tag(x, 'HasPdf')) }; });
       const total = tag(raw, 'Total');
-      if (!/<(?:[\\w.-]+:)?SearchReportListDto(?:\\s|>)/i.test(raw) && matches.length === 0) {
+      if (!/<(?:[\w.-]+:)?SearchReportListDto(?:\s|>)/i.test(raw) && matches.length === 0) {
         save('UNVERIFIED_XML_SCHEMA', { http_status: response.status, content_type: contentType });
         return;
       }
