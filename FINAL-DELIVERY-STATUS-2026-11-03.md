@@ -45,6 +45,11 @@
 - آزمون مرورگر Chromium در [Smoke workflow](https://github.com/Raminhashemi1/sahamban/actions/runs/41689744516) موفق شد.
 - آزمون خودکار WebKit در [WebKit mobile acceptance proxy](https://github.com/Raminhashemi1/sahamban/actions/runs/41689743934) موفق شد؛ این شبیه‌سازی/پروکسی CI است و جای آزمون روی iPhone یا Android فیزیکی را نمی‌گیرد.
 
+## پایداری آزمون دارایی‌های PWA
+- در اجرای public asset audit، یک فایل CSS با HTTP 503 موقت برگشت، در حالی که اجرای بعدی همان asset موفق بود. این مورد به‌عنوان نوسان گذرای CDN ثبت شد، نه خطای قطعی فایل.
+- برای آزمون انتشار، retry محدود و فقط یک‌بار برای HTTP 429/5xx و خطاهای موقت شبکه اضافه شد؛ خطاهای دائمی مانند HTTP 404 بدون retry شکست می‌خورند.
+- منطق retry با آزمون‌های مستقل `tests/pwa-asset-retry-v125.test.cjs` پوشش داده شده و به workflow دارایی‌های PWA افزوده شده است. نتیجه CI این commit هنوز باید بررسی شود.
+
 ## موارد پذیرش باز
 1. تأیید پایدار منبع داده در ساعات معامله تهران و تطبیق قیمت/تاریخچه با مرجع مستقل.
 2. آزمون VoiceOver فارسی روی iPhone فیزیکی.
