@@ -64,7 +64,7 @@ async function run(){
     assert.equal(url.origin,base.origin,'cross-origin request prohibited');
     try{
      const {response,attempts}=await fetchWithRetry(
-      fetch,url,{cache:'no-store',redirect:'follow',signal:AbortSignal.timeout(20000)},
+      fetch,url,()=>({cache:'no-store',redirect:'follow',signal:AbortSignal.timeout(20000)}),
       {maxAttempts:2,delayMs:750}
      );
      const type=(response.headers.get('content-type')||'').toLowerCase();
