@@ -39,3 +39,14 @@ test('does not classify arbitrary application errors as transient',()=>{
  assert.equal(retryableNetworkError(new Error('invalid content type')),false);
  assert.equal(retryableNetworkError(Object.assign(new Error('not found'),{code:'ENOENT'})),false);
 });
+
+test('builds fresh timeout options for each retry attempt',async()=>{
+ let calls=0;
+ const tokens=[];
+ const result=await fetchWithRetry(async(_url,options)=>{
+  calls++;tokens.push(options.signalToken);
+  return calls===1?response(503):response(200);
+ },'https://example.test/a.js',attempt=>({signalToken:'attempt-'+attempt}),{wait:async()=>{}});
+ assert.equal(result.attempts,2);
+ assert.deepEqual(tokens,['attempt-1','attempt-2']);
+});
