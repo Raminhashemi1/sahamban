@@ -22,6 +22,8 @@ small{opacity:.75}
 <p>برای بررسی اینکه مرورگر گوشی به منبع قیمت دسترسی دارد، دکمه را بزنید.</p>
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
+<p><small>نسخه صفحه آزمایش: ۳ نوامبر ۲۰۲۶ — نمایش جداگانه وضعیت اتصال، تطبیق تاریخچه و تازگی قیمت.</small></p>
+<p><a href="./market-connectivity-test.html?refresh=20261103" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
 <hr style="margin:28px 0">
 <h2>آزمایش نمادهای سبد</h2>
 <p>فهرست نمادها را از سبد خود وارد کنید؛ هر نماد را در یک خط بنویسید. فهرست اولیه برای شروع، شامل ۱۹ نماد آزمایش قبلی است و می‌توانید آن را کامل تغییر دهید. تعداد نمادها محدود به ۱۹ نیست.</p>
@@ -202,9 +204,9 @@ function quoteFreshness(marketDate,lastHEven){
 }
 
 const defaultSymbols=['وساخت','ولساپا','وبصادر','ذوب','وپارس','ونيرو','دی','ونوین','لکما','چکاپا','برکت','آبادا','امین','وملل','بپیوند','عیار','فروژ','استقلال','پرسپولیس'];
-$('symbols-input').value=defaultSymbols.join('\\n');
+$('symbols-input').value=defaultSymbols.join('\n');
 function readSymbols(){
- const raw=$('symbols-input').value.split(/[\\n،,;؛\\t]+/).map(x=>x.trim()).filter(Boolean);
+ const raw=$('symbols-input').value.split(/[\n،,;؛\t]+/).map(x=>x.trim()).filter(Boolean);
  const seen=new Set(),symbols=[];
  for(const item of raw){
   const key=norm(item);
