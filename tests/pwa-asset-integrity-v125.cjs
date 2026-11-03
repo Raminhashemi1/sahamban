@@ -6,6 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
+const {fetchWithRetry}=require('./pwa-asset-retry-v125.cjs');
 const root=process.cwd();
 const report={version:125,kind:'pwa-asset-integrity',physical_device:false,market_verified:false,checks:[],status:'RUNNING'};
 const base=new URL(process.env.SAHAMBAN_PUBLIC_ORIGIN||'https://raminhashemi1.github.io/sahamban/');
@@ -62,15 +63,17 @@ async function run(){
     const i=next++,name=names[i],url=new URL(name,base);
     assert.equal(url.origin,base.origin,'cross-origin request prohibited');
     try{
-     const response=await fetch(url,{cache:'no-store',redirect:'follow',signal:AbortSignal.timeout(20000)});
+     const {response,attempts}=await fetchWithRetry(
+      fetch,url,{cache:'no-store',redirect:'follow',signal:AbortSignal.timeout(20000)},
+      {maxAttempts:2,delayMs:750}
+     );
      const type=(response.headers.get('content-type')||'').toLowerCase();
      const bytes=Buffer.from(await response.arrayBuffer());
-     if(!response.ok)throw Error('HTTP '+response.status);
      if(new URL(response.url).origin!==base.origin)throw Error('cross-origin redirect');
      if(bytes.length===0)throw Error('empty body');
      if(name.endsWith('.js')&&/(?:text\/html|application\/html)/.test(type))throw Error('JavaScript served as HTML');
      if(name.endsWith('.css')&&/(?:text\/html|application\/html)/.test(type))throw Error('CSS served as HTML');
-     outcomes[i]={file:name,status:'PASS',bytes:bytes.length};
+     outcomes[i]={file:name,status:'PASS',bytes:bytes.length,attempts};
     }catch(e){failures.push(name+': '+e.message);outcomes[i]={file:name,status:'FAIL',error:e.message};}
    }
   }
