@@ -5,7 +5,7 @@
  * of predictive skill or an investable strategy.
  */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SahambanHoldoutV134=api;})(typeof globalThis!=='undefined'?globalThis:null,function(){
- const validDate=s=>/^\d{8}$/.test(s)&&(()=>{const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8)));return d.toISOString().slice(0,10).replaceAll('-')===s;})();
+ const validDate=s=>/^\d{8}$/.test(s)&&(()=>{const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8)));return d.toISOString().slice(0,10).replaceAll('-','')===s;})();
  const stats=arr=>{const n=arr.length,net=arr.map(x=>x.netReturnPct),gross=arr.map(x=>x.grossReturnPct),mean=a=>n?a.reduce((x,y)=>x+y,0)/n:null;return {count:n,meanNetReturnPct:mean(net),meanGrossReturnPct:mean(gross),netPositivePct:n?net.filter(x=>x>0).length/n*100:null,adequateSample:n>=10};};
  function evaluate(quote,{holdingDays=10,costPct=1,trainingShare=.6}={}){
   if(holdingDays!==10||trainingShare!==.6)throw new RangeError('تقسیم زمانی ثابت ۶۰/۴۰ و افق ۱۰ جلسه قابل تغییر نیستند.');
