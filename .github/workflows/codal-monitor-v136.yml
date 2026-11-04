@@ -16,6 +16,9 @@ on:
       - 'fundamental-evidence.js'
       - 'codal-disclosure-v137.js'
       - 'codal-original-intake-v138.js'
+      - 'codal-source-rows-v139.js'
+      - 'tests/codal-source-rows-v139.test.cjs'
+      - 'module-hub-v87.js'
       - 'tests/codal-original-intake-v138.test.cjs'
       - 'tests/codal-disclosure-v137.test.cjs'
       - 'index.html'
@@ -50,6 +53,8 @@ jobs:
         run: node --test tests/codal-disclosure-v137.test.cjs
       - name: Test local original-report fingerprint safety gate
         run: node --test tests/codal-original-intake-v138.test.cjs
+      - name: Test local financial-row provenance without authorizing ratios
+        run: node --test tests/codal-source-rows-v139.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
