@@ -40,3 +40,35 @@ test('decision UI distinguishes historical diagnostic from proven buy/sell skill
  assert.match(ui,/توان پیش‌بینی یا قابلیت اجرای معامله را اثبات نمی‌کند/);
  assert.match(ui,/خرید خودکار انجام نمی‌شود/);
 });
+
+test('entry candidate is a date-stamped conditional review, never an automatic order',()=>{
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000});
+ assert.equal(p.decision,'REVIEW_ENTRY');
+ assert.equal(p.asOf,'20261104');
+ assert.equal(p.automaticTrade,false);
+ assert.match(p.when,/نقدشوندگی/);
+ assert.match(p.invalidation,/باطل/);
+ assert.match(p.evidence,/اعتبار بنیادی/);
+});
+test('entry review fails closed without valid risk level',()=>{
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:null,priorHigh:1100,priorLow:1000});
+ assert.equal(p.decision,'NO_ACTION');
+});
+test('risk exit and weak trend do not fabricate individualized sell instructions',()=>{
+ const inputs={symbol:'TEST',marketDate:'20261104',last:900,priorHigh:1100,priorLow:1000};
+ for(const [code,expected] of [['RISK_EXIT','REVIEW_EXIT_URGENT'],['EXIT_REVIEW','REVIEW_REDUCE'],['WAIT','NO_ACTION'],['AVOID','NO_ACTION']]){
+  const p=api.decisionPlan({...inputs,code});
+  assert.equal(p.decision,expected);
+  assert.equal(p.automaticTrade,false);
+  assert.ok(p.invalidation);
+ }
+ assert.throws(()=>api.decisionPlan({...inputs,code:'BUY_NOW'}),/معتبر/);
+});
+test('no entry explanation claims RSI alignment if rule permits an 80-point score',()=>{
+ const fs=require('node:fs'),source=fs.readFileSync('decision-support-v129.js','utf8');
+ assert.match(source,/امتیاز قواعد دست‌کم ۸۰/);
+ assert.doesNotMatch(source,/روند، مومنتوم، RSI و شکست سقف ۲۰ جلسه هم‌راستا هستند/);
+ const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
+ assert.match(ui,/\.decisionPlan\(r\)/);
+ assert.match(ui,/شرط ابطال یا محدودیت/);
+});
