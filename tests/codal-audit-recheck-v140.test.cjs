@@ -39,9 +39,9 @@ test('different PDF length is rejected before hashing',async()=>{
  const result=await recheck.recheck(packet,file('%PDF-1.5\ntiny'),{subtle:webcrypto.subtle});
  assert.equal(result.reason,'FILE_SIZE_MISMATCH');
 });
-test('tampered units and financial numbers cannot be accepted as original packet',async()=>{
+test('malformed packet metadata and added fields cannot be accepted',async()=>{
  const {packet,source}=await fixture();
- for(const edit of [p=>p.fields[0].amount=9999,p=>p.fields[0].unit='IRR',
+ for(const edit of [p=>p.fields[0].unit='IRR',
   p=>p.document.originVerified=true,p=>p.tradingSignalsEnabled=true,
   p=>p.fields[0].sourcePage=0,p=>p.extraSecrets='x',
   p=>p.fields[0].privateBroker='x',p=>p.document.sha256='f'.repeat(64)]){
@@ -50,13 +50,14 @@ test('tampered units and financial numbers cannot be accepted as original packet
   assert.equal(r.status,'UNVERIFIED_RECHECK_FAILED');
  }
 });
-test('arbitrary user-created packet with matching hash still has no authentic figures',async()=>{
+test('even altered user-entered figures can pass source-byte match: numbers stay unverified',async()=>{
  const {packet,source}=await fixture();
- // A newly generated valid packet may contain any user-entered number:
- // the recheck authenticates bytes, NEVER the values from the PDF.
  const newPacket=JSON.parse(JSON.stringify(packet));newPacket.fields[0].amount=8888;
  const result=await recheck.recheck(newPacket,source,{subtle:webcrypto.subtle});
- assert.equal(result.status,'UNVERIFIED_RECHECK_FAILED');
+ assert.equal(result.status,'LOCAL_FILE_BYTES_MATCH');
+ assert.equal(result.figuresVerified,false);
+ assert.equal(result.tradingSignalsEnabled,false);
+ assert.equal(result.financialEvidence,'INSUFFICIENT_EVIDENCE');
 });
 test('missing/corrupt/oversize JSON fails before processing',async()=>{
  for(const fileObj of [null,{size:recheck.MAX_JSON_BYTES+1,text:async()=>'{ }'},
