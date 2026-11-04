@@ -28,3 +28,13 @@
 به محض دستیابی مجاز به فایل از همین لینک‌ها: ثبت HTTP و Content-Type، هش بایت‌های واقعی، استخراج با ابزار مناسب *قالب واقعی*، تطبیق عنوان/نماد/تاریخ و واحدها با خود سند، تطبیق ارجاع هر رقم مالی و جداسازی اطلاعات حسابرسی‌شده/حسابرسی‌نشده و تلفیقی/جداگانه. بدون این شواهد پذیرش بنیادی `PASS` نیست.
 
 **تعهد ایمنی:** این پیگیری فقط منابع عمومی را هدف می‌گیرد؛ فایل خصوصی سبد، توکن یا جزئیات کارگزاری به GitHub منتقل نمی‌شود.
+
+## آزمون مستقیم و تکرارپذیر فایل اصلی از GitHub Actions (v143)
+
+- مسیر ثابت: `https://excel.codal.ir/service/Excel/GetAll/OaYShM5Ay42fUq4E5eef5A%3D%3D/0`
+- ابزار: `tests/codal-official-document-v143.cjs`؛ درخواست HTTPS فقط‌خواندنی با `redirect: error`، بدون پروکسی یا دورزدن، سقف ۱۵ مگابایت، timeout حدود ۱۴ ثانیه.
+- در صورت پاسخ معتبر HTTP، قالب اولیه بایت‌ها (ZIP/XLSX، OLE/XLS، PDF، HTML/XML) و SHA-256 با پردازش جریان محاسبه می‌شود؛ **اصل فایل در مخزن یا artifact ذخیره نمی‌شود**. حتی در صورت موفقیت انتقال، وضعیت `OFFICIAL_URL_RESPONSE_HASHED_UNVERIFIED` همچنان به معنی عدم تأیید اصالت و ارقام است.
+- در صورت خطای شبکه، محدودیت نرخ، تغییر مسیر، محتوای نامعتبر یا حجم بیش‌ازحد، نتیجه به‌صورت `UNVERIFIED_*` ثبت می‌شود. آزمایش‌های مصنوعی این رفتار را بررسی می‌کنند.
+- اجرای واقعی [CODAL CI v143](https://github.com/Raminhashemi1/sahamban/actions/runs/41816628737) در ۴ نوامبر ۲۰۲۶ انجام شد: `CODAL_DOCUMENT_STATUS: UNVERIFIED_NETWORK` و `CODAL_STATUS: UNVERIFIED_NETWORK`. آزمون‌های مصنوعی (۶ مورد) موفق شدند.
+- نتیجه JSON هر اجرای workflow در artifact `sahamban-codal-v136` با نام `codal-official-document-v143.json` برای ممیزی قرار می‌گیرد؛ فاقد اطلاعات کاربر یا بایت سند است.
+- **دریافت سند واقعی و تصدیق صورت مالی ونوین همچنان انجام نشده است.** وضعیت `financialEvidence: INSUFFICIENT_EVIDENCE` و `tradingSignalsEnabled: false` می‌ماند.
