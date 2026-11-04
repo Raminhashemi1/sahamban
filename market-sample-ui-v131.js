@@ -44,7 +44,8 @@
       'بخش انتهایی: '+fmt(hold.holdout.count)+' رویداد؛ میانگین خالص پس از هزینه فرضی ۱٪ '+metric('holdout',hold.holdout.meanNetReturnPct)+
       '؛ سهم رویدادهای مثبت '+metric('positive',hold.holdout.netPositivePct)+'؛ با هزینه فرضی بالاتر '+fmt(hold.holdout.stressCostPct)+'٪ میانگین خالص '+metric('stress',hold.holdout.stressMeanNetReturnPct)+'. '+
       (hold.holdout.adequateSample?'نمونه انتهایی حداقل ۱۰ رویداد دارد، اما اعتبار پیش‌بینی را اثبات نمی‌کند.':'کمتر از ۱۰ رویداد در دوره انتهایی؛ برای ارزیابی قابل اتکا کافی نیست. ')+
-      ' رویدادهای عبوری از مرز زمانی حذف شده‌اند؛ پارامترها با این تقسیم بازتنظیم نشده‌اند.';
+      ' رویدادهای عبوری از مرز زمانی حذف شده‌اند؛ پارامترها با این تقسیم بازتنظیم نشده‌اند. '+
+      (hold.passiveComparison?'مقایسه همان نماد در '+fmt(hold.passiveComparison.count)+' پنجره ثابت ۱۰جلسه‌ای: میانگین خالص '+metric('passive',hold.passiveComparison.meanNetReturnPct)+'، اختلاف میانگین نسبت به نامزدهای ورود '+metric('excess',hold.passiveComparison.excessMeanNetReturnPct)+'. این مقایسه به‌دلیل تفاوت مدت حضور در بازار، اثبات برتری معاملاتی نیست.':'مقایسه مستقل موجود نیست.');
     }else{holdPanel.textContent='ارزیابی زمانی مجزا اجرا نشد.';}
     holdPanel.className='muted';d.append(holdPanel);
     const warning=document.createElement('p');warning.className='muted';warning.textContent='آزمون گذشته‌نگر فقط از قیمت‌های پایانی استفاده می‌کند: سیگنال در پایان روز، ورود فرضی در قیمت پایانی جلسه بعد و خروج فرضی پس از ۱۰ جلسه دیگر؛ هزینه رفت‌وبرگشت ۱٪ و سناریوی تنش ۲٪ صرفاً فرض‌های قابل‌تغییر برای حساسیت‌سنجی‌اند، نه تعرفه رسمی کارگزاری. صف، لغزش واقعی، توقف نماد، تعدیل افزایش سرمایه و تضمین اجرا شبیه‌سازی نشده‌اند. عملکرد گذشته قابل تعمیم به آینده نیست.';d.append(warning);results.append(d);
