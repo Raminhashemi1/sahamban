@@ -29,11 +29,16 @@ jobs:
       - name: Probe official TSE web gateway fallback
         run: node tests/live-market-webgw-fallback.cjs
         continue-on-error: true
+      - name: Validate after-close report semantics
+        run: node --test tests/after-close-summary.test.cjs
+      - name: Publish explicit verified or unverified summary
+        if: always()
+        run: node tests/after-close-summary.cjs
       - name: Preserve after-close live market evidence
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: sahamban-after-close-market-check
-          path: test-artifacts/live-market-*.json
+          path: |\n            test-artifacts/live-market-*.json\n            test-artifacts/after-close-summary.json
           if-no-files-found: warn
           retention-days: 30
