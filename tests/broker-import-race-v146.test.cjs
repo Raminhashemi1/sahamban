@@ -97,7 +97,7 @@ test('corrupt saved holdings are not displayed and original local bytes are pres
   assert.equal(h.element('brokerApply').disabled,true);
   assert.equal(h.element('brokerRisk').disabled,true);
   assert.equal(h.storage.get('sahamban-broker-holdings-v1'),raw);
-  assert.match(h.element('brokerStatus').textContent,/نامعتبر|محدوده/);
+  assert.match(h.element('brokerStatus').textContent,/نامعتبر|معتبر نیست|محدوده/);
  }
 });
 test('valid v1 legacy holdings are displayed with toman-to-rial conversion but never rewritten',()=>{
