@@ -72,7 +72,7 @@
      if(item.originalUrl&&win.SahambanCodalIntakeV138?.select){
       const choose=doc.createElement('button');choose.type='button';choose.className='secondary';
       choose.textContent='انتخاب برای اثرانگشت سند اصلی (بدون تأیید محتوا)';
-      choose.addEventListener('click',()=>{win.SahambanCodalIntakeV138.select(item);doc.getElementById('codalOriginalV138')?.scrollIntoView?.({block:'nearest'});});
+      choose.addEventListener('click',()=>{if(win.SahambanCodalIntakeV138.select(item))win.location.hash='codalOriginalV138';});
       p.append(choose);
      }
      results.append(p);
