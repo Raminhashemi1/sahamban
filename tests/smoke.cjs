@@ -48,7 +48,7 @@ test('Broker import is local-only with separate storage and offline Excel parser
 });
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
- assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v103'));
+ assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v149'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
   assert.ok(sw.includes('portfolio-pilot-v51.html'));
   assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
@@ -99,6 +99,7 @@ test('Portfolio example calculates nominal value and stop risk',()=>{
 test('Portfolio rejects invalid risk and duplicate symbols',()=>{
  assert.throws(()=>context.parsePortfolio('فولاد,100,500,540,550,650'));
  assert.throws(()=>context.parsePortfolio('فولاد,100,500,540,470,650\nفولاد,100,500,540,470,650'));
+ assert.throws(()=>context.parsePortfolio('فولاد,9007199254740991,100,110,90,130'),/دقت امن/);
 });
 test('Portfolio handles Persian decimal separators',()=>assert.equal(context.portfolioNumber('۱۲٫۵',1),12.5));
 test('Reward-to-risk zero division safely handled',()=>assert.equal(context.portfolioRewardRisk(500,0),null));
