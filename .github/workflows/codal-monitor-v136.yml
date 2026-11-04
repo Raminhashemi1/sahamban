@@ -14,6 +14,10 @@ on:
       - 'tests/codal-browser-quality.test.cjs'
       - 'tests/codal-report-link.test.cjs'
       - 'fundamental-evidence.js'
+      - 'codal-disclosure-v137.js'
+      - 'tests/codal-disclosure-v137.test.cjs'
+      - 'index.html'
+      - 'sw.js'
       - 'tests/fundamental-evidence.test.cjs'
       - 'market-connectivity-test.html'
       - '.github/workflows/codal-monitor-v136.yml'
@@ -40,6 +44,8 @@ jobs:
         run: node --test tests/codal-report-link.test.cjs
       - name: Test strict fundamental evidence readiness gate
         run: node --test tests/fundamental-evidence.test.cjs
+      - name: Test embedded read-only CODAL discovery and safety gates
+        run: node --test tests/codal-disclosure-v137.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
