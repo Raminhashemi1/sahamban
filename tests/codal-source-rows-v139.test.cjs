@@ -57,7 +57,45 @@ test('module loaded in PWA and has no storage/network/exfiltration',()=>{
  new vm.Script(js);
  for(const id of ['codalRowsV139','codalRowsPeriodV139','codalRowsUnitV139','codalRowsAuditV139','codalRowsBasisV139','codalRowsAddV139','codalRowsCheckV139'])
   assert.ok(html.includes('id="'+id+'"'),id);
- assert.ok(sw.includes('codal-source-rows-v139.js?v=139.0'));
- assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.0')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
+ assert.ok(sw.includes('codal-source-rows-v139.js?v=139.1'));
+ assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.1')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
+});
+
+test('download packet is allowlisted, immutable by input extras, and unmistakably unverified',()=>{
+ const input=sample();
+ input.fingerprint.privateBrokerHoldings='DO_NOT_EXPORT';
+ input.unknownSecret='DO_NOT_EXPORT';
+ input.rows[0].privateAccount='DO_NOT_EXPORT';
+ const r=rows.auditPacket(input);
+ assert.equal(r.status,'LOCAL_ROW_REFERENCES_UNVERIFIED');
+ assert.equal(r.packet.schema,'sahamban.codal.row-audit.v1');
+ assert.equal(r.packet.financialEvidence,'INSUFFICIENT_EVIDENCE');
+ assert.equal(r.packet.tradingSignalsEnabled,false);
+ assert.equal(r.packet.document.originVerified,false);
+ assert.equal(r.packet.document.originalDocumentRead,false);
+ assert.equal(r.packet.fields.length,1);
+ assert.equal(r.packet.fields[0].amount,-1234);
+ const dumped=JSON.stringify(r.packet);
+ assert.doesNotMatch(dumped,/DO_NOT_EXPORT|privateBrokerHoldings|privateAccount|unknownSecret/);
+ assert.ok(!('holdings' in r.packet));
+ assert.ok(!('verified' in r.packet));
+});
+test('no audit packet is exported on invalid row, missing SHA, or bad period',()=>{
+ for(const change of [{rows:[{metric:'net_income',amount:'abc',page:'4',sourceRow:'سود خالص'}]},
+ {fingerprint:null},{periodEnd:'۱۴۰۵/۱۲/۳۰'}]){
+  const r=rows.auditPacket({...sample(),...change});
+  assert.equal(r.status,'INSUFFICIENT_EVIDENCE');assert.equal(r.packet,null);
+ }
+});
+test('local export button is present and app code contains no network access',()=>{
+ const html=fs.readFileSync('index.html','utf8');
+ const src=fs.readFileSync('codal-source-rows-v139.js','utf8');
+ const sw=fs.readFileSync('sw.js','utf8');
+ assert.ok(html.includes('id="codalRowsExportV139"'));
+ assert.ok(html.includes('codal-source-rows-v139.js?v=139.1'));
+ assert.ok(sw.includes('codal-source-rows-v139.js?v=139.1'));
+ assert.match(src,/createObjectURL/);
+ assert.match(src,/revokeObjectURL/);
+ assert.doesNotMatch(src,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
