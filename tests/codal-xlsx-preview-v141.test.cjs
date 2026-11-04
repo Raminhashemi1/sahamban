@@ -91,3 +91,28 @@ test('rejects even a single member whose inflated bytes differ from declared siz
  }}).then(()=>null,e=>e);
  assert.match(out.message,/ZIP_UNCOMPRESSED_MISMATCH/);
 });
+
+test('resolves nonsequential worksheet targets using XLSX workbook relationships',async()=>{
+ const files=base();
+ files['xl/workbook.xml']='<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="تلفیقی" sheetId="7" r:id="rId10"/><sheet name="جداگانه" sheetId="1" r:id="rId2"/></sheets></workbook>';
+ files['xl/_rels/workbook.xml.rels']='<Relationships><Relationship Id="rId10" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet9.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+ files['xl/worksheets/sheet9.xml']='<worksheet><sheetData><c r="A1" t="inlineStr"><is><t>تلفیقی واقعی</t></is></c></sheetData></worksheet>';
+ const r=await extractor.extract(file(zip(files)));
+ assert.deepEqual(r.sheets.map(s=>s.name),['تلفیقی','جداگانه']);
+ assert.deepEqual(r.sheets.map(s=>s.path),['xl/worksheets/sheet9.xml','xl/worksheets/sheet1.xml']);
+ assert.equal(r.sheets[0].cells[0].text,'تلفیقی واقعی');
+ assert.equal(r.sheets[1].cells[0].text,'سود خالص');
+});
+test('never silently maps a missing workbook relationship to sheet1',async()=>{
+ const files=base();
+ files['xl/workbook.xml']='<workbook><sheets><sheet name="ناشناس" sheetId="1" r:id="rId42"/></sheets></workbook>';
+ await assert.rejects(extractor.extract(file(zip(files))),/UNRESOLVED_WORKSHEET_RELATIONSHIP/);
+});
+test('rejects traversal and external-style workbook worksheet targets',async()=>{
+ for(const target of ['../custom.xml','https://example.org/external.xml','worksheets/../sheet1.xml']){
+  const files=base();
+  files['xl/workbook.xml']='<workbook><sheets><sheet name="A" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  files['xl/_rels/workbook.xml.rels']='<Relationships><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="'+target+'"/></Relationships>';
+  await assert.rejects(extractor.extract(file(zip(files))),/UNSAFE_WORKSHEET_TARGET/);
+ }
+});
