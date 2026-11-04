@@ -95,3 +95,49 @@ test('web HTML and service worker use the same locally cached backup module',()=
  assert.match(sw,/local-backup-v148\.js\?v=148\.0/);
  assert.match(html,/رمزگذاری نشده/);
 });
+
+function uiHarness(initial={}){
+ const state=storage(initial),nodes=new Map(),confirms=[];
+ const element=id=>{if(!nodes.has(id))nodes.set(id,{id,textContent:'',disabled:id==='sb148Restore',files:[],
+  actions:{},addEventListener(name,cb){this.actions[name]=cb;}});return nodes.get(id);};
+ const fakeWin={
+  document:{getElementById:element},
+  localStorage:state,
+  confirm(message){confirms.push(message);return true;}
+ };
+ api.mount(fakeWin);
+ return {state,element,confirms,fakeWin,fire:(id,kind='click')=>element(id).actions[kind]()};
+}
+test('UI requires validated preview and explicit user consent before local restore',async()=>{
+ const live=JSON.stringify(alert),newAlert=JSON.stringify({...alert,symbol:'مخابرات'});
+ const h=uiHarness({'sahamban-v1':live});
+ const snap={format:api.FORMAT,schema:api.SCHEMA,items:{'sahamban-v1':newAlert}};
+ assert.equal(h.element('sb148Restore').disabled,true);
+ h.element('sb148File').files=[{size:100,text:async()=>JSON.stringify(snap)}];
+ await h.fire('sb148File','change');
+ assert.equal(h.state.getItem('sahamban-v1'),live);
+ assert.equal(h.element('sb148Restore').disabled,false);
+ assert.match(h.element('sb148Status').textContent,/هنوز جایگزین نشده/);
+ h.fakeWin.confirm=()=>false;
+ h.fire('sb148Restore');
+ assert.equal(h.state.getItem('sahamban-v1'),live);
+ assert.match(h.element('sb148Status').textContent,/لغو شد/);
+ h.element('sb148File').files=[{size:100,text:async()=>JSON.stringify(snap)}];
+ await h.fire('sb148File','change');
+ h.fakeWin.confirm=()=>true;
+ h.fire('sb148Restore');
+ assert.equal(h.state.getItem('sahamban-v1'),newAlert);
+ assert.match(h.element('sb148Status').textContent,/بازیابی شد/);
+});
+test('UI ignores stale backup file and rejects malformed backup before enabling restore',async()=>{
+ const h=uiHarness(),old={};old.promise=new Promise(resolve=>{old.resolve=resolve;});
+ h.element('sb148File').files=[{size:100,text:()=>old.promise}];
+ const first=h.fire('sb148File','change');
+ h.element('sb148File').files=[{size:100,text:async()=>JSON.stringify({format:api.FORMAT,schema:99,items:{}})}];
+ await h.fire('sb148File','change');
+ assert.equal(h.element('sb148Restore').disabled,true);
+ old.resolve(JSON.stringify({format:api.FORMAT,schema:api.SCHEMA,items:{'sahamban-v1':JSON.stringify(alert)}}));
+ await first;
+ assert.equal(h.element('sb148Restore').disabled,true);
+ assert.match(h.element('sb148Status').textContent,/پذیرفته نشد/);
+});
