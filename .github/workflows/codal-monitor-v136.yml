@@ -19,6 +19,8 @@ on:
       - 'codal-source-rows-v139.js'
       - 'codal-audit-recheck-v140.js'
       - 'codal-xlsx-preview-v141.js'
+      - 'codal-xlsx-match-v142.js'
+      - 'tests/codal-xlsx-match-v142.test.cjs'
       - 'tests/codal-xlsx-preview-v141.test.cjs'
       - 'tests/codal-audit-recheck-v140.test.cjs'
       - 'tests/codal-source-rows-v139.test.cjs'
@@ -63,6 +65,8 @@ jobs:
         run: node --test tests/codal-audit-recheck-v140.test.cjs
       - name: Test real offline XLSX extraction and ZIP safety limits
         run: node --test tests/codal-xlsx-preview-v141.test.cjs
+      - name: Test exact XLSX source-cell comparison with unverified status
+        run: node --test tests/codal-xlsx-match-v142.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
