@@ -310,17 +310,27 @@ $('run').addEventListener('click',async()=>{
     const quoteEvidence='قیمت پاسخ رسمی: '+fa(price)+' ریال | تاریخ: '+date+
      ' | آخرین معامله: '+(freshness.lastTradeTime||'نامشخص')+
      ' | تازگی پاسخ قیمت: '+freshness.status;
+    let historyStatus='MATCHED',historyDetail='';
     try{
      const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
      if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
-     verifyPublicClosingHistory(date,price,hist);
+     // Fresh quotes can appear before the daily history endpoint publishes today's row.
+     // Classify this separately; never turn it into a full PASS or guess the price.
+     const sameDay=hist.filter(x=>String(x?.dEven??'')===String(date));
+     if(sameDay.length===0&&freshness.status==='FRESH'){
+      historyStatus='PENDING_TODAY_ROW';
+      const lastDates=[...new Set(hist.map(x=>String(x?.dEven??'')).filter(x=>/^\\d{8}$/.test(x)))].sort().reverse().slice(0,3);
+      historyDetail='تاریخچه هنوز رکورد امروز '+date+' را منتشر نکرده است. آخرین تاریخ‌های موجود: '+(lastDates.join('، ')||'نامشخص');
+     }else{
+      verifyPublicClosingHistory(date,price,hist);
+     }
     }catch(historyError){
      const why=historyError?.name==='AbortError'
       ?'مهلت دریافت تاریخچه تمام شد'
       :String(historyError?.message||historyError);
-     throw Error(quoteEvidence+' | تاریخچه جداگانه تأیید نشد: '+why);
+     if(historyStatus!=='PENDING_TODAY_ROW')throw Error(quoteEvidence+' | تاریخچه جداگانه تأیید نشد: '+why);
     }
-    valid.push({code,price,date,freshness});
+    valid.push({code,price,date,freshness,historyStatus,historyDetail});
    }catch(e){
     // Preserve why a public instrument was rejected, but never guess its price.
     const reason=e?.name==='AbortError'
@@ -335,6 +345,10 @@ $('run').addEventListener('click',async()=>{
     (reasons?' | علت‌های گزارش‌شده: '+reasons:' | پاسخ معتبر از منبع دریافت نشد.'));
   }
   const q=valid[0];
+  if(q.historyStatus==='PENDING_TODAY_ROW'){
+   s.textContent='اتصال TSETMC و دریافت قیمت امروز: موفق.\\nتازگی آخرین معامله: '+q.freshness.status+' ('+q.freshness.lastTradeTime+' تهران).\\nتطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار.\\nوضعیت: FRESH_QUOTE_HISTORY_PENDING — تأیید کامل انجام نشده است.\\nنماد: فولاد | قیمت پایانی پاسخ: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\\n'+q.historyDetail+'\\nاین تأخیر احتمالی انتشار تاریخچه است و به معنی خطای اتصال یا تأیید کامل قیمت نیست. برای بررسی دوباره، بعداً فقط یک بار آزمون کنید.';
+   return;
+  }
   if(q.freshness.status!=='FRESH'){
    s.textContent='اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق.\nتطبیق قیمت پایانی با تاریخچه: موفق.\nتأیید تازگی قیمت زنده: انجام نشد.\nوضعیت تازگی: '+q.freshness.status+'\n'+q.freshness.message+'\nنماد: فولاد | قیمت پایانی: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\nبرای PASS زنده باید آزمون در ساعات معاملات تهران و با تاریخ امروز و زمان آخرین معامله حداکثر ۱۵ دقیقه قدیمی انجام شود. سبد شخصی بررسی یا تغییر نشده است.';
    return;
