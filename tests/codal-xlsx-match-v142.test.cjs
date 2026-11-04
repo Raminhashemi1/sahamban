@@ -32,6 +32,6 @@ test('browser UI and local cache available without portfolio or external network
  for(const id of ['codalXlsxCompareV142','codalXlsxSheetV142','codalXlsxLabelCellV142','codalXlsxValueCellV142','codalXlsxExpectedLabelV142','codalXlsxExpectedAmountV142','codalXlsxCompareStatusV142'])
  assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(sw.includes('codal-xlsx-match-v142.js?v=142.0'));
- assert.ok(html.indexOf('codal-xlsx-preview-v141.js?v=141.1')<html.indexOf('codal-xlsx-match-v142.js?v=142.0'));
+ assert.ok(html.indexOf('codal-xlsx-preview-v141.js?v=141.2')<html.indexOf('codal-xlsx-match-v142.js?v=142.0'));
  assert.doesNotMatch(code,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
