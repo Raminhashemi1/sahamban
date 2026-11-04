@@ -31,3 +31,12 @@ test('rejects fractional rial amounts and unsafe precision',()=>{
  assert.throws(()=>api.sizePosition({capital:10000.5,riskPercent:1,entry:1000,stop:900}),/دقت امن/);
  assert.throws(()=>api.sizePosition({capital:100000,riskPercent:1,entry:9007199254740992,stop:1}),/دقت امن/);
 });
+
+test('decision UI distinguishes historical diagnostic from proven buy/sell skill',()=>{
+ const fs=require('node:fs');
+ const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
+ assert.match(ui,/SahambanHoldoutV134\.evaluate/);
+ assert.match(ui,/اعتبار مستقل پیشنهاد: اثبات‌نشده/);
+ assert.match(ui,/توان پیش‌بینی یا قابلیت اجرای معامله را اثبات نمی‌کند/);
+ assert.match(ui,/خرید خودکار انجام نمی‌شود/);
+});
