@@ -12,7 +12,7 @@
  function compare(preview,claim){
   if(preview?.status!=='LOCAL_XLSX_CONTENT_PREVIEW_UNVERIFIED'||!Array.isArray(preview.sheets))
    return fail('NO_EXTRACTED_XLSX');
-  const sheet=Number(claim?.sheetIndex),labelRef=String(claim?.labelCell||'').trim().toUpperCase(),
+  const sheet=Number(digits(claim?.sheetIndex)),labelRef=String(claim?.labelCell||'').trim().toUpperCase(),
    valueRef=String(claim?.valueCell||'').trim().toUpperCase();
   if(!Number.isSafeInteger(sheet)||sheet<1||sheet>preview.sheets.length||
    !/^[A-Z]{1,3}[1-9][0-9]{0,6}$/.test(labelRef)||!/^[A-Z]{1,3}[1-9][0-9]{0,6}$/.test(valueRef)||
