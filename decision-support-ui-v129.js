@@ -18,7 +18,7 @@
   if(!holdout.holdout.adequateSample){
    evidence.textContent='اعتبار مستقل پیشنهاد: اثبات‌نشده؛ دوره خارج از نمونه فقط '+fmt(n)+' رویداد قابل ارزیابی دارد (حداقل آزمایشی ۱۰ رویداد). امتیاز بالا مجوز خرید نیست.';
   }else{
-   evidence.textContent='بررسی خارج از نمونه: '+fmt(n)+' رویداد؛ میانگین بازده خالص با هزینه فرضی '+fmt(holdout.costPct)+'٪: '+fmt(holdout.holdout.meanNetReturnPct)+'٪؛ سهم نتایج مثبت: '+fmt(holdout.holdout.netPositivePct)+'٪. این آزمون تشخیصی با قیمت‌های پایانی است و به‌تنهایی توان پیش‌بینی یا قابلیت اجرای معامله را اثبات نمی‌کند.';
+   evidence.textContent='بررسی خارج از نمونه: '+fmt(n)+' رویداد؛ میانگین بازده خالص با هزینه فرضی '+fmt(holdout.costPct)+'٪: '+fmt(holdout.holdout.meanNetReturnPct)+'٪؛ سهم نتایج مثبت: '+fmt(holdout.holdout.netPositivePct)+'٪؛ سناریوی هزینه بیشتر ('+fmt(holdout.holdout.stressCostPct)+'٪): میانگین خالص '+fmt(holdout.holdout.stressMeanNetReturnPct)+'٪. '+(holdout.holdout.evidenceStatus==='FRAGILE_TO_COSTS'?'نتیجه به هزینه معاملات حساس است. ':holdout.holdout.evidenceStatus==='NONPOSITIVE_NET_RETURN'?'میانگین خالص آزمون مثبت نیست. ':'')+'این آزمون تشخیصی با قیمت‌های پایانی است و به‌تنهایی توان پیش‌بینی یا قابلیت اجرای معامله را اثبات نمی‌کند.';
   }
  }catch(e){
   evidence.textContent='اعتبار مستقل پیشنهاد: تأیید نشده. '+e.message+' نمایش نامزد ورود/خروج صرفاً بر مبنای قواعد تکنیکال و برای بررسی است.';
