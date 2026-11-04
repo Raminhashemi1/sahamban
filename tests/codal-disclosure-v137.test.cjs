@@ -74,7 +74,7 @@ test('browser script parses and UI is wired to PWA precache',()=>{
  const sw=fs.readFileSync('sw.js','utf8');
  new vm.Script(js);
  for(const id of ['codalEvidenceV137','codalEvidenceSymbolV137','codalEvidenceRunV137','codalEvidenceStatusV137','codalEvidenceResultsV137'])assert.ok(html.includes('id="'+id+'"'));
- assert.ok(html.includes('./codal-disclosure-v137.js?v=137.0'));
- assert.ok(sw.includes('./codal-disclosure-v137.js?v=137.0'));
+ assert.ok(html.includes('./codal-disclosure-v137.js?v=137.1'));
+ assert.ok(sw.includes('./codal-disclosure-v137.js?v=137.1'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|sahamban-broker-holdings|dispatchEvent\(/);
 });
