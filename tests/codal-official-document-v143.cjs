@@ -47,10 +47,16 @@ async function probe({fetchImpl=globalThis.fetch,url=SOURCE,timeoutMs=14000}={})
   if(total<8)return fail('UNVERIFIED_EMPTY_OR_SHORT',{httpStatus:res.status});
   const format=detect(Buffer.concat(prefix.map(x=>Buffer.from(x))),contentType);
   if(format==='UNKNOWN')return fail('UNVERIFIED_UNKNOWN_FORMAT',{httpStatus:res.status,contentType,bytes:total});
-  // A hash and HTTPS response indicate transport/file evidence, NOT the official authenticity of contents.
+  // An HTTP 200 page (even an HTML table) may be a block/redirect/login/error page.
+  // Never equate an arbitrary HTML/XML response with an original financial document.
+  if(format==='HTML_OR_XML_UNINSPECTED')return fail('UNVERIFIED_HTML_OR_XML_RESPONSE',{
+   httpStatus:res.status,contentType,bytes:total,contentFormat:format});
+  if(/(?:text\/html|application\/json|application\/xml|text\/xml)/i.test(contentType))
+   return fail('UNVERIFIED_CONTENT_TYPE_MISMATCH',{httpStatus:res.status,contentType,bytes:total,contentFormat:format});
+  // Hashing bytes from the official URL is transport evidence only. ZIP is not proof of XLSX.
   return fail('OFFICIAL_URL_RESPONSE_HASHED_UNVERIFIED',{httpStatus:res.status,contentType,bytes:total,
    contentFormat:format,sha256:hash.digest('hex'),
-   note:'Exact bytes received from configured HTTPS endpoint; original publication, financial fields and authenticity not verified.'});
+   note:'Exact bytes received from configured HTTPS endpoint; file container, publication identity and financial figures are not verified.'});
  }catch(e){
   return fail(e?.name==='AbortError'?'UNVERIFIED_TIMEOUT':'UNVERIFIED_NETWORK',{errorCategory:e?.name==='AbortError'?'TIMEOUT':'NETWORK_ERROR'});
  }finally{clearTimeout(timeout);}
