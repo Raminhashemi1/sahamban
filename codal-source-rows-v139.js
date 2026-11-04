@@ -129,7 +129,7 @@
    if(!win.Blob||!win.URL?.createObjectURL||!win.URL?.revokeObjectURL){
     controls.summary.textContent='مرورگر امکان دانلود محلی امن را فراهم نکرد. هیچ داده‌ای ارسال نشد.';return;
    }
-   const packet=result.packet,blob=new win.Blob([JSON.stringify(packet,null,2)+'\\n'],{type:'application/json;charset=utf-8'});
+   const packet=result.packet,blob=new win.Blob([JSON.stringify(packet,null,2)],{type:'application/json;charset=utf-8'});
    const url=win.URL.createObjectURL(blob);
    try{
     const link=doc.createElement('a');
