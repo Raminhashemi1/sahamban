@@ -19,6 +19,10 @@ Feb 29 clamped to Feb 28 in a non-leap renewal year. This is an implementation
 placeholder; the user-visible commercial terms and calendar must match the
 actual plan before payments are accepted.
 
+## Trusted checkout order contract
+
+`subscription-orders.cjs` is a server-only, provider-neutral **order and receipt** validator. It binds the annual plan, an integer IRR price, user ID, order ID and server timestamp, and rejects mismatched settlement receipts before invoking provider verification. Replay of the same receipt leaves the order unchanged, while a conflicting payment ID is rejected. It is tested by `tests/subscription-orders.test.cjs` in smoke CI. The order constructor must only be called by a trusted backend using a price from the server's catalog, never a value supplied by browser JavaScript. A *separate* authenticated backend flow must transactionally record the verified order and issue the corresponding entitlement event exactly once. These files alone do not connect to a bank or accept payments.
+
 ## Required provider adapter / production controls
 
 1. A trusted backend authenticates the subscriber and uses the **server-side**
