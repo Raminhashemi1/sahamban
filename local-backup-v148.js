@@ -92,6 +92,7 @@
  function inspectSnapshot(data){
   if(!data||data.format!==FORMAT||data.schema!==SCHEMA||!data.items||typeof data.items!=='object'||
     Array.isArray(data.items))throw Error('قالب یا نسخه پشتیبان پشتیبانی نمی‌شود.');
+  if(JSON.stringify(data).length>MAX_FILE)throw Error('فایل پشتیبان از حد مجاز بزرگ‌تر است.');
   const keys=Object.keys(data.items);
   if(!keys.length||keys.some(k=>!KEYS.includes(k)))throw Error('کلید ناشناخته در فایل پشتیبان شناسایی شد.');
   for(const key of keys)validateOne(key,data.items[key]);
@@ -102,16 +103,21 @@
   // Preserve existing unrelated keys. Roll back each touched key on errors.
   const original=new Map();
   for(const key of inspected.keys)original.set(key,storage.getItem(key));
-  const written=[];
+  const attempted=[];
   try{
    for(const key of inspected.keys){
-    storage.setItem(key,snapshot.items[key]);written.push(key);
+    // Register the write *before* calling setItem: an implementation may mutate
+    // storage then throw, and the failed key must be included in rollback.
+    attempted.push(key);
+    storage.setItem(key,snapshot.items[key]);
     if(storage.getItem(key)!==snapshot.items[key])throw Error('تأیید نوشتن داده در مرورگر ناموفق بود.');
    }
   }catch(error){
    let rollbackFailed=false;
-   for(const key of written.reverse()){
-    try{const previous=original.get(key);if(previous===null)storage.removeItem(key);else storage.setItem(key,previous);
+   for(const key of attempted.reverse()){
+    try{
+     const previous=original.get(key);
+     if(previous===null)storage.removeItem(key);else storage.setItem(key,previous);
      if(storage.getItem(key)!==previous)rollbackFailed=true;
     }catch{rollbackFailed=true;}
    }
