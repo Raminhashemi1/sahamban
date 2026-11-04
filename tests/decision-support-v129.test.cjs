@@ -72,3 +72,34 @@ test('no entry explanation claims RSI alignment if rule permits an 80-point scor
  assert.match(ui,/\.decisionPlan\(r\)/);
  assert.match(ui,/شرط ابطال یا محدودیت/);
 });
+
+test('local decision audit export contains evidence, all assessed symbols and no trade orders',()=>{
+ const rows=[api.analyze({symbol:'آزمایشی۱',history:history()},{today:'20261103'}),
+             api.analyze({symbol:'آزمایشی۲',history:history()},{today:'20261103'})];
+ const out=api.exportAudit(rows,{generatedAt:'2026-11-04T17:00:00.000Z'});
+ assert.equal(out.schema,'sahamban-decision-audit-v1');
+ assert.equal(out.generatedAt,'2026-11-04T17:00:00.000Z');
+ assert.equal(out.results.length,2);
+ assert.deepEqual(out.results.map(x=>x.symbol),['آزمایشی۱','آزمایشی۲']);
+ assert.ok(out.results.every(x=>x.indicators.length===5&&x.automatedOrder===false&&x.requiresIndependentVerification===true));
+ assert.equal(out.noTradingOrders,true);
+ assert.match(out.evidenceScope,/not an independent live quote/);
+ assert.equal(JSON.stringify(out).includes('brokerToken'),false);
+});
+test('local audit refuses malformed timestamps and forged analyses',()=>{
+ const valid=api.analyze({symbol:'TEST',history:history()},{today:'20261103'});
+ assert.throws(()=>api.exportAudit([valid],{generatedAt:'not-a-date'}),/زمان/);
+ assert.throws(()=>api.exportAudit([valid],{generatedAt:'2026-11-04T17:00:00\\Z'}),/زمان/);
+ assert.throws(()=>api.exportAudit([{...valid,score:101}],{generatedAt:'2026-11-04T17:00:00Z'}),/ردیف/);
+});
+test('export button requires completed analysis and never writes holdings',()=>{
+ const fs=require('node:fs');
+ const html=fs.readFileSync('index.html','utf8');
+ const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
+ assert.match(html,/id="decisionExportV129"[^>]*disabled/);
+ assert.match(ui,/exportAudit\\(reports/);
+ assert.match(ui,/URL.createObjectURL/);
+ assert.match(ui,/URL.revokeObjectURL/);
+ assert.match(ui,/exportButton.disabled=true/);
+ assert.doesNotMatch(ui,/localStorage|sessionStorage/);
+});
