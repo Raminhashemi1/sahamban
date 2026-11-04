@@ -9,8 +9,11 @@
  function safeFiling(record){
   if(!record||typeof record!=='object'||typeof record.symbol!=='string'||!record.symbol.trim()||
      !/^[0-9]{1,20}$/.test(String(record.tracingNo||''))||BigInt(record.tracingNo)<=0n||
-     typeof record.published!=='string'||!/^(13\d\d|14\d\d)[/-]\d\d?[/-]\d\d?/.test(record.published))
-   return null;
+     typeof record.published!=='string')return null;
+  const published=record.published.replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776)).replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632));
+  const match=published.match(/^(13\d\d|14\d\d)[/-](\d\d?)[/-](\d\d?)(?:\s+\d\d?:\d\d(?::\d\d)?)?$/);
+  if(!match||Number(match[2])<1||Number(match[2])>12||Number(match[3])<1||
+     Number(match[3])>(Number(match[2])<=6?31:30))return null;
   // The originating v137 metadata gate must already have accepted this URL.
   const url=typeof record.originalUrl==='string'?record.originalUrl:null;
   if(!url||!/^https:\/\/(?:www\.)?codal\.ir\/(?:Reports\/|DownloadFile\.aspx\?)/i.test(url))return null;
