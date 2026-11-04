@@ -71,3 +71,27 @@ test('rejects unsupported overlong or corrupt local settings rather than generat
   ['sahamban-portfolio-local-v1',JSON.stringify({...risk,riskCap:'500'})]
  ])assert.throws(()=>api.createSnapshot(storage({[key]:raw})));
 });
+
+test('accepts valid Persian-number portfolio snapshots without editing source bytes',()=>{
+ const risk={version:2,data:'فولاد,۱۰,۱۲۰۰,۱۳۵۰,۱۱۰۰,۱۵۵۰',
+  capital:'۲۰۰۰۰',riskCap:'۵',stress:'۱۰',concentration:'۳۰'};
+ const raw=JSON.stringify(risk),snap=api.createSnapshot(storage({'sahamban-portfolio-local-v1':raw}));
+ assert.equal(snap.items['sahamban-portfolio-local-v1'],raw);
+ const target=storage();api.restoreSnapshot(target,snap);
+ assert.equal(target.getItem('sahamban-portfolio-local-v1'),raw);
+});
+test('rejects risk totals that would exceed safe monetary arithmetic bounds',()=>{
+ const oversized={version:2,data:'فولاد,9007199254740991,100,110,90,130',
+  capital:'',riskCap:'5',stress:'10',concentration:'30'};
+ assert.throws(()=>api.createSnapshot(storage({'sahamban-portfolio-local-v1':JSON.stringify(oversized)})));
+});
+test('web HTML and service worker use the same locally cached backup module',()=>{
+ const fs=require('node:fs');
+ const html=fs.readFileSync('index.html','utf8');
+ const sw=fs.readFileSync('sw.js','utf8');
+ assert.match(html,/id="sb148LocalBackup"/);
+ for(const id of ['sb148Export','sb148File','sb148Restore','sb148Status'])assert.ok(html.includes('id="'+id+'"'));
+ assert.match(html,/local-backup-v148\.js\?v=148\.0/);
+ assert.match(sw,/local-backup-v148\.js\?v=148\.0/);
+ assert.match(html,/رمزگذاری نشده/);
+});
