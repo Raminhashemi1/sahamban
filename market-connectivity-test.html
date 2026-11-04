@@ -197,7 +197,7 @@ function verifyPublicClosingHistory(date,price,history){
  }
  const historyPrice=Number(matching[0]?.pClosing);
  if(!Number.isFinite(historyPrice)||historyPrice!==price){
-  throw Error('اختلاف قیمت پایانی: پاسخ اصلی '+fa(price)+' ریال | تاریخچه '+(Number.isFinite(historyPrice)?fa(historyPrice):'نامعتبر')+' ریال | تاریخ '+date);
+  throw Error('UNVERIFIED_HISTORY_MISMATCH | اختلاف قیمت پایانی: پاسخ اصلی '+fa(price)+' ریال | تاریخچه '+(Number.isFinite(historyPrice)?fa(historyPrice):'نامعتبر')+' ریال | تاریخ '+date);
  }
  return true;
 }
