@@ -39,6 +39,13 @@ assert.match(html,/مهلت پاسخ سرور تمام شد/);
 assert.match(html,/const valid=\[\],rejectionReasons=\[\]/);
 assert.match(html,/const freshness=quoteFreshness\(info\?\.finalLastDate\|\|date,info\?\.lastHEven\)/);
 assert.match(html,/قیمت پاسخ رسمی:/);
+assert.match(html,/FRESH_QUOTE_HISTORY_PENDING/);
+assert.match(html,/historyStatus==='PENDING_TODAY_ROW'/);
+assert.match(html,/sameDay.length===0&&freshness.status==='FRESH'/);
+assert.match(html,/تطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار/);
+assert.ok(html.indexOf("if(q.historyStatus==='PENDING_TODAY_ROW')") < html.indexOf("if(q.freshness.status!=='FRESH')"));
+assert.match(html,/if\(valid.length!==1\)/);
+
 assert.match(html,/آخرین معامله:/);
 assert.match(html,/تازگی پاسخ قیمت:/);
 assert.match(html,/تاریخچه جداگانه تأیید نشد:/);
