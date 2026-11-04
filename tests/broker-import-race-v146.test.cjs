@@ -1,0 +1,81 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const code=fs.readFileSync('broker-import.js','utf8');
+function harness(){
+ const nodes=new Map();
+ function element(id=''){
+  if(nodes.has(id))return nodes.get(id);
+  const obj={id,files:[],value:'',textContent:'',disabled:false,hidden:false,style:{},children:[],
+   events:new Map(),addEventListener(name,fn){this.events.set(name,fn);},
+   replaceChildren(){this.children=[];},append(child){this.children.push(child);},
+   scrollIntoView(){},dispatchEvent(){}};
+  nodes.set(id,obj);return obj;
+ }
+ const document={getElementById:element,createElement:()=>element('new-'+nodes.size)};
+ const storage=new Map();
+ const localStorage={getItem:k=>storage.has(k)?storage.get(k):null,setItem:(k,v)=>storage.set(k,String(v))};
+ const window={dispatchEvent(){},confirm(){return true;}};
+ vm.runInNewContext(code,{document,localStorage,window,CustomEvent:class{constructor(name,options){this.type=name;this.detail=options.detail;}},
+  console,Intl,TextDecoder,Number,String,Set,Map,Date,Blob,URL,Promise,Array,Error,BigInt});
+ const fire=(id,type='click')=>{const fn=element(id).events.get(type);assert.ok(fn,id+' '+type);return fn();};
+ return {element,fire,storage};
+}
+function deferred(){
+ let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
+ return {promise,resolve,reject};
+}
+test('an older CSV read cannot overwrite a newly selected broker file',async()=>{
+ const h=harness(),first=deferred(),input=h.element('brokerFile');
+ input.files=[{name:'first.csv',size:80,text:()=>first.promise}];
+ const p1=h.fire('brokerFile','change');
+ assert.equal(h.element('brokerMapping').hidden,true);
+ input.files=[{name:'second.csv',size:80,text:async()=> 'symbol,qty,buy,current\nجدید,3,100,120'}];
+ await h.fire('brokerFile','change');
+ const good=h.element('brokerStatus').textContent;
+ assert.match(good,/فایل خوانده شد/);
+ assert.equal(h.element('brokerMapping').hidden,false);
+ assert.ok(h.element('brokerSymbolCol').children.some(x=>x.textContent.includes('symbol')));
+ first.resolve('ticker,qty,buy,current\nقدیمی,3,10,12');
+ await p1;
+ assert.equal(h.element('brokerStatus').textContent,good);
+ assert.equal(h.element('brokerMapping').hidden,false);
+ assert.ok(h.element('brokerSymbolCol').children.some(x=>x.textContent.includes('symbol')));
+ assert.ok(!h.element('brokerSymbolCol').children.some(x=>x.textContent.includes('ticker')));
+});
+test('clearing file selection invalidates outstanding CSV read and previous confirmation',async()=>{
+ const h=harness(),pending=deferred(),file=h.element('brokerFile');
+ file.files=[{name:'delayed.csv',size:40,text:()=>pending.promise}];
+ const old=h.fire('brokerFile','change');
+ file.files=[];
+ await h.fire('brokerFile','change');
+ pending.resolve('symbol,qty,buy,current\nغلط,1,10,20');await old;
+ assert.equal(h.element('brokerMapping').hidden,true);
+ assert.equal(h.element('brokerReview').hidden,true);
+ assert.equal(h.element('brokerApply').disabled,true);
+ assert.match(h.element('brokerStatus').textContent,/فایلی انتخاب نشده/);
+});
+test('loading stored holdings wins against a pending old file import',async()=>{
+ const h=harness(),pending=deferred(),file=h.element('brokerFile');
+ file.files=[{name:'delayed.csv',size:40,text:()=>pending.promise}];
+ const old=h.fire('brokerFile','change');
+ h.storage.set('sahamban-broker-holdings-v1',JSON.stringify({version:2,holdings:[{
+  symbol:'ذخیره',quantity:2,buy:100,current:120}]}));
+ h.fire('brokerLoad');
+ assert.equal(h.element('brokerReview').hidden,false);
+ const msg=h.element('brokerStatus').textContent;
+ pending.resolve('symbol,qty,buy,current\nغلط,1,10,20');await old;
+ assert.equal(h.element('brokerStatus').textContent,msg);
+ assert.equal(h.element('brokerReview').hidden,false);
+ assert.equal(h.element('brokerMapping').hidden,true);
+});
+test('stale failed reads cannot replace newer successful result or show private exception',async()=>{
+ const h=harness(),first=deferred(),file=h.element('brokerFile');
+ file.files=[{name:'first.csv',size:100,text:()=>first.promise}];
+ const stale=h.fire('brokerFile','change');
+ file.files=[{name:'new.csv',size:50,text:async()=> 'symbol,qty,buy,current\nجدید,1,10,20'}];
+ await h.fire('brokerFile','change');
+ first.reject(Error('PRIVATE_FILENAME_SHOULD_NOT_APPEAR'));
+ await stale;
+ assert.doesNotMatch(h.element('brokerStatus').textContent,/PRIVATE_FILENAME/);
+ assert.equal(h.element('brokerMapping').hidden,false);
+});
