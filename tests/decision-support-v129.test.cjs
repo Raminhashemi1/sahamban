@@ -97,7 +97,7 @@ test('export button requires completed analysis and never writes holdings',()=>{
  const html=fs.readFileSync('index.html','utf8');
  const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
  assert.match(html,/id="decisionExportV129"[^>]*disabled/);
- assert.match(ui,/exportAudit\\(reports/);
+ assert.match(ui,/exportAudit\(reports/);
  assert.match(ui,/URL.createObjectURL/);
  assert.match(ui,/URL.revokeObjectURL/);
  assert.match(ui,/exportButton.disabled=true/);
