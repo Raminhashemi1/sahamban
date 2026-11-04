@@ -1,0 +1,35 @@
+name: Sahamban after-close live market check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sahamban-after-close-market-check
+  cancel-in-progress: false
+
+jobs:
+  live-market-after-close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Run read-only TSETMC after-close diagnostic
+        run: node tests/live-market-connectivity.cjs
+      - name: Preserve live market evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-after-close-market-check
+          path: test-artifacts/live-market-v111.json
+          if-no-files-found: warn
+          retention-days: 30
