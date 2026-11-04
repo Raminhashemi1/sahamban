@@ -36,7 +36,7 @@ async function main(){
  console.log('PASS: versioned root navigation loads cached offline index');
  assert.equal((await request('app.js?v=41','no-cors')).from,'offline-js');
  console.log('PASS: offline JS cached version resolves');
- assert.equal(await request('app.js?v=999','no-cors'),undefined);
+ await assert.rejects(request('app.js?v=999','no-cors'),/offline/);
  console.log('PASS: missing JS does not silently return HTML fallback');
  console.log('SUCCESS: service worker offline tests');
 }
