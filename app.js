@@ -102,11 +102,12 @@ function parsePortfolio(raw){
    const [qty,buy,current,stop,target]=cols.slice(1).map(v=>portfolioNumber(v,i+1));
    if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(v=>v<=0)||stop>=current||target<=current)throw Error(`مقادیر نامعتبر در سطر ${i+1}: تعداد باید عدد صحیح مثبت، حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از آن باشد.`);
    const computed={value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*(current-stop),upside:qty*(target-current)};
-   if(!Object.values(computed).every(Number.isFinite))throw Error(`مقادیر بسیار بزرگ و محاسبه‌ناپذیر در سطر ${i+1}.`);
+   if(!Object.values(computed).every(Number.isFinite)||Object.values(computed).some(v=>Math.abs(v)>Number.MAX_SAFE_INTEGER))throw Error(`مقادیر بسیار بزرگ یا خارج از دقت امن محاسبات مالی در سطر ${i+1}.`);
    return {symbol,qty,buy,current,stop,target,...computed};
  });
  for(const key of ['value','cost','pnl','atRisk','upside']){
-  if(!Number.isFinite(positions.reduce((sum,p)=>sum+p[key],0)))throw Error('جمع ارزش‌ها یا ریسک سبد بیش از حد بزرگ است.');
+  const total=positions.reduce((sum,p)=>sum+p[key],0);
+  if(!Number.isFinite(total)||Math.abs(total)>Number.MAX_SAFE_INTEGER)throw Error('جمع ارزش‌ها یا ریسک سبد از محدوده دقت امن محاسبات مالی خارج است.');
  }
  return positions;
 }
