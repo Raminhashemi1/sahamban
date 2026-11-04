@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const sw=fs.readFileSync('sw.js','utf8');
-test('v103 installs a new cache generation then retires older Sahamban caches',async()=>{
+test('current cache generation installs before retiring older Sahamban caches',async()=>{
  const events={},stores=new Map(),deleted=[],prefetched=[];
  const caches={
   open:async name=>({
@@ -9,7 +9,7 @@ test('v103 installs a new cache generation then retires older Sahamban caches',a
    add:async()=>{},
    put:async()=>{}
   }),
-  keys:async()=>['sahamban-static-v93-0','sahamban-static-v102-0','unrelated-app-cache','sahamban-static-v103-0'],
+  keys:async()=>['sahamban-static-v93-0','sahamban-static-v103-0','sahamban-static-v148-0','unrelated-app-cache','sahamban-static-v149-0'],
   delete:async name=>{deleted.push(name);return true;},
   match:async()=>undefined
  };
@@ -19,13 +19,13 @@ test('v103 installs a new cache generation then retires older Sahamban caches',a
  const fire=async name=>{let pending;events[name]({waitUntil:promise=>{pending=promise}});assert.ok(pending);await pending;};
  await fire('install');
  assert.equal(skipped,1);
- assert.ok(stores.has('sahamban-static-v103-0'));
+ assert.ok(stores.has('sahamban-static-v149-0'));
  assert.ok(prefetched.includes('./index.html'));
  assert.ok(prefetched.includes('./update-notice-v103.js?v=103.0'));
  assert.ok(prefetched.includes('./update-notice-v103.css?v=103.0'));
  await fire('activate');
  assert.equal(claimed,1);
- assert.deepEqual(deleted.sort(),['sahamban-static-v102-0','sahamban-static-v93-0']);
+ assert.deepEqual(deleted.sort(),['sahamban-static-v103-0','sahamban-static-v148-0','sahamban-static-v93-0']);
 });
 test('v103 navigation remains network first and falls back to offline index only for navigations',async()=>{
  const events={},root='https://example.test/sahamban/';
