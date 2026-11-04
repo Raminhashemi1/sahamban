@@ -8,7 +8,7 @@
  const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
  const AUDITS=new Set(['AUDITED','UNAUDITED','UNKNOWN']);
  const BASES=new Set(['STANDALONE','CONSOLIDATED','UNKNOWN']);
- const METRICS=new Set(['revenue','operating_profit','net_income','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding']);
+ const METRICS=new Set(['revenue','operating_profit','net_income','total_assets','total_liabilities','equity','operating_cash_flow']);
  const ascii=value=>String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632));
  function date(value){
   const match=ascii(value).trim().match(/^(13\d\d|14\d\d)[/-](\d\d?)[/-](\d\d?)$/);
