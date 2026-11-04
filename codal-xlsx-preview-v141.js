@@ -116,17 +116,35 @@
   const book=entries.get('xl/workbook.xml')||'';
   if(!book||/<!DOCTYPE|<!ENTITY/i.test(book))err('INVALID_WORKBOOK');
   const strings=sharedStrings(entries.get('xl/sharedStrings.xml')||'');
-  const names=[];
+  const sheetMeta=[];
   for(const m of book.matchAll(/<(?:[A-Za-z_][\w.-]*:)?sheet\b([^>]*?)(?:\/>|>)/gi)){
-   const name=attr(m[1],'name');if(name)names.push(name.slice(0,80));
+   const name=attr(m[1],'name');
+   const id=(m[1].match(/(?:^|\s)r:id="([^"]+)"/i)||[])[1]||'';
+   if(name)sheetMeta.push({name:name.slice(0,80),id});
+  }
+  const relXml=entries.get('xl/_rels/workbook.xml.rels')||'';
+  if(/<!DOCTYPE|<!ENTITY/i.test(relXml))err('UNSUPPORTED_XML_DIRECTIVE');
+  const relationships=new Map();
+  for(const m of relXml.matchAll(/<(?:[A-Za-z_][\w.-]*:)?Relationship\b([^>]*?)(?:\/>|>)/gi)){
+   const id=attr(m[1],'Id'),type=attr(m[1],'Type'),target=attr(m[1],'Target');
+   if(!id||relationships.has(id))err('INVALID_WORKBOOK_RELATIONSHIPS');
+   if(/\/worksheet$/i.test(type)){
+    const path=target.startsWith('/xl/')?target.slice(1):'xl/'+target;
+    if(!/^xl\/worksheets\/sheet[1-9][0-9]*\.xml$/.test(path))err('UNSAFE_WORKSHEET_TARGET');
+    relationships.set(id,path);
+   }
   }
   const sheets=[];let totalCells=0;
-  // For common Excel exports: sheet1..sheetN. Nonstandard mappings must be checked manually.
-  for(let i=1;i<=Math.min(20,names.length||10);i++){
-   const xml=entries.get('xl/worksheets/sheet'+i+'.xml');
-   if(!xml)continue;
+  for(let i=0;i<Math.min(20,sheetMeta.length||10);i++){
+   const meta=sheetMeta[i];
+   // Explicit workbook relationships are authoritative. Never assign a sheet's
+   // values to another displayed name when its relationship cannot be resolved.
+   const path=meta?.id?relationships.get(meta.id):'xl/worksheets/sheet'+(i+1)+'.xml';
+   if(meta?.id&&!path)err('UNRESOLVED_WORKSHEET_RELATIONSHIP');
+   const xml=entries.get(path);
+   if(!xml){if(meta?.id)err('MISSING_WORKSHEET_TARGET');continue;}
    const parsed=parseXmlSheet(xml,strings,{limit:800});
-   sheets.push({name:names[i-1]||'Sheet '+i,path:'xl/worksheets/sheet'+i+'.xml',
+   sheets.push({name:meta?.name||'Sheet '+(i+1),path,
     cells:parsed.cells,scanned:parsed.scanned,truncated:parsed.truncated});
    totalCells+=parsed.scanned;
   }
