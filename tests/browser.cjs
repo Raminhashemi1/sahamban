@@ -87,7 +87,7 @@ async function main(){
   assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),0);
   assert.match(await page.locator('#sb94ModuleSearchStatus').innerText(),/پیدا نشد/);
   await page.getByRole('button',{name:'پاک کردن'}).click();
-  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),13);
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87:visible').count(),15);
   await page.getByRole('button',{name:'آموزش اولین استفاده (۴ قدم)'}).click();
   assert.equal(await page.locator('#sb92Tour').isVisible(),true);
   assert.match(await page.locator('#sb92TourTitle').innerText(),/سبدتان/);
