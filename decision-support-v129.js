@@ -22,7 +22,7 @@
   let action='صبر و پایش',code='WAIT',reason='هنوز همه شروط ورود هم‌زمان برقرار نیستند.';
   if(broken20){action='بررسی فوری حد ضرر',code='RISK_EXIT',reason='قیمت پایانی زیر کمترین قیمت پایانی ۲۰ جلسه قبل بسته شده؛ حد ضرر و امکان خروج را بررسی کنید.';}
   else if(weakTrend&&negativeMomentum&&negativeMacd&&rsi<45){action='بررسی خروج / کاهش ریسک',code='EXIT_REVIEW',reason='روند، مومنتوم و MACD هم‌زمان ضعیف‌اند؛ خروج قطعی نیست و باید با حد ضرر و وضعیت موقعیت بررسی شود.';}
-  else if(score>=80&&breakout){action='نامزد ورود؛ نیازمند تأیید',code='ENTRY_CANDIDATE',reason='روند، مومنتوم، RSI و شکست سقف ۲۰ جلسه هم‌راستا هستند؛ این فقط نامزد بررسی است، نه دستور خرید.';}
+  else if(score>=80&&breakout){action='نامزد ورود؛ نیازمند تأیید',code='ENTRY_CANDIDATE',reason='امتیاز قواعد دست‌کم ۸۰ است و شکست سقف ۲۰ جلسه رخ داده؛ مؤلفه‌های موافق و مخالف پایین نمایش داده می‌شوند. این نامزد صرفاً نیازمند ارزیابی مستقل است، نه دستور خرید.';}
   else if(score<40){action='فعلاً عدم ورود',code='AVOID',reason='امتیاز شروط روند و مومنتوم پایین است؛ برای ورود عجله نکنید.';}
   const stop=priorLow,riskPerShare=last-stop,target=last+2*riskPerShare;
   const reasons=[['روند صعودی (قیمت > SMA20 > SMA50)',trend],['RSI در بازه ۵۰ تا ۶۸',healthyRsi],['MACD مثبت و رو به تقویت',positiveMacd],['بازده ۲۰ جلسه مثبت',positiveMomentum],['شکست سقف ۲۰ جلسه قبل',breakout]];
@@ -43,5 +43,37 @@
    throw new RangeError('مبلغ یا ریسک محاسبه‌شده خارج از محدوده امن است.');
   return {riskBudget,quantity,maxLoss:estimatedLoss,estimatedCost,limitedBy:byCash<byRisk?'AVAILABLE_CASH':'RISK_BUDGET'};
  }
- return Object.freeze({analyze,sizePosition});
+ // A conditional, date-stamped interpretation of rule output, not an order.
+ // No user holdings, brokerage access, execution or network calls.
+ function decisionPlan(r){
+  if(!r||!['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code)||
+    !validDate(r.marketDate)||!Number.isFinite(r.last)||r.last<=0||
+    !Number.isFinite(r.priorHigh)||r.priorHigh<=0||
+    !Number.isFinite(r.priorLow)||r.priorLow<=0)
+   throw new TypeError('گزارش تحلیلی معتبر برای برنامه مشروط لازم است.');
+  const common={symbol:r.symbol,asOf:r.marketDate,automaticTrade:false,
+   dataStatus:'قیمت پایانی تاریخ ذکرشده؛ لزوماً قیمت لحظه‌ای یا قابل معامله نیست.',
+   evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.'};
+  if(r.code==='ENTRY_CANDIDATE'){
+   if(!Number.isFinite(r.stop)||r.stop<=0||r.stop>=r.last)
+    return {...common,decision:'NO_ACTION',when:'تا داشتن حد ریسک معتبر و بررسی شواهد مستقل هیچ ورودی مجاز نیست.',invalidation:'',condition:'NO_VALID_RISK_LEVEL'};
+   return {...common,decision:'REVIEW_ENTRY',
+    when:'فقط در صورت تأیید هویت نماد، تاریخ و قیمت تازه، نقدشوندگی و پابرجابودن شکست سقف '+r.priorHigh+' ریال در داده مستقل، ورود را بررسی کنید.',
+    invalidation:'اگر مبنای روند نقض شود یا قیمت به زیر سطح ساختاری '+r.stop+' ریال برسد، فرضیه ورود باطل و خطر خروج باید دوباره بررسی شود.',
+    condition:'VERIFY_FRESH_QUOTE_AND_LIQUIDITY'};
+  }
+  if(r.code==='RISK_EXIT')return {...common,decision:'REVIEW_EXIT_URGENT',
+   when:'قیمت پایانی در تاریخ گزارش به زیر کف ۲۰ جلسه قبل رسیده است؛ اگر سهم را دارید، ریسک خروج و امکان معامله را فوراً بررسی کنید.',
+   invalidation:'خروج بدون دانستن قیمت خرید، اندازه موقعیت، نقدشوندگی و محدودیت‌های معاملاتی به‌طور خودکار توصیه نمی‌شود.',
+   condition:'REVIEW_HOLDING_AND_EXECUTION'};
+  if(r.code==='EXIT_REVIEW')return {...common,decision:'REVIEW_REDUCE',
+   when:'ضعف هم‌زمان روند و مومنتوم هشدار بررسی کاهش ریسک است؛ بر اساس حد زیان و شواهد مستقل تصمیم بگیرید.',
+   invalidation:'بدون داده معتبر از موقعیت واقعی کاربر نمی‌توان فروش مشخصی تعیین کرد.',
+   condition:'REVIEW_HOLDING_AND_EXECUTION'};
+  return {...common,decision:'NO_ACTION',
+   when:r.code==='AVOID'?'با داده حاضر ورود تازه قابل دفاع نیست.':'شرایط لازم برای ورود یا خروج مشخص برقرار نیست؛ پایش کنید.',
+   invalidation:'اگر شرایط بازار یا داده تغییر کرد، تحلیل جدید با تاریخ جدید لازم است.',
+   condition:'WAIT_FOR_NEW_EVIDENCE'};
+ }
+ return Object.freeze({analyze,sizePosition,decisionPlan});
 });
