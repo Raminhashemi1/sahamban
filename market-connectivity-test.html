@@ -347,10 +347,11 @@ $('run').addEventListener('click',async()=>{
      // Fresh quotes can appear before the daily history endpoint publishes today's row.
      // Classify this separately; never turn it into a full PASS or guess the price.
      const sameDay=hist.filter(x=>String(x?.dEven??'')===String(date));
-     if(sameDay.length===0&&freshness.status==='FRESH'){
+     const lastDates=[...new Set(hist.map(x=>String(x?.dEven??'')).filter(x=>/^\d{8}$/.test(x)))].sort().reverse().slice(0,3);
+     const missingToday=sameDay.length===0&&date===tehranMarketNow().date&&lastDates.length>0&&lastDates[0]<date;
+     if(missingToday){
       historyStatus='PENDING_TODAY_ROW';
-      const lastDates=[...new Set(hist.map(x=>String(x?.dEven??'')).filter(x=>/^\d{8}$/.test(x)))].sort().reverse().slice(0,3);
-      historyDetail='تاریخچه هنوز رکورد امروز '+date+' را منتشر نکرده است. آخرین تاریخ‌های موجود: '+(lastDates.join('، ')||'نامشخص');
+      historyDetail='تاریخچه هنوز رکورد امروز '+date+' را منتشر نکرده است. آخرین تاریخ‌های موجود: '+lastDates.join('، ');
      }else{
       verifyPublicClosingHistory(date,price,hist);
      }
@@ -376,7 +377,7 @@ $('run').addEventListener('click',async()=>{
   }
   const q=valid[0];
   if(q.historyStatus==='PENDING_TODAY_ROW'){
-   s.textContent='اتصال TSETMC و دریافت قیمت امروز: موفق.\nتازگی آخرین معامله: '+q.freshness.status+' ('+q.freshness.lastTradeTime+' تهران).\nتطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار.\nوضعیت: FRESH_QUOTE_HISTORY_PENDING — تأیید کامل انجام نشده است.\nنماد: فولاد | قیمت پایانی پاسخ: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\n'+q.historyDetail+'\nاین تأخیر احتمالی انتشار تاریخچه است و به معنی خطای اتصال یا تأیید کامل قیمت نیست. برای بررسی دوباره، بعداً فقط یک بار آزمون کنید.';
+   s.textContent='اتصال TSETMC و دریافت قیمت امروز: موفق.\nتازگی آخرین معامله: '+q.freshness.status+(q.freshness.lastTradeTime?' ('+q.freshness.lastTradeTime+' تهران)':'')+'.\nتطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار.\nوضعیت: '+(q.freshness.status==='FRESH'?'FRESH_QUOTE_HISTORY_PENDING':'UNVERIFIED_HISTORY_NOT_PUBLISHED')+' — تأیید کامل انجام نشده است.\nنماد: فولاد | قیمت پایانی پاسخ: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\n'+q.historyDetail+'\nاین تأخیر احتمالی انتشار تاریخچه است و به معنی خطای اتصال یا تأیید کامل قیمت نیست. برای بررسی دوباره، بعداً فقط یک بار آزمون کنید.';
    return;
   }
   if(q.freshness.status!=='FRESH'){
