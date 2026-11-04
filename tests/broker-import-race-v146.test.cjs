@@ -79,3 +79,43 @@ test('stale failed reads cannot replace newer successful result or show private 
  assert.doesNotMatch(h.element('brokerStatus').textContent,/PRIVATE_FILENAME/);
  assert.equal(h.element('brokerMapping').hidden,false);
 });
+
+test('corrupt saved holdings are not displayed and original local bytes are preserved',()=>{
+ const badCases=[
+  {version:2,holdings:[{symbol:'نماد',quantity:2,buy:-1,current:130}]},
+  {version:2,holdings:[{symbol:'نماد',quantity:'3',buy:100,current:130}]},
+  {version:2,holdings:[{symbol:'نماد',quantity:2,buy:100,current:130},{symbol:' نماد ',quantity:3,buy:120,current:140}]},
+  {version:2,holdings:[{symbol:'نماد',quantity:9007199254740991,buy:2,current:3}]},
+  {version:2,holdings:[{symbol:'نماد',quantity:1,buy:100,current:130},{symbol:'دیگر',quantity:1,buy:9007199254740900,current:9007199254740900}]},
+  {version:999,holdings:[{symbol:'نماد',quantity:1,buy:100,current:130}]}
+ ];
+ for(const bad of badCases){
+  const h=harness(),raw=JSON.stringify(bad);
+  h.storage.set('sahamban-broker-holdings-v1',raw);
+  h.fire('brokerLoad');
+  assert.equal(h.element('brokerReview').hidden,true);
+  assert.equal(h.element('brokerApply').disabled,true);
+  assert.equal(h.element('brokerRisk').disabled,true);
+  assert.equal(h.storage.get('sahamban-broker-holdings-v1'),raw);
+  assert.match(h.element('brokerStatus').textContent,/نامعتبر|محدوده/);
+ }
+});
+test('valid v1 legacy holdings are displayed with toman-to-rial conversion but never rewritten',()=>{
+ const h=harness(),old={version:1,holdings:[{symbol:'ونوین',quantity:2,buy:100,current:120}]},raw=JSON.stringify(old);
+ h.storage.set('sahamban-broker-holdings-v1',raw);
+ h.fire('brokerLoad');
+ assert.equal(h.element('brokerReview').hidden,false);
+ assert.equal(h.element('brokerApply').disabled,false);
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1'),raw);
+ const rows=h.element('brokerRows').children;
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].children.length,5);
+ assert.ok(rows[0].children.some(c=>String(c.textContent).includes('۱٬۰۰۰')));
+});
+test('backup export refuses invalid persisted holdings without deleting saved bytes',()=>{
+ const h=harness(),raw=JSON.stringify({version:2,holdings:[{symbol:'نماد',quantity:0,buy:100,current:120}]});
+ h.storage.set('sahamban-broker-holdings-v1',raw);
+ h.fire('brokerExportBackup');
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1'),raw);
+ assert.match(h.element('brokerStatus').textContent,/پشتیبان‌گیری انجام نشد/);
+});
