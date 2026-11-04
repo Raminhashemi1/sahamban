@@ -141,3 +141,32 @@ test('UI ignores stale backup file and rejects malformed backup before enabling 
  assert.equal(h.element('sb148Restore').disabled,true);
  assert.match(h.element('sb148Status').textContent,/پذیرفته نشد/);
 });
+
+test('rolls back failing key when storage writes new bytes and then throws',()=>{
+ const original=storage({'sahamban-v1':JSON.stringify(alert),'sahamban-watchlist-v6':JSON.stringify(watch)});
+ const snapshot=api.createSnapshot(original);
+ const destination=storage({'sahamban-v1':'ORIGINAL_ALERT','sahamban-watchlist-v6':'ORIGINAL_WATCH','unrelated':'preserve'});
+ const prior=destination.dump();
+ const normalSet=destination.setItem.bind(destination);
+ let calls=0;
+ destination.setItem=(key,value)=>{
+  normalSet(key,value);
+  if(++calls===2)throw Error('write completed but wrapper threw');
+ };
+ assert.throws(()=>api.restoreSnapshot(destination,snapshot),/بازیابی انجام نشد/);
+ assert.deepEqual(destination.dump(),prior);
+});
+test('detects and reports rollback failure instead of claiming atomic success',()=>{
+ const snapshot=api.createSnapshot(storage({'sahamban-v1':JSON.stringify(alert)}));
+ const destination=storage({'sahamban-v1':'BEFORE'});
+ destination.setItem=()=>{throw Error('write denied');};
+ assert.throws(()=>api.restoreSnapshot(destination,snapshot),/بازگردانی خودکار موفق نشد/);
+ assert.equal(destination.getItem('sahamban-v1'),'BEFORE');
+});
+test('rejects oversized direct backup objects before mutating storage',()=>{
+ const snapshot={format:api.FORMAT,schema:api.SCHEMA,items:{'sahamban-v1':JSON.stringify(alert)},
+  extra:'X'.repeat(270000)};
+ const destination=storage({'sahamban-v1':'UNCHANGED'});
+ assert.throws(()=>api.restoreSnapshot(destination,snapshot),/بزرگ‌تر از حد مجاز/);
+ assert.equal(destination.getItem('sahamban-v1'),'UNCHANGED');
+});
