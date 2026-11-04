@@ -12,6 +12,7 @@ function file(data,name='report.pdf'){
 }
 test('valid filing identity can be selected',()=>{
  assert.equal(intake.safeFiling(record()).tracingNo,'12345');
+ assert.equal(intake.safeFiling(intake.safeFiling(record())).tracingNo,'12345');
 });
 test('invalid issuer proof and unsafe URLs are rejected',()=>{
  for(const change of [{tracingNo:'0'},{symbol:''},{published:''},{originalUrl:null},
@@ -86,6 +87,7 @@ test('changing file invalidates old fingerprint and discards in-flight hashing',
  els.codalOriginalFileV138.files=[{name:'x.pdf',size:10,
   arrayBuffer:()=>new Promise(resolve=>{release=resolve;})}];
  const pending=els.codalOriginalCheckV138.listeners.click();
+ assert.equal(typeof release,'function','selected document should reach its file read stage');
  els.codalOriginalFileV138.listeners.change();
  assert.equal(resets,2);
  assert.equal(els.codalOriginalCheckV138.disabled,false);
