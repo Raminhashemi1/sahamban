@@ -40,3 +40,29 @@ test('no candidate signals yield explicit null metrics, not fabricated zero prof
   assert.equal(r.holdout.count,0);assert.equal(r.holdout.meanNetReturnPct,null);assert.equal(r.holdout.netPositivePct,null);assert.equal(r.holdout.adequateSample,false);
  }finally{globalThis.SahambanDecisionV129=old;}
 });
+
+test('independent holdout exposes higher-cost stress without claiming predictive skill',()=>{
+ const old=globalThis.SahambanDecisionV129;
+ globalThis.SahambanDecisionV129={analyze(){return {code:'ENTRY_CANDIDATE'};}};
+ try{
+  const out=evaluate({symbol:'نماد',history:history(480)},{costPct:1});
+  assert.ok(out.holdout.count>=10);
+  assert.equal(out.holdout.stressCostPct,2);
+  assert.ok(Math.abs(out.holdout.stressMeanNetReturnPct-(out.holdout.meanNetReturnPct-1))<1e-10);
+  assert.equal(out.holdout.evidenceStatus,'DIAGNOSTIC_ONLY_NOT_VALIDATED');
+  assert.equal(out.sufficientToClaimSkill,false);
+  const extra=evaluate({symbol:'نماد',history:history(480)},{costPct:4.5});
+  assert.equal(extra.holdout.stressCostPct,5);
+  assert.equal(extra.sufficientToClaimSkill,false);
+ }finally{globalThis.SahambanDecisionV129=old;}
+});
+test('zero trade holdout stays null under stress rather than displaying invented returns',()=>{
+ const old=globalThis.SahambanDecisionV129;
+ globalThis.SahambanDecisionV129={analyze(){return {code:'WAIT'};}};
+ try{
+  const out=evaluate({symbol:'نماد',history:history(260)});
+  assert.equal(out.holdout.evidenceStatus,'INSUFFICIENT_EVENTS');
+  assert.equal(out.holdout.stressMeanNetReturnPct,null);
+  assert.equal(out.holdout.stressPositivePct,null);
+ }finally{globalThis.SahambanDecisionV129=old;}
+});
