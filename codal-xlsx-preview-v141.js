@@ -82,7 +82,18 @@
    else{
     if(typeof DecompressionStream!=='function')err('RAW_DEFLATE_UNSUPPORTED');
     const stream=new Blob([bytes.subarray(begin,end)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    decoded=new Uint8Array(await new Response(stream).arrayBuffer());
+    const reader=stream.getReader(),chunks=[];let written=0;
+    try{
+     while(true){
+      const next=await reader.read();
+      if(next.done)break;
+      written+=next.value.byteLength;
+      if(written>uncomp||written>MAX_ENTRY||written>MAX_TOTAL)err('ZIP_DECOMPRESSION_LIMIT');
+      chunks.push(next.value);
+     }
+    }finally{reader.releaseLock();}
+    decoded=new Uint8Array(written);let cursor=0;
+    for(const chunk of chunks){decoded.set(chunk,cursor);cursor+=chunk.byteLength;}
    }
    if(decoded.byteLength!==uncomp||decoded.byteLength>MAX_ENTRY)err('ZIP_UNCOMPRESSED_MISMATCH');
    out.set(name,decoder.decode(decoded));
