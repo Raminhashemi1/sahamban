@@ -24,3 +24,13 @@ The broker XLSX reader applies compressed-file, entry-count, per-entry and aggre
 ## Verification limits
 
 CI tests exercise synthetic portfolios and parser fixtures. They do not prove the security of the user's device, browser extensions, operating system, market-data provider, or external CODAL publication. Physical-device testing and independent security review remain separate acceptance activities.
+
+## Full local backup and version compatibility (v148)
+
+The in-app local backup file includes only the following allowlisted browser-storage records when they exist: imported broker holdings, one prior broker snapshot, saved risk portfolio, alert settings, and the public-instrument watchlist. It **does not** include recorded alert audio, manual market instrument mappings, browser caches, tokens, other websites' data or other unknown storage keys. It is not a backup of the entire device.
+
+The backup is an **unencrypted JSON file containing sensitive portfolio data**. Download and protect it on the user's own device. Do not upload it to GitHub or use it as an issue attachment.
+
+A restore checks the backup format and schema version (`sahamban-local-backup`, version `1`), validates each recognized record, and asks for explicit consent. It does **not** silently migrate legacy portfolio/holdings versions 1 into version 2; application readers retain their own legacy conversion rules. Unknown schema versions and unknown keys fail closed. The restore changes only keys explicitly contained in the file, and attempts to roll back modified keys after a storage error. If rollback also fails, the status clearly warns that local state may be inconsistent and instructs the user to preserve the external backup.
+
+Use this backup **before** updating browsers or moving to a new phone; importing the JSON into a different profile restores only these allowlisted keys. Reload the app after a successful restore to make its in-memory state reflect the new storage. No financial data is transmitted by this module.
