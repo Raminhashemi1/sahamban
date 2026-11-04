@@ -11,9 +11,10 @@
  function showDetail(){const r=reports.find(x=>x.symbol===select.value);detail.replaceChildren();if(!r)return;const h=document.createElement('h3');h.textContent=r.symbol+' — '+r.action;detail.append(h);const p=document.createElement('p');p.textContent=r.reason+' امتیاز شروط: '+fmt(r.score)+' از ۱۰۰ (احتمال موفقیت نیست). آخرین تاریخ: '+pretty(r.marketDate)+'.';detail.append(p);const list=document.createElement('ul');for(const x of r.reasons){const li=document.createElement('li');li.textContent=(x[1]?'✓ ':'✗ ')+x[0];list.append(li);}detail.append(list);const metrics=document.createElement('p');metrics.textContent='قیمت پایانی: '+fmt(r.last)+' ریال | SMA20: '+fmt(r.sma20)+' | SMA50: '+fmt(r.sma50)+' | RSI14: '+fmt(r.rsi)+' | MACD histogram: '+fmt(r.hist)+' | بازده ۲۰ جلسه: '+fmt(r.momentum)+'٪';detail.append(metrics);
  const evidence=document.createElement('p');
  const quote=quotes.find(x=>x.symbol===r.symbol);
+ let holdout;
  try{
   if(!window.SahambanHoldoutV134?.evaluate)throw Error('ماژول ارزیابی خارج از نمونه در دسترس نیست.');
-  const holdout=window.SahambanHoldoutV134.evaluate(quote);
+  holdout=window.SahambanHoldoutV134.evaluate(quote);
   const n=holdout?.holdout?.count??0;
   if(!holdout.holdout.adequateSample){
    evidence.textContent='اعتبار مستقل پیشنهاد: اثبات‌نشده؛ دوره خارج از نمونه فقط '+fmt(n)+' رویداد قابل ارزیابی دارد (حداقل آزمایشی ۱۰ رویداد). امتیاز بالا مجوز خرید نیست.';
@@ -26,7 +27,8 @@
  detail.append(evidence);
  const comparison=document.createElement('p');
  try{
-  const review=window.SahambanHoldoutV134.evaluate(quote),base=review.passiveComparison;
+  if(!holdout?.passiveComparison)throw Error('گزارش مقایسه موجود نیست.');
+  const base=holdout.passiveComparison;
   const fmtPct=v=>v===null?'ناموجود':fmt(v)+'٪';
   comparison.textContent='مقایسه تشخیصی همان نماد: '+fmt(base.count)+' پنجره ثابت ۱۰جلسه‌ای مستقل از انتخاب سیگنال؛ میانگین خالص نگهداری فرضی '+fmtPct(base.meanNetReturnPct)+'؛ اختلاف میانگین رویدادهای نامزد ورود با آن '+fmtPct(base.excessMeanNetReturnPct)+'. این دو نمونه از نظر زمان حضور در بازار هم‌ارز نیستند؛ مقایسه با شاخص کل بازار یا اثبات برتری راهبرد نیست.';
  }catch(e){comparison.textContent='مقایسه مستقل بازده در دسترس نیست: '+e.message;}
