@@ -21,6 +21,8 @@ on:
       - 'codal-xlsx-preview-v141.js'
       - 'codal-xlsx-match-v142.js'
       - 'tests/codal-xlsx-match-v142.test.cjs'
+      - 'tests/codal-official-document-v143.cjs'
+      - 'tests/codal-official-document-v143.test.cjs'
       - 'tests/codal-xlsx-preview-v141.test.cjs'
       - 'tests/codal-audit-recheck-v140.test.cjs'
       - 'tests/codal-source-rows-v139.test.cjs'
@@ -67,6 +69,10 @@ jobs:
         run: node --test tests/codal-xlsx-preview-v141.test.cjs
       - name: Test exact XLSX source-cell comparison with unverified status
         run: node --test tests/codal-xlsx-match-v142.test.cjs
+      - name: Test read-only original document probe and binary format evidence
+        run: node --test tests/codal-official-document-v143.test.cjs
+      - name: Probe one specific official CODAL Excel source (read-only, bounded)
+        run: node tests/codal-official-document-v143.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
@@ -74,6 +80,8 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: sahamban-codal-v136
-          path: test-artifacts/codal-v136.json
+          path: |
+            test-artifacts/codal-v136.json
+            test-artifacts/codal-official-document-v143.json
           if-no-files-found: warn
           retention-days: 30
