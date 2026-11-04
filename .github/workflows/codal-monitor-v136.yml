@@ -18,6 +18,8 @@ on:
       - 'codal-original-intake-v138.js'
       - 'codal-source-rows-v139.js'
       - 'codal-audit-recheck-v140.js'
+      - 'codal-xlsx-preview-v141.js'
+      - 'tests/codal-xlsx-preview-v141.test.cjs'
       - 'tests/codal-audit-recheck-v140.test.cjs'
       - 'tests/codal-source-rows-v139.test.cjs'
       - 'module-hub-v87.js'
@@ -59,6 +61,8 @@ jobs:
         run: node --test tests/codal-source-rows-v139.test.cjs
       - name: Verify local audit JSON against exact source bytes with tamper checks
         run: node --test tests/codal-audit-recheck-v140.test.cjs
+      - name: Test real offline XLSX extraction and ZIP safety limits
+        run: node --test tests/codal-xlsx-preview-v141.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
