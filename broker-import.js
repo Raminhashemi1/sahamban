@@ -29,38 +29,71 @@ function csv(text){
 }
 // Read modern .xlsx (OOXML) inside the browser without third-party code or uploads.
 async function unzipXlsx(file){
- const bytes=new Uint8Array(await file.arrayBuffer()),view=new DataView(bytes.buffer);
- const decoder=new TextDecoder('utf-8');
+ const MAX_FILE=5*1024*1024,MAX_ENTRIES=150,MAX_ENTRY=12*1024*1024,MAX_TOTAL=20*1024*1024;
+ if(!file||file.size>MAX_FILE)throw Error('فایل اکسل بیش از حد مجاز است.');
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ if(bytes.length<22||bytes.length>MAX_FILE)throw Error('اندازه فایل اکسل معتبر نیست.');
+ const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),decoder=new TextDecoder('utf-8',{fatal:true});
+ const u16=(p)=>{if(p<0||p+2>bytes.length)throw Error('ساختار ZIP ناقص است.');return view.getUint16(p,true);};
+ const u32=(p)=>{if(p<0||p+4>bytes.length)throw Error('ساختار ZIP ناقص است.');return view.getUint32(p,true);};
  let eocd=-1;
- for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}
- if(eocd<0)throw Error('ساختار فایل XLSX معتبر نیست.');
- const count=view.getUint16(eocd+10,true),offset=view.getUint32(eocd+16,true);
- if(count>1500||offset>=bytes.length)throw Error('فایل اکسل بسیار پیچیده یا نامعتبر است.');
- const entries=new Map();let ptr=offset;
- for(let i=0;i<count;i++){
-  if(view.getUint32(ptr,true)!==0x02014b50)throw Error('فهرست XLSX آسیب دیده است.');
-  const method=view.getUint16(ptr+10,true),compressed=view.getUint32(ptr+20,true),uncompressed=view.getUint32(ptr+24,true);
-  const nameLen=view.getUint16(ptr+28,true),extraLen=view.getUint16(ptr+30,true),commentLen=view.getUint16(ptr+32,true);
-  const local=view.getUint32(ptr+42,true);
-  const name=decoder.decode(bytes.subarray(ptr+46,ptr+46+nameLen));
-  if(!name.includes('..')&&uncompressed<=12*1024*1024)entries.set(name,{method,compressed,uncompressed,local});
-  ptr+=46+nameLen+extraLen+commentLen;
+ for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
+  if(u32(i)===0x06054b50){eocd=i;break;}
  }
+ if(eocd<0)throw Error('ساختار فایل XLSX معتبر نیست.');
+ if(u16(eocd+4)!==0||u16(eocd+6)!==0||u16(eocd+8)!==u16(eocd+10))throw Error('فایل ZIP چندبخشی پشتیبانی نمی‌شود.');
+ const count=u16(eocd+10),centralSize=u32(eocd+12),offset=u32(eocd+16);
+ if(count>MAX_ENTRIES||offset+centralSize>eocd||offset>=bytes.length)throw Error('فایل اکسل بسیار پیچیده یا نامعتبر است.');
+ const entries=new Map();let ptr=offset,totalDeclared=0;
+ const allowed=/^(?:xl\/worksheets\/sheet[1-9][0-9]*\.xml|xl\/sharedStrings\.xml|xl\/workbook\.xml|xl\/_rels\/workbook\.xml\.rels)$/;
+ for(let i=0;i<count;i++){
+  if(u32(ptr)!==0x02014b50)throw Error('فهرست XLSX آسیب دیده است.');
+  const flags=u16(ptr+8),method=u16(ptr+10),compressed=u32(ptr+20),uncompressed=u32(ptr+24);
+  const nameLen=u16(ptr+28),extraLen=u16(ptr+30),commentLen=u16(ptr+32),local=u32(ptr+42);
+  const next=ptr+46+nameLen+extraLen+commentLen;
+  if(next>offset+centralSize)throw Error('فهرست ZIP ناقص است.');
+  if((flags&1)||!(method===0||method===8))throw Error('فایل رمزدار یا روش فشرده‌سازی پشتیبانی‌نشده است.');
+  let name;try{name=decoder.decode(bytes.subarray(ptr+46,ptr+46+nameLen));}catch{throw Error('نام فایل داخلی XLSX معتبر نیست.');}
+  if(name.includes('\\')||name.startsWith('/')||name.split('/').some(x=>x==='..'||x==='.')||name.length>180)throw Error('مسیر داخلی ناامن در XLSX شناسایی شد.');
+  if(uncompressed>MAX_ENTRY)throw Error('یکی از بخش‌های اکسل بیش از حد بزرگ است.');
+  totalDeclared+=uncompressed;if(totalDeclared>MAX_TOTAL)throw Error('حجم بازشده کل اکسل بیش از حد مجاز است.');
+  if(allowed.test(name)){
+   if(entries.has(name))throw Error('نام تکراری در ساختار XLSX شناسایی شد.');
+   entries.set(name,{flags,method,compressed,uncompressed,local,name});
+  }
+  ptr=next;
+ }
+ if(ptr!==offset+centralSize)throw Error('اندازه فهرست ZIP ناسازگار است.');
  async function read(name){
   const e=entries.get(name);if(!e)return null;
-  const p=e.local;if(view.getUint32(p,true)!==0x04034b50)throw Error('فایل XLSX آسیب دیده است.');
-  const header=30+view.getUint16(p+26,true)+view.getUint16(p+28,true),begin=p+header;
-  if(begin+e.compressed>bytes.length)throw Error('داده XLSX ناقص است.');
-  let raw=bytes.slice(begin,begin+e.compressed);
+  const p=e.local;
+  if(u32(p)!==0x04034b50)throw Error('فایل XLSX آسیب دیده است.');
+  const localFlags=u16(p+6),localMethod=u16(p+8),nameLen=u16(p+26),extraLen=u16(p+28);
+  const begin=p+30+nameLen+extraLen,end=begin+e.compressed;
+  if(localFlags!==e.flags||localMethod!==e.method||begin>end||end>offset)throw Error('سرآیند محلی ZIP با فهرست اصلی سازگار نیست.');
+  let localName;try{localName=decoder.decode(bytes.subarray(p+30,p+30+nameLen));}catch{throw Error('نام محلی XLSX معتبر نیست.');}
+  if(localName!==e.name)throw Error('نام فایل داخلی XLSX ناسازگار است.');
+  if(!(e.flags&8)&&(u32(p+18)!==e.compressed||u32(p+22)!==e.uncompressed))throw Error('اندازه سرآیند محلی XLSX ناسازگار است.');
+  let raw=bytes.slice(begin,end);
   if(e.method===8){
    if(typeof DecompressionStream==='undefined')throw Error('این مرورگر خواندن آفلاین اکسل را پشتیبانی نمی‌کند؛ خروجی CSV بگیرید.');
    const stream=new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-   raw=new Uint8Array(await new Response(stream).arrayBuffer());
-  }else if(e.method!==0)throw Error('روش فشرده‌سازی این اکسل پشتیبانی نمی‌شود.');
+   const reader=stream.getReader(),chunks=[];let size=0;
+   try{
+    while(true){
+     const part=await reader.read();if(part.done)break;
+     size+=part.value.byteLength;
+     if(size>e.uncompressed||size>MAX_ENTRY||size>MAX_TOTAL)throw Error('حجم بازشده اکسل از حد مجاز عبور کرد.');
+     chunks.push(part.value);
+    }
+   }finally{reader.releaseLock();}
+   raw=new Uint8Array(size);let cursor=0;for(const chunk of chunks){raw.set(chunk,cursor);cursor+=chunk.byteLength;}
+  }
   if(raw.length!==e.uncompressed)throw Error('حجم داده XLSX صحیح نیست.');
-  return decoder.decode(raw);
+  try{return decoder.decode(raw);}catch{throw Error('متن داخلی XLSX کدگذاری معتبر ندارد.');}
  }
  const parse=xml=>{
+  if(/<!DOCTYPE|<!ENTITY/i.test(xml))throw Error('دستور XML ناامن در فایل اکسل شناسایی شد.');
   const doc=new DOMParser().parseFromString(xml,'application/xml');
   if(doc.getElementsByTagName('parsererror').length)throw Error('ساختار XML فایل اکسل معتبر نیست.');
   return doc;
@@ -75,13 +108,17 @@ async function unzipXlsx(file){
  }
  let sheetName='xl/worksheets/sheet1.xml';
  const wb=await read('xl/workbook.xml'),rels=await read('xl/_rels/workbook.xml.rels');
- if(wb&&rels){
-  const workbook=parse(wb),relationships=parse(rels);
-  const sheet=workbook.getElementsByTagName('sheet')[0];
-  const relId=sheet?.getAttribute('r:id')||sheet?.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
-  const rel=Array.from(relationships.getElementsByTagName('Relationship')).find(x=>x.getAttribute('Id')===relId);
+ if(wb){
+  const workbook=parse(wb),sheet=workbook.getElementsByTagName('sheet')[0];
+  if(!sheet)throw Error('کاربرگ اصلی در فایل اکسل پیدا نشد.');
+  const relId=sheet.getAttribute('r:id')||sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+  if(!rels||!relId)throw Error('ارتباط کاربرگ در فایل اکسل پیدا نشد.');
+  const relationships=parse(rels),rel=Array.from(relationships.getElementsByTagName('Relationship')).find(x=>x.getAttribute('Id')===relId);
   const target=rel?.getAttribute('Target');
-  if(target){const cleaned=target.replace(/^\/+/,'');if(!cleaned.includes('..'))sheetName=cleaned.startsWith('xl/')?cleaned:'xl/'+cleaned;}
+  if(!target||target.includes('..')||/^[a-z]+:/i.test(target)||target.includes('\\'))throw Error('مسیر کاربرگ در فایل اکسل ناامن یا نامعتبر است.');
+  const cleaned=target.replace(/^\/+/,'');
+  sheetName=cleaned.startsWith('xl/')?cleaned:'xl/'+cleaned;
+  if(!allowed.test(sheetName))throw Error('مسیر کاربرگ در فایل اکسل پشتیبانی نمی‌شود.');
  }
  const sheetXml=await read(sheetName);
  if(!sheetXml)throw Error('برگه اول فایل اکسل پیدا نشد.');
