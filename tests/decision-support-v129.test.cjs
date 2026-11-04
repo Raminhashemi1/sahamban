@@ -25,7 +25,7 @@ test('position size never exceeds actual loss budget, including zero-affordable 
  const zero=api.sizePosition({capital:1000,riskPercent:1,entry:2000,stop:1000});
  assert.equal(zero.quantity,0);
  assert.equal(zero.maxLoss,0);
- assert.equal(zero.limitedBy,'AVAILABLE_CASH');
+ assert.equal(zero.limitedBy,'BOTH_LIMITS');
 });
 test('rejects fractional rial amounts and unsafe precision',()=>{
  assert.throws(()=>api.sizePosition({capital:10000.5,riskPercent:1,entry:1000,stop:900}),/دقت امن/);
@@ -111,4 +111,12 @@ test('fresh market history invalidates visible earlier buy and sell conclusions'
  assert.match(ui,/reports=\[\];table\.replaceChildren\(\);detail\.replaceChildren\(\);select\.replaceChildren\(\)/);
  assert.match(ui,/گزارش قبلی معتبر نیست/);
  assert.match(ui,/if\(exportButton\)exportButton\.disabled=true/);
+});
+
+test('equal cash and risk share caps are disclosed without implying one sole constraint',()=>{
+ const same=api.sizePosition({capital:10000,riskPercent:5,entry:5000,stop:4750});
+ assert.equal(same.quantity,2);
+ assert.equal(same.limitedBy,'BOTH_LIMITS');
+ assert.equal(same.estimatedCost,10000);
+ assert.equal(same.maxLoss,500);
 });
