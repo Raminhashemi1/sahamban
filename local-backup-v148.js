@@ -19,6 +19,7 @@
  const parse=(raw)=>{if(typeof raw!=='string')throw Error('داده ذخیره‌شده متنی نیست.');return JSON.parse(raw);};
  const normalize=s=>s.replace(/[\u200c\u200e\u200f\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
  const finiteMoney=n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<=Number.MAX_SAFE_INTEGER;
+ const portfolioNum=v=>Number(String(v).trim().replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/٬/g,'').replace(/٫/g,'.'));
  function validateHoldings(data){
   if(!data||![1,2].includes(data.version)||!Array.isArray(data.holdings)||data.holdings.length<1||data.holdings.length>100)throw Error('ساختار دارایی‌های کارگزاری معتبر نیست.');
   const factor=data.version===1?10:1,seen=new Set();let cost=0,value=0;
@@ -42,14 +43,14 @@
    const cells=row.split(/[,،;\t]/).map(x=>x.trim());
    if(cells.length!==6||!cells[0]||cells[0].length>35||names.has(normalize(cells[0])))throw Error('نماد تکراری یا سطر نامعتبر در سبد ریسک.');
    names.add(normalize(cells[0]));
-   const n=cells.slice(1).map(Number);
+   const n=cells.slice(1).map(portfolioNum);
    if(!Number.isSafeInteger(n[0])||n[0]<=0||n.slice(1).some(v=>!Number.isFinite(v)||v<=0||!Number.isFinite(v*factor))||
     n[3]>=n[2]||n[4]<=n[2])throw Error('مقادیر سبد ریسک نامعتبر است.');
   }
   for(const field of ['capital','riskCap','stress'])if(typeof data[field]!=='string'||data[field].length>60)throw Error('تنظیمات سبد ریسک نامعتبر است.');
   const concentration=data.concentration??'30';
   if(typeof concentration!=='string'||concentration.length>60)throw Error('سقف تمرکز نامعتبر است.');
-  const risk=Number(data.riskCap),stress=Number(data.stress),cap=Number(concentration),capital=data.capital?Number(data.capital):null;
+  const risk=portfolioNum(data.riskCap),stress=portfolioNum(data.stress),cap=portfolioNum(concentration),capital=data.capital?portfolioNum(data.capital):null;
   if(!(risk>0&&risk<=100&&stress>=0&&stress<=100&&cap>=1&&cap<=100)||
      (capital!==null&&(!Number.isSafeInteger(capital)||capital<=0)))throw Error('محدودیت‌های ریسک نامعتبر است.');
  }
@@ -64,7 +65,7 @@
   const seen=new Set();
   for(const p of data){
    if(!p||typeof p.name!=='string'||!p.name.trim()||p.name.length>35||
-     !/^[0-9]{8,25}$/.test(p.code)||seen.has(p.code)||
+     typeof p.code!=='string'||!/^[0-9]{8,25}$/.test(p.code)||seen.has(p.code)||
      !finiteMoney(p.stop)||!finiteMoney(p.target)||p.target<=p.stop)throw Error('رکورد فهرست نمادهای تحت‌نظر نامعتبر است.');
    seen.add(p.code);
   }
