@@ -62,6 +62,14 @@
    return Boolean(current);
   }
   fileInput.disabled=true;button.disabled=true;
+  // Changing the selected file invalidates its previous SHA-256 and every row linked to it.
+  // Incrementing version also discards the result of an asynchronous hash already in progress.
+  fileInput.addEventListener('change',()=>{
+   version++;
+   win.SahambanCodalRowsV139?.reset?.();
+   button.disabled=!current;
+   status.textContent='فایل انتخاب‌شده تغییر کرد. اثر انگشت قبلی و ارجاعات مالی آن باطل شدند؛ دوباره SHA-256 را محاسبه کنید.';
+  });
   button.addEventListener('click',async()=>{
    const file=fileInput.files?.[0],stamp=version,record=current;
    button.disabled=true;status.textContent='در حال محاسبه اثرانگشت محلی فایل؛ هیچ فایلی ارسال نمی‌شود.';
