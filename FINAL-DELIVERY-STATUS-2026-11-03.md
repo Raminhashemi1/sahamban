@@ -107,3 +107,14 @@
 ### وضعیت پذیرش
 - پذیرش کامل بازار زنده، تطبیق تاریخی قیمت روز، دریافت و بررسی اصل گزارش کدال، اتصال دروازه بنیادی به جریان تحلیل، و آزمون‌های میدانی iOS/Android و صفحه‌خوان فارسی همچنان باز هستند.
 - موفقیت آزمون‌های خودکار یا یک مشاهده موفق از گوشی، جایگزین تکمیل ماتریس پذیرش Issue #106 نیست.
+
+## نتیجه CI برای commit وضعیت ۴ نوامبر
+
+Commit مستندسازی `1395b749f9bbfdb9e4b8a5a8e7962828736425fe` در GitHub Actions بررسی شد:
+- Smoke: موفق — [run 41805493281](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493281)، jobهای `smoke` و `browser`.
+- WebKit mobile acceptance proxy: موفق — [run 41805493306](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493306)، job `webkit-mobile`. این proxy جایگزین آزمون Safari روی iPhone فیزیکی نیست.
+- GitHub Pages build و deploy: موفق — [run 41805492216](https://github.com/Raminhashemi1/sahamban/actions/runs/41805492216)، هر سه job موفق.
+- PWA asset inventory: موفق — [run 41805493247](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493247).
+- چرخه سبد ۲۰ و ۱۰۰ دارایی، quote-basis/atomicity، broker safe amounts، Professional Risk و Technical Indicators نیز در همین commit موفق شدند: [20-holding](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493345), [100-holding](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493144), [quote-basis](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493638), [broker amounts](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493251), [risk](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493154), [indicators](https://github.com/Raminhashemi1/sahamban/actions/runs/41805493199).
+
+این نتایج فقط پذیرش خودکار همان commit را تأیید می‌کنند. آزمون روی iPhone/Android فیزیکی، VoiceOver/TalkBack، اندازه‌گیری عملکرد واقعی، تطبیق تاریخچه قیمت روز و دریافت/راستی‌آزمایی اصل گزارش کدال همچنان نیازمند شواهد مستقل هستند.
