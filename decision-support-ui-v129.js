@@ -2,7 +2,7 @@
 /* v129 read-only decision assistant. Consumes only the separately verified history event. */
 (()=>{const $=id=>document.getElementById(id);const root=$('decisionSupportV129');if(!root)return;
  const status=$('decisionStatusV129'),summary=$('decisionSummaryV129'),table=$('decisionTableV129'),detail=$('decisionDetailV129'),select=$('decisionSymbolV129');
- let quotes=[],reports=[];
+ let quotes=[],reports=[];const exportButton=$('decisionExportV129');
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
  const dateTehran=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return p.year+p.month+p.day;};
  const pretty=d=>String(d||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1/$2/$3').replace(/[0-9]/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)]);
@@ -31,7 +31,21 @@
  }catch(e){conditional.textContent='برنامه اجرایی تأیید نشده: '+e.message;}
  detail.append(conditional);
  if(r.stop!==null){const plan=document.createElement('p');plan.textContent='سطح ساختاری زیر نظر: '+fmt(r.stop)+' ریال (کمترین قیمت پایانی ۲۰ جلسه قبل) | هدف آموزشی با نسبت ۲ به ۱: '+fmt(r.target)+' ریال. این سطوح تضمین اجرا یا قیمت قابل معامله نیستند.';detail.append(plan);}else{const plan=document.createElement('p');plan.textContent='سطح حد ضرر ساختاری قابل اتکا از این داده استخراج نشد؛ اندازه موقعیت محاسبه نمی‌شود.';detail.append(plan);}}
- function run(){if(!quotes.length){status.textContent='هنوز تاریخچه تأییدشده‌ای دریافت نشده است. به بخش «تحلیل تکنیکال تاریخی» بروید و «دریافت تاریخچه تأییدشده همه نمادها» را اجرا کنید؛ سپس به این ماژول برگردید.';return;}reports=[];const errors=[];for(const q of quotes){try{reports.push(window.SahambanDecisionV129.analyze(q,{today:dateTehran(),maxAgeDays:7}));}catch(e){errors.push(q.symbol+': '+e.message);}}reports.sort((a,b)=>b.score-a.score);select.replaceChildren();for(const r of reports){const o=document.createElement('option');o.value=r.symbol;o.textContent=r.symbol+' — '+r.action;select.append(o);}renderRows();if(reports.length){select.value=reports[0].symbol;showDetail();}summary.textContent='نمادهای دارای تاریخچه کافی و تازه: '+fmt(reports.length)+' از '+fmt(quotes.length)+'. نمادهای کنارگذاشته‌شده: '+fmt(errors.length)+'. '+(errors.length?'علت‌ها: '+errors.join(' | '):'همه نمادهای بررسی‌شده داده معتبر داشتند.');status.textContent='تحلیل انجام شد؛ فقط داده تاریخی تأییدشده همین نشست استفاده شد. هیچ سفارشی ارسال و هیچ دارایی ذخیره یا تغییر داده نشد.';}
+ function run(){if(!quotes.length){status.textContent='هنوز تاریخچه تأییدشده‌ای دریافت نشده است. به بخش «تحلیل تکنیکال تاریخی» بروید و «دریافت تاریخچه تأییدشده همه نمادها» را اجرا کنید؛ سپس به این ماژول برگردید.';return;}reports=[];if(exportButton)exportButton.disabled=true;const errors=[];for(const q of quotes){try{reports.push(window.SahambanDecisionV129.analyze(q,{today:dateTehran(),maxAgeDays:7}));}catch(e){errors.push(q.symbol+': '+e.message);}}reports.sort((a,b)=>b.score-a.score);select.replaceChildren();for(const r of reports){const o=document.createElement('option');o.value=r.symbol;o.textContent=r.symbol+' — '+r.action;select.append(o);}renderRows();if(exportButton)exportButton.disabled=reports.length===0;if(reports.length){select.value=reports[0].symbol;showDetail();}summary.textContent='نمادهای دارای تاریخچه کافی و تازه: '+fmt(reports.length)+' از '+fmt(quotes.length)+'. نمادهای کنارگذاشته‌شده: '+fmt(errors.length)+'. '+(errors.length?'علت‌ها: '+errors.join(' | '):'همه نمادهای بررسی‌شده داده معتبر داشتند.');status.textContent='تحلیل انجام شد؛ فقط داده تاریخی تأییدشده همین نشست استفاده شد. هیچ سفارشی ارسال و هیچ دارایی ذخیره یا تغییر داده نشد.';}
+ if(exportButton)exportButton.addEventListener('click',()=>{
+  if(!reports.length){status.textContent='برای دریافت گزارش، ابتدا تحلیل نمادها را اجرا کنید.';return;}
+  try{
+   const audit=window.SahambanDecisionV129.exportAudit(reports,{generatedAt:new Date().toISOString()});
+   const blob=new Blob([JSON.stringify(audit,null,2)],{type:'application/json;charset=utf-8'});
+   const url=URL.createObjectURL(blob);
+   try{
+    const link=document.createElement('a');
+    link.href=url;link.download='sahamban-decision-audit-'+audit.generatedAt.slice(0,10)+'.json';
+    document.body.append(link);link.click();link.remove();
+    status.textContent='گزارش تحلیل همین نشست روی دستگاه برای دانلود آماده شد؛ ارسال به سرور انجام نشد. این گزارش توصیه قطعی معامله یا اثبات بازده نیست.';
+   }finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  }catch(e){status.textContent='تهیه گزارش مستند انجام نشد: '+e.message;}
+ });
  $('decisionRunV129').addEventListener('click',run);select.addEventListener('change',showDetail);$('decisionSizeV129').addEventListener('click',()=>{const r=reports.find(x=>x.symbol===select.value),out=$('decisionSizeResultV129');if(!r||r.code!=='ENTRY_CANDIDATE'||r.stop===null){out.textContent='محاسبه حجم فقط برای نامزد ورود با حد ضرر معتبر فعال است؛ ابتدا شروط ورود را بررسی کنید.';return;}try{const capital=Number($('decisionCapitalV129').value),riskPercent=Number($('decisionRiskV129').value),x=window.SahambanDecisionV129.sizePosition({capital,riskPercent,entry:r.last,stop:r.stop});out.textContent='بودجه ریسک: '+fmt(x.riskBudget)+' ریال | حداکثر تعداد قابل تأمین از سرمایه و بودجه ریسک: '+fmt(x.quantity)+' سهم | ارزش خرید نظری: '+fmt(x.estimatedCost)+' ریال | زیان نظری تا حد ضرر: '+fmt(x.maxLoss)+' ریال | محدودکننده: '+(x.limitedBy==='AVAILABLE_CASH'?'سرمایه در دسترس':'بودجه ریسک')+'. این محاسبه پیش از کارمزد است و لغزش، صف و محدودیت نقدشوندگی لحاظ نشده‌اند؛ خرید خودکار انجام نمی‌شود.';}catch(e){out.textContent=e.message;}});
- window.addEventListener('sahamban:verified-historical-quotes-v50',e=>{const a=e?.detail?.quotes;if(Array.isArray(a)){quotes=a;status.textContent='تاریخچه تأییدشده دریافت شد. برای ساخت گزارش تصمیم‌یار، «تحلیل همه نمادها» را بزنید.';}});
+ window.addEventListener('sahamban:verified-historical-quotes-v50',e=>{const a=e?.detail?.quotes;if(Array.isArray(a)){quotes=a;reports=[];if(exportButton)exportButton.disabled=true;status.textContent='تاریخچه تأییدشده دریافت شد. برای ساخت گزارش تصمیم‌یار، «تحلیل همه نمادها» را بزنید.';}});
 })();
