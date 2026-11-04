@@ -23,6 +23,8 @@ on:
       - 'tests/codal-xlsx-match-v142.test.cjs'
       - 'tests/codal-official-document-v143.cjs'
       - 'tests/codal-official-document-v143.test.cjs'
+      - 'tests/codal-final-acceptance-v144.cjs'
+      - 'tests/codal-final-acceptance-v144.test.cjs'
       - 'tests/codal-xlsx-preview-v141.test.cjs'
       - 'tests/codal-audit-recheck-v140.test.cjs'
       - 'tests/codal-source-rows-v139.test.cjs'
@@ -75,6 +77,11 @@ jobs:
         run: node tests/codal-official-document-v143.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
+      - name: Test final fail-closed CODAL acceptance criteria
+        run: node --test tests/codal-final-acceptance-v144.test.cjs
+      - name: Record final CODAL acceptance verdict from actual probe artifacts
+        if: always()
+        run: node tests/codal-final-acceptance-v144.cjs
       - name: Preserve outcome, including block or network failure
         if: always()
         uses: actions/upload-artifact@v6
@@ -83,5 +90,6 @@ jobs:
           path: |
             test-artifacts/codal-v136.json
             test-artifacts/codal-official-document-v143.json
+            test-artifacts/codal-final-acceptance-v144.json
           if-no-files-found: warn
           retention-days: 30
