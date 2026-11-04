@@ -90,6 +90,19 @@ small{opacity:.75}
   }
   return {status:items.length?'SEARCH_METADATA_VALIDATED':body.Letters.length?'UNVERIFIED_NO_VALID_LETTERS':'UNVERIFIED_EMPTY_SEARCH',items,rejected};
  }
+ function codalReportUrl(value){
+  const raw=String(value??'').trim();
+  if(!raw||raw.length>2048||/[\s\\\u0000-\u001f\u007f]/.test(raw)||raw.startsWith('//'))return null;
+  if(!raw.startsWith('/')&&!/^https:\/\//i.test(raw))return null;
+  try{
+   const url=new URL(raw,'https://www.codal.ir');
+   if(url.protocol!=='https:'||!['codal.ir','www.codal.ir'].includes(url.hostname.toLowerCase())||
+      url.username||url.password||url.port)return null;
+   if(!/^\/Reports\//i.test(url.pathname)&&!/^\/DownloadFile\.aspx$/i.test(url.pathname))return null;
+   if(!url.searchParams.size)return null;
+   return url.href;
+  }catch(_){return null;}
+ }
  const button=document.getElementById('codal-run');
  const status=document.getElementById('codal-status');
  const results=document.getElementById('codal-results');
@@ -120,7 +133,15 @@ small{opacity:.75}
     const row=document.createElement('p');
     const title=document.createElement('strong');title.textContent=String(item.Title||'بدون عنوان');
     const meta=document.createElement('small');meta.style.display='block';meta.textContent='نماد: '+String(item.Symbol||symbol)+' | انتشار: '+String(item.PublishDateTime||item.SentDateTime||'نامشخص')+' | شناسه رهگیری: '+String(item.TracingNo||'نامشخص');
-    row.append(title,meta);results.appendChild(row);
+    row.append(title,meta);
+    const reportUrl=codalReportUrl(item.Url);
+    if(reportUrl){
+     const a=document.createElement('a');
+     a.href=reportUrl;a.target='_blank';a.rel='noopener noreferrer nofollow';
+     a.textContent='مشاهده اصل اطلاعیه در کدال (محتوا هنوز راستی‌آزمایی نشده)';
+     a.style.display='block';row.appendChild(a);
+    }
+    results.appendChild(row);
    }
   }catch(error){
    status.textContent='اتصال کدال تأیید نشد: '+(error.name==='AbortError'?'مهلت پاسخ تمام شد.':error.message)+' خطا را با نبود اطلاعیه اشتباه نگیرید.';
