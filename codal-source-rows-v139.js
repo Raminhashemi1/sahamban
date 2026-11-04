@@ -53,6 +53,23 @@
     source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',originVerified:false,originalDocumentRead:false,fields},
    warning:'Values were manually entered and have not been independently checked against original CODAL content. No fundamental ratios or trade signals are authorized.'};
  }
+ function auditPacket(data){
+  const checked=review(data);
+  if(checked.status!=='LOCAL_ROW_REFERENCES_UNVERIFIED')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors||[],packet:null};
+  const e=checked.evidence;
+  // Explicit allowlist: never include raw file bytes, portfolio state, session values, or unknown input fields.
+  const packet={schema:'sahamban.codal.row-audit.v1',status:'LOCAL_ROW_REFERENCES_UNVERIFIED',
+   financialEvidence:'INSUFFICIENT_EVIDENCE',verifiedMarketPrice:false,tradingSignalsEnabled:false,
+   document:{symbol:e.symbol,tracingNo:e.tracingNo,reportUrl:e.reportUrl,publicationDate:e.publicationDate,
+    periodEnd:e.periodEnd,unit:e.unit,auditStatus:e.auditStatus,statementBasis:e.statementBasis,
+    sha256:e.documentSha256,format:e.format,fileSizeBytes:e.fileSizeBytes,
+    originVerified:false,originalDocumentRead:false},
+   source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',
+   fields:e.fields.map(row=>({metric:row.metric,amount:row.amount,unit:row.unit,
+    sourcePage:row.sourcePage,sourceRow:row.sourceRow})),
+   warning:'UNVERIFIED USER-ENTERED FIGURES. Compare against the original CODAL filing independently. Do not compute financial ratios, EPS, NAV, or trading signals.'};
+  return {status:'LOCAL_ROW_REFERENCES_UNVERIFIED',errors:[],packet};
+ }
  function mount(win){
   const doc=win.document,root=doc.getElementById('codalRowsV139');if(!root)return;
   const input=id=>doc.getElementById(id);
@@ -60,7 +77,7 @@
    audit:input('codalRowsAuditV139'),basis:input('codalRowsBasisV139'),
    metric:input('codalRowsMetricV139'),amount:input('codalRowsAmountV139'),
    page:input('codalRowsPageV139'),label:input('codalRowsLabelV139'),
-   add:input('codalRowsAddV139'),run:input('codalRowsCheckV139'),
+   add:input('codalRowsAddV139'),run:input('codalRowsCheckV139'),export:input('codalRowsExportV139'),
    summary:input('codalRowsSummaryV139'),rows:input('codalRowsListV139')};
   if(Object.values(controls).some(v=>!v))return;
   let fingerprint=null,rows=[];
@@ -71,6 +88,7 @@
     const del=doc.createElement('button');del.type='button';del.textContent='حذف';
     del.addEventListener('click',()=>{rows.splice(i,1);render();});li.append(del);controls.rows.append(li);});
    controls.add.disabled=!fingerprint;controls.run.disabled=!fingerprint||!rows.length;
+   controls.export.disabled=!fingerprint||!rows.length;
   }
   function reset(){
    fingerprint=null;rows=[];controls.summary.textContent='برای ثبت ردیف، ابتدا فایل اطلاعیه را در بخش قبل اثرانگشت‌گذاری کنید.';
@@ -101,8 +119,27 @@
    controls.summary.textContent='پیش‌نویس ارجاع ردیف‌ها ایجاد شد: '+result.evidence.fields.length+
     ' ردیف. وضعیت: بررسی‌نشده و نیازمند تطبیق مستقل با اصل گزارش. هیچ سود، EPS، NAV یا سیگنالی محاسبه نشده است.';
   });
+  controls.export.addEventListener('click',()=>{
+   const result=auditPacket({fingerprint,periodEnd:controls.end.value,unit:controls.unit.value,
+    auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows});
+   if(!result.packet){
+    controls.summary.textContent='خروجی ساخته نشد: '+result.errors.join('، ')+'. ابتدا اطلاعات را اصلاح کنید.';
+    return;
+   }
+   if(!win.Blob||!win.URL?.createObjectURL||!win.URL?.revokeObjectURL){
+    controls.summary.textContent='مرورگر امکان دانلود محلی امن را فراهم نکرد. هیچ داده‌ای ارسال نشد.';return;
+   }
+   const packet=result.packet,blob=new win.Blob([JSON.stringify(packet,null,2)+'\\n'],{type:'application/json;charset=utf-8'});
+   const url=win.URL.createObjectURL(blob);
+   try{
+    const link=doc.createElement('a');
+    link.href=url;link.download='sahamban-codal-unverified-'+packet.document.tracingNo+'.json';
+    link.hidden=true;root.append(link);link.click();link.remove();
+    controls.summary.textContent='فایل JSON پیش‌نویس تأییدنشده برای بررسی مستقل آماده شد؛ هیچ اطلاعاتی به شبکه ارسال نشد.';
+   }finally{win.setTimeout(()=>win.URL.revokeObjectURL(url),0);}
+  });
   reset();
   win.SahambanCodalRowsV139.accept=accept;win.SahambanCodalRowsV139.reset=reset;
  }
- return {parseAmount,date,review,mount};
+ return {parseAmount,date,review,auditPacket,mount};
 });
