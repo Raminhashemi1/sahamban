@@ -65,8 +65,8 @@ test('browser script parses, is before CODAL discovery and cached',()=>{
  const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
  new vm.Script(js);
  for(const id of ['codalOriginalV138','codalOriginalFileV138','codalOriginalCheckV138','codalOriginalStatusV138','codalOriginalSelectedV138'])assert.ok(html.includes('id="'+id+'"'));
- assert.ok(html.indexOf('codal-original-intake-v138.js?v=138.1')<html.indexOf('codal-disclosure-v137.js?v=137.2'));
- assert.ok(sw.includes('codal-original-intake-v138.js?v=138.1'));
+ assert.ok(html.indexOf('codal-original-intake-v138.js?v=138.2')<html.indexOf('codal-disclosure-v137.js?v=137.2'));
+ assert.ok(sw.includes('codal-original-intake-v138.js?v=138.2'));
  assert.ok(sw.includes('codal-disclosure-v137.js?v=137.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon/);
 });
