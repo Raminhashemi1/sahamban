@@ -56,7 +56,7 @@
   if(!fileInput||!button||!status||!selected)return;
   let current=null,version=0;
   function select(record){
-   version++;current=safeFiling(record);fileInput.value='';status.textContent='فایل اصلی هنوز انتخاب و بررسی نشده است. تحلیل بنیادی: اطلاعات ناکافی.';
+   version++;win.SahambanCodalRowsV139?.reset?.();current=safeFiling(record);fileInput.value='';status.textContent='فایل اصلی هنوز انتخاب و بررسی نشده است. تحلیل بنیادی: اطلاعات ناکافی.';
    selected.textContent=current?'اطلاعیه منتخب: '+current.symbol+' | شناسه: '+current.tracingNo+' | انتشار: '+current.published:'اطلاعیه با هویت و نشانی معتبر انتخاب نشده است.';
    fileInput.disabled=!current;button.disabled=!current;
    return Boolean(current);
@@ -71,6 +71,7 @@
     if(result.status!=='LOCAL_FILE_FINGERPRINT_ONLY'){
      status.textContent='فایل قابل پذیرش برای اثرانگشت نبود: '+result.reason+'. هیچ تحلیل مالی انجام نشد.';return;
     }
+    win.SahambanCodalRowsV139?.accept?.(result);
     status.textContent='اثر انگشت محلی SHA-256: '+result.sha256+' | نوع فایل: '+result.format+' | اندازه: '+result.fileSizeBytes+
       ' بایت. این نتیجه فقط محاسبه هش است؛ اصالت کدال، محتوای سند و ارقام مالی هنوز بررسی نشده‌اند. تحلیل بنیادی: اطلاعات ناکافی.';
    }catch{if(version===stamp)status.textContent='محاسبه اثر انگشت انجام نشد. هیچ تحلیل یا سیگنال صادر نشد.';}
