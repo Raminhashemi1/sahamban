@@ -46,3 +46,11 @@
 - اگر سرآیند بایت‌ها شبیه ZIP/PDF/XLS باشد اما Content-Type صریحاً `text/html`، JSON یا XML باشد، نتیجه `UNVERIFIED_CONTENT_TYPE_MISMATCH` است.
 - در صورت دریافت ZIP، صرفاً `XLSX_OR_ZIP_UNINSPECTED` گزارش می‌شود؛ ساختار واقعی XLSX باید با parser مستقل کنترل شود.
 - آزمون‌های ساختگی برای HTML جعلی و MIME ناسازگار اضافه شده‌اند. این تغییرات **خطای شبکه و نبود سند واقعی را برطرف نمی‌کنند**؛ وضعیت بنیادین هنوز `INSUFFICIENT_EVIDENCE` باقی است.
+
+## گزارش نهایی پذیرش با جداسازی نتیجه نرم‌افزار و سند رسمی (v144)
+
+- ابزار `tests/codal-final-acceptance-v144.cjs` نتیجه واقعی دو artifact جست‌وجوی کدال (`codal-v136.json`) و دریافت مستقیم فایل (`codal-official-document-v143.json`) را می‌خواند و `codal-final-acceptance-v144.json` می‌سازد.
+- خروجی صریحاً مشخص می‌کند کدام موانع بازند: `OFFICIAL_FILE_BYTES_UNAVAILABLE_OR_UNINSPECTED`، `SEARCH_METADATA_NOT_LIVE_VERIFIED`، `NO_INDEPENDENT_AUTHENTICATED_CODAL_ORIGIN` و `ORIGINAL_FINANCIAL_ROWS_NOT_INDEPENDENTLY_VERIFIED`.
+- آزمون موفق GitHub، هش فایل رسیده از یک نشانی، هویت ادعایی در JSON و تطبیق محلی سلول‌ها هیچ‌یک جای **تأیید مستقل منشأ رسمی و صورت مالی** را نمی‌گیرد؛ حتی هش موفق از نشانی رسمی همچنان `HASHED_FROM_CONFIGURED_ENDPOINT_UNVERIFIED` است.
+- قفل‌های تحویل نهایی: `liveDocumentAcceptance=BLOCKED_EXTERNAL_EVIDENCE`، `originalReportVerified=false`، `originVerified=false`، `figuresVerified=false`، `financialEvidence=INSUFFICIENT_EVIDENCE` و `tradingSignalsEnabled=false`.
+- مسیر توسعه و آزمون نرم‌افزاری بررسی فایل انجام شده است؛ **بستن رسمی پذیرش داده واقعی نیازمند یک سند قابل‌دسترسی از منبع رسمی و تطبیق معتبر مفاد مالی آن است**. هیچ مسیری برای برچسب PASS ساختگی ایجاد نشده است.
