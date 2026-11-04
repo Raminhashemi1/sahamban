@@ -167,6 +167,6 @@ test('rejects oversized direct backup objects before mutating storage',()=>{
  const snapshot={format:api.FORMAT,schema:api.SCHEMA,items:{'sahamban-v1':JSON.stringify(alert)},
   extra:'X'.repeat(270000)};
  const destination=storage({'sahamban-v1':'UNCHANGED'});
- assert.throws(()=>api.restoreSnapshot(destination,snapshot),/بزرگ‌تر از حد مجاز/);
+ assert.throws(()=>api.restoreSnapshot(destination,snapshot),/از حد مجاز بزرگ‌تر است/);
  assert.equal(destination.getItem('sahamban-v1'),'UNCHANGED');
 });
