@@ -69,3 +69,29 @@ test('browser script parses, is before CODAL discovery and cached',()=>{
  assert.ok(sw.includes('codal-disclosure-v137.js?v=137.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon/);
 });
+
+test('changing file invalidates old fingerprint and discards in-flight hashing',async()=>{
+ const els={};
+ for(const id of ['codalOriginalV138','codalOriginalFileV138','codalOriginalCheckV138','codalOriginalStatusV138','codalOriginalSelectedV138']){
+  els[id]={id,disabled:false,value:'',textContent:'',listeners:{},
+   addEventListener(n,fn){this.listeners[n]=fn;}};
+ }
+ let resets=0,accepts=0;
+ const win={document:{getElementById:id=>els[id]||null},crypto:{subtle:crypto.webcrypto.subtle},
+  SahambanCodalRowsV139:{reset(){resets++;},accept(){accepts++;}}};
+ intake.mount(win);
+ assert.equal(win.SahambanCodalIntakeV138.select(record()),true);
+ assert.equal(resets,1);
+ let release;
+ els.codalOriginalFileV138.files=[{name:'x.pdf',size:10,
+  arrayBuffer:()=>new Promise(resolve=>{release=resolve;})}];
+ const pending=els.codalOriginalCheckV138.listeners.click();
+ els.codalOriginalFileV138.listeners.change();
+ assert.equal(resets,2);
+ assert.equal(els.codalOriginalCheckV138.disabled,false);
+ const bytes=Buffer.from('%PDF-1.4\\nX');
+ release(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
+ await pending;
+ assert.equal(accepts,0);
+ assert.match(els.codalOriginalStatusV138.textContent,/باطل/);
+});
