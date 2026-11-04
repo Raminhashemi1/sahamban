@@ -3,7 +3,7 @@
 (()=>{
 const el=id=>document.getElementById(id);
 const STORAGE='sahamban-broker-holdings-v1';
-let matrix=[], headers=[], preview=[],ready=false;
+let matrix=[], headers=[], preview=[],ready=false,importGeneration=0;
 const status=s=>{el('brokerStatus').textContent=s;};
 function publishVisibleSymbols(items){
  const symbols=[...new Set(items.filter(p=>p&&typeof p.symbol==='string').map(p=>p.symbol.trim()).filter(Boolean))];
@@ -195,23 +195,39 @@ function previewRows(){
  el('brokerReview').hidden=false;ready=preview.some(x=>!x.issue);
 }
 el('brokerFile').addEventListener('change',async()=>{
- ready=false;preview=[];el('brokerReview').hidden=true;el('brokerMapping').hidden=true;
- const f=el('brokerFile').files?.[0];if(!f)return;
+ const stamp=++importGeneration;
+ ready=false;preview=[];matrix=[];headers=[];
+ el('brokerApply').disabled=true;el('brokerRisk').disabled=true;
+ el('brokerReview').hidden=true;el('brokerMapping').hidden=true;
+ const f=el('brokerFile').files?.[0];
+ if(!f){status('فایلی انتخاب نشده است.');return;}
  if(f.size>5*1024*1024){status('فایل بیش از ۵ مگابایت است.');return;}
  try{
   status('در حال خواندن فایل فقط داخل مرورگر...');
+  let incoming;
   if(/\.csv$/i.test(f.name)){
-   let data=await f.text();matrix=csv(data.replace(/^\uFEFF/,''));
-   if(matrix[0]?.length===1&&data.includes(';'))matrix=csv(data.replace(/;/g,','));
+   const data=await f.text();
+   if(stamp!==importGeneration)return;
+   incoming=csv(data.replace(/^\uFEFF/,''));
+   if(incoming[0]?.length===1&&data.includes(';'))incoming=csv(data.replace(/;/g,','));
   }else if(/\.xlsx$/i.test(f.name)){
-   matrix=await unzipXlsx(f);
+   incoming=await unzipXlsx(f);
   }else throw Error('فقط فایل Excel یا CSV انتخاب کنید.');
-  matrix=matrix.filter(r=>Array.isArray(r)&&r.some(x=>String(x??'').trim()!==''));
-  if(matrix.length<2||matrix.length>1001)throw Error('فایل خالی یا بسیار بزرگ است.');
+  // Discard asynchronous results from a file that has been replaced or
+  // superseded by an explicit load from storage.
+  if(stamp!==importGeneration)return;
+  const clean=incoming.filter(r=>Array.isArray(r)&&r.some(x=>String(x??'').trim()!==''));
+  if(clean.length<2||clean.length>1001)throw Error('فایل خالی یا بسیار بزرگ است.');
+  matrix=clean;
   headers=matrix[0].map((x,i)=>String(x||'ستون '+(i+1)));
   for(const [key,id] of [['symbol','brokerSymbolCol'],['qty','brokerQtyCol'],['buy','brokerBuyCol'],['current','brokerCurrentCol']])selectColumn(id,groups[key]);
   el('brokerMapping').hidden=false;status('فایل خوانده شد. ستون‌ها را بررسی و «نمایش پیش‌نمایش» را بزنید.');
- }catch(e){status('خواندن فایل ناموفق: '+e.message);}
+ }catch(e){
+  if(stamp!==importGeneration)return;
+  matrix=[];headers=[];preview=[];ready=false;
+  el('brokerMapping').hidden=true;el('brokerReview').hidden=true;
+  status('خواندن فایل ناموفق: '+e.message);
+ }
 });
 el('brokerPreview').addEventListener('click',()=>{try{previewRows();status('پیش‌نمایش آماده است؛ هنوز چیزی ذخیره نشده.')}catch(e){ready=false;el('brokerReview').hidden=true;status(e.message)}});
 for(const id of ['brokerUnit','brokerSymbolCol','brokerQtyCol','brokerBuyCol','brokerCurrentCol'])el(id).addEventListener('change',()=>{ready=false;el('brokerReview').hidden=true;status('تنظیمات ستون یا واحد قیمت تغییر کرد؛ پیش‌نمایش را دوباره بسازید.');});
@@ -230,6 +246,11 @@ el('brokerApply').addEventListener('click',()=>{
  }catch(e){status('ذخیره محلی انجام نشد: '+e.message);}
 });
 el('brokerLoad').addEventListener('click',()=>{
+ // An explicit load overrides any asynchronous file import still pending.
+ ++importGeneration;
+ ready=false;preview=[];matrix=[];headers=[];
+ el('brokerMapping').hidden=true;el('brokerReview').hidden=true;
+ el('brokerApply').disabled=true;el('brokerRisk').disabled=true;
  try{
   const obj=JSON.parse(localStorage.getItem(STORAGE)||'null');
   if(!obj||!Array.isArray(obj.holdings))throw Error('هنوز دارایی واردشده‌ای ذخیره نشده.');
