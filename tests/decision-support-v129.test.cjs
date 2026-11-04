@@ -8,3 +8,26 @@ test('decision engine uses verified history and emits bounded, explainable score
 test('decision engine rejects stale history instead of generating a signal',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history().map(x=>({...x,date:new Date(Date.UTC(+x.date.slice(0,4),+x.date.slice(4,6)-1,+x.date.slice(6,8)-33)).toISOString().slice(0,10).replaceAll('-','')}))},{today:'20261103'}),/قدیمی/);});
 test('decision engine rejects insufficient history and invalid ordering',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history(40)},{today:'20261103'}),/۶۰/);const h=history();h[20].date=h[19].date;assert.throws(()=>api.analyze({symbol:'TEST',history:h},{today:'20261103'}),/مرتب/);});
 test('position sizing is risk-budget based and bounded to 5 percent',()=>{const x=api.sizePosition({capital:100000000,riskPercent:1,entry:1200,stop:1100});assert.equal(x.riskBudget,1000000);assert.equal(x.quantity,10000);assert.equal(x.quantity*(1200-1100),1000000);assert.throws(()=>api.sizePosition({capital:1e8,riskPercent:6,entry:1200,stop:1100}),/حداکثر/);assert.throws(()=>api.sizePosition({capital:1e8,riskPercent:1,entry:1000,stop:1100}),/حد ضرر/);});
+
+test('position size never requires more cash than available',()=>{
+ const result=api.sizePosition({capital:100000,riskPercent:5,entry:90000,stop:89999});
+ assert.equal(result.quantity,1);
+ assert.equal(result.estimatedCost,90000);
+ assert.equal(result.maxLoss,1);
+ assert.equal(result.limitedBy,'AVAILABLE_CASH');
+});
+test('position size never exceeds actual loss budget, including zero-affordable holdings',()=>{
+ const r=api.sizePosition({capital:100000,riskPercent:1,entry:3000,stop:2500});
+ assert.equal(r.quantity,2);
+ assert.equal(r.maxLoss,1000);
+ assert.equal(r.estimatedCost,6000);
+ assert.equal(r.limitedBy,'RISK_BUDGET');
+ const zero=api.sizePosition({capital:1000,riskPercent:1,entry:2000,stop:1000});
+ assert.equal(zero.quantity,0);
+ assert.equal(zero.maxLoss,0);
+ assert.equal(zero.limitedBy,'AVAILABLE_CASH');
+});
+test('rejects fractional rial amounts and unsafe precision',()=>{
+ assert.throws(()=>api.sizePosition({capital:10000.5,riskPercent:1,entry:1000,stop:900}),/دقت امن/);
+ assert.throws(()=>api.sizePosition({capital:100000,riskPercent:1,entry:9007199254740992,stop:1}),/دقت امن/);
+});
