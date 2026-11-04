@@ -120,3 +120,13 @@ test('equal cash and risk share caps are disclosed without implying one sole con
  assert.equal(same.estimatedCost,10000);
  assert.equal(same.maxLoss,500);
 });
+
+test('professional UI discloses passive comparison limits without overstating its evidence',()=>{
+ const fs=require('node:fs');
+ const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
+ assert.match(ui,/passiveComparison/);
+ assert.match(ui,/زمان حضور در بازار هم‌ارز نیستند/);
+ const sample=fs.readFileSync('market-sample-ui-v131.js','utf8');
+ assert.match(sample,/passiveComparison/);
+ assert.match(sample,/اثبات برتری معاملاتی نیست/);
+});
