@@ -34,3 +34,14 @@ The backup is an **unencrypted JSON file containing sensitive portfolio data**. 
 A restore checks the backup format and schema version (`sahamban-local-backup`, version `1`), validates each recognized record, and asks for explicit consent. It does **not** silently migrate legacy portfolio/holdings versions 1 into version 2; application readers retain their own legacy conversion rules. Unknown schema versions and unknown keys fail closed. The restore changes only keys explicitly contained in the file, and attempts to roll back modified keys after a storage error. If rollback also fails, the status clearly warns that local state may be inconsistent and instructs the user to preserve the external backup.
 
 Use this backup **before** updating browsers or moving to a new phone; importing the JSON into a different profile restores only these allowlisted keys. Reload the app after a successful restore to make its in-memory state reflect the new storage. No financial data is transmitted by this module.
+
+## Combined reliability/security review (v149)
+
+The v149 review added regression coverage for four operational areas:
+
+- **Client-side security boundary:** checked the application, broker importer and local backup module for dynamic code execution (`eval`, `new Function`) and `document.write`. User-facing symbol and message rendering paths covered by the audit use text nodes / `textContent`; the local backup module has no network transport. This is a targeted source audit, not a third-party penetration test or a guarantee that every browser dependency is vulnerability-free.
+- **Financial arithmetic:** portfolio rows and aggregate values now fail closed when intermediate monetary values exceed JavaScript's safe-integer precision range. This prevents displaying a plausible but precision-corrupted total. It does not validate broker statements against an official exchange or calculate fees, taxes, slippage or corporate actions.
+- **Connectivity/offline behavior:** same-origin GET assets use network-first caching; a successful network response refreshes the cache, while a network failure falls back to the cached asset. Navigation may fall back to the cached app shell. Cross-origin market API calls and non-GET requests are not intercepted by this service worker. Existing read-only TSETMC connectivity, freshness and history checks remain separate from synthetic tests.
+- **Deployment freshness:** service worker cache generation is now `sahamban-static-v149-0`; activation removes only older caches with the `sahamban-static-` prefix. The PWA inventory and public deployment checks remain separate from real-device installation.
+
+The automated regression file is `tests/reliability-security-v149.test.cjs`. Passing CI does not establish a physical phone test, a live market guarantee, a formal security certification, or independent financial-statement verification.
