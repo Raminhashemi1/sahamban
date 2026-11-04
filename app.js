@@ -86,6 +86,7 @@ function portfolioNumber(v,line){
  const digits=String(v).trim().replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٬/g,'').replace(/٫/g,'.');
  const val=Number(digits);
  if(digits===''||!Number.isFinite(val))throw Error('عدد نامعتبر در سطر '+line);
+ if(Number.isInteger(val)&&!Number.isSafeInteger(val))throw Error('عدد خارج از دقت امن محاسبات مالی در سطر '+line);
  return val;
 }
 function parsePortfolio(raw){
