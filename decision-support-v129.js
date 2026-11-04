@@ -78,7 +78,7 @@
  function exportAudit(reports,{generatedAt}={}){
   if(!Array.isArray(reports)||reports.length>100)throw new RangeError('تعداد گزارش‌ها خارج از محدوده مجاز است.');
   const stamp=String(generatedAt??'');
-  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(stamp)||!Number.isFinite(Date.parse(stamp)))
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(stamp)||!Number.isFinite(Date.parse(stamp))||new Date(stamp).toISOString().slice(0,19)!==stamp.slice(0,19))
    throw new TypeError('زمان تولید گزارش معتبر نیست.');
   const results=reports.map(r=>{
    const plan=decisionPlan(r);
