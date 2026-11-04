@@ -37,6 +37,7 @@ jobs:
           path: test-artifacts/live-market-v111.json
           if-no-files-found: warn
           retention-days: 14
+      - run: node --test tests/broker-import-security-v145.test.cjs
       - run: node --check portfolio-pilot-v61.js
       - run: node --test tests/pilot-v61-coverage.test.cjs tests/home-portfolio-v61-entry.test.cjs
   browser:
