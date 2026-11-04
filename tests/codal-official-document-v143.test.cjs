@@ -20,7 +20,8 @@ test('records ZIP signature and sha without claiming official report verificatio
 test('HTML response is clearly classified as HTML not XLSX',async()=>{
  const r=await probe({fetchImpl:async()=>reply('<!DOCTYPE html><html><body>export blocked</body></html>',{type:'text/html'})});
  assert.equal(r.contentFormat,'HTML_OR_XML_UNINSPECTED');
- assert.equal(r.originalReportVerified,false);
+ assert.equal(r.status,'UNVERIFIED_HTML_OR_XML_RESPONSE');
+ assert.equal(r.originalReportVerified,false);assert.equal(r.sha256,undefined);
 });
 test('network timeout and 429 remain unverified',async()=>{
  const rate=await probe({fetchImpl:async()=>reply('limited',{status:429})});
@@ -43,4 +44,17 @@ test('recognizes old XLS/PDF and rejects unrecognized type',()=>{
  assert.equal(detect(Uint8Array.from([208,207,17,224,161,177,26,225])),'XLS_OLE_UNINSPECTED');
  assert.equal(detect(Buffer.from('%PDF-1.7\noriginal text')),'PDF_UNINSPECTED');
  assert.equal(detect(Buffer.from('random bytes')),'UNKNOWN');
+});
+
+test('mismatched HTML MIME and ZIP bytes never count as hashed report',async()=>{
+ for(const type of ['text/html','application/json']){
+  const r=await probe({fetchImpl:async()=>reply(Buffer.from([80,75,3,4,1,2,3,4,9]),{type})});
+  assert.equal(r.status,'UNVERIFIED_CONTENT_TYPE_MISMATCH');
+  assert.equal(r.sha256,undefined);assert.equal(r.originalReportVerified,false);
+ }
+});
+test('HTML tables from Excel service are unverified',async()=>{
+ const r=await probe({fetchImpl:async()=>reply('<table><tr><td>سود خالص</td><td>123</td></tr></table>',{type:'application/vnd.ms-excel'})});
+ assert.equal(r.status,'UNVERIFIED_HTML_OR_XML_RESPONSE');
+ assert.equal(r.sha256,undefined);assert.equal(r.figuresVerified,false);
 });
