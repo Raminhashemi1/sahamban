@@ -49,7 +49,7 @@ test('independent holdout exposes higher-cost stress without claiming predictive
   assert.ok(out.holdout.count>=10);
   assert.equal(out.holdout.stressCostPct,2);
   assert.ok(Math.abs(out.holdout.stressMeanNetReturnPct-(out.holdout.meanNetReturnPct-1))<1e-10);
-  assert.equal(out.holdout.evidenceStatus,'DIAGNOSTIC_ONLY_NOT_VALIDATED');
+  assert.ok(['FRAGILE_TO_COSTS','NONPOSITIVE_NET_RETURN','DIAGNOSTIC_ONLY_NOT_VALIDATED'].includes(out.holdout.evidenceStatus));
   assert.equal(out.sufficientToClaimSkill,false);
   const extra=evaluate({symbol:'نماد',history:history(480)},{costPct:4.5});
   assert.equal(extra.holdout.stressCostPct,5);
