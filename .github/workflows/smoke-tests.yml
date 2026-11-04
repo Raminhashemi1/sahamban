@@ -21,7 +21,7 @@ jobs:
       - run: node tests/sw-offline.cjs
       - run: node --test tests/reliability-security-v149.test.cjs
       - run: node --test tests/portfolio-insights-scroll-v115.test.cjs
-      - run: node --test tests/subscription-entitlements.test.cjs
+      - run: node --test tests/subscription-entitlements.test.cjs tests/subscription-orders.test.cjs
       - run: node --test tests/decision-support-v129.test.cjs tests/external-screener-v130.test.cjs tests/market-sample-v131.test.cjs tests/signal-audit-v132.test.cjs tests/candidate-ranking-v133.test.cjs tests/temporal-holdout-v134.test.cjs
       - run: node --test tests/portfolio-price-empty-v116.test.cjs
       - run: node --test tests/market-connectivity-page.test.cjs
