@@ -54,6 +54,7 @@ function dateAge(date){
  assert.ok(candidates.length>0,'no exact instrument identity found for '+symbol);
  assert.ok(candidates.length<=5,'unexpectedly many exact instrument identities: '+candidates.length);
  const valid=[];
+ const historyLag=[];
  for(const code of candidates){
   try{
    const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
@@ -66,10 +67,25 @@ function dateAge(date){
    const rows=history.filter(x=>String(x?.dEven??'')===date&&number(x?.pClosing)===price);
    const clean=history.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(number(x?.pClosing))&&number(x.pClosing)>0);
    const unique=new Set(clean.map(x=>String(x.dEven)));
-   if(rows.length===1&&clean.length>=15&&unique.size===clean.length)valid.push({code,price,date,age,historyCount:clean.length,lastTradeTime:info?.lastHEven,finalLastDate:info?.finalLastDate});
+   const latestHistoryDate=clean.map(x=>String(x.dEven)).sort().at(-1)||null;
+   if(rows.length===1&&clean.length>=15&&unique.size===clean.length){
+    valid.push({code,price,date,age,historyCount:clean.length,lastTradeTime:info?.lastHEven,finalLastDate:info?.finalLastDate});
+   }else if(rows.length===0&&clean.length>=1&&latestHistoryDate&&latestHistoryDate<date){
+    historyLag.push({code,price,date,latestHistoryDate,historyCount:clean.length,lastTradeTime:info?.lastHEven,finalLastDate:info?.finalLastDate});
+   }
   }catch(error){console.log('Candidate rejected '+code+': '+String(error.message||error));}
  }
- assert.equal(valid.length,1,'expected exactly one candidate with fresh matching price and >=15 unique history rows; got '+valid.length);
+ if(valid.length===0&&historyLag.length===1){
+  const lag=historyLag[0];
+  console.log('UNVERIFIED daily history publication lag: quote date '+lag.date+' is newer than latest history date '+lag.latestHistoryDate);
+  recordOutcome('UNVERIFIED_HISTORY_NOT_PUBLISHED',{
+   market_date:lag.date,price_rial:lag.price,last_trade_time:lag.lastTradeTime??null,
+   latest_history_date:lag.latestHistoryDate,history_rows:lag.historyCount,
+   finding:'Quote endpoint is newer than daily-history endpoint; do not merge or treat the history as current.'
+  });
+  return;
+ }
+ assert.equal(valid.length,1,'expected exactly one candidate with matching daily history and >=15 unique rows; got '+valid.length);
  const q=valid[0];
  const freshness=classifyTehranQuoteFreshness({
   marketDate:q.finalLastDate||q.date,
