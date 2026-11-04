@@ -69,7 +69,11 @@
       /(?:^\/|\\|\.\.)/.test(name)||!name||out.has(name))err('ZIP_ENTRY_UNSAFE');
    total+=uncomp;if(total>MAX_TOTAL)err('ZIP_EXPANSION_LIMIT');
    if(loc+30>off||u32(loc)!==0x04034b50)err('ZIP_LOCAL_INVALID');
-   const begin=loc+30+u16(loc+26)+u16(loc+28),end=begin+comp;
+   const lname=u16(loc+26),lextra=u16(loc+28);
+   if(u16(loc+6)!==flags||u16(loc+8)!==method||loc+30+lname+lextra>off||
+      decoder.decode(bytes.subarray(loc+30,loc+30+lname))!==name)err('ZIP_LOCAL_HEADER_MISMATCH');
+   if(!(flags&8)&&(u32(loc+18)!==comp||u32(loc+22)!==uncomp))err('ZIP_LOCAL_SIZE_MISMATCH');
+   const begin=loc+30+lname+lextra,end=begin+comp;
    if(end>off)err('ZIP_COMPRESSED_BOUNDS');
    if(!/^(?:xl\/worksheets\/sheet[1-9][0-9]*\.xml|xl\/sharedStrings\.xml|xl\/workbook\.xml|xl\/_rels\/workbook\.xml\.rels|\[Content_Types\]\.xml)$/.test(name))continue;
    let decoded;
