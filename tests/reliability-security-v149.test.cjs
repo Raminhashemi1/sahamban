@@ -34,9 +34,7 @@ test('offline static assets fall back to cached response without HTML substituti
  h.entries.set(key,{ok:true,body:'cached-app'});
  const result=await h.request('app.js?v=127.0');
  assert.equal(result.response.body,'cached-app');
- const missing=await h.request('missing.js');
- assert.equal(missing.responded,true);
- await assert.rejects(Promise.resolve(missing.response),/network offline/);
+ await assert.rejects(h.request('missing.js'),/network offline/);
 });
 test('offline navigation falls back to cached app shell',async()=>{
  const h=harness({offline:true}),shell={ok:true,body:'offline-shell'};
