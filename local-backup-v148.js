@@ -38,14 +38,16 @@
   if(!data||![1,2].includes(data.version)||typeof data.data!=='string'||data.data.length>25000)throw Error('ساختار سبد ریسک معتبر نیست.');
   const rows=data.data.trim().split(/\r?\n/).filter(Boolean);
   if(rows.length<1||rows.length>100)throw Error('تعداد سهم در گزارش ریسک نامعتبر است.');
-  const names=new Set(),factor=data.version===1?10:1;
+  const names=new Set(),factor=data.version===1?10:1;let sumCost=0,sumValue=0;
   for(const row of rows){
    const cells=row.split(/[,،;\t]/).map(x=>x.trim());
    if(cells.length!==6||!cells[0]||cells[0].length>35||names.has(normalize(cells[0])))throw Error('نماد تکراری یا سطر نامعتبر در سبد ریسک.');
    names.add(normalize(cells[0]));
    const n=cells.slice(1).map(portfolioNum);
-   if(!Number.isSafeInteger(n[0])||n[0]<=0||n.slice(1).some(v=>!Number.isFinite(v)||v<=0||!Number.isFinite(v*factor))||
+   if(!Number.isSafeInteger(n[0])||n[0]<=0||n.slice(1).some(v=>!Number.isFinite(v)||v<=0||v*factor>Number.MAX_SAFE_INTEGER)||
     n[3]>=n[2]||n[4]<=n[2])throw Error('مقادیر سبد ریسک نامعتبر است.');
+   sumCost+=n[0]*n[1]*factor;sumValue+=n[0]*n[2]*factor;
+   if(!Number.isFinite(sumCost)||!Number.isFinite(sumValue)||sumCost>Number.MAX_SAFE_INTEGER||sumValue>Number.MAX_SAFE_INTEGER)throw Error('جمع مبلغ سبد ریسک خارج از محدوده امن است.');
   }
   for(const field of ['capital','riskCap','stress'])if(typeof data[field]!=='string'||data[field].length>60)throw Error('تنظیمات سبد ریسک نامعتبر است.');
   const concentration=data.concentration??'30';
