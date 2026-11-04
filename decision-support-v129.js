@@ -28,6 +28,20 @@
   const reasons=[['روند صعودی (قیمت > SMA20 > SMA50)',trend],['RSI در بازه ۵۰ تا ۶۸',healthyRsi],['MACD مثبت و رو به تقویت',positiveMacd],['بازده ۲۰ جلسه مثبت',positiveMomentum],['شکست سقف ۲۰ جلسه قبل',breakout]];
   return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,action,code,reason,stop:stop<last?stop:null,target:stop<last?target:null,riskPerShare:stop<last?riskPerShare:null,reasons};
  }
- function sizePosition({capital,riskPercent,entry,stop}){for(const [k,v] of Object.entries({capital,riskPercent,entry,stop}))if(!Number.isFinite(v)||v<=0)throw new RangeError('همه مقادیر باید مثبت و معتبر باشند.');if(riskPercent>5||stop>=entry)throw new RangeError('ریسک هر معامله باید حداکثر ۵٪ و حد ضرر کمتر از ورود باشد.');const riskBudget=capital*riskPercent/100;return {riskBudget,quantity:Math.floor(riskBudget/(entry-stop)),maxLoss:riskBudget};}
+ function sizePosition({capital,riskPercent,entry,stop}){
+  for(const [k,v] of Object.entries({capital,riskPercent,entry,stop}))
+   if(!Number.isFinite(v)||v<=0)throw new RangeError('همه مقادیر باید مثبت و معتبر باشند.');
+  if(!Number.isSafeInteger(capital)||!Number.isSafeInteger(entry)||!Number.isSafeInteger(stop))
+   throw new RangeError('مبالغ ریالی باید عدد صحیح در محدوده دقت امن باشند.');
+  if(riskPercent>5||stop>=entry)throw new RangeError('ریسک هر معامله باید حداکثر ۵٪ و حد ضرر کمتر از ورود باشد.');
+  const riskPerShare=entry-stop,riskBudget=capital*riskPercent/100;
+  const byRisk=Math.floor(riskBudget/riskPerShare),byCash=Math.floor(capital/entry);
+  const quantity=Math.min(byRisk,byCash);
+  if(!Number.isSafeInteger(quantity)||quantity<0)throw new RangeError('تعداد سهام خارج از محدوده امن است.');
+  const estimatedCost=quantity*entry,estimatedLoss=quantity*riskPerShare;
+  if(!Number.isSafeInteger(estimatedCost)||!Number.isSafeInteger(estimatedLoss))
+   throw new RangeError('مبلغ یا ریسک محاسبه‌شده خارج از محدوده امن است.');
+  return {riskBudget,quantity,maxLoss:estimatedLoss,estimatedCost,limitedBy:byCash<byRisk?'AVAILABLE_CASH':'RISK_BUDGET'};
+ }
  return Object.freeze({analyze,sizePosition});
 });
