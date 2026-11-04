@@ -284,13 +284,40 @@ el('brokerLoad').addEventListener('click',()=>{
  try{
   const obj=JSON.parse(localStorage.getItem(STORAGE)||'null');
   if(!obj)throw Error('هنوز دارایی واردشده‌ای ذخیره نشده.');
-  preview=validatedStoredHoldings(obj).map(p=>({...p,issue:''}));ready=true;
+  preview=validatedStoredHoldings(obj).map(p=>({...p,issue:''}));ready=false;
   const body=el('brokerRows');body.replaceChildren();
   for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,'ذخیره‌شده']);body.append(tr);}
   publishVisibleSymbols(preview);
   el('brokerReview').hidden=false;el('brokerReviewStatus').textContent=preview.length+' سهم از حافظه این دستگاه بارگذاری شد.';
-  el('brokerApply').disabled=false;el('brokerRisk').disabled=false;status('دارایی‌های ذخیره‌شده نمایش داده شدند.');
+  // Loading existing holdings is read-only. Re-applying would overwrite the
+  // one-level recovery snapshot even though no new file was imported.
+  el('brokerApply').disabled=true;el('brokerRisk').disabled=false;
+  status('دارایی‌های ذخیره‌شده فقط نمایش داده شدند؛ برای تغییر آن‌ها فایل تازه‌ای وارد کنید.');
  }catch(e){status(e.message);}
+});
+el('brokerRestorePrevious').addEventListener('click',()=>{
+ // Restoration never reads or writes broker credentials or transmits portfolio data.
+ // The single saved recovery snapshot stays intact even if a write is rejected.
+ ++importGeneration;ready=false;preview=[];matrix=[];headers=[];
+ el('brokerMapping').hidden=true;el('brokerReview').hidden=true;
+ el('brokerApply').disabled=true;el('brokerRisk').disabled=true;
+ try{
+  const saved=localStorage.getItem(STORAGE+'-previous');
+  if(!saved)throw Error('نسخه قبلی معتبر روی این دستگاه وجود ندارد.');
+  const recovered=validatedStoredHoldings(JSON.parse(saved));
+  if(!window.confirm('نسخه قبلی شامل '+recovered.length+' سهم است. دارایی‌های فعلی روی همین دستگاه با این نسخه جایگزین شوند؟ نسخه قبلی حفظ خواهد شد.'))return;
+  localStorage.setItem(STORAGE,saved);
+  // Check readback to avoid claiming success when storage write silently fails.
+  if(localStorage.getItem(STORAGE)!==saved)throw Error('بازیابی در حافظه مرورگر تأیید نشد.');
+  preview=recovered.map(p=>({...p,issue:''}));
+  const body=el('brokerRows');body.replaceChildren();
+  for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,'بازیابی‌شده']);body.append(tr);}
+  publishVisibleSymbols(preview);
+  el('brokerReview').hidden=false;
+  el('brokerReviewStatus').textContent=preview.length+' سهم از نسخه قبلی بازیابی و دوباره اعتبارسنجی شد.';
+  el('brokerApply').disabled=true;el('brokerRisk').disabled=false;
+  status('نسخه قبلی روی همین دستگاه بازیابی شد. نسخه بازیابی محفوظ است؛ فایل یا داده‌ای ارسال نشد.');
+ }catch(e){status('بازیابی انجام نشد: '+e.message);}
 });
 el('brokerExportBackup').addEventListener('click',()=>{
  try{
