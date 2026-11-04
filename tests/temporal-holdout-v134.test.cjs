@@ -66,3 +66,31 @@ test('zero trade holdout stays null under stress rather than displaying invented
   assert.equal(out.holdout.stressPositivePct,null);
  }finally{globalThis.SahambanDecisionV129=old;}
 });
+
+test('fixed-grid passive benchmark ignores signal timing and stays in holdout',()=>{
+ const old=globalThis.SahambanDecisionV129;
+ try{
+  globalThis.SahambanDecisionV129={analyze(q){return {code:q.history.length%19===0?'ENTRY_CANDIDATE':'WAIT'};}};
+  const a=evaluate({symbol:'TEST',history:history(480)},{costPct:1});
+  globalThis.SahambanDecisionV129={analyze(){return {code:'WAIT'};}};
+  const b=evaluate({symbol:'TEST',history:history(480)},{costPct:1});
+  assert.deepEqual(a.passiveComparison.events,b.passiveComparison.events);
+  assert.ok(a.passiveComparison.count>0);
+  assert.ok(a.passiveComparison.events.every(x=>x.entryIndex>a.splitIndex&&x.exitIndex<480));
+  assert.equal(b.passiveComparison.excessMeanNetReturnPct,null);
+  assert.ok(a.passiveComparison.excessMeanNetReturnPct!==null);
+  assert.match(a.passiveComparison.method,/different market exposure/);
+  assert.equal(a.sufficientToClaimSkill,false);
+ }finally{globalThis.SahambanDecisionV129=old;}
+});
+test('passive benchmark returns match fixed windows and stated round-trip cost',()=>{
+ const old=globalThis.SahambanDecisionV129;
+ globalThis.SahambanDecisionV129={analyze(){return {code:'ENTRY_CANDIDATE'};}};
+ try{
+  const q={symbol:'نماد',history:history(480)},out=evaluate(q,{costPct:1.5});
+  const e=out.passiveComparison.events[0];
+  assert.ok(Math.abs(e.grossReturnPct-(q.history[e.exitIndex].close/q.history[e.entryIndex].close-1)*100)<1e-10);
+  assert.ok(Math.abs(e.netReturnPct-(e.grossReturnPct-1.5))<1e-10);
+  assert.ok(out.passiveComparison.events.every((x,i,a)=>i===0||x.entryIndex>a[i-1].exitIndex));
+ }finally{globalThis.SahambanDecisionV129=old;}
+});
