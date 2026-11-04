@@ -89,6 +89,7 @@ test('local decision audit export contains evidence, all assessed symbols and no
 test('local audit refuses malformed timestamps and forged analyses',()=>{
  const valid=api.analyze({symbol:'TEST',history:history()},{today:'20261103'});
  assert.throws(()=>api.exportAudit([valid],{generatedAt:'not-a-date'}),/زمان/);
+ assert.throws(()=>api.exportAudit([valid],{generatedAt:'2026-02-30T17:00:00Z'}),/زمان/);
  assert.throws(()=>api.exportAudit([valid],{generatedAt:'2026-11-04T17:00:00\\Z'}),/زمان/);
  assert.throws(()=>api.exportAudit([{...valid,score:101}],{generatedAt:'2026-11-04T17:00:00Z'}),/ردیف/);
 });
