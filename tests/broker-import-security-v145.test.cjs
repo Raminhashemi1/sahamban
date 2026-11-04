@@ -33,3 +33,13 @@ test('broker import UI writes imported content as text, stays local and does not
  assert.doesNotMatch(source,/fetch\s*\(|XMLHttpRequest|sendBeacon|navigator\.sendBeacon/);
  assert.doesNotMatch(source,/innerHTML\s*=/);
 });
+
+test('security guidance discloses localStorage and plaintext backup limitations',()=>{
+ const html=fs.readFileSync('index.html','utf8');
+ const policy=fs.readFileSync('SECURITY.md','utf8');
+ assert.match(html,/بدون رمزگذاری اختصاصی/);
+ assert.match(html,/نسخه پشتیبان JSON را در محل امن نگه دارید/);
+ assert.match(policy,/localStorage/);
+ assert.match(policy,/plaintext/);
+ assert.match(policy,/brokerage passwords|OTP|session tokens/i);
+});
