@@ -23,13 +23,17 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Run read-only TSETMC after-close diagnostic
+      - name: Probe TSETMC CDN read-only API
         run: node tests/live-market-connectivity.cjs
-      - name: Preserve live market evidence
+        continue-on-error: true
+      - name: Probe official TSE web gateway fallback
+        run: node tests/live-market-webgw-fallback.cjs
+        continue-on-error: true
+      - name: Preserve after-close live market evidence
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: sahamban-after-close-market-check
-          path: test-artifacts/live-market-v111.json
+          path: test-artifacts/live-market-*.json
           if-no-files-found: warn
           retention-days: 30
