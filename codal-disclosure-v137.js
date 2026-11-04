@@ -69,6 +69,12 @@
      title.textContent=item.title;meta.textContent=' | نماد: '+item.symbol+' | تاریخ انتشار: '+item.published+' | رهگیری: '+item.tracingNo;
      p.append(title,meta);
      if(item.originalUrl){const a=doc.createElement('a');a.href=item.originalUrl;a.target='_blank';a.rel='noopener noreferrer nofollow';a.textContent=' مشاهده اصل اطلاعیه در کدال';p.append(a);}
+     if(item.originalUrl&&win.SahambanCodalIntakeV138?.select){
+      const choose=doc.createElement('button');choose.type='button';choose.className='secondary';
+      choose.textContent='انتخاب برای اثرانگشت سند اصلی (بدون تأیید محتوا)';
+      choose.addEventListener('click',()=>{win.SahambanCodalIntakeV138.select(item);doc.getElementById('codalOriginalV138')?.scrollIntoView?.({block:'nearest'});});
+      p.append(choose);
+     }
      results.append(p);
     }
    }catch(error){
