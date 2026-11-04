@@ -41,7 +41,7 @@
   const estimatedCost=quantity*entry,estimatedLoss=quantity*riskPerShare;
   if(!Number.isSafeInteger(estimatedCost)||!Number.isSafeInteger(estimatedLoss))
    throw new RangeError('مبلغ یا ریسک محاسبه‌شده خارج از محدوده امن است.');
-  return {riskBudget,quantity,maxLoss:estimatedLoss,estimatedCost,limitedBy:byCash<byRisk?'AVAILABLE_CASH':'RISK_BUDGET'};
+  return {riskBudget,quantity,maxLoss:estimatedLoss,estimatedCost,limitedBy:byCash===byRisk?'BOTH_LIMITS':byCash<byRisk?'AVAILABLE_CASH':'RISK_BUDGET'};
  }
  // A conditional, date-stamped interpretation of rule output, not an order.
  // No user holdings, brokerage access, execution or network calls.
