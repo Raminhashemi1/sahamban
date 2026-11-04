@@ -154,6 +154,36 @@ function selectColumn(id,aliases){
  if(idx<0)idx=headers.findIndex(h=>exact.some(a=>a.length>3&&normal(h).includes(a)));
  if(idx>=0)s.value=String(idx);
 }
+// Validate persisted holdings before displaying, exporting or reusing them.
+// This never rewrites the stored blob; unreadable data must remain untouched for recovery.
+function validatedStoredHoldings(data){
+ if(!data||typeof data!=='object'||![1,2].includes(data.version)||
+    !Array.isArray(data.holdings)||data.holdings.length<1||data.holdings.length>100)
+  throw Error('ساختار دارایی‌های ذخیره‌شده معتبر نیست؛ داده ذخیره‌شده تغییر نکرد.');
+ const factor=data.version===1?10:1,seen=new Set(),holdings=[];
+ let totalBuy=0,totalCurrent=0;
+ for(const item of data.holdings){
+  if(!item||typeof item!=='object')throw Error('ردیف دارایی ذخیره‌شده نامعتبر است.');
+  const symbol=typeof item.symbol==='string'?item.symbol.trim():'';
+  const key=normal(symbol);
+  // Persisted values must already be numbers. Do not coerce user-controlled strings.
+  const quantity=item.quantity,buy=item.buy*factor,current=item.current*factor;
+  if(!symbol||symbol.length>35||/[\r\n,;\t]/.test(symbol)||seen.has(key)||
+     !Number.isSafeInteger(quantity)||quantity<=0||
+     typeof item.buy!=='number'||typeof item.current!=='number'||
+     !Number.isFinite(buy)||!Number.isFinite(current)||buy<=0||current<=0||
+     buy>Number.MAX_SAFE_INTEGER||current>Number.MAX_SAFE_INTEGER||
+     !Number.isFinite(quantity*buy)||!Number.isFinite(quantity*current)||
+     quantity*buy>Number.MAX_SAFE_INTEGER||quantity*current>Number.MAX_SAFE_INTEGER)
+   throw Error('دارایی ذخیره‌شده نامعتبر یا تکراری است؛ فایل اصلی تغییر نکرد.');
+  seen.add(key);totalBuy+=quantity*buy;totalCurrent+=quantity*current;
+  if(!Number.isFinite(totalBuy)||!Number.isFinite(totalCurrent)||
+     totalBuy>Number.MAX_SAFE_INTEGER||totalCurrent>Number.MAX_SAFE_INTEGER)
+   throw Error('جمع ارزش دارایی‌های ذخیره‌شده از محدوده محاسبه مطمئن خارج است.');
+  holdings.push({symbol,quantity,buy,current});
+ }
+ return holdings;
+}
 function rowText(tr,values){for(const v of values){const td=document.createElement('td');td.style.padding='6px';td.style.borderBottom='1px solid #34546d';td.textContent=typeof v==='number'?new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(v):String(v).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);tr.append(td)}}
 function previewRows(){
  const ids=['brokerSymbolCol','brokerQtyCol','brokerBuyCol','brokerCurrentCol'].map(id=>el(id).value);
@@ -253,8 +283,8 @@ el('brokerLoad').addEventListener('click',()=>{
  el('brokerApply').disabled=true;el('brokerRisk').disabled=true;
  try{
   const obj=JSON.parse(localStorage.getItem(STORAGE)||'null');
-  if(!obj||!Array.isArray(obj.holdings))throw Error('هنوز دارایی واردشده‌ای ذخیره نشده.');
-  preview=obj.holdings.map(p=>({...p,buy:obj.version===1?p.buy*10:p.buy,current:obj.version===1?p.current*10:p.current,issue:''}));ready=true;
+  if(!obj)throw Error('هنوز دارایی واردشده‌ای ذخیره نشده.');
+  preview=validatedStoredHoldings(obj).map(p=>({...p,issue:''}));ready=true;
   const body=el('brokerRows');body.replaceChildren();
   for(const p of preview){const tr=document.createElement('tr');rowText(tr,[p.symbol,p.quantity,p.buy,p.current,'ذخیره‌شده']);body.append(tr);}
   publishVisibleSymbols(preview);
@@ -267,7 +297,7 @@ el('brokerExportBackup').addEventListener('click',()=>{
   const raw=localStorage.getItem(STORAGE);
   if(!raw)throw Error('ابتدا دارایی‌های کارگزاری را ذخیره کنید.');
   const data=JSON.parse(raw);
-  if(!data||![1,2].includes(data.version)||!Array.isArray(data.holdings)||!data.holdings.length)throw Error('ساختار فایل ذخیره‌شده نامعتبر است.');
+  validatedStoredHoldings(data); // Refuse malformed backups; do not alter the saved blob.
   const payload=JSON.stringify({format:'sahamban-broker-holdings',exportedAt:new Date().toISOString(),...data},null,2);
   const url=URL.createObjectURL(new Blob([payload],{type:'application/json;charset=utf-8'}));
   const a=document.createElement('a');a.href=url;a.download='sahamban-broker-holdings-backup.json';
