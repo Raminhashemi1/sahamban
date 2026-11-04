@@ -78,7 +78,7 @@ test('changing file invalidates old fingerprint and discards in-flight hashing',
  }
  let resets=0,accepts=0;
  const win={document:{getElementById:id=>els[id]||null},crypto:{subtle:crypto.webcrypto.subtle},
-  SahambanCodalRowsV139:{reset(){resets++;},accept(){accepts++;}}};
+  SahambanCodalRowsV139:{reset(){resets++;},accept(){accepts++;}},SahambanCodalIntakeV138:{}};
  intake.mount(win);
  assert.equal(win.SahambanCodalIntakeV138.select(record()),true);
  assert.equal(resets,1);
