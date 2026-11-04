@@ -58,6 +58,6 @@ test('module loaded in PWA and has no storage/network/exfiltration',()=>{
  for(const id of ['codalRowsV139','codalRowsPeriodV139','codalRowsUnitV139','codalRowsAuditV139','codalRowsBasisV139','codalRowsAddV139','codalRowsCheckV139'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(sw.includes('codal-source-rows-v139.js?v=139.0'));
- assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.0')<html.indexOf('codal-original-intake-v138.js?v=138.1'));
+ assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.0')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
