@@ -18,7 +18,7 @@ function harness(){
  vm.runInNewContext(code,{document,localStorage,window,CustomEvent:class{constructor(name,options){this.type=name;this.detail=options.detail;}},
   console,Intl,TextDecoder,Number,String,Set,Map,Date,Blob,URL,Promise,Array,Error,BigInt});
  const fire=(id,type='click')=>{const fn=element(id).events.get(type);assert.ok(fn,id+' '+type);return fn();};
- return {element,fire,storage};
+ return {element,fire,storage,window};
 }
 function deferred(){
  let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
@@ -105,7 +105,7 @@ test('valid v1 legacy holdings are displayed with toman-to-rial conversion but n
  h.storage.set('sahamban-broker-holdings-v1',raw);
  h.fire('brokerLoad');
  assert.equal(h.element('brokerReview').hidden,false);
- assert.equal(h.element('brokerApply').disabled,false);
+ assert.equal(h.element('brokerApply').disabled,true);
  assert.equal(h.storage.get('sahamban-broker-holdings-v1'),raw);
  const rows=h.element('brokerRows').children;
  assert.equal(rows.length,1);
@@ -118,4 +118,60 @@ test('backup export refuses invalid persisted holdings without deleting saved by
  h.fire('brokerExportBackup');
  assert.equal(h.storage.get('sahamban-broker-holdings-v1'),raw);
  assert.match(h.element('brokerStatus').textContent,/پشتیبان‌گیری انجام نشد/);
+});
+
+test('read-only load cannot destroy a valid previous recovery snapshot',()=>{
+ const h=harness(),old={version:2,holdings:[{symbol:'قدیمی',quantity:1,buy:100,current:110}]},
+  current={version:2,holdings:[{symbol:'جدید',quantity:2,buy:200,current:220}]};
+ const prior=JSON.stringify(old),now=JSON.stringify(current);
+ h.storage.set('sahamban-broker-holdings-v1-previous',prior);
+ h.storage.set('sahamban-broker-holdings-v1',now);
+ h.fire('brokerLoad');
+ assert.equal(h.element('brokerApply').disabled,true);
+ h.fire('brokerApply');
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1'),now);
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1-previous'),prior);
+});
+test('restore valid older snapshot only after user confirmation and preserve snapshot',()=>{
+ const h=harness(),current=JSON.stringify({version:2,holdings:[{symbol:'فعلی',quantity:2,buy:200,current:220}]}),
+ prior=JSON.stringify({version:1,holdings:[{symbol:'قبلی',quantity:3,buy:100,current:125}]});
+ h.storage.set('sahamban-broker-holdings-v1',current);
+ h.storage.set('sahamban-broker-holdings-v1-previous',prior);
+ h.window.confirm=()=>false;
+ h.fire('brokerRestorePrevious');
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1'),current);
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1-previous'),prior);
+ h.window.confirm=()=>true;
+ h.fire('brokerRestorePrevious');
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1'),prior);
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1-previous'),prior);
+ assert.equal(h.element('brokerRows').children.length,1);
+ assert.equal(h.element('brokerApply').disabled,true);
+ assert.equal(h.element('brokerRisk').disabled,false);
+ assert.match(h.element('brokerStatus').textContent,/بازیابی شد/);
+});
+test('restore rejects corrupt previous snapshot without changing current holdings',()=>{
+ for(const bad of ['not JSON',JSON.stringify({version:2,holdings:[{symbol:'نماد',quantity:0,buy:10,current:11}]})]){
+  const h=harness(),current=JSON.stringify({version:2,holdings:[{symbol:'فعلی',quantity:2,buy:200,current:220}]});
+  h.storage.set('sahamban-broker-holdings-v1',current);
+  h.storage.set('sahamban-broker-holdings-v1-previous',bad);
+  h.fire('brokerRestorePrevious');
+  assert.equal(h.storage.get('sahamban-broker-holdings-v1'),current);
+  assert.equal(h.storage.get('sahamban-broker-holdings-v1-previous'),bad);
+  assert.equal(h.element('brokerRisk').disabled,true);
+  assert.match(h.element('brokerStatus').textContent,/بازیابی انجام نشد/);
+ }
+});
+test('restore safely rejects storage write errors and keeps prior bytes unchanged',()=>{
+ const h=harness(),current=JSON.stringify({version:2,holdings:[{symbol:'فعلی',quantity:2,buy:200,current:220}]}),
+ previous=JSON.stringify({version:2,holdings:[{symbol:'قبلی',quantity:1,buy:100,current:110}]});
+ h.storage.set('sahamban-broker-holdings-v1',current);
+ h.storage.set('sahamban-broker-holdings-v1-previous',previous);
+ // vm fixture uses Map-backed storage; a failed write leaves both snapshots intact.
+ const original=h.storage.set.bind(h.storage);
+ h.storage.set=(key,value)=>{if(key==='sahamban-broker-holdings-v1')throw Error('QUOTA_FAIL');return original(key,value);};
+ h.fire('brokerRestorePrevious');
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1'),current);
+ assert.equal(h.storage.get('sahamban-broker-holdings-v1-previous'),previous);
+ assert.match(h.element('brokerStatus').textContent,/بازیابی انجام نشد/);
 });
