@@ -69,3 +69,25 @@ test('no numeric ratios, no holdings access, and UI + PWA caching connected',()=
  assert.ok(sw.includes('codal-xlsx-preview-v141.js?v=141.0'));
  assert.doesNotMatch(source,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
+
+test('rejects local ZIP header filename disagreement with central directory',async()=>{
+ const archive=zip(base(),{deflate:false});
+ const changed=Buffer.from(archive);
+ const nameLength=changed.readUInt16LE(26);
+ assert.ok(nameLength>0);
+ changed[30]^=1;
+ await assert.rejects(extractor.extract(file(changed)),/ZIP_LOCAL_HEADER_MISMATCH/);
+});
+test('rejects local ZIP size disagreement with central directory',async()=>{
+ const changed=Buffer.from(zip(base(),{deflate:false}));
+ changed.writeUInt32LE(changed.readUInt32LE(22)+1,22);
+ await assert.rejects(extractor.extract(file(changed)),/ZIP_LOCAL_SIZE_MISMATCH/);
+});
+test('rejects even a single member whose inflated bytes differ from declared size',async()=>{
+ const changed=Buffer.from(zip(base()));
+ const out=await extractor.extract(file(changed),{inflate:async(comp)=>{
+  const actual=zlib.inflateRawSync(Buffer.from(comp));
+  return Buffer.concat([actual,Buffer.from('tamper')]);
+ }}).then(()=>null,e=>e);
+ assert.match(out.message,/ZIP_UNCOMPRESSED_MISMATCH/);
+});
