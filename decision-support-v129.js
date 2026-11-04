@@ -75,5 +75,29 @@
    invalidation:'اگر شرایط بازار یا داده تغییر کرد، تحلیل جدید با تاریخ جدید لازم است.',
    condition:'WAIT_FOR_NEW_EVIDENCE'};
  }
- return Object.freeze({analyze,sizePosition,decisionPlan});
+ function exportAudit(reports,{generatedAt}={}){
+  if(!Array.isArray(reports)||reports.length>100)throw new RangeError('تعداد گزارش‌ها خارج از محدوده مجاز است.');
+  const stamp=String(generatedAt??'');
+  if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(stamp)||!Number.isFinite(Date.parse(stamp)))
+   throw new TypeError('زمان تولید گزارش معتبر نیست.');
+  const results=reports.map(r=>{
+   const plan=decisionPlan(r);
+   if(typeof r.symbol!=='string'||r.symbol.length<1||r.symbol.length>35||
+      !Number.isFinite(r.score)||r.score<0||r.score>100||
+      !Array.isArray(r.reasons)||r.reasons.length!==5)
+    throw new TypeError('ردیف گزارش تحلیلی معتبر نیست.');
+   return {
+    symbol:r.symbol,marketDate:r.marketDate,closingPriceRial:r.last,
+    ruleScore:r.score,classification:r.code,description:r.reason,
+    indicators:r.reasons.map(x=>({name:String(x[0]),satisfied:x[1]===true})),
+    conditionalDecision:plan.decision,reviewCondition:plan.when,
+    invalidation:plan.invalidation,requiresIndependentVerification:true,
+    automatedOrder:false
+   };
+  });
+  return {schema:'sahamban-decision-audit-v1',generatedAt:stamp,
+   evidenceScope:'technical daily-close rule assessment; not an independent live quote, fundamental valuation or validated predictive recommendation',
+   noTradingOrders:true,results};
+ }
+ return Object.freeze({analyze,sizePosition,decisionPlan,exportAudit});
 });
