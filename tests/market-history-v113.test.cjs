@@ -14,9 +14,14 @@ const check=context.verifyPublicClosingHistory;
 test('v113 confirms only a unique same-day price matching record',()=>{
  assert.equal(check('20261102',4000,[{dEven:20261102,pClosing:4000}]),true);
 });
-test('v113 explicitly identifies missing same-day history instead of generic mismatch',()=>{
- assert.throws(()=>check('20261102',4000,[{dEven:20261031,pClosing:4000}]),/تعداد سوابق همان روز: 0/);
- assert.throws(()=>check('20261102',4000,[{dEven:20261031,pClosing:4000}]),/20261031/);
+test('v113 explicitly classifies a lagging daily-history feed',()=>{
+ const error=()=>check('20261104',4290,[{dEven:20261103,pClosing:4210},{dEven:20261102,pClosing:4090}]);
+ assert.throws(error,/UNVERIFIED_HISTORY_NOT_PUBLISHED/);
+ assert.throws(error,/آخرین تاریخ تاریخچه: 20261103/);
+ assert.throws(error,/تعداد سوابق همان روز: 0/);
+});
+test('v113 keeps a same-date price mismatch distinct from publication lag',()=>{
+ assert.throws(()=>check('20261104',4290,[{dEven:20261104,pClosing:4280}]),/UNVERIFIED_HISTORY_MISMATCH/);
 });
 test('v113 refuses duplicate public same-day records',()=>{
  assert.throws(()=>check('20261102',4000,[{dEven:20261102,pClosing:4000},{dEven:20261102,pClosing:4000}]),/تعداد سوابق همان روز: 2/);
