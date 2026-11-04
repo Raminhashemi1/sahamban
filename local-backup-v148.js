@@ -18,7 +18,7 @@
  MAX[KEYS[3]]=1200;MAX[KEYS[4]]=15000;
  const parse=(raw)=>{if(typeof raw!=='string')throw Error('داده ذخیره‌شده متنی نیست.');return JSON.parse(raw);};
  const normalize=s=>s.replace(/[\u200c\u200e\u200f\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
- const finiteMoney=n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&Number.isSafeInteger(n);
+ const finiteMoney=n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<=Number.MAX_SAFE_INTEGER;
  function validateHoldings(data){
   if(!data||![1,2].includes(data.version)||!Array.isArray(data.holdings)||data.holdings.length<1||data.holdings.length>100)throw Error('ساختار دارایی‌های کارگزاری معتبر نیست.');
   const factor=data.version===1?10:1,seen=new Set();let cost=0,value=0;
@@ -26,11 +26,11 @@
    if(!p||typeof p.symbol!=='string'||!p.symbol.trim()||p.symbol.length>35||
       /[\r\n,;\t]/.test(p.symbol)||seen.has(normalize(p.symbol))||
       !Number.isSafeInteger(p.quantity)||p.quantity<=0||
-      !finiteMoney(p.buy)||!finiteMoney(p.current)||!Number.isSafeInteger(p.buy*factor)||!Number.isSafeInteger(p.current*factor))
+      !finiteMoney(p.buy)||!finiteMoney(p.current)||p.buy*factor>Number.MAX_SAFE_INTEGER||p.current*factor>Number.MAX_SAFE_INTEGER)
      throw Error('نماد، تعداد یا قیمت دارایی ذخیره‌شده نامعتبر است.');
    seen.add(normalize(p.symbol));
    cost+=p.quantity*p.buy*factor;value+=p.quantity*p.current*factor;
-   if(!Number.isSafeInteger(cost)||!Number.isSafeInteger(value))throw Error('جمع ارزش سبد خارج از محدوده محاسبه امن است.');
+   if(!Number.isFinite(cost)||!Number.isFinite(value)||cost>Number.MAX_SAFE_INTEGER||value>Number.MAX_SAFE_INTEGER)throw Error('جمع ارزش سبد خارج از محدوده محاسبه امن است.');
   }
  }
  function validatePortfolio(data){
@@ -43,8 +43,8 @@
    if(cells.length!==6||!cells[0]||cells[0].length>35||names.has(normalize(cells[0])))throw Error('نماد تکراری یا سطر نامعتبر در سبد ریسک.');
    names.add(normalize(cells[0]));
    const n=cells.slice(1).map(Number);
-   if(!Number.isSafeInteger(n[0])||n[0]<=0||n.slice(1).some(v=>!Number.isFinite(v)||v<0||!Number.isSafeInteger(v*factor))||
-    n[1]<=0||n[2]<=0||n[3]>=n[2]||n[4]<=n[2])throw Error('مقادیر سبد ریسک نامعتبر است.');
+   if(!Number.isSafeInteger(n[0])||n[0]<=0||n.slice(1).some(v=>!Number.isFinite(v)||v<=0||!Number.isFinite(v*factor))||
+    n[3]>=n[2]||n[4]<=n[2])throw Error('مقادیر سبد ریسک نامعتبر است.');
   }
   for(const field of ['capital','riskCap','stress'])if(typeof data[field]!=='string'||data[field].length>60)throw Error('تنظیمات سبد ریسک نامعتبر است.');
   const concentration=data.concentration??'30';
