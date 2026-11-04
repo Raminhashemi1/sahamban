@@ -38,3 +38,11 @@
 - اجرای واقعی [CODAL CI v143](https://github.com/Raminhashemi1/sahamban/actions/runs/41816628737) در ۴ نوامبر ۲۰۲۶ انجام شد: `CODAL_DOCUMENT_STATUS: UNVERIFIED_NETWORK` و `CODAL_STATUS: UNVERIFIED_NETWORK`. آزمون‌های مصنوعی (۶ مورد) موفق شدند.
 - نتیجه JSON هر اجرای workflow در artifact `sahamban-codal-v136` با نام `codal-official-document-v143.json` برای ممیزی قرار می‌گیرد؛ فاقد اطلاعات کاربر یا بایت سند است.
 - **دریافت سند واقعی و تصدیق صورت مالی ونوین همچنان انجام نشده است.** وضعیت `financialEvidence: INSUFFICIENT_EVIDENCE` و `tradingSignalsEnabled: false` می‌ماند.
+
+## سخت‌گیری نسبت به صفحه HTML یا نوع پاسخ ناسازگار — v143.1
+
+- پاسخ HTTP 200 از آدرس خروجی Excel به‌تنهایی مدرک صورت مالی نیست: سرویس ممکن است یک صفحه HTML/XML شامل پیام خطا، CAPTCHA یا جدول عمومی برگرداند.
+- در آزمون سند اصلی، چنین پاسخ‌هایی اکنون `UNVERIFIED_HTML_OR_XML_RESPONSE` می‌گیرند؛ هشی که ظاهراً سند معتبر را القا کند گزارش نمی‌شود.
+- اگر سرآیند بایت‌ها شبیه ZIP/PDF/XLS باشد اما Content-Type صریحاً `text/html`، JSON یا XML باشد، نتیجه `UNVERIFIED_CONTENT_TYPE_MISMATCH` است.
+- در صورت دریافت ZIP، صرفاً `XLSX_OR_ZIP_UNINSPECTED` گزارش می‌شود؛ ساختار واقعی XLSX باید با parser مستقل کنترل شود.
+- آزمون‌های ساختگی برای HTML جعلی و MIME ناسازگار اضافه شده‌اند. این تغییرات **خطای شبکه و نبود سند واقعی را برطرف نمی‌کنند**؛ وضعیت بنیادین هنوز `INSUFFICIENT_EVIDENCE` باقی است.
