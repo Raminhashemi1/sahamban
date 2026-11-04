@@ -48,7 +48,9 @@ assert.match(html,/const freshness=quoteFreshness\(info\?\.finalLastDate\|\|date
 assert.match(html,/قیمت پاسخ رسمی:/);
 assert.match(html,/FRESH_QUOTE_HISTORY_PENDING/);
 assert.match(html,/historyStatus==='PENDING_TODAY_ROW'/);
-assert.match(html,/sameDay.length===0&&freshness.status==='FRESH'/);
+assert.match(html,/sameDay.length===0&&date===tehranMarketNow\(\)\.date/);
+assert.match(html,/lastDates\[0\]<date/);
+assert.match(html,/q\.freshness\.status==='FRESH'\?'FRESH_QUOTE_HISTORY_PENDING':'UNVERIFIED_HISTORY_NOT_PUBLISHED'/);
 assert.match(html,/تطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار/);
 assert.ok(html.indexOf("if(q.historyStatus==='PENDING_TODAY_ROW')") < html.indexOf("if(q.freshness.status!=='FRESH')"));
 assert.match(html,/if\(valid.length!==1\)/);
