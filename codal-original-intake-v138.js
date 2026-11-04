@@ -15,7 +15,7 @@
   if(!match||Number(match[2])<1||Number(match[2])>12||Number(match[3])<1||
      Number(match[3])>(Number(match[2])<=6?31:30))return null;
   // The originating v137 metadata gate must already have accepted this URL.
-  const url=typeof record.originalUrl==='string'?record.originalUrl:null;
+  const url=typeof record.originalUrl==='string'?record.originalUrl:(typeof record.reportUrl==='string'?record.reportUrl:null);
   if(!url||!/^https:\/\/(?:www\.)?codal\.ir\/(?:Reports\/|DownloadFile\.aspx\?)/i.test(url))return null;
   try{
    const u=new URL(url);
