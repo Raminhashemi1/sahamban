@@ -9,7 +9,7 @@ function elt(id){
 }
 function boot(initialHash=''){
  const ids={};for(const id of ['sahambanHubV87','sahambanGuideV87','sahambanGuideTitleV87','sahambanGuideStepsV87','sahambanGuideOpenV87','sahambanModulesV87','sahambanHomeControlV87','sahambanActiveTitleV87','calculate','check'])ids[id]=elt(id);
- const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV128','decisionSupportV129','externalScreenerV130','codalEvidenceV137','codalOriginalV138'];
+ const keys=['portfolio-live-entry','positionSizeSectionV87','manualAlertsSectionV87','marketSection','watchlistSection','historicalSectionV87','brokerImportSection','livePortfolioSection','portfolioSection','professionalRiskV49','premiumArea','technicalAnalysisV50','educationSectionV128','decisionSupportV129','externalScreenerV130','codalEvidenceV137','codalOriginalV138','codalRowsV139'];
  const sections=keys.map(id=>{const e=elt(id);e.closest=()=>e;e.querySelector=()=>null;ids[id]=e;return e});
  ids.calculate.closest=()=>ids.positionSizeSectionV87;ids.check.closest=()=>ids.manualAlertsSectionV87;
  const host={querySelectorAll:()=>sections},listeners={},location={hash:initialHash};
@@ -17,8 +17,8 @@ function boot(initialHash=''){
  vm.runInNewContext(src,{document,location,window:{addEventListener:(n,fn)=>listeners[n]=fn},requestAnimationFrame:fn=>fn()});
  return {ids,sections,location,change:hash=>{location.hash=hash;listeners.hashchange()},buttons:ids.sahambanModulesV87.children};
 }
-test('v87 creates an at-a-glance 15 module home and guides with no extra traffic',()=>{
- const a=boot();assert.equal(a.buttons.length,15);assert.equal(a.ids.sahambanHubV87.hidden,false);
+test('v87 creates an at-a-glance 16 module home and guides with no extra traffic',()=>{
+ const a=boot();assert.equal(a.buttons.length,16);assert.equal(a.ids.sahambanHubV87.hidden,false);
  assert.ok(a.sections.every(x=>x.hidden));assert.equal(a.ids.sahambanHomeControlV87.hidden,true);
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|navigator\.sendBeacon/);
 });
@@ -42,9 +42,9 @@ test('v87 shows contextual guidance, step list, and a link to selected module',(
 test('v87 supports deep links directly and all module ids are backed by HTML',()=>{
  const a=boot('#professionalRiskV49');assert.equal(a.ids.professionalRiskV49.hidden,false);
  assert.match(html,/id="sahambanHubV87"/);assert.match(html,/id="sahambanModulesV87"/);
- assert.match(html,/module-hub-v87\.js\?v=130\.1/);
+ assert.match(html,/module-hub-v87\.js\?v=130\.2/);
  for(const id of ['livePortfolioSection','brokerImportSection','portfolioSection','technicalAnalysisV50','marketSection','watchlistSection','professionalRiskV49'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(sw,/module-hub-v87\.js\?v=130\.1/);assert.match(sw,/sahamban-static-v103-0/);
+ assert.match(sw,/module-hub-v87\.js\?v=130\.2/);assert.match(sw,/sahamban-static-v103-0/);
 });
 
 test('CODAL lookup and original intake are independently accessible from home',()=>{
@@ -53,4 +53,6 @@ test('CODAL lookup and original intake are independently accessible from home',(
  assert.equal(a.ids.codalOriginalV138.hidden,true);
  a.change('#codalOriginalV138');assert.equal(a.ids.codalOriginalV138.hidden,false);
  assert.equal(a.ids.codalEvidenceV137.hidden,true);
+ a.change('#codalRowsV139');assert.equal(a.ids.codalRowsV139.hidden,false);
+ assert.equal(a.ids.codalOriginalV138.hidden,true);
 });
