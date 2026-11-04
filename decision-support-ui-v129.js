@@ -24,6 +24,13 @@
   evidence.textContent='اعتبار مستقل پیشنهاد: تأیید نشده. '+e.message+' نمایش نامزد ورود/خروج صرفاً بر مبنای قواعد تکنیکال و برای بررسی است.';
  }
  detail.append(evidence);
+ const comparison=document.createElement('p');
+ try{
+  const review=window.SahambanHoldoutV134.evaluate(quote),base=review.passiveComparison;
+  const fmtPct=v=>v===null?'ناموجود':fmt(v)+'٪';
+  comparison.textContent='مقایسه تشخیصی همان نماد: '+fmt(base.count)+' پنجره ثابت ۱۰جلسه‌ای مستقل از انتخاب سیگنال؛ میانگین خالص نگهداری فرضی '+fmtPct(base.meanNetReturnPct)+'؛ اختلاف میانگین رویدادهای نامزد ورود با آن '+fmtPct(base.excessMeanNetReturnPct)+'. این دو نمونه از نظر زمان حضور در بازار هم‌ارز نیستند؛ مقایسه با شاخص کل بازار یا اثبات برتری راهبرد نیست.';
+ }catch(e){comparison.textContent='مقایسه مستقل بازده در دسترس نیست: '+e.message;}
+ detail.append(comparison);
  const conditional=document.createElement('p');
  try{
   const plan=window.SahambanDecisionV129.decisionPlan(r);
