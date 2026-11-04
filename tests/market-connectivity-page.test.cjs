@@ -26,6 +26,13 @@ assert.ok(!html.includes("'وسایا'"));
 assert.ok(!html.includes("'پیوند'"));
 assert.match(html,/پرسپولیس'\]/);
 assert.match(html,/run-basket/);
+assert.match(html,/id="codal-diagnostic"/);
+const appHtml=fs.readFileSync('index.html','utf8');
+assert.match(appHtml,/id="market-source-diagnostics"/);
+assert.match(appHtml,/href="\.\/market-connectivity-test\.html"/);
+assert.match(appHtml,/href="\.\/market-connectivity-test\.html#codal-diagnostic"/);
+assert.match(appHtml,/این آزمایش به سبد ذخیره‌شده یا فایل کارگزاری دسترسی ندارد/);
+
 assert.ok(html.includes('function readSymbols()'));
 assert.ok(html.includes('const queryList=[...new Set([symbol,symbol.slice(0,3),symbol.slice(0,2)]'));
 assert.ok(html.includes('جستجوی مستقیم و جستجوی گسترده‌تر انجام شد'));
