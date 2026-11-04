@@ -39,6 +39,8 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: sahamban-after-close-market-check
-          path: |\n            test-artifacts/live-market-*.json\n            test-artifacts/after-close-summary.json
+          path: |
+            test-artifacts/live-market-*.json
+            test-artifacts/after-close-summary.json
           if-no-files-found: warn
           retention-days: 30
