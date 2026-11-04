@@ -37,7 +37,7 @@ async function main(){
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'sb105MainContent');
   // Verify compact launcher and a beginner's guide before starting the existing workflows.
-  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),13);
+  assert.equal(await page.locator('#sahambanModulesV87 .sahamban-module-v87').count(),15);
   // v129: synthetic verified history exercises the decision assistant without touching holdings.
   assert.equal(await page.locator('#decisionSupportV129').count(),1);
   await page.locator('#sahambanModulesV87 a[href="#decisionSupportV129"]').click();
