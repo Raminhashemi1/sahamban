@@ -186,9 +186,9 @@ function verifyPublicClosingHistory(date,price,history){
  if(!Array.isArray(history))throw Error('پاسخ تاریخچه معتبر نیست.');
  const matching=history.filter(x=>String(x?.dEven??'')===String(date));
  if(matching.length!==1){
-  const validDates=history.map(x=>String(x?.dEven??'')).filter(x=>/^\d{8}$/.test(x));
-  const latest=validDates.sort().at(-1)||'';
-  const sample=[...new Set(validDates)].slice(0,3);
+  const validDates=[...new Set(history.map(x=>String(x?.dEven??'')).filter(x=>/^\d{8}$/.test(x)))].sort((a,b)=>b.localeCompare(a));
+  const latest=validDates[0]||'';
+  const sample=validDates.slice(0,3);
   const lag=latest&&latest<String(date);
   throw Error((lag?'UNVERIFIED_HISTORY_NOT_PUBLISHED | تاریخچه از قیمت جاری عقب‌تر است. ':'UNVERIFIED_HISTORY_MISMATCH | ')+
    'تاریخ قیمت: '+date+' | آخرین تاریخ تاریخچه: '+(latest||'نامشخص')+
@@ -271,8 +271,9 @@ async function checkSymbol(symbol){
    const validRows=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
    const dayRows=validRows.filter(x=>String(x.dEven)===date);
    if(!dayRows.length||!dayRows.some(x=>Number(x.pClosing)===price)){
-    const latest=validRows.slice(0,3).map(x=>String(x.dEven)+':'+fa(Number(x.pClosing))).join('، ');
-    const latestDate=validRows.map(x=>String(x.dEven)).sort().at(-1)||'';
+    const latestRows=[...validRows].sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
+    const latest=latestRows.slice(0,3).map(x=>String(x.dEven)+':'+fa(Number(x.pClosing))).join('، ');
+    const latestDate=String(latestRows[0]?.dEven??'');
    const lag=latestDate&&latestDate<date;
    throw Error((lag?'UNVERIFIED_HISTORY_NOT_PUBLISHED؛ تاریخچه هنوز به روز قیمت جاری نرسیده است. ':'UNVERIFIED_HISTORY_MISMATCH؛ ')+
     'قیمت اطلاعاتی '+fa(price)+' در '+date+'؛ آخرین تاریخچه '+(latestDate||'نامشخص')+'؛ آخرین سوابق: '+(latest||'ندارد'));
