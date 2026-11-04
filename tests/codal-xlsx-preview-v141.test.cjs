@@ -65,8 +65,8 @@ test('no numeric ratios, no holdings access, and UI + PWA caching connected',()=
  const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
  new vm.Script(source);
  for(const id of ['codalXlsxPreviewV141','codalXlsxFileV141','codalXlsxRunV141','codalXlsxStatusV141','codalXlsxCellsV141'])assert.ok(html.includes('id="'+id+'"'));
- assert.ok(html.includes('codal-xlsx-preview-v141.js?v=141.0'));
- assert.ok(sw.includes('codal-xlsx-preview-v141.js?v=141.0'));
+ assert.ok(html.includes('codal-xlsx-preview-v141.js?v=141.1'));
+ assert.ok(sw.includes('codal-xlsx-preview-v141.js?v=141.1'));
  assert.doesNotMatch(source,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
 
