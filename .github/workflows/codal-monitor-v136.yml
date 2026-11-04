@@ -17,6 +17,8 @@ on:
       - 'codal-disclosure-v137.js'
       - 'codal-original-intake-v138.js'
       - 'codal-source-rows-v139.js'
+      - 'codal-audit-recheck-v140.js'
+      - 'tests/codal-audit-recheck-v140.test.cjs'
       - 'tests/codal-source-rows-v139.test.cjs'
       - 'module-hub-v87.js'
       - 'tests/codal-original-intake-v138.test.cjs'
@@ -55,6 +57,8 @@ jobs:
         run: node --test tests/codal-original-intake-v138.test.cjs
       - name: Test local financial-row provenance without authorizing ratios
         run: node --test tests/codal-source-rows-v139.test.cjs
+      - name: Verify local audit JSON against exact source bytes with tamper checks
+        run: node --test tests/codal-audit-recheck-v140.test.cjs
       - name: Check one public Codal filing search (read-only)
         run: node tests/codal-connectivity-v136.cjs
       - name: Preserve outcome, including block or network failure
