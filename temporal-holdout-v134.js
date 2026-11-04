@@ -28,8 +28,18 @@
    (phase==='training'?training:holdout).push(event);
    i=exitIndex-1;
   }
-  const train=stats(training,costPct),test=stats(holdout,costPct);
-  return {symbol:quote.symbol,historyCount:h.length,splitIndex:cut,splitDate:dates[cut],training:{...train,events:training,signalDaysEvaluated:evaluations.training},holdout:{...test,events:holdout,signalDaysEvaluated:evaluations.holdout},skipped,embargoedSignalDays:excludedBoundary.length,costPct,holdingDays,validity:'fixed-rules temporal diagnostic only',sufficientToClaimSkill:false};
+  // Passive same-symbol, same-horizon comparison on a FIXED grid of
+  // non-overlapping windows; independent of whether the rule emits a signal.
+  // It is not a market-index benchmark, nor matched for time in market.
+  const passive=[];
+  for(let entryIndex=cut+1;entryIndex+holdingDays<h.length;entryIndex+=holdingDays+1){
+   const exitIndex=entryIndex+holdingDays,grossReturnPct=(prices[exitIndex]/prices[entryIndex]-1)*100;
+   passive.push({entryDate:dates[entryIndex],exitDate:dates[exitIndex],entryIndex,exitIndex,grossReturnPct,netReturnPct:grossReturnPct-costPct});
+  }
+  const train=stats(training,costPct),test=stats(holdout,costPct),passiveStats=stats(passive,costPct);
+  const comparison={method:'fixed-grid passive same-symbol 10-session windows in holdout; different market exposure; diagnostic only',
+    ...passiveStats,events:passive,excessMeanNetReturnPct:test.count&&passiveStats.count?test.meanNetReturnPct-passiveStats.meanNetReturnPct:null};
+  return {symbol:quote.symbol,historyCount:h.length,splitIndex:cut,splitDate:dates[cut],training:{...train,events:training,signalDaysEvaluated:evaluations.training},holdout:{...test,events:holdout,signalDaysEvaluated:evaluations.holdout},passiveComparison:comparison,skipped,embargoedSignalDays:excludedBoundary.length,costPct,holdingDays,validity:'fixed-rules temporal diagnostic only',sufficientToClaimSkill:false};
  }
  return Object.freeze({evaluate});
 });
