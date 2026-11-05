@@ -49,5 +49,9 @@ The owner does not want to purchase a domain or pay upfront for hosting. A paid 
 - [ ] Paid entitlement is checked server-side for premium APIs; hiding buttons in static PWA is not access control.
 - [ ] Pilot terms, privacy, support and cancellation/refund rules are visible.
 
+### Stage 1 manual-transfer control model now in repository
+
+`manual-bank-reconciliation.cjs` and `tests/manual-bank-reconciliation.test.cjs` implement and test a server-only domain rule: a pending order can only be marked manually verified after an authenticated payment-reconciler role independently checks a matching settled bank credit. The module does not access a bank, authenticate a real admin, persist a ledger, or activate Pro on its own. Production must enforce admin authorization, transaction uniqueness and atomic order/entitlement writes in a trusted backend. Do not expose this function directly to a browser.
+
 ## Current state
 Existing server-only order and annual-entitlement modules are testable business logic, not a deployed backend. No bank account, payment provider, payment link, free backend account, credentials or merchant approval has been assumed. Gate C remains OPEN until an actual verified payment and entitlement lifecycle passes end-to-end acceptance.
