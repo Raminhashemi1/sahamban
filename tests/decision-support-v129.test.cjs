@@ -130,3 +130,14 @@ test('professional UI discloses passive comparison limits without overstating it
  assert.match(sample,/passiveComparison/);
  assert.match(sample,/اثبات برتری معاملاتی نیست/);
 });
+
+test('holdout UI communicates Wilson uncertainty as descriptive, not forecast confidence',()=>{
+ const fs=require('node:fs');
+ const professional=fs.readFileSync('decision-support-ui-v129.js','utf8');
+ const sample=fs.readFileSync('market-sample-ui-v131.js','utf8');
+ assert.match(professional,/positiveRateUncertainty/);
+ assert.match(professional,/Wilson/);
+ assert.match(professional,/احتمال موفقیت آینده/);
+ assert.match(sample,/positiveRateUncertainty/);
+ assert.match(sample,/مستقل نیستند/);
+});
