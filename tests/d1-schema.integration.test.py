@@ -88,6 +88,26 @@ class D1SchemaIntegrationTests(unittest.TestCase):
                 VALUES('r3','o2','u2',1500000,'IRR','MANUALLY_VERIFIED','bank-1','2026-11-05T08:05:00Z','admin-1','2026-11-05T08:06:00Z')"""
             )
 
+    def test_one_pending_annual_order_per_user_is_enforced_by_database(self):
+        self.seed_user_order()
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute(
+                """INSERT INTO subscription_orders
+                (id,user_id,plan_id,amount_rial,currency,state,created_at)
+                VALUES('o2','u1','SAHAMBAN_PRO_ANNUAL',1500000,'IRR','PENDING',
+                '2026-11-05T08:02:00Z')"""
+            )
+        self.db.execute("UPDATE subscription_orders SET state='CANCELLED' WHERE id='o1'")
+        self.db.execute(
+            """INSERT INTO subscription_orders
+            (id,user_id,plan_id,amount_rial,currency,state,created_at)
+            VALUES('o2','u1','SAHAMBAN_PRO_ANNUAL',1500000,'IRR','PENDING',
+            '2026-11-05T08:03:00Z')"""
+        )
+        self.assertEqual(self.db.execute(
+            "SELECT count(*) FROM subscription_orders WHERE user_id='u1' AND state='PENDING'"
+        ).fetchone()[0],1)
+
     def test_reconciliation_cannot_reference_other_users_order_or_invent_amount(self):
         self.seed_user_order()
         self.db.execute("INSERT INTO sahamban_users(id,created_at) VALUES('u2','2026-11-05T08:00:00Z')")
