@@ -8,7 +8,9 @@ test('D1 ledger schema keeps payment identities unique and amounts integer-posit
  assert.match(sql,/UNIQUE\(provider_name, provider_payment_id\)/);
  assert.match(sql,/UNIQUE\(provider_name, provider_event_id\)/);
  assert.match(sql,/bank_transaction_id TEXT UNIQUE/);
- assert.match(sql,/order_id TEXT NOT NULL UNIQUE REFERENCES subscription_orders\(id\)/);
+ assert.match(sql,/order_id TEXT NOT NULL UNIQUE/);
+ assert.match(sql,/FOREIGN KEY \(order_id, user_id, amount_rial, currency\)/);
+ assert.match(sql,/REFERENCES subscription_orders\(id, user_id, amount_rial, currency\)/);
 });
 test('D1 schema has separate entitlement, reconciliation and admin audit tables',()=>{
  for(const table of ['sahamban_users','subscription_orders','manual_bank_reconciliations','subscription_entitlements','payment_event_ledger','subscription_admin_audit'])
