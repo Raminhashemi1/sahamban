@@ -174,3 +174,15 @@ Gate C remains **OPEN** until the backend, gateway, database and subscriber
 journeys pass actual integration and security acceptance.
 
 No external provider or production secrets are presumed or hardcoded.
+
+## Atomic manual-bank settlement (not deployed)
+
+`server/manual-settlement-db.cjs` adds an operator-only D1 transactional
+coordinator. An independently authorized bank reconciler and verified bank
+credit can atomically update the matching order, reconciliation, unique
+payment event, annual entitlement and audit. NOT a bank gateway, HTTP
+endpoint or production authentication. `tests/manual-settlement-db.test.cjs`
+executes real SQLite constraints and tests duplicate credits, race protection,
+renewal, suspension and rollback at each failure stage. Bank-credit validation
+and admin authentication must be implemented with trusted external systems
+before use. No live payment or free cloud service has been enabled.
