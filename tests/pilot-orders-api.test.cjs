@@ -79,6 +79,14 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  assert.equal(receipt.proEnabled,false);assert.equal(receipt.paymentsEnabled,false);
  assert.match(receipt.orderId,/^ord_[a-f0-9]{32}$/);
  assert.equal(storage.calls[1][2],1500000);
+ const forgedBody=new Request('https://worker.example/api/v1/me/orders',{
+  method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token},
+  body:JSON.stringify({userId:'victim',amountRial:1,success:true})
+ });
+ const before=storage.calls.length;
+ const refused=await worker.fetch(forgedBody,env);
+ assert.equal(refused.status,400);
+ assert.equal(storage.calls.length,before);
  const blocked=await worker.fetch(request('POST',token),{...env,PILOT_ORDERS_ENABLED:'false'});
  assert.equal(blocked.status,503);
  const checkout=await worker.fetch(new Request('https://worker.example/api/v1/checkout',{method:'POST'}),env);
