@@ -87,9 +87,17 @@ export default {
   if(isOrders){
    if(request.method==='POST'){
     // No body is necessary or accepted: identity and price are server-trusted.
-    if(request.body!==null||
-       (request.headers.get('Content-Length')!==null&&request.headers.get('Content-Length')!=='0'))
-     return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
+    const length=request.headers.get('Content-Length');
+    if(length!==null&&length!=='0')return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
+    // Workers may expose an empty POST body as a readable stream instead of null.
+    // Reject the first actual byte without buffering an attacker-controlled body.
+    if(request.body){
+     const reader=request.body.getReader();
+     let first;
+     try{first=await reader.read();}catch(_){return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);}
+     finally{reader.cancel().catch(()=>{});}
+     if(!first.done)return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
+    }
     const order=await createPilotPendingOrder(env?.SAHAMBAN_DB,{
      authenticatedSubject:subject,now:new Date(nowMs).toISOString(),
      configuredPriceRial:env?.PILOT_ANNUAL_PRICE_RIAL,
