@@ -1,7 +1,8 @@
+import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
- * ONLY read-only entitlement lookup. No checkout, payment verification, user
- * enrollment, automatic token issuance, bank access or premium trading APIs.
+ * Read-only entitlement lookup and optional private-pilot pending-order
+ * records. NO checkout, payment verification, enrollment, login or banking.
  * Environment: SAHAMBAN_DB (private D1 binding), AUTH_HMAC_SECRET (secret),
  * PWA_ORIGIN (exact origin, e.g. https://raminhashemi1.github.io).
  * The short-lived HMAC token is for a controlled private pilot, not a
@@ -70,15 +71,36 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, OPTIONS','Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
-  if(request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
-  if(url.pathname==='/api/v1/health')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
-  if(url.pathname!=='/api/v1/me/entitlement')return send({error:'NOT_FOUND'},404,cors);
+  if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
+  const isEntitlement=url.pathname==='/api/v1/me/entitlement';
+  const isOrders=url.pathname==='/api/v1/me/orders';
+  if(!isEntitlement&&!isOrders)return send({error:'NOT_FOUND'},404,cors);
+  if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  if(isOrders){
+   if(request.method==='POST'){
+    // No body is necessary or accepted: identity and price are server-trusted.
+    if(request.headers.get('Content-Length')!=='0'&&request.headers.get('Content-Length')!==null)
+     return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
+    const order=await createPilotPendingOrder(env?.SAHAMBAN_DB,{
+     authenticatedSubject:subject,now:new Date(nowMs).toISOString(),
+     configuredPriceRial:env?.PILOT_ANNUAL_PRICE_RIAL,
+     enabled:env?.PILOT_ORDERS_ENABLED==='true',
+     makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
+       b=>b.toString(16).padStart(2,'0')).join(''))
+    });
+    return send(order,order.status,cors);
+   }
+   const pending=await findPilotPendingOrder(env?.SAHAMBAN_DB,subject);
+   return send(pending,pending.status,cors);
+  }
   const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs);
   if(result.http!==200)return send({proEnabled:false,reason:result.state},result.http,cors);
   return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,autoRenewCancelled:result.autoRenewCancelled},200,cors);
