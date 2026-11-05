@@ -83,6 +83,11 @@ CREATE TABLE IF NOT EXISTS subscription_admin_audit (
   created_at TEXT NOT NULL
 );
 
+-- One unpaid annual order per account prevents duplicate concurrent pilot requests.
+-- Pending orders must be explicitly cancelled/expired before a new request.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_one_pending_annual_order_per_user
+  ON subscription_orders(user_id) WHERE state = 'PENDING';
+
 CREATE INDEX IF NOT EXISTS idx_orders_user_created
   ON subscription_orders(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_state_created
