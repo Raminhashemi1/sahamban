@@ -106,6 +106,20 @@ All controlled-pilot setup still depends on owner-created Cloudflare
 resources, secure key provisioning and actual account enrollment. No live
 payable product can be inferred from a green unit test.
 
+## CI: validate the free Cloudflare runtime without provisioning an account
+
+`.github/workflows/pilot-worker-build.yml` installs a pinned Wrangler CLI,
+compiles the Worker with `deploy --dry-run`, and runs
+`server/d1-schema.sql` against an **isolated local Cloudflare D1 emulator**
+using the non-secret `server/wrangler.local.toml` configuration. It also
+runs the signed pilot-token and order/API security regression suites.
+
+This is a stronger compatibility check than standalone Node/SQLite tests,
+but it does not create a Cloudflare account, upload the Worker, initialize
+a real remote D1 database, prove live network connectivity or enable paid
+subscriptions. The local config contains no bank or payment secrets and
+pilot order issuance remains off by default.
+
 ## Required provider adapter / production controls
 
 1. A trusted backend authenticates the subscriber and uses the **server-side**
