@@ -2,7 +2,7 @@
 # A Cloudflare account and private D1 database must be provisioned by the owner.
 # Store auth secrets with Wrangler secret bindings (never in this file).
 name = "sahamban-pro-pilot"
-main = "server/worker-api.mjs"
+main = "worker-api.mjs"
 compatibility_date = "2026-11-05"
 workers_dev = true
 
