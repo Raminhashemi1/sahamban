@@ -7,3 +7,9 @@ and schedule capture during the same local day. Neither official connectivity, l
 independently attested timestamps, prospective samples, nor validated future returns exist yet.
 The adapter callbacks returning true in unit tests are synthetic; never trust client flags or scores.
 Gate B stays OPEN; do not claim investment skill or monetisable recommendations.
+
+The collector now runs the trusted, checked-in v50 indicator + v129 decision
+engine itself (server/fixed-rule-evaluator.cjs), ignoring any browser or caller
+supplied score. Each run stores SHA-256 of the exact source bytes of both
+rule modules for future independent reproduction. Source verification remains
+a separate required trusted callback and is not implemented by this adapter.

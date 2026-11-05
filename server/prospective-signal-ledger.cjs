@@ -4,6 +4,7 @@
  * independently. This cannot establish predictive skill without future data.
  */
 const {createHash,randomUUID}=require('node:crypto');
+const fixed=require('./fixed-rule-evaluator.cjs');
 const VERSION='decision-support-v129-fixed';
 const CODES=new Set(['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT']);
 const SYMBOL=/^[\p{L}\p{N}_ .-]{1,35}$/u;
@@ -30,7 +31,7 @@ function historyOf(q,day){
  return last===day?h.map(x=>[x.date,x.close]):null;
 }
 async function recordProspectiveRun(db,{marketDate,sourceId,universe,snapshots,capturedAt,
- verifyMarketData,calculateDecision,makeId=randomUUID}={}){
+ verifyMarketData,makeId=randomUUID}={}){
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function')throw Error('DB_UNAVAILABLE');
  if(!realDay(marketDate)||localDate(time(capturedAt))!==marketDate)throw Error('NOT_CAPTURED_ON_MARKET_DAY');
  if(typeof sourceId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(sourceId))throw Error('INVALID_SOURCE');
@@ -44,8 +45,7 @@ async function recordProspectiveRun(db,{marketDate,sourceId,universe,snapshots,c
    throw Error('INCOMPLETE_UNIVERSE');
   bySymbol.set(q.symbol,q);
  }
- if(bySymbol.size!==universe.length||typeof verifyMarketData!=='function'||
-   typeof calculateDecision!=='function')throw Error('TRUSTED_PROVENANCE_REQUIRED');
+ if(bySymbol.size!==universe.length||typeof verifyMarketData!=='function')throw Error('TRUSTED_PROVENANCE_REQUIRED');
  if(await verifyMarketData({marketDate,sourceId,universe:[...universe],snapshots})!==true)
   throw Error('MARKET_SOURCE_NOT_VERIFIED');
  const runId=makeId();
@@ -54,7 +54,7 @@ async function recordProspectiveRun(db,{marketDate,sourceId,universe,snapshots,c
  for(const symbol of universe){
   const q=bySymbol.get(symbol),hist=historyOf(q,marketDate);
   let r=null;
-  if(hist)try{r=await calculateDecision(q,{today:marketDate,maxAgeDays:0});}catch(_){}
+  if(hist)try{r=fixed.evaluate(q,{today:marketDate,maxAgeDays:0});}catch(_){}
   if(!hist||!r||r.symbol!==symbol||r.marketDate!==marketDate||
      !CODES.has(r.code)||!Number.isSafeInteger(r.score)||r.score<0||r.score>100||
      r.last!==hist.at(-1)[1]){
@@ -66,15 +66,15 @@ async function recordProspectiveRun(db,{marketDate,sourceId,universe,snapshots,c
  }
  const unavailable=rows.filter(r=>r.status==='DATA_UNAVAILABLE').length;
  const statements=[
-  db.prepare('INSERT INTO prospective_signal_runs(id,market_date,rule_version,source_id,captured_at,universe_count,unavailable_count) VALUES(?,?,?,?,?,?,?)')
-   .bind(runId,marketDate,VERSION,sourceId,capturedAt,universe.length,unavailable),
+  db.prepare('INSERT INTO prospective_signal_runs(id,market_date,rule_version,rule_source_digest,source_id,captured_at,universe_count,unavailable_count) VALUES(?,?,?,?,?,?,?,?)')
+   .bind(runId,marketDate,VERSION,fixed.ruleSourceSha256,sourceId,capturedAt,universe.length,unavailable),
   ...rows.map(r=>db.prepare('INSERT INTO prospective_signal_events(run_id,symbol,status,signal_code,score,close_rial,history_digest) VALUES(?,?,?,?,?,?,?)')
    .bind(runId,r.symbol,r.status,r.code,r.score,r.close,r.hash))
  ];
  let saved;try{saved=await db.batch(statements);}catch(_){throw Error('ATOMIC_PROSPECTIVE_RECORD_FAILED');}
  if(!Array.isArray(saved)||saved.length!==statements.length||
     saved.some(x=>x?.success!==true||x?.meta?.changes!==1))throw Error('PROSPECTIVE_RECORD_NOT_CONFIRMED');
- return Object.freeze({runId,marketDate,ruleVersion:VERSION,universeCount:universe.length,
+ return Object.freeze({runId,marketDate,ruleVersion:VERSION,ruleSourceSha256:fixed.ruleSourceSha256,universeCount:universe.length,
   evaluatedCount:universe.length-unavailable,unavailableCount:unavailable,
   predictiveSkillValidated:false});
 }

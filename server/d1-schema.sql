@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS prospective_signal_runs (
  id TEXT PRIMARY KEY,
  market_date TEXT NOT NULL CHECK(length(market_date)=8),
  rule_version TEXT NOT NULL CHECK(rule_version='decision-support-v129-fixed'),
+ rule_source_digest TEXT NOT NULL CHECK(length(rule_source_digest)=64),
  source_id TEXT NOT NULL,
  captured_at TEXT NOT NULL,
  universe_count INTEGER NOT NULL CHECK(universe_count BETWEEN 1 AND 100),

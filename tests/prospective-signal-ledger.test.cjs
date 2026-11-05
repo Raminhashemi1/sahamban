@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {DatabaseSync}=require('node:sqlite');
 const {recordProspectiveRun:record,VERSION}=require('../server/prospective-signal-ledger.cjs');
+const fixed=require('../server/fixed-rule-evaluator.cjs');
 const schema=fs.readFileSync('server/d1-schema.sql','utf8');
 const day='20261104',stamp='2026-11-04T11:00:00.000Z';
 const history=Array.from({length:60},(_,i)=>({
@@ -23,8 +24,6 @@ function harness(){
  const options={marketDate:day,capturedAt:stamp,sourceId:'official-test-source',
   universe:['AAA','BBB','CCC'],snapshots:['AAA','BBB','CCC'].map(quote),
   verifyMarketData:async()=>true,
-  calculateDecision:async(q)=>({symbol:q.symbol,marketDate:day,
-    code:q.symbol==='AAA'?'ENTRY_CANDIDATE':'WAIT',score:q.symbol==='AAA'?80:35,last:159}),
   makeId:()=> 'run-1'};
  const count=t=>sql.prepare('SELECT count(*) n FROM '+t).get().n;
  return {sql,db,options,count};
@@ -34,7 +33,9 @@ test('all selected symbols including WAIT are recorded; changes and deletion ref
  assert.equal(r.ruleVersion,VERSION);assert.equal(r.evaluatedCount,3);
  assert.equal(r.predictiveSkillValidated,false);assert.equal(h.count('prospective_signal_events'),3);
  const rows=h.sql.prepare('SELECT signal_code,length(history_digest) n FROM prospective_signal_events ORDER BY symbol').all();
- assert.deepEqual(rows.map(x=>x.signal_code),['ENTRY_CANDIDATE','WAIT','WAIT']);
+ const expected=fixed.evaluate(quote('AAA'),{today:day,maxAgeDays:0});
+ assert.ok(rows.every(x=>x.signal_code===expected.code));
+ assert.equal(h.sql.prepare('SELECT rule_source_digest FROM prospective_signal_runs').get().rule_source_digest,fixed.ruleSourceSha256);
  assert.ok(rows.every(x=>x.n===64));
  assert.throws(()=>h.sql.prepare("UPDATE prospective_signal_events SET signal_code='WAIT'").run(),/PROSPECTIVE_IMMUTABLE/);
  assert.throws(()=>h.sql.prepare('DELETE FROM prospective_signal_runs').run(),/PROSPECTIVE_IMMUTABLE/);
@@ -59,11 +60,15 @@ test('untrusted source, incomplete universe, and next-day captures never write',
   assert.equal(h.count('prospective_signal_events'),0);
  }
 });
-test('unrecognised or fabricated outputs cannot be counted as evaluated',async()=>{
- const h=harness();h.options.calculateDecision=async q=>({symbol:q.symbol,
-  marketDate:day,code:'GUARANTEED_PROFIT',score:100,last:159});
+test('browser-supplied and injected fake scores cannot override the server-fixed rule engine',async()=>{
+ const h=harness();
+ h.options.snapshots.forEach(q=>{q.code='GUARANTEED_PROFIT';q.score=100;});
+ h.options.calculateDecision=async()=>({code:'GUARANTEED_PROFIT',score:100});
  const r=await record(h.db,h.options);
- assert.equal(r.unavailableCount,3);assert.equal(r.evaluatedCount,0);
+ assert.equal(r.unavailableCount,0);assert.equal(r.evaluatedCount,3);
+ assert.equal(r.ruleSourceSha256,fixed.ruleSourceSha256);
+ const codes=h.sql.prepare('SELECT signal_code FROM prospective_signal_events').all().map(x=>x.signal_code);
+ assert.ok(codes.every(x=>x!=='GUARANTEED_PROFIT'));
 });
 test('duplicate backfilled same-day record rolls back; original history cannot be overwritten',async()=>{
  const h=harness();await record(h.db,h.options);
