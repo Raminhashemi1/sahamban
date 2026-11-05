@@ -16,6 +16,7 @@ const BASE='http://127.0.0.1:'+PORT;
 const NOW=Date.now();
 const ID='pilot|local-runtime-check';
 const stamp=new Date(NOW).toISOString();
+const enableOrders=process.env.LOCAL_TEST_ENABLE_ORDERS==='1';
 const timeout=75000;
 const nap=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
@@ -38,7 +39,8 @@ async function main(){
  cli('--command',"INSERT OR REPLACE INTO subscription_entitlements(user_id,paid_until,suspended,auto_renew_cancelled,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,0,'"+stamp+"')");
  const tok=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  // Command-line var is a PUBLIC TEST VALUE, NOT an actual key or credential.
- const app=spawn('npx',['--no-install','wrangler','dev','--local','--config',CONFIG,'--ip','127.0.0.1','--port',String(PORT),'--var','AUTH_HMAC_SECRET:'+SECRET],{
+ const app=spawn('npx',['--no-install','wrangler','dev','--local','--config',CONFIG,'--ip','127.0.0.1','--port',String(PORT),'--var','AUTH_HMAC_SECRET:'+SECRET,
+  ...(enableOrders?['--var','PILOT_ORDERS_ENABLED:true','--var','PILOT_ANNUAL_PRICE_RIAL:2500000']:[])],{
   cwd:process.cwd(),env:{...process.env,WRANGLER_SEND_METRICS:'false',NO_COLOR:'1'},
   stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'
  });
@@ -66,16 +68,36 @@ async function main(){
   assert.equal(hostile.status,403);
   const forgedIdentity=await json('/api/v1/me/entitlement?user=other',{token:tok});
   assert.equal(forgedIdentity.status,400);
-  const noOrderPrice=await json('/api/v1/me/orders',{token:tok,method:'POST'});
-  assert.equal(noOrderPrice.status,503);
-  assert.equal(noOrderPrice.data.reason,'PILOT_ORDERS_DISABLED');
+  if(!enableOrders){
+   const noOrderPrice=await json('/api/v1/me/orders',{token:tok,method:'POST'});
+   assert.equal(noOrderPrice.status,503);
+   assert.equal(noOrderPrice.data.reason,'PILOT_ORDERS_DISABLED');
+  }else{
+   const first=await json('/api/v1/me/orders',{token:tok,method:'POST'});
+   assert.equal(first.status,201);
+   assert.equal(first.data.amountRial,2500000);
+   assert.equal(first.data.proEnabled,false);
+   assert.equal(first.data.paymentsEnabled,false);
+   assert.match(first.data.orderId,/^ord_[a-f0-9]{32}$/);
+   const open=await json('/api/v1/me/orders',{token:tok});
+   assert.equal(open.status,200);
+   assert.equal(open.data.pending,true);
+   assert.equal(open.data.orderId,first.data.orderId);
+   const duplicate=await json('/api/v1/me/orders',{token:tok,method:'POST'});
+   assert.equal(duplicate.status,503);
+   assert.equal(duplicate.data.reason,'ORDER_UNAVAILABLE');
+   const fakeBody=await json('/api/v1/me/orders',{token:tok,method:'POST',body:JSON.stringify({userId:'victim',amountRial:1,success:true})});
+   assert.equal(fakeBody.status,400);
+   const after=await json('/api/v1/me/orders',{token:tok});
+   assert.equal(after.data.orderId,first.data.orderId);
+  }
   const checkout=await json('/api/v1/checkout',{method:'POST'});
   assert.equal(checkout.status,404);
   const preflight=await fetch(BASE+'/api/v1/me/entitlement',{
    method:'OPTIONS',headers:{Origin:ORIGIN},signal:AbortSignal.timeout(5000)
   });
   assert.equal(preflight.status,204);
-  process.stdout.write('PASS: local Worker served, private D1 verified, signed pilot access accepted; unauthenticated, cross-origin, forged-query and checkout blocked.\n');
+  process.stdout.write('PASS: offline Worker+D1 HTTP '+(enableOrders?'synthetic order issuance/idempotency':'disabled order')+' checks; identity, origin and checkout boundaries preserved.\n');
  }catch(err){
   // Do not print server command line: it includes a synthetic test key.
   process.stderr.write('FAIL local Worker+D1 acceptance: '+String(err.message).slice(0,500)+'\n');
