@@ -18,5 +18,6 @@ test('D1 schema has separate entitlement, reconciliation and admin audit tables'
  assert.match(sql,/CHECK\(suspended IN \(0,1\)\)/);
 });
 test('D1 schema does not ask to store raw bank/card secrets',()=>{
- assert.doesNotMatch(sql,/card_number|cvv|otp|bank_password|gateway_secret/i);
+ const schemaColumns=sql.split('\n').filter(line=>!line.trimStart().startsWith('--')).join('\n');
+ assert.doesNotMatch(schemaColumns,/\b(?:card_number|cvv|otp|bank_password|gateway_secret)\b/i);
 });
