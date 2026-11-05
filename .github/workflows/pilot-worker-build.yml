@@ -35,5 +35,7 @@ jobs:
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/d1-schema.sql --yes
       - name: Verify local D1 required table is accessible
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS tables_found FROM sqlite_master WHERE type='table' AND name='subscription_orders';"
+      - name: Exercise local Worker HTTP endpoints and D1 authorization (no deployment)
+        run: node tests/worker-local-runtime.cjs
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
