@@ -21,6 +21,11 @@ The owner does not want to purchase a domain or pay upfront for hosting. A paid 
 - Some no-site link products are card-to-card services that rely on SMS forwarding from the merchant's Android phone. These are not the same as a direct Shaparak PSP gateway and should not be described as such.
 - Automatic activation is allowed only after a server-side authenticated provider API/webhook verifies exact order, amount, currency, merchant and final settlement status. If the provider only offers a dashboard/manual link, retain manual bank reconciliation; never trust browser callback or uploaded receipt.
 
+### Provider shortlist for no-site checkout
+- Bluepal publicly describes hosted payment links without a website and a server-side transaction confirmation step. It is a candidate to ask about; its public page alone does not prove approval for annual subscriptions or this investment-analysis service.
+- Payexa documents a no-website payment link, but it uses personal card-to-card transfer, an Android SMS-forwarding app, an active personal-card setup and a fee wallet. Treat it as a different, operationally dependent payment method, not a direct bank PSP or preferred commercial checkout.
+- Do not create an account, submit identity documents or accept a provider's terms on the owner's behalf. Compare fees and obtain explicit written acceptance of the business category first.
+
 ### Stage 3 — free backend subdomain, only if required
 - A free workers.dev endpoint may be evaluated for a prototype backend; it does not require buying a domain and Cloudflare documents a free Workers plan quota.
 - It is a hobby/free endpoint, not automatically suitable for a business-critical financial service. Review availability, data residency, privacy, Iran network reachability, account eligibility, provider callback reachability, secrets management and persistence before using it for production.
