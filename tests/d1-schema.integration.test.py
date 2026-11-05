@@ -245,5 +245,59 @@ class D1SchemaIntegrationTests(unittest.TestCase):
             "SELECT paid_until FROM subscription_entitlements WHERE user_id='u1'"
         ).fetchone())
 
+    def test_atomic_settlement_rolls_back_at_each_failure_boundary(self):
+        """Synthetic bank credits: any failure must roll back order, ledger, and access."""
+        self.seed_user_order()
+        self.db.commit()
+        stages = ("reconciliation", "order", "event", "entitlement")
+        for stop_after in stages:
+            with self.subTest(stop_after=stop_after):
+                self.db.execute("BEGIN")
+                with self.assertRaisesRegex(RuntimeError, "injected failure"):
+                    try:
+                        self.db.execute(
+                            """INSERT INTO manual_bank_reconciliations
+                            (id,order_id,user_id,amount_rial,currency,state,
+                             bank_transaction_id,bank_booked_at,verified_by,verified_at)
+                            VALUES('r1','o1','u1',1500000,'IRR','MANUALLY_VERIFIED',
+                            'bank-1','2026-11-05T08:05:00Z','admin-1','2026-11-05T08:06:00Z')"""
+                        )
+                        if stop_after == "reconciliation":
+                            raise RuntimeError("injected failure")
+                        changed = self.db.execute(
+                            """UPDATE subscription_orders SET state='SETTLED',
+                            settled_at='2026-11-05T08:05:00Z',
+                            provider_name='MANUAL_BANK',provider_payment_id='bank-1'
+                            WHERE id='o1' AND user_id='u1' AND state='PENDING'"""
+                        )
+                        self.assertEqual(changed.rowcount, 1)
+                        if stop_after == "order":
+                            raise RuntimeError("injected failure")
+                        self.db.execute(
+                            """INSERT INTO payment_event_ledger
+                            (id,provider_name,provider_event_id,provider_payment_id,
+                             order_id,event_type,verified_at)
+                            VALUES('evt1','MANUAL_BANK','bank-event-1','bank-1',
+                            'o1','MANUAL_BANK_SETTLED','2026-11-05T08:06:00Z')"""
+                        )
+                        if stop_after == "event":
+                            raise RuntimeError("injected failure")
+                        self.db.execute(
+                            """INSERT INTO subscription_entitlements
+                            (user_id,paid_until,updated_at)
+                            VALUES('u1','2027-11-05T08:05:00Z','2026-11-05T08:06:00Z')"""
+                        )
+                        raise RuntimeError("injected failure")
+                    except Exception:
+                        self.db.rollback()
+                        raise
+                self.assertEqual(
+                    self.db.execute("SELECT state FROM subscription_orders WHERE id='o1'").fetchone()[0],
+                    "PENDING"
+                )
+                self.assertEqual(self.db.execute("SELECT count(*) FROM manual_bank_reconciliations").fetchone()[0], 0)
+                self.assertEqual(self.db.execute("SELECT count(*) FROM payment_event_ledger").fetchone()[0], 0)
+                self.assertEqual(self.db.execute("SELECT count(*) FROM subscription_entitlements").fetchone()[0], 0)
+
 if __name__ == "__main__":
     unittest.main()
