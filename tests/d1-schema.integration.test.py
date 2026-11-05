@@ -185,6 +185,33 @@ class D1SchemaIntegrationTests(unittest.TestCase):
             "SELECT paid_until FROM subscription_entitlements WHERE user_id='u2'"
         ).fetchone())
 
+    def test_pro_authorization_query_is_scoped_to_verified_identity(self):
+        self.db.execute(
+            "INSERT INTO sahamban_users(id,auth_subject,created_at) VALUES(?,?,?)",
+            ("u1","oidc|issuer:user-123","2026-11-05T08:00:00Z"),
+        )
+        self.db.execute(
+            "INSERT INTO sahamban_users(id,auth_subject,created_at) VALUES(?,?,?)",
+            ("u2","oidc|issuer:user-456","2026-11-05T08:00:00Z"),
+        )
+        self.db.execute(
+            """INSERT INTO subscription_entitlements(user_id,paid_until,updated_at)
+            VALUES('u1','2027-11-05T08:00:00Z','2026-11-05T08:00:00Z')"""
+        )
+        statement = """SELECT u.id AS user_id, u.status AS account_status,
+            e.paid_until AS paid_until, e.suspended AS suspended,
+            e.auto_renew_cancelled AS auto_renew_cancelled
+            FROM sahamban_users u
+            LEFT JOIN subscription_entitlements e ON e.user_id = u.id
+            WHERE u.auth_subject = ? LIMIT 1"""
+        first = self.db.execute(statement,("oidc|issuer:user-123",)).fetchone()
+        self.assertEqual(first[0],"u1")
+        self.assertEqual(first[2],"2027-11-05T08:00:00Z")
+        other = self.db.execute(statement,("oidc|issuer:user-456",)).fetchone()
+        self.assertEqual(other[0],"u2")
+        self.assertIsNone(other[2])
+        self.assertIsNone(self.db.execute(statement,("unknown",)).fetchone())
+
     def test_transaction_rolls_back_partial_payment_state(self):
         self.seed_user_order()
         self.db.commit()
