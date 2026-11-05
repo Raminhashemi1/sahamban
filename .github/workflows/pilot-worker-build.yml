@@ -1,0 +1,35 @@
+name: Sahamban free pilot Worker build verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'tests/pilot-orders-api.test.cjs'
+      - 'tests/worker-api.test.cjs'
+      - 'tests/mint-pilot-token.test.cjs'
+      - '.github/workflows/pilot-worker-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/pilot-worker-build.yml'
+  workflow_dispatch:
+jobs:
+  offline-worker-bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Test private pilot security rules
+        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs
+      - name: Install pinned Wrangler CLI for offline build
+        run: npm install --no-save wrangler@4.102.0
+      - name: Bundle Cloudflare Worker without deploying or contacting merchant
+        run: npx wrangler deploy --dry-run --config server/wrangler.local.toml --outdir /tmp/sahamban-worker-bundle
+      - name: Check generated bundle exists
+        run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
