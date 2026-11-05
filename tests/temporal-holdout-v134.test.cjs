@@ -94,3 +94,36 @@ test('passive benchmark returns match fixed windows and stated round-trip cost',
   assert.ok(out.passiveComparison.events.every((x,i,a)=>i===0||x.entryIndex>a[i-1].exitIndex));
  }finally{globalThis.SahambanDecisionV129=old;}
 });
+
+test('descriptive Wilson uncertainty is null for no events and bounded for small samples',()=>{
+ const old=globalThis.SahambanDecisionV129;
+ try{
+  globalThis.SahambanDecisionV129={analyze(){return {code:'WAIT'};}};
+  const none=evaluate({symbol:'نماد',history:history(260)});
+  assert.equal(none.holdout.positiveRateUncertainty.lowerPct,null);
+  assert.equal(none.holdout.positiveRateUncertainty.upperPct,null);
+  globalThis.SahambanDecisionV129={analyze(){return {code:'ENTRY_CANDIDATE'};}};
+  const many=evaluate({symbol:'نماد',history:history(480)},{costPct:1});
+  const part=many.holdout,range=part.positiveRateUncertainty;
+  assert.ok(part.count>=10);
+  assert.ok(range.lowerPct>=0&&range.upperPct<=100);
+  assert.ok(range.lowerPct<=part.netPositivePct&&range.upperPct>=part.netPositivePct);
+  assert.ok(range.lowerPct<range.upperPct);
+  assert.match(range.method,/NON_IID_NOT_VALIDATED/);
+  assert.equal(many.sufficientToClaimSkill,false);
+  assert.equal(many.training.positiveRateUncertainty.method,range.method);
+  assert.equal(many.passiveComparison.positiveRateUncertainty.method,range.method);
+ }finally{globalThis.SahambanDecisionV129=old;}
+});
+test('Wilson interval for a single positive result never claims certainty',()=>{
+ const old=globalThis.SahambanDecisionV129;
+ try{
+  globalThis.SahambanDecisionV129={analyze(q){return {code:q.history.length===200?'ENTRY_CANDIDATE':'WAIT'};}};
+  const result=evaluate({symbol:'نماد',history:history(250)},{costPct:0});
+  assert.equal(result.holdout.count,1);
+  assert.equal(result.holdout.netPositivePct,100);
+  assert.ok(result.holdout.positiveRateUncertainty.lowerPct<25);
+  assert.equal(result.holdout.positiveRateUncertainty.upperPct,100);
+  assert.equal(result.holdout.evidenceStatus,'INSUFFICIENT_EVENTS');
+ }finally{globalThis.SahambanDecisionV129=old;}
+});
