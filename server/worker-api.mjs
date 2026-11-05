@@ -87,7 +87,8 @@ export default {
   if(isOrders){
    if(request.method==='POST'){
     // No body is necessary or accepted: identity and price are server-trusted.
-    if(request.headers.get('Content-Length')!=='0'&&request.headers.get('Content-Length')!==null)
+    if(request.body!==null||
+       (request.headers.get('Content-Length')!==null&&request.headers.get('Content-Length')!=='0'))
      return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
     const order=await createPilotPendingOrder(env?.SAHAMBAN_DB,{
      authenticatedSubject:subject,now:new Date(nowMs).toISOString(),
