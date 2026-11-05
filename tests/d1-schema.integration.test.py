@@ -116,6 +116,75 @@ class D1SchemaIntegrationTests(unittest.TestCase):
                 ("e2","psp","event-1","pay-2","o1","PAYMENT_SETTLED","2026-11-05T08:07:00Z")
             )
 
+    def test_atomic_manual_payment_grant_and_duplicate_bank_credit_rollback(self):
+        self.seed_user_order()
+        self.db.commit()
+        # This is a synthetic, verified-bank-record transaction; it does not
+        # authenticate an admin or connect to a bank.
+        self.db.execute("BEGIN")
+        try:
+            self.db.execute(
+                """INSERT INTO manual_bank_reconciliations
+                (id,order_id,user_id,amount_rial,currency,state,
+                 bank_transaction_id,bank_booked_at,verified_by,verified_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                ("r1","o1","u1",1500000,"IRR","MANUALLY_VERIFIED","bank-1",
+                 "2026-11-05T08:05:00Z","admin-1","2026-11-05T08:06:00Z")
+            )
+            self.db.execute(
+                """UPDATE subscription_orders SET state='SETTLED',
+                settled_at='2026-11-05T08:05:00Z',provider_name='MANUAL_BANK',
+                provider_payment_id='bank-1' WHERE id='o1' AND state='PENDING'"""
+            )
+            self.db.execute(
+                """INSERT INTO payment_event_ledger
+                (id,provider_name,provider_event_id,provider_payment_id,order_id,event_type,verified_at)
+                VALUES('evt1','MANUAL_BANK','bank-event-1','bank-1','o1','MANUAL_BANK_SETTLED',
+                '2026-11-05T08:06:00Z')"""
+            )
+            self.db.execute(
+                """INSERT INTO subscription_entitlements
+                (user_id,paid_until,updated_at) VALUES
+                ('u1','2027-11-05T08:05:00Z','2026-11-05T08:06:00Z')"""
+            )
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
+        self.assertEqual(self.db.execute(
+            "SELECT state FROM subscription_orders WHERE id='o1'"
+        ).fetchone()[0], "SETTLED")
+        self.assertEqual(self.db.execute(
+            "SELECT paid_until FROM subscription_entitlements WHERE user_id='u1'"
+        ).fetchone()[0], "2027-11-05T08:05:00Z")
+
+        self.db.execute("INSERT INTO sahamban_users(id,created_at) VALUES('u2','2026-11-05T08:00:00Z')")
+        self.db.execute(
+            """INSERT INTO subscription_orders
+            (id,user_id,plan_id,amount_rial,currency,state,created_at)
+            VALUES('o2','u2','SAHAMBAN_PRO_ANNUAL',1500000,'IRR','PENDING',
+            '2026-11-05T08:01:00Z')"""
+        )
+        self.db.commit()
+        self.db.execute("BEGIN")
+        try:
+            with self.assertRaises(sqlite3.IntegrityError):
+                self.db.execute(
+                    """INSERT INTO manual_bank_reconciliations
+                    (id,order_id,user_id,amount_rial,currency,state,
+                     bank_transaction_id,bank_booked_at,verified_by,verified_at)
+                    VALUES('r2','o2','u2',1500000,'IRR','MANUALLY_VERIFIED',
+                    'bank-1','2026-11-05T08:05:00Z','admin-1','2026-11-05T08:06:00Z')"""
+                )
+        finally:
+            self.db.rollback()
+        self.assertEqual(self.db.execute(
+            "SELECT state FROM subscription_orders WHERE id='o2'"
+        ).fetchone()[0], "PENDING")
+        self.assertIsNone(self.db.execute(
+            "SELECT paid_until FROM subscription_entitlements WHERE user_id='u2'"
+        ).fetchone())
+
     def test_transaction_rolls_back_partial_payment_state(self):
         self.seed_user_order()
         self.db.commit()
