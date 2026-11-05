@@ -25,12 +25,13 @@ CREATE TABLE IF NOT EXISTS subscription_orders (
   settled_at TEXT,
   provider_name TEXT,
   provider_payment_id TEXT,
+  UNIQUE(id, user_id, amount_rial, currency),
   UNIQUE(provider_name, provider_payment_id)
 );
 
 CREATE TABLE IF NOT EXISTS manual_bank_reconciliations (
   id TEXT PRIMARY KEY,
-  order_id TEXT NOT NULL UNIQUE REFERENCES subscription_orders(id),
+  order_id TEXT NOT NULL UNIQUE,
   user_id TEXT NOT NULL REFERENCES sahamban_users(id),
   amount_rial INTEGER NOT NULL CHECK(amount_rial > 0),
   currency TEXT NOT NULL CHECK(currency = 'IRR'),
@@ -40,6 +41,8 @@ CREATE TABLE IF NOT EXISTS manual_bank_reconciliations (
   bank_booked_at TEXT,
   verified_by TEXT,
   verified_at TEXT,
+  FOREIGN KEY (order_id, user_id, amount_rial, currency)
+    REFERENCES subscription_orders(id, user_id, amount_rial, currency),
   CHECK(
     (state = 'MANUALLY_VERIFIED'
       AND bank_transaction_id IS NOT NULL
