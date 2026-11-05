@@ -88,6 +88,18 @@ class D1SchemaIntegrationTests(unittest.TestCase):
                 VALUES('r3','o2','u2',1500000,'IRR','MANUALLY_VERIFIED','bank-1','2026-11-05T08:05:00Z','admin-1','2026-11-05T08:06:00Z')"""
             )
 
+    def test_reconciliation_cannot_reference_other_users_order_or_invent_amount(self):
+        self.seed_user_order()
+        self.db.execute("INSERT INTO sahamban_users(id,created_at) VALUES('u2','2026-11-05T08:00:00Z')")
+        for user_id, amount in [('u2',1500000), ('u1',1000000)]:
+            with self.assertRaises(sqlite3.IntegrityError):
+                self.db.execute(
+                    """INSERT INTO manual_bank_reconciliations
+                    (id,order_id,user_id,amount_rial,currency,state)
+                    VALUES(?,?,?,?,?,?)""",
+                    ("r-"+user_id+"-"+str(amount),"o1",user_id,amount,"IRR","AWAITING_BANK_RECONCILIATION")
+                )
+
     def test_payment_event_ids_are_unique_per_provider(self):
         self.seed_user_order()
         row=("e1","psp","event-1","pay-1","o1","PAYMENT_SETTLED","2026-11-05T08:06:00Z")
