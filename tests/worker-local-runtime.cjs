@@ -49,7 +49,7 @@ async function main(){
  try{
   let ready=false;
   for(let i=0;i<75;i++){
-   if(stopped)throw Error('Local Worker stopped before becoming ready');
+   if(stopped)throw Error('Local Worker stopped before becoming ready: '+errors.replaceAll(SECRET,'[REDACTED]').slice(-1200));
    try{const result=await json('/api/v1/health');if(result.status===200){ready=true;break;}}catch(_){}
    await nap(700);
   }
