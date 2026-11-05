@@ -29,6 +29,7 @@ jobs:
       - run: node --test tests/manual-bank-reconciliation.test.cjs
       - run: node --test tests/manual-subscription-settlement.test.cjs
       - run: node --test tests/manual-settlement-db.test.cjs
+      - run: node --test tests/prospective-signal-ledger.test.cjs
       - run: node --test tests/d1-schema.test.cjs
       - run: python tests/d1-schema.integration.test.py
       - run: node --test tests/decision-support-v129.test.cjs tests/external-screener-v130.test.cjs tests/market-sample-v131.test.cjs tests/signal-audit-v132.test.cjs tests/candidate-ranking-v133.test.cjs tests/temporal-holdout-v134.test.cjs

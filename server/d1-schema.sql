@@ -96,3 +96,37 @@ CREATE INDEX IF NOT EXISTS idx_reconciliation_state_created
   ON manual_bank_reconciliations(state, bank_booked_at);
 CREATE INDEX IF NOT EXISTS idx_payment_ledger_order
   ON payment_event_ledger(order_id);
+
+-- Prospective research archive; no holdings, payment details or customer PII.
+CREATE TABLE IF NOT EXISTS prospective_signal_runs (
+ id TEXT PRIMARY KEY,
+ market_date TEXT NOT NULL CHECK(length(market_date)=8),
+ rule_version TEXT NOT NULL CHECK(rule_version='decision-support-v129-fixed'),
+ source_id TEXT NOT NULL,
+ captured_at TEXT NOT NULL,
+ universe_count INTEGER NOT NULL CHECK(universe_count BETWEEN 1 AND 100),
+ unavailable_count INTEGER NOT NULL CHECK(unavailable_count BETWEEN 0 AND universe_count),
+ UNIQUE(market_date,rule_version)
+);
+CREATE TABLE IF NOT EXISTS prospective_signal_events (
+ run_id TEXT NOT NULL REFERENCES prospective_signal_runs(id),
+ symbol TEXT NOT NULL,
+ status TEXT NOT NULL CHECK(status IN ('EVALUATED','DATA_UNAVAILABLE')),
+ signal_code TEXT CHECK(signal_code IN ('ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT')),
+ score INTEGER CHECK(score BETWEEN 0 AND 100),
+ close_rial INTEGER CHECK(close_rial>0),
+ history_digest TEXT,
+ PRIMARY KEY(run_id,symbol),
+ CHECK((status='DATA_UNAVAILABLE' AND signal_code IS NULL AND score IS NULL
+   AND close_rial IS NULL AND history_digest IS NULL) OR
+ (status='EVALUATED' AND signal_code IS NOT NULL AND score IS NOT NULL
+   AND close_rial IS NOT NULL AND length(history_digest)=64))
+);
+CREATE TRIGGER IF NOT EXISTS prospective_run_no_update BEFORE UPDATE ON prospective_signal_runs
+ BEGIN SELECT RAISE(ABORT,'PROSPECTIVE_IMMUTABLE'); END;
+CREATE TRIGGER IF NOT EXISTS prospective_run_no_delete BEFORE DELETE ON prospective_signal_runs
+ BEGIN SELECT RAISE(ABORT,'PROSPECTIVE_IMMUTABLE'); END;
+CREATE TRIGGER IF NOT EXISTS prospective_event_no_update BEFORE UPDATE ON prospective_signal_events
+ BEGIN SELECT RAISE(ABORT,'PROSPECTIVE_IMMUTABLE'); END;
+CREATE TRIGGER IF NOT EXISTS prospective_event_no_delete BEFORE DELETE ON prospective_signal_events
+ BEGIN SELECT RAISE(ABORT,'PROSPECTIVE_IMMUTABLE'); END;
