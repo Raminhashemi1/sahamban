@@ -23,6 +23,24 @@ actual plan before payments are accepted.
 
 `subscription-orders.cjs` is a server-only, provider-neutral **order and receipt** validator. It binds the annual plan, an integer IRR price, user ID, order ID and server timestamp, and rejects mismatched settlement receipts before invoking provider verification. Replay of the same receipt leaves the order unchanged, while a conflicting payment ID is rejected. It is tested by `tests/subscription-orders.test.cjs` in smoke CI. The order constructor must only be called by a trusted backend using a price from the server's catalog, never a value supplied by browser JavaScript. A *separate* authenticated backend flow must transactionally record the verified order and issue the corresponding entitlement event exactly once. These files alone do not connect to a bank or accept payments.
 
+## Server-side paid access authorization (not deployed)
+
+`pro-access-gate.cjs` provides an asynchronous, read-only authorization
+query for the future trusted D1 backend. It looks up a subscriber by a
+**server-verified authentication subject** through a bound SQL parameter,
+checks the account is ACTIVE, then computes active/expired/suspended
+annual access from the persisted entitlement using the **server's UTC time**.
+Unauthenticated requests, no database, invalid account data, absent
+subscriptions, expiry and database failures all deny Pro.
+
+The authenticated subject MUST come from independently verified identity
+provider signatures and claims, NOT an email, user ID, cookie content or
+query parameter supplied directly by the caller. This module does not
+authenticate anyone. Its decision must protect actual premium API
+endpoints server-side; do not treat a front-end flag or hidden button
+as paid access control. Test coverage is in
+`tests/pro-access-gate.test.cjs`, included in smoke CI.
+
 ## Required provider adapter / production controls
 
 1. A trusted backend authenticates the subscriber and uses the **server-side**
