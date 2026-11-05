@@ -10,7 +10,7 @@ const {randomUUID}=require('node:crypto');
 const {checkOrder}=require('./subscription-orders.cjs');
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 function validId(x,label){if(typeof x!=='string'||!ID.test(x))throw new TypeError(label+' نامعتبر است.');return x;}
-function validTime(x,label){if(typeof x!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,3})?Z$/.test(x))throw new TypeError(label+' باید زمان UTC باشد.');const n=Date.parse(x);if(!Number.isFinite(n)||new Date(n).toISOString().slice(0,19)!==x.slice(0,19))throw new TypeError(label+' نامعتبر است.');return n;}
+function validTime(x,label){if(typeof x!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,3})?Z$/.test(x))throw new TypeError(label+' باید زمان UTC باشد.');const n=Date.parse(x);if(!Number.isFinite(n)||new Date(n).toISOString().slice(0,19)!==x.slice(0,19))throw new TypeError(label+' نامعتبر است.');return n;}
 function createPendingTransfer({order,now,reference=randomUUID()}){
  checkOrder(order);validTime(now,'زمان سرور');validId(reference,'شناسه پیگیری');
  if(order.state!=='PENDING')throw new Error('فقط سفارش در انتظار پرداخت می‌تواند انتقال بانکی بگیرد.');
