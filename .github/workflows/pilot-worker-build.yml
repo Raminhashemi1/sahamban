@@ -31,5 +31,9 @@ jobs:
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
         run: npx wrangler deploy --dry-run --config server/wrangler.local.toml --outdir /tmp/sahamban-worker-bundle
+      - name: Apply subscription schema to isolated local Cloudflare D1
+        run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/d1-schema.sql --yes
+      - name: Verify local D1 required table is accessible
+        run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS tables_found FROM sqlite_master WHERE type='table' AND name='subscription_orders';"
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
