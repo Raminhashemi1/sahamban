@@ -1,0 +1,15 @@
+# LOCAL / CI ONLY. Do not deploy to a Cloudflare account.
+name = "sahamban-pro-local-check"
+main = "worker-api.mjs"
+compatibility_date = "2026-11-05"
+workers_dev = false
+
+[vars]
+PWA_ORIGIN = "https://raminhashemi1.github.io"
+PILOT_ORDERS_ENABLED = "false"
+
+[[d1_databases]]
+binding = "SAHAMBAN_DB"
+database_name = "sahamban-local-validation"
+database_id = "00000000-0000-0000-0000-000000000001"
+preview_database_id = "sahamban-local-validation"
