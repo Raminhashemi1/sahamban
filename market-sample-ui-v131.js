@@ -42,7 +42,10 @@
      holdPanel.textContent='ارزیابی زمانی مستقل با قواعد ثابت، ۶۰٪ دوره نخست / ۴۰٪ دوره انتهایی؛ آغاز دوره انتهایی: '+hold.splitDate+'. '+
       'بخش نخست: '+fmt(hold.training.count)+' رویداد و میانگین خالص '+metric('training',hold.training.meanNetReturnPct)+'. '+
       'بخش انتهایی: '+fmt(hold.holdout.count)+' رویداد؛ میانگین خالص پس از هزینه فرضی ۱٪ '+metric('holdout',hold.holdout.meanNetReturnPct)+
-      '؛ سهم رویدادهای مثبت '+metric('positive',hold.holdout.netPositivePct)+'؛ با هزینه فرضی بالاتر '+fmt(hold.holdout.stressCostPct)+'٪ میانگین خالص '+metric('stress',hold.holdout.stressMeanNetReturnPct)+'. '+
+      '؛ سهم رویدادهای مثبت '+metric('positive',hold.holdout.netPositivePct)+
+      (hold.holdout.positiveRateUncertainty?.lowerPct===null?'؛ بازه عدم‌قطعیت ناموجود':
+      '؛ بازه توصیفی Wilson ۹۵٪ برای نرخ نتیجه مثبت '+fmt(hold.holdout.positiveRateUncertainty.lowerPct)+' تا '+fmt(hold.holdout.positiveRateUncertainty.upperPct)+'٪ (مشاهدات یک سهم مستقل نیستند)')+
+      '؛ با هزینه فرضی بالاتر '+fmt(hold.holdout.stressCostPct)+'٪ میانگین خالص '+metric('stress',hold.holdout.stressMeanNetReturnPct)+'. '+
       (hold.holdout.adequateSample?'نمونه انتهایی حداقل ۱۰ رویداد دارد، اما اعتبار پیش‌بینی را اثبات نمی‌کند.':'کمتر از ۱۰ رویداد در دوره انتهایی؛ برای ارزیابی قابل اتکا کافی نیست. ')+
       ' رویدادهای عبوری از مرز زمانی حذف شده‌اند؛ پارامترها با این تقسیم بازتنظیم نشده‌اند. '+
       (hold.passiveComparison?'مقایسه همان نماد در '+fmt(hold.passiveComparison.count)+' پنجره ثابت ۱۰جلسه‌ای: میانگین خالص '+metric('passive',hold.passiveComparison.meanNetReturnPct)+'، اختلاف میانگین نسبت به نامزدهای ورود '+metric('excess',hold.passiveComparison.excessMeanNetReturnPct)+'. این مقایسه به‌دلیل تفاوت مدت حضور در بازار، اثبات برتری معاملاتی نیست.':'مقایسه مستقل موجود نیست.');
