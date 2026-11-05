@@ -41,6 +41,43 @@ endpoints server-side; do not treat a front-end flag or hidden button
 as paid access control. Test coverage is in
 `tests/pro-access-gate.test.cjs`, included in smoke CI.
 
+## Zero-domain-cost private Worker pilot (not deployed)
+
+`worker-api.mjs` is a **read-only Cloudflare Worker prototype** designed
+to run on a no-custom-domain `workers.dev` address with a private D1
+database. It provides only:
+- `GET /api/v1/health` — explicitly reports checkout/payments disabled.
+- `GET /api/v1/me/entitlement` — requires a short-lived, strictly checked
+  HS256 pilot token, a valid configured `PWA_ORIGIN`, and a live database
+  lookup of a matching ACTIVE authenticated subject. Invalid/expired tokens,
+  other origins, missing or unavailable DB, suspended accounts, expired
+  subscriptions and invalid entitlements deny access. All responses disable
+  caching; database queries bind identity as a prepared-statement parameter.
+- All other routes, especially checkout and payment, return 404.
+
+`server/wrangler.toml.example` is a template with a placeholder D1 database
+ID, **not deployable unchanged**. No free Cloudflare account or database has
+been created. The AUTH_HMAC_SECRET is never included in source control and
+must be a high-entropy private secret set through Cloudflare's secret binding.
+The GitHub Pages origin is `https://raminhashemi1.github.io`, not the
+path ending in `/sahamban/`.
+
+`server/mint-pilot-token.cjs` is an **offline operator-only** helper for
+issuing a 15-minute access token to an already authenticated, manually
+enrolled pilot subject. Use the SAME private secret as the Worker. Do not
+create an endpoint to issue these tokens to unauthenticated visitors, print
+them in CI, log them in production, put them in URLs/localStorage, or
+treat them as proof of payment. For a commercial release replace this
+limited invitation process with a proper sign-in and identity provider.
+No client login or paid feature has been added yet.
+
+Security limitation: A browser with a valid bearer token can call this read
+endpoint; no downloadable/static JavaScript can be protected by this API
+alone. Premium **server** endpoints need their own checked authorization.
+All controlled-pilot setup still depends on owner-created Cloudflare
+resources, secure key provisioning and actual account enrollment. No live
+payable product can be inferred from a green unit test.
+
 ## Required provider adapter / production controls
 
 1. A trusted backend authenticates the subscriber and uses the **server-side**
