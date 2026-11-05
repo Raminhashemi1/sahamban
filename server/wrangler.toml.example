@@ -3,7 +3,7 @@
 # Store auth secrets with Wrangler secret bindings (never in this file).
 name = "sahamban-pro-pilot"
 main = "worker-api.mjs"
-compatibility_date = "2026-11-05"
+compatibility_date = "2026-06-01"
 workers_dev = true
 
 [vars]
