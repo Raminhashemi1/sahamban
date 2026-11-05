@@ -114,6 +114,17 @@ compiles the Worker with `deploy --dry-run`, and runs
 using the non-secret `server/wrangler.local.toml` configuration. It also
 runs the signed pilot-token and order/API security regression suites.
 
+The same workflow also runs `tests/worker-local-runtime.cjs` against an
+actual locally running Wrangler Worker and private local D1 database. In two
+separate runs it checks (1) the default-disabled state, authenticated
+entitlement and rejection of cross-origin, unsigned or query-forged requests;
+(2) synthetic server-priced annual order creation with the pilot flag
+explicitly enabled only for CI, persisted D1 readback, one-pending-order
+uniqueness under duplicate requests, browser-body forgery rejection and
+absence of checkout/payments. These are offline tests with fake accounts,
+synthetic amounts and temporary keys. **The CI flag never enables payment
+or any endpoint on the public GitHub Pages PWA.**
+
 This is a stronger compatibility check than standalone Node/SQLite tests,
 but it does not create a Cloudflare account, upload the Worker, initialize
 a real remote D1 database, prove live network connectivity or enable paid
