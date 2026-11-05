@@ -38,5 +38,7 @@ jobs:
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS tables_found FROM sqlite_master WHERE type='table' AND name='subscription_orders';"
       - name: Exercise local Worker HTTP endpoints and D1 authorization (no deployment)
         run: node tests/worker-local-runtime.cjs
+      - name: Exercise synthetic-price pending order lifecycle in local Worker+D1 only
+        run: LOCAL_TEST_ENABLE_ORDERS=1 node tests/worker-local-runtime.cjs
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
