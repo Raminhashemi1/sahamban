@@ -13,7 +13,7 @@ test('D1 ledger schema keeps payment identities unique and amounts integer-posit
 test('D1 schema has separate entitlement, reconciliation and admin audit tables',()=>{
  for(const table of ['sahamban_users','subscription_orders','manual_bank_reconciliations','subscription_entitlements','payment_event_ledger','subscription_admin_audit'])
   assert.match(sql,new RegExp('CREATE TABLE IF NOT EXISTS '+table));
- assert.match(sql,/verified_by TEXT NOT NULL/);
+ assert.match(sql,/verified_by TEXT,/);\n assert.match(sql,/state = 'MANUALLY_VERIFIED'[\\s\\S]*?verified_by IS NOT NULL/);
  assert.match(sql,/CHECK\(suspended IN \(0,1\)\)/);
 });
 test('D1 schema does not ask to store raw bank/card secrets',()=>{
