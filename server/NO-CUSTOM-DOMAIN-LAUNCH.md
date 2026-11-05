@@ -49,6 +49,10 @@ The owner does not want to purchase a domain or pay upfront for hosting. A paid 
 - [ ] Paid entitlement is checked server-side for premium APIs; hiding buttons in static PWA is not access control.
 - [ ] Pilot terms, privacy, support and cancellation/refund rules are visible.
 
+### Free-backend data layer groundwork
+
+`server/d1-schema.sql` defines a minimal Cloudflare D1/SQLite ledger for users, annual orders, manual bank reconciliation, entitlements, unique payment events and admin audit. CI checks key uniqueness and safety constraints. This is a schema artifact only: no D1 database has been created, no Worker deployed, and no account/session authentication or transactional endpoint is live. D1 schema syntax and constraints must be validated against a real disposable D1 database before production. The next external setup step is owner-authorized creation of a free Cloudflare account and D1 database; no account will be opened on the owner's behalf.
+
 ### Stage 1 manual-transfer control model now in repository
 
 `manual-bank-reconciliation.cjs` and `tests/manual-bank-reconciliation.test.cjs` implement and test a server-only domain rule: a pending order can only be marked manually verified after an authenticated payment-reconciler role independently checks a matching settled bank credit. The module does not access a bank, authenticate a real admin, persist a ledger, or activate Pro on its own. Production must enforce admin authorization, transaction uniqueness and atomic order/entitlement writes in a trusted backend. Do not expose this function directly to a browser.
