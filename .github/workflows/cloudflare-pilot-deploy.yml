@@ -1,0 +1,60 @@
+name: Sahamban approved free pilot deploy (no paid checkout)
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        required: true
+        type: string
+        description: Type DEPLOY_PILOT_NO_PAYMENTS
+permissions:
+  contents: read
+concurrency:
+  group: sahamban-cloudflare-pilot
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event.inputs.approval == 'DEPLOY_PILOT_NO_PAYMENTS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: cloudflare-pilot
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      SAHAMBAN_D1_DATABASE_ID: ${{ vars.SAHAMBAN_D1_DATABASE_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Fail closed without explicitly provisioned Cloudflare credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing restricted Cloudflare token'; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing Cloudflare account ID'; exit 1; }
+          test -n "$SAHAMBAN_D1_DATABASE_ID" || { echo 'Missing D1 ID'; exit 1; }
+          node --test tests/generate-pilot-deploy-config.test.cjs
+          node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs
+          node server/generate-pilot-deploy-config.cjs --write
+          ! grep -q 'PILOT_ORDERS_ENABLED = "true"' server/wrangler.deploy.toml
+      - name: Bundle with pinned Wrangler, without deploying
+        run: |
+          npm install --no-save wrangler@4.102.0
+          npx wrangler deploy --dry-run --config server/wrangler.deploy.toml --outdir /tmp/sahamban-pilot-bundle
+      - name: Require pre-provisioned private signing secret (names only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler secret list --name sahamban-pro-pilot | grep -q '"name": "AUTH_HMAC_SECRET"' || {
+            echo 'Missing AUTH_HMAC_SECRET in Worker. Refusing deployment.'
+            exit 1
+          }
+      - name: Apply reviewed D1 schema remotely
+        run: npx wrangler d1 execute sahamban-pilot --remote --config server/wrangler.deploy.toml --file server/d1-schema.sql --yes
+      - name: Deploy pilot only, orders and checkout disabled
+        run: npx wrangler deploy --config server/wrangler.deploy.toml
+      - name: Check deployed endpoint confirms payments disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --max-time 15 https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/health | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const v=JSON.parse(s);if(v.status!=="prototype"||v.paymentsEnabled!==false||v.checkoutEnabled!==false)process.exit(1);console.log("Verified: no payments or checkout")})'
