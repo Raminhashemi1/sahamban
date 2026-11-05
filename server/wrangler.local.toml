@@ -1,7 +1,7 @@
 # LOCAL / CI ONLY. Do not deploy to a Cloudflare account.
 name = "sahamban-pro-local-check"
 main = "worker-api.mjs"
-compatibility_date = "2026-11-05"
+compatibility_date = "2026-06-01"
 workers_dev = false
 
 [vars]
