@@ -6,6 +6,7 @@ on:
       - 'server/**'
       - 'tests/pilot-orders-api.test.cjs'
       - 'tests/worker-api.test.cjs'
+      - 'tests/worker-local-runtime.cjs'
       - 'tests/mint-pilot-token.test.cjs'
       - '.github/workflows/pilot-worker-build.yml'
   pull_request:
