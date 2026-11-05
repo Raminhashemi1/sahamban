@@ -106,6 +106,7 @@ class D1SchemaIntegrationTests(unittest.TestCase):
 
     def test_transaction_rolls_back_partial_payment_state(self):
         self.seed_user_order()
+        self.db.commit()
         self.db.execute("BEGIN")
         self.db.execute(
             """INSERT INTO subscription_entitlements(user_id,paid_until,updated_at)
