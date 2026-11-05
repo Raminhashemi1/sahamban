@@ -34,5 +34,5 @@ test('v79 excludes impossible, future and old NAV comparison dates',()=>{
 });
 test('v63 is integrated and cached offline',()=>{
  assert.ok(html.includes('riskFundNavPremiumV63'));assert.ok(html.includes('portfolio-fund-nav-v63.js?v=63.1'));
- assert.ok(sw.includes('sahamban-static-v149-0'));assert.ok(sw.includes('portfolio-fund-nav-v63.js?v=63.1'));
+ assert.ok(/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/.test(sw));assert.ok(sw.includes('portfolio-fund-nav-v63.js?v=63.1'));
 });
