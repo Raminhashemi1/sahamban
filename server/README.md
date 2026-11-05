@@ -71,6 +71,34 @@ treat them as proof of payment. For a commercial release replace this
 limited invitation process with a proper sign-in and identity provider.
 No client login or paid feature has been added yet.
 
+## Optional controlled-pilot order endpoint (no money movement)
+
+`pilot-orders-api.mjs` and the Worker now support:
+- `POST /api/v1/me/orders` only when private environment variable
+  `PILOT_ORDERS_ENABLED` is literally `true`, and
+  `PILOT_ANNUAL_PRICE_RIAL` is a valid, positive integer from the
+  **server's own** plan catalog. The request accepts no user ID, price,
+  credit-card details or payment instructions from the browser. An already
+  authenticated subject is mapped to a current ACTIVE database user using
+  parameter-bound SQL. The server generates an unpredictable order ID.
+- `GET /api/v1/me/orders` reads that authenticated user's pending
+  order or an explicit absence of one; it never asserts that money was paid.
+- A partial UNIQUE index permits at most **one PENDING annual order per
+  user**, even under simultaneous requests. Operators must close/expire an
+  old order before another can be requested.
+
+Both endpoints are **draft order records only**. No deposit instructions,
+checkout link, account number, self-service identity registration or paid
+entitlement activation is exposed. Pending orders never unlock Pro.
+A completed paid transfer must still pass independently verified bank
+reconciliation and an atomic server-side entitlement transaction.
+
+This endpoint is **off by default**, including in the template deployment
+configuration. Neither a Pro annual price nor a payment merchant has been
+chosen or authorized by the owner. Do not enable order issuance before
+merchant terms, actual server identity enrollment and a supported pilot
+workflow have been accepted.
+
 Security limitation: A browser with a valid bearer token can call this read
 endpoint; no downloadable/static JavaScript can be protected by this API
 alone. Premium **server** endpoints need their own checked authorization.
