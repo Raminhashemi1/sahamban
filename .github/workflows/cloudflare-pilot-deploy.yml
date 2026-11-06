@@ -37,6 +37,37 @@ jobs:
           node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs
           node server/generate-pilot-deploy-config.cjs --write
           ! grep -q 'PILOT_ORDERS_ENABLED = "true"' server/wrangler.deploy.toml
+      - name: Verify account-scoped Cloudflare API token
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --silent --show-error --max-time 20 \
+            --write-out $'\\n%{http_code}' \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/tokens/verify")"
+          http_status="${response##*$'\\n'}"
+          body="${response%$'\\n'*}"
+          if [[ "$http_status" != "200" ]]; then
+            echo "Cloudflare Account API token verification failed (HTTP $http_status). Replace the cloudflare-pilot environment secret with an active Account API token for this account."
+            exit 1
+          fi
+          printf '%s' "$body" | node -e '
+            let input = "";
+            process.stdin.on("data", chunk => input += chunk);
+            process.stdin.on("end", () => {
+              try {
+                const result = JSON.parse(input);
+                if (result.success !== true || result.result?.status !== "active") {
+                  console.error("Cloudflare Account API token is not active.");
+                  process.exit(1);
+                }
+                console.log("Cloudflare Account API token verified as active.");
+              } catch {
+                console.error("Cloudflare token verification returned an unreadable response.");
+                process.exit(1);
+              }
+            });
+          '
       - name: Bundle with pinned Wrangler, without deploying
         run: |
           npm install --no-save wrangler@4.102.0
@@ -45,8 +76,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx wrangler secret list --name sahamban-pro-pilot | grep -q '"name": "AUTH_HMAC_SECRET"' || {
-            echo 'Missing AUTH_HMAC_SECRET in Worker. Refusing deployment.'
+          secret_list="$(npx wrangler secret list --name sahamban-pro-pilot)"
+          printf '%s' "$secret_list" | grep -q '"name": "AUTH_HMAC_SECRET"' || {
+            echo 'AUTH_HMAC_SECRET is not provisioned in the private Worker. Refusing deployment.'
             exit 1
           }
       - name: Apply reviewed D1 schema remotely
