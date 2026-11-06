@@ -42,11 +42,11 @@ jobs:
         run: |
           set -euo pipefail
           response="$(curl --silent --show-error --max-time 20 \
-            --write-out $'\\n%{http_code}' \
+            --write-out $'\n%{http_code}' \
             --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/tokens/verify")"
-          http_status="${response##*$'\\n'}"
-          body="${response%$'\\n'*}"
+          http_status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
           if [[ "$http_status" != "200" ]]; then
             echo "Cloudflare Account API token verification failed (HTTP $http_status). Replace the cloudflare-pilot environment secret with an active Account API token for this account."
             exit 1
