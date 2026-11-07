@@ -1,0 +1,32 @@
+name: Sahamban TSETMC runner connectivity diagnostic (non-production)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - diagnostics/tsetmc-network-20261107
+    paths:
+      - 'tests/tsetmc-runner-diagnostic-v1.cjs'
+      - '.github/workflows/tsetmc-network-diagnostic-v1.yml'
+jobs:
+  network-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax-check diagnostic
+        run: node --check tests/tsetmc-runner-diagnostic-v1.cjs
+      - name: Probe public TSETMC DNS, TCP and HTTPS (read-only)
+        run: node tests/tsetmc-runner-diagnostic-v1.cjs
+      - name: Upload diagnostic report even when network is unavailable
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tsetmc-runner-diagnostic-v1
+          path: test-artifacts/tsetmc-network-diagnostic-v1.json
+          if-no-files-found: warn
+          retention-days: 7
