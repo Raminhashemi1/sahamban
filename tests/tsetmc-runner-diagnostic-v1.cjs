@@ -79,7 +79,7 @@ function tcpConnect() {
       '',
       '> A successful workflow run confirms diagnostic execution only. It never verifies a fresh market price.',
       ''
-    ].join('\\n');
+    ].join('\n');
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
   }
   console.log('TSETMC_DIAGNOSTIC_RESULT: ' + report.outcome);
