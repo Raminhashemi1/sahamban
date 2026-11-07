@@ -1,6 +1,10 @@
 name: Sahamban TSETMC runner connectivity diagnostic (non-production)
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/tsetmc-runner-diagnostic-v1.cjs'
+      - '.github/workflows/tsetmc-network-diagnostic-v1.yml'
   push:
     branches:
       - diagnostics/tsetmc-network-20261107
