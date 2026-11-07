@@ -84,4 +84,9 @@ function tcpConnect() {
   }
   console.log('TSETMC_DIAGNOSTIC_RESULT: ' + report.outcome);
   console.log(JSON.stringify(report, null, 2));
+  // The artifact is still uploaded by the workflow's if: always() step.
+  // Do not mark an unreachable public API as a successful connectivity check.
+  if (report.outcome !== 'API_REACHABLE_NOT_LIVE_QUOTE_VERIFIED') {
+    process.exitCode = 1;
+  }
 })().catch(error => { console.error('Diagnostic infrastructure error:', errorInfo(error)); process.exitCode = 1; });
