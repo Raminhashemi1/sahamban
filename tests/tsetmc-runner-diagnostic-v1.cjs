@@ -63,6 +63,25 @@ function tcpConnect() {
       : 'API_NOT_VERIFIED';
   fs.mkdirSync('test-artifacts', { recursive: true });
   fs.writeFileSync('test-artifacts/tsetmc-network-diagnostic-v1.json', JSON.stringify(report, null, 2) + '\n');
+  // Show diagnostic outcome prominently on the GitHub Actions run summary.
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const state = name => report.probes[name]?.status || 'NOT_RUN';
+    const summary = [
+      '## TSETMC network diagnostic (not a live quote check)',
+      '',
+      '**Overall:** ' + report.outcome,
+      '',
+      '| Probe | Status |',
+      '| --- | --- |',
+      '| DNS | ' + state('dns') + ' |',
+      '| TCP 443 | ' + state('tcp_443') + ' |',
+      '| HTTPS API | ' + state('https_api') + ' |',
+      '',
+      '> A successful workflow run confirms diagnostic execution only. It never verifies a fresh market price.',
+      ''
+    ].join('\\n');
+    fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+  }
   console.log('TSETMC_DIAGNOSTIC_RESULT: ' + report.outcome);
   console.log(JSON.stringify(report, null, 2));
 })().catch(error => { console.error('Diagnostic infrastructure error:', errorInfo(error)); process.exitCode = 1; });
