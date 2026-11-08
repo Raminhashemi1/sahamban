@@ -74,27 +74,8 @@ function calculateCapitalAdjustment(data,expectedSymbol){
  },note:'A review-only corporate-action factor derived from user-entered, traceable source rows. It does not authenticate the CODAL document, establish the legally effective share count, adjust accounting EPS automatically, or authorize trading.'};
 }
 
-function calculateAdjustedWeightedAverageShares(actionResult,{daysBefore,daysAfter,periodEnd}={}){
- const a=actionResult?.adjustment;
- if(actionResult?.status!=='CAPITAL_ADJUSTMENT_READY_FOR_REVIEW'||!a)
-  return {status:'INSUFFICIENT_EVIDENCE',errors:['UNVERIFIED_CAPITAL_ACTION'],weightedAverageShares:null};
- if(!Number.isSafeInteger(daysBefore)||daysBefore<0||!Number.isSafeInteger(daysAfter)||daysAfter<0||
-  !Number.isSafeInteger(daysBefore+daysAfter)||daysBefore+daysAfter<=0||!jalaliKey(periodEnd)||
-  !jalaliKey(a.effectiveDate)||jalaliKey(a.effectiveDate)>jalaliKey(periodEnd))
-  return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_CAPITAL_ACTION_DAY_WEIGHTS_OR_PERIOD'],weightedAverageShares:null};
- if(!positiveSafeInteger(a.preActionShares)||!positiveSafeInteger(a.postActionShares)||
-  !Number.isFinite(a.epsRetrospectiveShareMultiplier)||a.epsRetrospectiveShareMultiplier<=0)
-  return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_CAPITAL_ACTION_SHARE_BASIS'],weightedAverageShares:null};
- const preAdjusted=a.preActionShares*a.epsRetrospectiveShareMultiplier;
- const numerator=preAdjusted*daysBefore+a.postActionShares*daysAfter;
- const weightedAverageShares=numerator/(daysBefore+daysAfter);
- if(!Number.isFinite(preAdjusted)||preAdjusted<=0||!Number.isFinite(numerator)||!Number.isFinite(weightedAverageShares)||weightedAverageShares<=0)
-  return {status:'INSUFFICIENT_EVIDENCE',errors:['ADJUSTED_WEIGHTED_AVERAGE_OUT_OF_RANGE'],weightedAverageShares:null};
- return {status:'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW',symbol:a.symbol,periodEnd,weightedAverageShares,
-  unit:'SHARES',daysBefore,daysAfter,totalDays:daysBefore+daysAfter,
-  source:{tracingNo:a.source.tracingNo,row:a.source.row,page:a.source.page},
-  formula:'((pre_action_shares * eps_retrospective_share_multiplier * days_before) + (post_action_shares * days_after)) / total_period_days',
-  note:'Review-only IAS 33-style denominator adjustment for one corporate action. Day weights and source share counts require independent verification; do not combine multiple actions without chronological restatement.'};
+function calculateAdjustedWeightedAverageShares(actionResult,{periodStart,periodEnd}={}){
+ return calculateMultiActionWeightedAverageShares([actionResult],{periodStart,periodEnd});
 }
 
 function jalaliOrdinal(value){
@@ -147,7 +128,7 @@ function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,pe
   const adjustedShares=baseShares*factor;
   if(!Number.isFinite(adjustedShares)||adjustedShares<=0)return fail('MULTI_ACTION_SHARE_FACTOR_OUT_OF_RANGE');
   segments.push({from:i===0?periodStart:actions[i-1].effectiveDate,
-   through:i===actions.length?periodEnd:actions[i].effectiveDate,
+   endsBefore:i===actions.length?null:actions[i].effectiveDate,
    days,baseShares,subsequentRestatementFactor:factor,adjustedShares});
  }
  const totalDays=end-start+1,weightedTotal=segments.reduce((sum,x)=>sum+x.adjustedShares*x.days,0);
