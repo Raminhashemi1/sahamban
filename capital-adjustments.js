@@ -11,7 +11,7 @@ function calculateCapitalAdjustment(data,expectedSymbol){
  if(!normalizeSymbol(expectedSymbol)||normalizeSymbol(data.symbol)!==normalizeSymbol(expectedSymbol))errors.push('SYMBOL_MISMATCH');
  if(!ACTIONS.has(data.action_type))errors.push('UNSUPPORTED_CAPITAL_ACTION');
  const tracing=toAsciiDigits(data.tracing_no).trim();
- if(!/^\\d{1,20}$/.test(tracing)||BigInt(tracing||'0')<=0n)errors.push('INVALID_TRACING');
+ if(!/^\d{1,20}$/.test(tracing)||BigInt(tracing||'0')<=0n)errors.push('INVALID_TRACING');
  const url=safeReportUrl(data.report_url);
  if(!url)errors.push('INVALID_REPORT_URL');
  else{
