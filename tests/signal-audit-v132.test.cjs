@@ -22,3 +22,10 @@ test('audit refuses to run if the decision engine is unavailable',()=>{
  const engine=globalThis.SahambanDecisionV129;delete globalThis.SahambanDecisionV129;
  try{assert.throws(()=>audit.audit({symbol:'x',history:history()}),/بارگذاری نشده/);}finally{globalThis.SahambanDecisionV129=engine;}
 });
+
+test('audit rejects impossible calendar dates even when their text is eight digits and ordered',()=>{
+ for(const invalid of ['20261131','20261301','20260229']){
+  const h=history();h[h.length-1].date=invalid;
+  assert.throws(()=>audit.audit({symbol:'x',history:h}),/تاریخچه نامعتبر/);
+ }
+});
