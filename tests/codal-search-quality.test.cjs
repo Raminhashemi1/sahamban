@@ -44,3 +44,10 @@ test('accepts Esfand 30 only in Persian leap years',()=>{
  assert.equal(validPublicationDate('۱۴۰۵/۱۲/۳۰'),false);
  assert.equal(validPublicationDate('۱۴۰۵/۱۲/۲۹'),true);
 });
+
+test('covers a second leap-year cycle boundary',()=>{
+ assert.equal(validPublicationDate('1399/12/30'),true);
+ assert.equal(validPublicationDate('1400/12/30'),false);
+ assert.equal(validPublicationDate('1401/12/30'),false);
+ assert.equal(validPublicationDate('1404/12/30'),false);
+});
