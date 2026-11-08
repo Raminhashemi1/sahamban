@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {calculateCapitalAdjustment}=require('../capital-adjustments.js');
+const {calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares}=require('../capital-adjustments.js');
 const sample=()=>({symbol:'ونوین',tracing_no:'۱۲۳۴۵',
  report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
  effective_date:'۱۴۰۵/۰۸/۱۲',document_sha256:'b'.repeat(64),original_document_read:true,
@@ -21,11 +21,14 @@ test('stock split and reverse split use the correct direction',()=>{
 });
 test('rights issue calculates TERP and historical price multiplier',()=>{
  const a=sample();a.action_type='RIGHTS_ISSUE';a.pre_action_shares=1000000;a.post_action_shares=1250000;
- a.cum_rights_price=1000;a.subscription_price=800;
+ a.cum_rights_price=1000;a.subscription_price=800;a.price_unit='IRR_PER_SHARE';
+ a.cum_rights_price_source_row='قیمت پایانی سهم پیش از مجمع';a.cum_rights_price_source_page=4;
+ a.subscription_price_source_row='قیمت پذیره‌نویسی حق‌تقدم';a.subscription_price_source_page=5;
  const r=calculateCapitalAdjustment(a,'ونوین');
  assert.equal(r.status,'CAPITAL_ADJUSTMENT_READY_FOR_REVIEW');
  assert.equal(r.adjustment.theoreticalExRightsPrice,960);
  assert.equal(r.adjustment.historicalPriceMultiplier,0.96);
+ assert.ok(Math.abs(r.adjustment.epsRetrospectiveShareMultiplier-(1000/960))<1e-12);
  assert.equal(r.adjustment.newShares,250000);
 });
 test('capital action refuses missing or mismatched CODAL evidence',()=>{
@@ -49,4 +52,45 @@ test('capital action rejects unsupported type, invalid effective date and unsafe
  assert.ok(calculateCapitalAdjustment(date,'ونوین').errors.includes('INVALID_EFFECTIVE_DATE'));
  const count=sample();count.pre_action_shares=Number.MAX_SAFE_INTEGER+1;
  assert.ok(calculateCapitalAdjustment(count,'ونوین').errors.includes('INVALID_ACTION_SHARE_COUNTS'));
+});
+
+test('EPS retrospective share multiplier differs from market-price factor for rights issue',()=>{
+ const a=sample();a.action_type='RIGHTS_ISSUE';a.pre_action_shares=1000000;a.post_action_shares=1250000;
+ a.cum_rights_price=1000;a.subscription_price=800;a.price_unit='IRR_PER_SHARE';
+ a.cum_rights_price_source_row='قیمت پایانی قبل از مجمع';a.cum_rights_price_source_page=4;
+ a.subscription_price_source_row='قیمت پذیره‌نویسی';a.subscription_price_source_page=5;
+ const r=calculateCapitalAdjustment(a,'ونوین');
+ assert.equal(r.status,'CAPITAL_ADJUSTMENT_READY_FOR_REVIEW');
+ assert.equal(r.adjustment.historicalPriceMultiplier,0.96);
+ assert.ok(Math.abs(r.adjustment.epsRetrospectiveShareMultiplier-1.0416666666666667)<1e-12);
+ assert.notEqual(r.adjustment.epsRetrospectiveShareMultiplier,r.adjustment.historicalPriceMultiplier);
+});
+test('rights issue refuses untraceable or wrongly denominated prices',()=>{
+ const a=sample();a.action_type='RIGHTS_ISSUE';a.post_action_shares=1250000;
+ a.cum_rights_price=1000;a.subscription_price=800;a.price_unit='IRR';
+ a.cum_rights_price_source_row='قیمت قبل';a.cum_rights_price_source_page=4;
+ a.subscription_price_source_row='پذیره نویسی';a.subscription_price_source_page=5;
+ assert.ok(calculateCapitalAdjustment(a,'ونوین').errors.includes('INVALID_RIGHTS_PRICING_INPUTS_OR_UNIT'));
+ a.price_unit='IRR_PER_SHARE';a.cum_rights_price_source_page=0;
+ assert.ok(calculateCapitalAdjustment(a,'ونوین').errors.includes('UNTRACEABLE_RIGHTS_PRICING_INPUTS'));
+});
+test('weighted-average EPS denominator retrospectively adjusts bonus shares and time-weights rights issues',()=>{
+ const bonus=calculateCapitalAdjustment(sample(),'ونوین');
+ const b=calculateAdjustedWeightedAverageShares(bonus,{daysBefore:180,daysAfter:180});
+ assert.equal(b.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
+ assert.equal(b.weightedAverageShares,1500000);
+ const rights=sample();rights.action_type='RIGHTS_ISSUE';rights.pre_action_shares=1000000;rights.post_action_shares=1250000;
+ rights.cum_rights_price=1000;rights.subscription_price=800;rights.price_unit='IRR_PER_SHARE';
+ rights.cum_rights_price_source_row='قیمت قبل از مجمع';rights.cum_rights_price_source_page=4;
+ rights.subscription_price_source_row='قیمت پذیره نویسی';rights.subscription_price_source_page=5;
+ const action=calculateCapitalAdjustment(rights,'ونوین');
+ const weighted=calculateAdjustedWeightedAverageShares(action,{daysBefore:180,daysAfter:180});
+ assert.equal(weighted.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
+ assert.ok(Math.abs(weighted.weightedAverageShares-((1000000*(1000/960)+1250000)/2))<1e-7);
+ assert.equal(weighted.source.page,6);
+});
+test('weighted-average EPS denominator fails closed on invalid weights or action status',()=>{
+ const action=calculateCapitalAdjustment(sample(),'ونوین');
+ assert.equal(calculateAdjustedWeightedAverageShares(action,{daysBefore:-1,daysAfter:365}).status,'INSUFFICIENT_EVIDENCE');
+ assert.equal(calculateAdjustedWeightedAverageShares({status:'INSUFFICIENT_EVIDENCE'},{daysBefore:1,daysAfter:1}).status,'INSUFFICIENT_EVIDENCE');
 });
