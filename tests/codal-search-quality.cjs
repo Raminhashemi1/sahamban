@@ -13,8 +13,9 @@ function validPublicationDate(value){
  const s=toAsciiDigits(value).trim();
  // CODAL uses local Jalali dates. Reject malformed and implausible values;
  // this checks metadata shape only, not authenticity of publication.
- const m=s.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+\d\d?:\d\d(?::\d\d)?)?$/);
+ const m=s.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+(\d\d?):(\d\d)(?::(\d\d))?)?$/);
  if(!m)return false;
+ if(m[4]!==undefined&&(Number(m[4])>23||Number(m[5])>59||(m[6]!==undefined&&Number(m[6])>59)))return false;
  const month=Number(m[2]),day=Number(m[3]);
  if(month<1||month>12||day<1||day>(month<=6?31:30))return false;
  if(month===12&&day===30){
