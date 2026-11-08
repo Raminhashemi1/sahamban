@@ -49,8 +49,8 @@ async function runCase(kind) {
     }
     if (path.endsWith('/ClosingPrice/GetClosingPriceDailyList/' + instrumentCode + '/0')) {
       return mockResponse({ closingPriceDaily: [
-        { dEven: kind === 'after-close-history' ? day : previousDay, pClosing: kind === 'after-close-history' ? quote : 4410 },
-        { dEven: '20261104', pClosing: 4350 }
+        { dEven: ['after-close-history', 'bulk-wrong-price', 'bulk-duplicate-conflict'].includes(kind) ? day : previousDay, pClosing: kind === 'after-close-history' ? quote : kind === 'bulk-duplicate-conflict' ? quote : kind === 'bulk-wrong-price' ? 4410 : 4410 },
+        { dEven: kind === 'bulk-duplicate-conflict' ? day : '20261104', pClosing: kind === 'bulk-duplicate-conflict' ? 4410 : 4350 }
       ]});
     }
     if (path.endsWith('/ClosingPrice/GetClosingPriceDaily/' + instrumentCode + '/' + day)) {
@@ -118,3 +118,14 @@ test('basket accepts only history-matched quotes with fresh or closed-session ti
   assert.match(html, /if\(\['FRESH','SESSION_CLOSED_FINAL'\]\.includes\(r\.freshness\.status\)\)/);
   assert.doesNotMatch(html, /valid\.push\(\{symbol,price,date,count:uniqueDays\.size,code,historyStatus,historyDetail,freshness:/);
 });
+
+// Regression: an incorrect or contradictory record for the requested day in
+// the bulk endpoint must never be bypassed by the same-day fallback.
+for (const kind of ['bulk-wrong-price', 'bulk-duplicate-conflict']) {
+  test(kind + ' cannot be marked corroborated or PASS', async () => {
+    const { output, paths } = await runCase(kind);
+    assert.doesNotMatch(output, /^PASS|^CORROBORATED_SAME_PROVIDER/);
+    assert.match(output, /UNVERIFIED_HISTORY_MISMATCH|تاریخچه جداگانه تأیید نشد/);
+    assert.equal(paths.some(x => x.endsWith('/ClosingPrice/GetClosingPriceDaily/' + instrumentCode + '/' + day)), false);
+  });
+}
