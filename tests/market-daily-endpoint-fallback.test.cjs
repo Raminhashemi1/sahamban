@@ -112,3 +112,9 @@ test('after Tehran close, same-day exact bulk history match can PASS as final se
   assert.match(output, /^PASS/);
   assert.match(output, /قیمت نهایی جلسه بسته‌شده/);
 });
+
+test('basket accepts only history-matched quotes with fresh or closed-session timestamps', () => {
+  assert.match(html, /historyStatus:'MATCHED',historyDetail:/);
+  assert.match(html, /if\(\['FRESH','SESSION_CLOSED_FINAL'\]\.includes\(r\.freshness\.status\)\)/);
+  assert.doesNotMatch(html, /valid\.push\(\{symbol,price,date,count:uniqueDays\.size,code,historyStatus,historyDetail,freshness:/);
+});
