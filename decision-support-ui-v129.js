@@ -98,10 +98,22 @@
   if(file.size<=0||file.size>128*1024){fundamentalStatus.textContent='حجم فایل JSON باید بین ۱ بایت تا ۱۲۸ کیلوبایت باشد.';return;}
   try{
    const payload=JSON.parse(await file.text());
-   if(payload?.schema==='sahamban.codal.row-audit.v1'||payload?.status==='LOCAL_ROW_REFERENCES_UNVERIFIED'){
-    throw Error('بسته ردیف‌های محلی هنوز تأییدنشده است و مستقیماً برای عبور از دروازه بنیادی پذیرفته نمی‌شود. ارقام را پس از تطبیق با اصل گزارش در قالب شواهد مالی وارد کنید.');
+   let data=payload?.financialEvidence&&typeof payload.financialEvidence==='object'?payload.financialEvidence:payload;
+   if(payload?.schema==='sahamban.codal.row-audit.v1'){
+    const doc=payload.document,rows=payload.fields;
+    if(!doc||!Array.isArray(rows)||!rows.length)throw Error('ساختار بسته ردیف‌های کدال ناقص است.');
+    const fields={};
+    for(const row of rows){
+     if(!row||typeof row.metric!=='string'||Object.prototype.hasOwnProperty.call(fields,row.metric))throw Error('ردیف مالی تکراری یا نامعتبر است.');
+     fields[row.metric]={amount:row.amount,unit:row.unit,source_row:row.sourceRow,source_page:row.sourcePage};
+    }
+    data={symbol:doc.symbol,tracing_no:doc.tracingNo,report_url:doc.reportUrl,
+     publication_date:doc.publicationDate,period_end:doc.periodEnd,unit:doc.unit,
+     audit_status:doc.auditStatus,statement_basis:doc.statementBasis,
+     document_sha256:doc.sha256,original_document_read:true,origin_verified:false,
+     source:'USER_ENTERED_LOCAL_PACKET_REQUIRES_HUMAN_ATTESTATION',fields,
+     ...(payload.dividendEvidence&&typeof payload.dividendEvidence==='object'?payload.dividendEvidence:{})};
    }
-   const data=payload?.financialEvidence&&typeof payload.financialEvidence==='object'?payload.financialEvidence:payload;
    const expected=String(data?.symbol??'').trim();
    if(!expected)throw Error('نماد در فایل شواهد مالی مشخص نشده است.');
    if(!window.SahambanFundamentalGateV150?.evaluateFundamentalGate)throw Error('موتور بنیادی در مرورگر بارگذاری نشده است.');
