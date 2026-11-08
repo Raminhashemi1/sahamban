@@ -51,7 +51,8 @@ function checkFinancialEvidence(data,expectedSymbol){
    errors.push('UNTRACEABLE_FIELD');continue;
   }
   const fieldUnit=row.unit??(name==='shares_outstanding'?'SHARES':data.unit);
-  if(name==='shares_outstanding'?!SHARE_UNITS.has(fieldUnit):fieldUnit!==data.unit){
+  const isShareMetric=name==='shares_outstanding'||name==='weighted_average_shares';
+  if(isShareMetric?!SHARE_UNITS.has(fieldUnit):fieldUnit!==data.unit){
    errors.push('INVALID_FIELD_UNIT');continue;
   }
   if((name==='total_assets'||name==='total_liabilities')&&row.amount<0){
