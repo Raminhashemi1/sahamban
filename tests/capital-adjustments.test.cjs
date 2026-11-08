@@ -77,7 +77,7 @@ test('rights issue refuses untraceable or wrongly denominated prices',()=>{
 test('weighted-average EPS denominator retrospectively adjusts bonus shares and time-weights rights issues',()=>{
  const bonusData=sample();bonusData.effective_date='۱۴۰۵/۰۵/۱۲';
  const bonus=calculateCapitalAdjustment(bonusData,'ونوین');
- const b=calculateAdjustedWeightedAverageShares(bonus,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
+ const b=calculateAdjustedWeightedAverageShares(bonus,{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۰۶/۳۱'});
  assert.equal(b.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
  assert.equal(b.weightedAverageShares,1500000);
  const rights=sample();rights.effective_date='۱۴۰۵/۰۵/۱۲';rights.action_type='RIGHTS_ISSUE';rights.pre_action_shares=1000000;rights.post_action_shares=1250000;
@@ -85,9 +85,12 @@ test('weighted-average EPS denominator retrospectively adjusts bonus shares and 
  rights.cum_rights_price_source_row='قیمت قبل از مجمع';rights.cum_rights_price_source_page=4;
  rights.subscription_price_source_row='قیمت پذیره نویسی';rights.subscription_price_source_page=5;
  const action=calculateCapitalAdjustment(rights,'ونوین');
- const weighted=calculateAdjustedWeightedAverageShares(action,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
+ const weighted=calculateAdjustedWeightedAverageShares(action,{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۰۶/۳۱'});
  assert.equal(weighted.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
- assert.ok(Math.abs(weighted.weightedAverageShares-((1000000*(1000/960)+1250000)/2))<1e-7);
+ assert.equal(weighted.segments.length,2);
+ assert.ok(Math.abs(weighted.segments[0].adjustedShares-(1000000*(1000/960)))<1e-7);
+ assert.equal(weighted.segments[1].adjustedShares,1250000);
+ assert.ok(weighted.weightedAverageShares>weighted.segments[0].adjustedShares&&weighted.weightedAverageShares<1250000);
  assert.equal(weighted.source.page,6);
 });
 test('weighted-average EPS denominator fails closed on invalid weights or action status',()=>{
@@ -98,16 +101,16 @@ test('weighted-average EPS denominator fails closed on invalid weights or action
 
 test('EPS share adjustment refuses an action effective after the reporting period',()=>{
  const a=calculateCapitalAdjustment(sample(),'ونوین');
- const r=calculateAdjustedWeightedAverageShares(a,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
+ const r=calculateAdjustedWeightedAverageShares(a,{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۰۶/۳۱'});
  assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
- assert.ok(r.errors.includes('INVALID_CAPITAL_ACTION_DAY_WEIGHTS_OR_PERIOD'));
+ assert.ok(r.errors.includes('INVALID_ACTION_DATE_SHARE_COUNTS_OR_PROVENANCE'));
 });
 
 test('capital-adjusted weighted-average shares flow into EPS with issuer and period binding',()=>{
  const {calculateEPS}=require('../fundamental-evidence.js');
  const actionData=sample();actionData.effective_date='۱۴۰۵/۰۵/۱۲';
  const action=calculateCapitalAdjustment(actionData,'ونوین');
- const basis=calculateAdjustedWeightedAverageShares(action,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
+ const basis=calculateAdjustedWeightedAverageShares(action,{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۰۶/۳۱'});
  const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',
   report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
   publication_date:'۱۴۰۵/۰۸/۱۲',period_end:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',
