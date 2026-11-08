@@ -60,7 +60,7 @@ function calculateCapitalAdjustment(data,expectedSymbol){
   (theoreticalExRightsPrice!==null&&(!Number.isFinite(theoreticalExRightsPrice)||theoreticalExRightsPrice<=0)))
   return {status:'INSUFFICIENT_EVIDENCE',errors:['CAPITAL_ADJUSTMENT_OUT_OF_RANGE'],adjustment:null};
  return {status:'CAPITAL_ADJUSTMENT_READY_FOR_REVIEW',errors:[],adjustment:{
-  actionType:type,effectiveDate:data.effective_date,preActionShares:before,postActionShares:after,
+  actionType:type,symbol:data.symbol,effectiveDate:data.effective_date,preActionShares:before,postActionShares:after,
   newShares:after-before,shareCountMultiplier,historicalPriceMultiplier,
   epsRetrospectiveShareMultiplier,theoreticalExRightsPrice,rightsPricingSource,source:{tracingNo:tracing,row:data.source_row,page:data.source_page},
   formula:type==='RIGHTS_ISSUE'?
@@ -69,12 +69,12 @@ function calculateCapitalAdjustment(data,expectedSymbol){
  },note:'A review-only corporate-action factor derived from user-entered, traceable source rows. It does not authenticate the CODAL document, establish the legally effective share count, adjust accounting EPS automatically, or authorize trading.'};
 }
 
-function calculateAdjustedWeightedAverageShares(actionResult,{daysBefore,daysAfter}={}){
+function calculateAdjustedWeightedAverageShares(actionResult,{daysBefore,daysAfter,periodEnd}={}){
  const a=actionResult?.adjustment;
  if(actionResult?.status!=='CAPITAL_ADJUSTMENT_READY_FOR_REVIEW'||!a)
   return {status:'INSUFFICIENT_EVIDENCE',errors:['UNVERIFIED_CAPITAL_ACTION'],weightedAverageShares:null};
  if(!Number.isSafeInteger(daysBefore)||daysBefore<0||!Number.isSafeInteger(daysAfter)||daysAfter<0||
-  !Number.isSafeInteger(daysBefore+daysAfter)||daysBefore+daysAfter<=0)
+  !Number.isSafeInteger(daysBefore+daysAfter)||daysBefore+daysAfter<=0||!validPublicationDate(periodEnd))
   return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_CAPITAL_ACTION_DAY_WEIGHTS'],weightedAverageShares:null};
  if(!positiveSafeInteger(a.preActionShares)||!positiveSafeInteger(a.postActionShares)||
   !Number.isFinite(a.epsRetrospectiveShareMultiplier)||a.epsRetrospectiveShareMultiplier<=0)
@@ -84,7 +84,7 @@ function calculateAdjustedWeightedAverageShares(actionResult,{daysBefore,daysAft
  const weightedAverageShares=numerator/(daysBefore+daysAfter);
  if(!Number.isFinite(preAdjusted)||preAdjusted<=0||!Number.isFinite(numerator)||!Number.isFinite(weightedAverageShares)||weightedAverageShares<=0)
   return {status:'INSUFFICIENT_EVIDENCE',errors:['ADJUSTED_WEIGHTED_AVERAGE_OUT_OF_RANGE'],weightedAverageShares:null};
- return {status:'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW',weightedAverageShares,
+ return {status:'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW',symbol:a.symbol,periodEnd,weightedAverageShares,
   unit:'SHARES',daysBefore,daysAfter,totalDays:daysBefore+daysAfter,
   source:{tracingNo:a.source.tracingNo,row:a.source.row,page:a.source.page},
   formula:'((pre_action_shares * eps_retrospective_share_multiplier * days_before) + (post_action_shares * days_after)) / total_period_days',
