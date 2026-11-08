@@ -113,7 +113,7 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
  const basis=calculateAdjustedWeightedAverageShares(action,{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۰۶/۳۱'});
  const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',
   report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
-  publication_date:'۱۴۰۵/۰۸/۱۲',period_end:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',
+  publication_date:'۱۴۰۵/۰۸/۱۲',period_start:'۱۴۰۵/۰۱/۰۱',period_end:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',
   audit_status:'AUDITED',statement_basis:'CONSOLIDATED',document_sha256:'c'.repeat(64),
   original_document_read:true,fields:{
    net_income_attributable_to_parent:{amount:2000,source_row:'سود قابل انتساب به مالکان اصلی',source_page:4}
@@ -124,6 +124,8 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
  assert.equal(eps.eps.shareBasisType,'CAPITAL_ACTION_SEQUENCE_RESTATED_WEIGHTED_AVERAGE_SHARES');
  assert.equal(eps.eps.capitalAdjustmentCount,1);
  assert.equal(eps.eps.capitalAdjustmentPeriodEnd,financial.period_end);
+ const wrongPeriod=calculateEPS(financial,'ونوین',{...basis,periodStart:'۱۴۰۵/۰۲/۰۱'});
+ assert.ok(wrongPeriod.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
  const wrongSymbol=calculateEPS(financial,'ونوین',{...basis,symbol:'فولاد'});
  assert.ok(wrongSymbol.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
  const wrongPeriod=calculateEPS(financial,'ونوین',{...basis,periodEnd:'۱۴۰۵/۰۳/۳۱'});
