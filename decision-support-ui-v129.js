@@ -87,6 +87,7 @@
   fundamentalReviews.clear();
   if(fundamentalFile)fundamentalFile.value='';
   if(attestation)attestation.checked=false;
+  const actionInput=$('fundamentalCapitalActionsV150');if(actionInput)actionInput.value='';
   if(fundamentalStatus)fundamentalStatus.textContent='بررسی بنیادی این نشست پاک شد؛ هیچ داده‌ای ذخیره یا ارسال نشده است.';
   if(fundamentalDetail)fundamentalDetail.textContent='';
   if(reports.length)showDetail();
@@ -108,7 +109,7 @@
      fields[row.metric]={amount:row.amount,unit:row.unit,source_row:row.sourceRow,source_page:row.sourcePage};
     }
     data={symbol:doc.symbol,tracing_no:doc.tracingNo,report_url:doc.reportUrl,
-     publication_date:doc.publicationDate,period_end:doc.periodEnd,unit:doc.unit,
+     publication_date:doc.publicationDate,period_start:doc.periodStart,period_end:doc.periodEnd,unit:doc.unit,
      audit_status:doc.auditStatus,statement_basis:doc.statementBasis,
      document_sha256:doc.sha256,original_document_read:true,origin_verified:false,
      source:'USER_ENTERED_LOCAL_PACKET_REQUIRES_HUMAN_ATTESTATION',fields,
