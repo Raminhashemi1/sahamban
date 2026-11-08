@@ -1,11 +1,11 @@
 'use strict';
 (function(root,factory){
  const validation=typeof module==='object'&&module.exports?require('./tests/codal-search-quality.cjs'):{
-  normalizeSymbol:value=>String(value??'').replace(/[\\s\\u200c\\u200e\\u200f\\ufeff]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase(),
+  normalizeSymbol:value=>String(value??'').replace(/[\s\u200c\u200e\u200f\ufeff]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase(),
   toAsciiDigits:value=>String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632)),
   validPublicationDate:value=>{
    const s=String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632)).trim();
-   const m=s.match(/^(13\\d\\d|14\\d\\d)[/\\-](\\d\\d?)[/\\-](\\d\\d?)(?:\\s+(\\d\\d?):(\\d\\d)(?::(\\d\\d))?)?$/);
+   const m=s.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+(\d\d?):(\d\d)(?::(\d\d))?)?$/);
    if(!m||Number(m[2])<1||Number(m[2])>12||Number(m[3])<1||Number(m[3])>(Number(m[2])<=6?31:30)||
     (m[4]!==undefined&&(Number(m[4])>23||Number(m[5])>59||(m[6]!==undefined&&Number(m[6])>59))))return false;
    if(Number(m[2])===12&&Number(m[3])===30){
@@ -267,5 +267,6 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
   sources:checked.fields.map(x=>({metric:x.name,row:x.source_row,page:x.source_page})),
   note:'Ratios are calculated from one supplied reporting period and source rows. ROE/ROA are not annualized; ratios are not normalized for seasonality, exceptional items, group structure or accounting policy. Flags are review prompts, not ratings.'};
 }
-\nreturn {normalizeSymbol,safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
+ 
+return {normalizeSymbol,safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
 });
