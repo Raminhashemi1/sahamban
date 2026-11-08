@@ -129,8 +129,15 @@
    const last=quote?.history?.at(-1);
    const marketPriceEvidence=last&&Number.isFinite(Number(last.close))&&Number(last.close)>0?
     {status:'VERIFIED_MARKET_CLOSE',symbol:quote.symbol,closeRialPerShare:Number(last.close),marketDate:last.date,source:'VERIFIED_HISTORICAL_QUOTE_EVENT'}:undefined;
-   const review=window.SahambanFundamentalGateV150.evaluateFundamentalGate(data,expected,
-    marketPriceEvidence?{marketPriceEvidence,asOfDate:last.date}:{});
+   const options={};
+   if(marketPriceEvidence){options.marketPriceEvidence=marketPriceEvidence;options.asOfDate=last.date;}
+   const actionsText=$('fundamentalCapitalActionsV150')?.value?.trim();
+   if(actionsText){
+    if(actionsText.length>64*1024)throw Error('حجم آرایه رویدادهای سرمایه بیش از ۶۴ کیلوبایت است.');
+    options.capitalActions=JSON.parse(actionsText);
+    if(!Array.isArray(options.capitalActions))throw Error('رویدادهای سرمایه باید به‌صورت آرایه JSON وارد شوند.');
+   }
+   const review=window.SahambanFundamentalGateV150.evaluateFundamentalGate(data,expected,options);
    fundamentalReviews.set(norm,review);
    fundamentalStatus.textContent=review.status==='FUNDAMENTAL_REVIEW_READY'?
     'بررسی حداقلی بنیادی آماده بازبینی است. EPS: '+fmt(review.epsRialPerShare)+' ریال/سهم | DPS: '+(review.dpsRialPerShare==null?'ارائه نشده':fmt(review.dpsRialPerShare)+' ریال/سهم')+
@@ -149,7 +156,7 @@
     if(review.financialRatios.flags?.length)parts.push('پرچم‌های بررسی: '+review.financialRatios.flags.join('، '));
    }
    fundamentalDetail.textContent='نماد: '+review.symbol+' | دوره: '+(review.periodEnd||'نامشخص')+' | مبنا: '+(review.statementBasis||'نامشخص')+
-    ' | حسابرسی: '+(review.auditStatus||'نامشخص')+' | EPS: '+(review.epsRialPerShare==null?'ناموجود':fmt(review.epsRialPerShare)+' ریال')+
+    ' | حسابرسی: '+(review.auditStatus||'نامشخص')+' | رویداد سرمایه: '+fmt(review.capitalAdjustmentCount||0)+' | EPS: '+(review.epsRialPerShare==null?'ناموجود':fmt(review.epsRialPerShare)+' ریال')+
     (parts.length?'\n'+parts.join('\n'):'')+'\nتوجه: این نتایج از داده‌های کاربر و ردیف‌های ادعاشده محاسبه شده‌اند و اصالت سند/صحت رقم را مستقل اثبات نمی‌کنند.';
    if(reports.length&&select.value&&window.SahambanFundamentalEvidenceV150.normalizeSymbol(select.value)===norm)showDetail();
   }catch(e){fundamentalStatus.textContent='بررسی انجام نشد: '+e.message;fundamentalDetail.textContent='هیچ سیگنال یا داده‌ای تغییر نکرد.';}
