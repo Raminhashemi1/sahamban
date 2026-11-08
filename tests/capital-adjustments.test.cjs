@@ -170,3 +170,18 @@ test('multi-action EPS restatement is bound to same issuer and reporting period'
  assert.ok(Math.abs(eps.eps.valueRialPerShare-2000)<1e-7);
  assert.ok(calculateEPS(financial,'ونوین',{...basis,symbol:'فولاد'}).errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
 });
+
+test('mixed bonus and rights actions compound only retrospective EPS factors for earlier segments',()=>{
+ const bonus=sample();bonus.effective_date='۱۴۰۵/۰۴/۰۱';bonus.pre_action_shares=1000000;bonus.post_action_shares=1500000;
+ const rights=sample();rights.effective_date='۱۴۰۵/۰۷/۰۱';rights.action_type='RIGHTS_ISSUE';
+ rights.pre_action_shares=1500000;rights.post_action_shares=1875000;
+ rights.cum_rights_price=1000;rights.subscription_price=800;rights.price_unit='IRR_PER_SHARE';
+ rights.cum_rights_price_source_row='قیمت پایانی پیش از حق‌تقدم';rights.cum_rights_price_source_page=4;
+ rights.subscription_price_source_row='قیمت پذیره‌نویسی حق‌تقدم';rights.subscription_price_source_page=5;
+ const first=calculateCapitalAdjustment(bonus,'ونوین'),second=calculateCapitalAdjustment(rights,'ونوین');
+ const r=calculateMultiActionWeightedAverageShares([first,second],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
+ assert.equal(r.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
+ assert.ok(Math.abs(r.segments[0].adjustedShares-1562500)<1e-7);
+ assert.ok(Math.abs(r.segments[1].adjustedShares-1562500)<1e-7);
+ assert.equal(r.segments[2].adjustedShares,1875000);
+});
