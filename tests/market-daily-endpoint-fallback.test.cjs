@@ -44,12 +44,12 @@ async function runCase(kind) {
     }
     if (path.endsWith('/ClosingPrice/GetClosingPriceInfo/' + instrumentCode)) {
       return mockResponse({ closingPriceInfo: {
-        pClosing: quote, dEven: day, finalLastDate: day, lastHEven: kind === 'stale-match' ? '090000' : '112939'
+        pClosing: quote, dEven: day, finalLastDate: day, lastHEven: kind === 'stale-match' ? '090000' : (kind === 'after-close' || kind === 'after-close-history') ? '122959' : '112939'
       }});
     }
     if (path.endsWith('/ClosingPrice/GetClosingPriceDailyList/' + instrumentCode + '/0')) {
       return mockResponse({ closingPriceDaily: [
-        { dEven: previousDay, pClosing: 4410 },
+        { dEven: kind === 'after-close-history' ? day : previousDay, pClosing: kind === 'after-close-history' ? quote : 4410 },
         { dEven: '20261104', pClosing: 4350 }
       ]});
     }
@@ -62,7 +62,7 @@ async function runCase(kind) {
     }
     throw Error('Unexpected external endpoint: ' + path);
   };
-  const fixed = new Date('2026-11-08T08:00:00Z');
+  const fixed = new Date(kind === 'after-close' || kind === 'after-close-history' ? '2026-11-08T09:15:00Z' : '2026-11-08T08:00:00Z');
   class FixedDate extends Date {
     constructor(...args) { super(...(args.length ? args : [fixed.getTime()])); }
     static now() { return fixed.getTime(); }
@@ -99,4 +99,16 @@ test('same-provider match with stale quote is not presented as fresh or full PAS
   assert.match(output, /وضعیت تازگی: UNVERIFIED_STALE_TRADE/);
   assert.match(output, /این نتیجه PASS کامل نیست/);
   assert.doesNotMatch(output, /^PASS/);
+});
+
+test('after Tehran close, same-day final trade is not marked stale', async () => {
+  const { output } = await runCase('after-close');
+  assert.match(output, /^CORROBORATED_SAME_PROVIDER/);
+  assert.match(output, /وضعیت تازگی: SESSION_CLOSED_FINAL/);
+  assert.doesNotMatch(output, /UNVERIFIED_STALE_TRADE/);
+});
+test('after Tehran close, same-day exact bulk history match can PASS as final session data', async () => {
+  const { output } = await runCase('after-close-history');
+  assert.match(output, /^PASS/);
+  assert.match(output, /قیمت نهایی جلسه بسته‌شده/);
 });
