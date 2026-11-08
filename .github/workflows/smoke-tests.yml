@@ -35,6 +35,7 @@ jobs:
       - run: node --test tests/d1-schema.test.cjs
       - run: python tests/d1-schema.integration.test.py
       - run: node --test tests/decision-support-v129.test.cjs tests/external-screener-v130.test.cjs tests/market-sample-v131.test.cjs tests/signal-audit-v132.test.cjs tests/candidate-ranking-v133.test.cjs tests/temporal-holdout-v134.test.cjs
+      - run: node --test tests/fundamental-evidence.test.cjs
       - run: node --test tests/portfolio-price-empty-v116.test.cjs
       - run: node --test tests/market-connectivity-page.test.cjs
       - run: node --test tests/market-symbol-lines.test.cjs
