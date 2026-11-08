@@ -126,3 +126,20 @@ test('EPS source rows distinguish share counts from monetary filing units',()=>{
  assert.equal(packet.fields.find(v=>v.metric==='weighted_average_shares').unit,'SHARES');
  assert.equal(packet.financialEvidence,'INSUFFICIENT_EVIDENCE');
 });
+
+test('AGM dividend provenance is allowlisted and requires approval and record-date source rows',()=>{
+ const x=sample();x.rows=[
+  {metric:'cash_dividend_approved_total',amount:'۱۰۰۰',page:'8',sourceRow:'کل سود نقدی مصوب'},
+  {metric:'dividend_eligible_shares',amount:'۱۰۰۰۰۰۰۰۰',page:'9',sourceRow:'سهام مشمول دریافت سود'}
+ ];
+ const missing=rows.auditPacket({...x,dividendEvidence:{status:'APPROVED_BY_AGM'}});
+ assert.equal(missing.status,'INSUFFICIENT_EVIDENCE');
+ const good=rows.auditPacket({...x,dividendEvidence:{status:'APPROVED_BY_AGM',recordDate:'۱۴۰۵/۰۸/۱۰',
+  approvalSourceRow:'مصوبه مجمع عمومی عادی',approvalSourcePage:'10',
+  recordDateSourceRow:'تاریخ ثبت جهت دریافت سود',recordDateSourcePage:'11'}});
+ assert.equal(good.status,'LOCAL_ROW_REFERENCES_UNVERIFIED');
+ assert.equal(good.packet.dividendEvidence.status,'APPROVED_BY_AGM');
+ assert.equal(good.packet.dividendEvidence.recordDate,'1405/08/10');
+ assert.equal(good.packet.dividendEvidence.approvalSourcePage,10);
+ assert.equal(good.packet.financialEvidence,'INSUFFICIENT_EVIDENCE');
+});
