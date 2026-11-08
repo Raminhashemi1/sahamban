@@ -80,11 +80,24 @@ function checkFinancialEvidence(data,expectedSymbol){
    errors,fields:errors.length?[]:fields,accountingCheck,
    note:'READY_FOR_REVIEW does not authenticate the published report or authorize trading signals. Balance-sheet checks are arithmetic consistency checks only.'};
 }
-function calculateEPS(data,expectedSymbol){
+function calculateEPS(data,expectedSymbol,adjustedShareBasis){
  const checked=checkFinancialEvidence(data,expectedSymbol);
  if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,eps:null};
  const byName=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
- const income=byName.net_income_attributable_to_parent,shares=byName.weighted_average_shares;
+ const income=byName.net_income_attributable_to_parent;
+ let shares=byName.weighted_average_shares,shareBasisType='REPORTED_WEIGHTED_AVERAGE_SHARES';
+ if(adjustedShareBasis!==undefined){
+  const source=adjustedShareBasis?.source;
+  const validBasis=adjustedShareBasis?.status==='CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW'&&
+   normalizeSymbol(adjustedShareBasis.symbol)===normalizeSymbol(expectedSymbol)&&
+   adjustedShareBasis.periodEnd===data.period_end&&adjustedShareBasis.unit==='SHARES'&&
+   Number.isFinite(adjustedShareBasis.weightedAverageShares)&&adjustedShareBasis.weightedAverageShares>0&&
+   source&&typeof source.row==='string'&&source.row.trim()&&Number.isInteger(source.page)&&source.page>0;
+  if(!validBasis)return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'],eps:null};
+  shares={amount:adjustedShareBasis.weightedAverageShares,unit:'SHARES',
+   source_row:'Restated weighted-average shares: '+source.row,source_page:source.page};
+  shareBasisType='CAPITAL_ACTION_RESTATED_WEIGHTED_AVERAGE_SHARES';
+ }
  if(!income||!shares)return {status:'INSUFFICIENT_EVIDENCE',errors:['EPS_REQUIRES_PARENT_ATTRIBUTABLE_NET_INCOME_AND_WEIGHTED_AVERAGE_SHARES'],eps:null};
  if(shares.unit!=='SHARES'||!Number.isFinite(shares.amount)||shares.amount<=0)
   return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_WEIGHTED_AVERAGE_SHARES'],eps:null};
@@ -97,6 +110,8 @@ function calculateEPS(data,expectedSymbol){
  return {status:'EPS_READY_FOR_REVIEW',eps:{valueRialPerShare:eps,currency:'IRR',periodEnd:data.period_end,
   statementBasis:data.statement_basis,netIncomeSource:{row:income.source_row,page:income.source_page},
   weightedAverageSharesSource:{row:shares.source_row,page:shares.source_page},
+  shareBasisType,
+  capitalAdjustmentPeriodEnd:adjustedShareBasis?.periodEnd??null,
   formula:'net_income_attributable_to_parent_in_IRR / weighted_average_shares'},
   note:'EPS is an arithmetic derivation from user-supplied, traceable rows; it is not independently verified against CODAL and is not a trading signal.'};
 }
