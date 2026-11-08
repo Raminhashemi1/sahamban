@@ -217,7 +217,7 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
   const price=marketPriceEvidence;
   const marketOrdinal=value=>{
    const s=toAsciiDigits(value).trim();
-   const g=s.match(/^(\\d{4})(\\d{2})(\\d{2})$/);
+   const g=s.match(/^(\d{4})(\d{2})(\d{2})$/);
    if(g){
     const d=new Date(Date.UTC(Number(g[1]),Number(g[2])-1,Number(g[3])));
     if(d.getUTCFullYear()!==Number(g[1])||d.getUTCMonth()+1!==Number(g[2])||d.getUTCDate()!==Number(g[3]))return null;
