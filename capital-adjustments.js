@@ -113,7 +113,7 @@ function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,pe
   const a=result.adjustment,ordinal=jalaliOrdinal(a.effectiveDate);
   if(ordinal===null||ordinal<start||ordinal>end||!positiveSafeInteger(a.preActionShares)||
    !positiveSafeInteger(a.postActionShares)||!Number.isFinite(a.epsRetrospectiveShareMultiplier)||
-   a.epsRetrospectiveShareMultiplier<=0||!a.source||!/^\\d{1,20}$/.test(String(a.source.tracingNo))||
+   a.epsRetrospectiveShareMultiplier<=0||!a.source||!/^\d{1,20}$/.test(String(a.source.tracingNo))||
    typeof a.source.row!=='string'||!a.source.row.trim()||!Number.isInteger(a.source.page)||a.source.page<1)
    return fail('INVALID_ACTION_DATE_SHARE_COUNTS_OR_PROVENANCE');
   actions.push({...a,ordinal});
