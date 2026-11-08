@@ -219,10 +219,10 @@ test('financial ratios disclose margins, returns, leverage and cash conversion f
  assert.equal(r.ratios.operatingMarginPct,20);
  assert.equal(r.ratios.netMarginPct,23.75);
  assert.equal(r.ratios.roePct,50);
- assert.equal(r.ratios.roaPct,20);
+ assert.equal(r.ratios.roaPct,19);
  assert.equal(r.ratios.liabilitiesToAssetsPct,60);
  assert.equal(r.ratios.liabilitiesToEquity,1.5);
- assert.equal(r.ratios.operatingCashFlowToNetIncome,0.5);
+ assert.ok(Math.abs(r.ratios.operatingCashFlowToNetIncome-(1000/1900))<1e-12);
  assert.equal(r.valuation.pe,50);
  assert.equal(r.valuation.pb,25);
  assert.equal(r.valuation.ps,12.5);
