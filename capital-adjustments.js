@@ -4,6 +4,11 @@ const {safeReportUrl}=require('./fundamental-evidence.js');
 const {normalizeSymbol,toAsciiDigits,validPublicationDate}=require('./tests/codal-search-quality.cjs');
 const ACTIONS=new Set(['BONUS_ISSUE','STOCK_SPLIT','REVERSE_SPLIT','RIGHTS_ISSUE']);
 function positiveSafeInteger(value){return Number.isSafeInteger(value)&&value>0;}
+function jalaliKey(value){
+ const m=toAsciiDigits(value).trim().match(/^(13\\d\\d|14\\d\\d)[/-](\\d{1,2})[/-](\\d{1,2})$/);
+ if(!m||!validPublicationDate(value))return null;
+ return m[1]+String(Number(m[2])).padStart(2,'0')+String(Number(m[3])).padStart(2,'0');
+}
 function calculateCapitalAdjustment(data,expectedSymbol){
  const errors=[];
  if(!data||typeof data!=='object'||Array.isArray(data))
@@ -74,8 +79,9 @@ function calculateAdjustedWeightedAverageShares(actionResult,{daysBefore,daysAft
  if(actionResult?.status!=='CAPITAL_ADJUSTMENT_READY_FOR_REVIEW'||!a)
   return {status:'INSUFFICIENT_EVIDENCE',errors:['UNVERIFIED_CAPITAL_ACTION'],weightedAverageShares:null};
  if(!Number.isSafeInteger(daysBefore)||daysBefore<0||!Number.isSafeInteger(daysAfter)||daysAfter<0||
-  !Number.isSafeInteger(daysBefore+daysAfter)||daysBefore+daysAfter<=0||!validPublicationDate(periodEnd))
-  return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_CAPITAL_ACTION_DAY_WEIGHTS'],weightedAverageShares:null};
+  !Number.isSafeInteger(daysBefore+daysAfter)||daysBefore+daysAfter<=0||!jalaliKey(periodEnd)||
+  !jalaliKey(a.effectiveDate)||jalaliKey(a.effectiveDate)>jalaliKey(periodEnd))
+  return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_CAPITAL_ACTION_DAY_WEIGHTS_OR_PERIOD'],weightedAverageShares:null};
  if(!positiveSafeInteger(a.preActionShares)||!positiveSafeInteger(a.postActionShares)||
   !Number.isFinite(a.epsRetrospectiveShareMultiplier)||a.epsRetrospectiveShareMultiplier<=0)
   return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_CAPITAL_ACTION_SHARE_BASIS'],weightedAverageShares:null};
