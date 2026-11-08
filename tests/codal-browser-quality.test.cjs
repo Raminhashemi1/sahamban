@@ -33,3 +33,8 @@ test('browser accepts Esfand 30 only in Persian leap years',()=>{
  assert.notEqual(check(body([item({PublishDateTime:'۱۴۰۵/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
  assert.equal(check(body([item({PublishDateTime:'۱۴۰۵/۱۲/۲۹'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
 });
+
+test('browser validator covers the 1399 to 1400 leap-year boundary',()=>{
+ assert.equal(check(body([item({PublishDateTime:'۱۳۹۹/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.notEqual(check(body([item({PublishDateTime:'۱۴۰۰/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+});
