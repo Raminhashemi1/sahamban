@@ -128,8 +128,8 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
  assert.ok(wrongPeriod.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
  const wrongSymbol=calculateEPS(financial,'ونوین',{...basis,symbol:'فولاد'});
  assert.ok(wrongSymbol.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
- const wrongPeriod=calculateEPS(financial,'ونوین',{...basis,periodEnd:'۱۴۰۵/۰۳/۳۱'});
- assert.ok(wrongPeriod.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+ const wrongEnd=calculateEPS(financial,'ونوین',{...basis,periodEnd:'۱۴۰۵/۰۳/۳۱'});
+ assert.ok(wrongEnd.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
 });
 
 test('chronological bonus actions restate every earlier interval through all later factors',()=>{
