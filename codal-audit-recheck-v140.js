@@ -18,7 +18,9 @@
   return JSON.stringify(v);
  }
  function validate(packet){
-  if(!keys(packet,['schema','status','financialEvidence','verifiedMarketPrice','tradingSignalsEnabled','document','source','fields','warning'])||
+  const packetKeys=['schema','status','financialEvidence','verifiedMarketPrice','tradingSignalsEnabled','document','source','fields','warning'];
+  const hasDividend=Object.prototype.hasOwnProperty.call(packet||{},'dividendEvidence');
+  if(!keys(packet,hasDividend?[...packetKeys,'dividendEvidence']:packetKeys)||
    packet.schema!=='sahamban.codal.row-audit.v1'||
    packet.status!=='LOCAL_ROW_REFERENCES_UNVERIFIED'||packet.financialEvidence!=='INSUFFICIENT_EVIDENCE'||
    packet.verifiedMarketPrice!==false||packet.tradingSignalsEnabled!==false||
@@ -37,7 +39,8 @@
    filing:{symbol:doc.symbol,tracingNo:doc.tracingNo,published:doc.publicationDate,reportUrl:doc.reportUrl}
   },periodEnd:doc.periodEnd,unit:doc.unit,auditStatus:doc.auditStatus,
    statementBasis:doc.statementBasis,
-   rows:packet.fields.map(f=>({metric:f.metric,amount:f.amount,page:f.sourcePage,sourceRow:f.sourceRow}))});
+   rows:packet.fields.map(f=>({metric:f.metric,amount:f.amount,page:f.sourcePage,sourceRow:f.sourceRow})),
+   ...(hasDividend?{dividendEvidence:packet.dividendEvidence}:{})});
   if(!rebuilt.packet||canonical(rebuilt.packet)!==canonical(packet))return fail('INVALID_OR_MODIFIED_PACKET');
   return {status:'PACKET_STRUCTURE_UNVERIFIED',financialEvidence:'INSUFFICIENT_EVIDENCE',tradingSignalsEnabled:false};
  }
