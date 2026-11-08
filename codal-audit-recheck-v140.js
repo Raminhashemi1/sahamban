@@ -26,7 +26,7 @@
    packet.verifiedMarketPrice!==false||packet.tradingSignalsEnabled!==false||
    packet.source!=='USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED')return fail('INVALID_PACKET_SCHEMA');
   const doc=packet.document;
-  if(!keys(doc,['symbol','tracingNo','reportUrl','publicationDate','periodEnd','unit','auditStatus','statementBasis','sha256','format','fileSizeBytes','originVerified','originalDocumentRead'])||
+  if(!keys(doc,['symbol','tracingNo','reportUrl','publicationDate','periodStart','periodEnd','unit','auditStatus','statementBasis','sha256','format','fileSizeBytes','originVerified','originalDocumentRead'])||
    doc.originVerified!==false||doc.originalDocumentRead!==false||
    !/^[a-f0-9]{64}$/.test(String(doc.sha256))||!Number.isSafeInteger(doc.fileSizeBytes)||
    doc.fileSizeBytes<1||doc.fileSizeBytes>intake.MAX_BYTES||
@@ -37,7 +37,7 @@
    status:'LOCAL_FILE_FINGERPRINT_ONLY',sha256:doc.sha256,format:doc.format,fileSizeBytes:doc.fileSizeBytes,
    originVerified:false,originalDocumentRead:false,
    filing:{symbol:doc.symbol,tracingNo:doc.tracingNo,published:doc.publicationDate,reportUrl:doc.reportUrl}
-  },periodEnd:doc.periodEnd,unit:doc.unit,auditStatus:doc.auditStatus,
+  },periodStart:doc.periodStart,periodEnd:doc.periodEnd,unit:doc.unit,auditStatus:doc.auditStatus,
    statementBasis:doc.statementBasis,
    rows:packet.fields.map(f=>({metric:f.metric,amount:f.amount,page:f.sourcePage,sourceRow:f.sourceRow})),
    ...(hasDividend?{dividendEvidence:packet.dividendEvidence}:{})});
