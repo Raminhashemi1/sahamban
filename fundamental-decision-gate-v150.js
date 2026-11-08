@@ -1,8 +1,13 @@
 'use strict';
 /* v150: conservative fundamental prerequisite for technical entry candidates.
    This is a screening gate, not a valuation, price target or trading recommendation. */
-const {normalizeSymbol}=require('./tests/codal-search-quality.cjs');
-const {checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios}=require('./fundamental-evidence.js');
+(function(root,factory){
+ const evidence=typeof module==='object'&&module.exports?require('./fundamental-evidence.js'):root?.SahambanFundamentalEvidenceV150;
+ const api=factory(evidence);
+ if(typeof module==='object'&&module.exports)module.exports=api;
+ if(root)root.SahambanFundamentalGateV150=api;
+})(typeof globalThis!=='undefined'?globalThis:null,function(evidence){
+ const {normalizeSymbol,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios}=evidence;
 function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDate}={}){
  const checked=checkFinancialEvidence(data,expectedSymbol);
  if(checked.status!=='READY_FOR_REVIEW')
@@ -35,4 +40,5 @@ function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDa
   ratioStatus:ratios.status,ratioErrors:ratios.errors||[],entryEligible:true,
   note:'A minimum evidence gate only: audited same-issuer statements and positive EPS are prerequisites. It does not establish fair value, growth, solvency, liquidity, valuation attractiveness or expected return.'};
 }
-module.exports={evaluateFundamentalGate};
+return {evaluateFundamentalGate};
+});
