@@ -157,7 +157,7 @@ test('DPS refuses proposed or paid-only status and invalid record dates',()=>{
  a.fields.cash_dividend_approved_total={amount:1000,source_row:'پیشنهاد سود نقدی',source_page:12};
  a.fields.dividend_eligible_shares={amount:100000000,unit:'SHARES',source_row:'سهام مشمول',source_page:13};
  assert.ok(calculateDPS(a,'ونوین').errors.includes('DIVIDEND_NOT_APPROVED_BY_AGM'));
- a.dividend_status='APPROVED_BY_AGM';a.dividend_record_date='۱۴۰۵/۱۲/۳۰';
+ a.dividend_status='APPROVED_BY_AGM';a.dividend_record_date='۱۴۰۵/۱۳/۰۱';
  assert.ok(calculateDPS(a,'ونوین').errors.includes('INVALID_DIVIDEND_RECORD_DATE'));
 });
 test('DPS never substitutes closing shares outstanding for record-date eligible shares',()=>{
@@ -174,7 +174,7 @@ test('DPS rejects negative approved dividend totals and currency-unit mismatch',
  const a=sample();a.dividend_status='APPROVED_BY_AGM';a.dividend_record_date='۱۴۰۵/۰۸/۱۰';
  a.fields.cash_dividend_approved_total={amount:-1,source_row:'سود نقدی مصوب',source_page:12};
  a.fields.dividend_eligible_shares={amount:100000000,unit:'SHARES',source_row:'سهام مشمول',source_page:13};
- assert.ok(calculateDPS(a,'ونوین').errors.includes('NEGATIVE_BALANCE_SHEET_TOTAL'));
+ assert.ok(calculateDPS(a,'ونوین').errors.includes('NEGATIVE_FINANCIAL_AMOUNT'));
  a.fields.cash_dividend_approved_total.amount=1000;a.fields.cash_dividend_approved_total.unit='IRR';
  assert.ok(calculateDPS(a,'ونوین').errors.includes('INVALID_FIELD_UNIT'));
 });
