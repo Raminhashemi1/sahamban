@@ -44,7 +44,7 @@ async function runCase(kind) {
     }
     if (path.endsWith('/ClosingPrice/GetClosingPriceInfo/' + instrumentCode)) {
       return mockResponse({ closingPriceInfo: {
-        pClosing: quote, dEven: day, finalLastDate: day, lastHEven: '112939'
+        pClosing: quote, dEven: day, finalLastDate: day, lastHEven: kind === 'stale-match' ? '090000' : '112939'
       }});
     }
     if (path.endsWith('/ClosingPrice/GetClosingPriceDailyList/' + instrumentCode + '/0')) {
@@ -92,3 +92,11 @@ for (const kind of ['wrong-date', 'wrong-price', 'missing', 'network-error']) {
     assert.match(output, /FRESH_QUOTE_HISTORY_PENDING/);
   });
 }
+
+test('same-provider match with stale quote is not presented as fresh or full PASS', async () => {
+  const { output } = await runCase('stale-match');
+  assert.match(output, /^CORROBORATED_SAME_PROVIDER/);
+  assert.match(output, /وضعیت تازگی: STALE/);
+  assert.match(output, /این نتیجه PASS کامل نیست/);
+  assert.doesNotMatch(output, /^PASS/);
+});
