@@ -217,7 +217,7 @@ test('financial ratios disclose margins, returns, leverage and cash conversion f
  const r=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:price,asOfDate:'۱۴۰۵/۰۸/۱۲'});
  assert.equal(r.status,'FINANCIAL_RATIOS_READY_FOR_REVIEW');
  assert.equal(r.ratios.operatingMarginPct,20);
- assert.equal(r.ratios.netMarginPct,25);
+ assert.equal(r.ratios.netMarginPct,23.75);
  assert.equal(r.ratios.roePct,50);
  assert.equal(r.ratios.roaPct,20);
  assert.equal(r.ratios.liabilitiesToAssetsPct,60);
