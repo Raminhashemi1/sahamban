@@ -214,17 +214,23 @@ function tehranMarketNow(){
 }
 function quoteFreshness(marketDate,lastHEven){
  const now=tehranMarketNow();
- const session=['Sat','Sun','Mon','Tue','Wed'].includes(now.weekday)&&
-  now.secondsOfDay>=9*3600&&now.secondsOfDay<12*3600+30*60;
- if(!session)return {status:'UNVERIFIED_OUTSIDE_SESSION',message:'خارج از ساعات معمول معاملات تهران؛ فقط تطبیق تاریخی ممکن است.'};
+ const tradingDay=['Sat','Sun','Mon','Tue','Wed'].includes(now.weekday);
+ if(!tradingDay)return {status:'UNVERIFIED_OUTSIDE_SESSION',message:'امروز روز معاملاتی معمول تهران نیست؛ فقط تطبیق تاریخی ممکن است.'};
  if(String(marketDate??'')!==now.date)return {status:'UNVERIFIED_STALE_SESSION_DATE',message:'تاریخ آخرین معامله مربوط به امروز تهران نیست.'};
  const raw=String(lastHEven??'');
  if(!/^\d{1,6}$/.test(raw))return {status:'UNVERIFIED_MISSING_TRADE_TIME',message:'زمان آخرین معامله در پاسخ رسمی وجود ندارد یا معتبر نیست.'};
  const digits=raw.padStart(6,'0');
  const hour=Number(digits.slice(0,2)),minute=Number(digits.slice(2,4)),second=Number(digits.slice(4,6));
  if(hour>23||minute>59||second>59)return {status:'UNVERIFIED_MISSING_TRADE_TIME',message:'قالب زمان آخرین معامله معتبر نیست.'};
- const age=now.secondsOfDay-(hour*3600+minute*60+second);
+ const tradeSeconds=hour*3600+minute*60+second;
  const lastTradeTime=digits.slice(0,2)+':'+digits.slice(2,4)+':'+digits.slice(4,6);
+ const closeSeconds=12*3600+30*60;
+ if(now.secondsOfDay>=closeSeconds){
+  if(tradeSeconds<9*3600||tradeSeconds>closeSeconds)return {status:'UNVERIFIED_INVALID_SESSION_TIME',message:'زمان آخرین معامله خارج از بازه معمول جلسه تهران است.',lastTradeTime};
+  return {status:'SESSION_CLOSED_FINAL',message:'جلسه معمول معاملات تهران بسته شده و زمان آخرین معامله در همان جلسه ثبت شده است.',lastTradeTime,ageMinutes:(now.secondsOfDay-tradeSeconds)/60};
+ }
+ if(now.secondsOfDay<9*3600)return {status:'UNVERIFIED_OUTSIDE_SESSION',message:'هنوز جلسه معمول معاملات تهران آغاز نشده است؛ فقط تطبیق تاریخی ممکن است.',lastTradeTime};
+ const age=now.secondsOfDay-tradeSeconds;
  if(age<0||age>15*60)return {status:'UNVERIFIED_STALE_TRADE',message:'آخرین معامله بیش از ۱۵ دقیقه فاصله دارد یا زمان آن در آینده است.',lastTradeTime,ageMinutes:age/60};
  return {status:'FRESH',message:'آخرین معامله در بازهٔ ۱۵ دقیقه‌ای ثبت شده است.',lastTradeTime,ageMinutes:age/60};
 }
@@ -400,11 +406,11 @@ $('run').addEventListener('click',async()=>{
    s.textContent='CORROBORATED_SAME_PROVIDER — تاریخ و قیمت با مسیر روزانه دوم TSETMC تطبیق دارد، اما فهرست تاریخچه اصلی هنوز رکورد امروز را ندارد. این نتیجه PASS کامل نیست.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nوضعیت تازگی: '+q.freshness.status+(q.freshness.lastTradeTime?' | آخرین معامله: '+q.freshness.lastTradeTime+' تهران':'')+(q.freshness.status==='FRESH'?' ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)':' | '+q.freshness.message)+'\n'+q.historyDetail+'\nسبد شخصی بررسی یا تغییر نشده است.';
    return;
   }
-  if(q.freshness.status!=='FRESH'){
+  if(!['FRESH','SESSION_CLOSED_FINAL'].includes(q.freshness.status)){
    s.textContent='اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق.\nتطبیق قیمت پایانی با فهرست تاریخچه اصلی: موفق.\nتأیید تازگی قیمت زنده: انجام نشد.\nوضعیت تازگی: '+q.freshness.status+'\n'+q.freshness.message+'\nنماد: فولاد | قیمت پایانی: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\nبرای PASS زنده باید آزمون در ساعات معاملات تهران و با تاریخ امروز و زمان آخرین معامله حداکثر ۱۵ دقیقه قدیمی انجام شود. سبد شخصی بررسی یا تغییر نشده است.';
    return;
   }
-  s.textContent='PASS — قیمت با فهرست تاریخچه روزانه تطبیق دارد و آخرین معامله تازه است.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
+  s.textContent='PASS — قیمت با فهرست تاریخچه روزانه تطبیق دارد و '+(q.freshness.status==='SESSION_CLOSED_FINAL'?'قیمت نهایی جلسه بسته‌شده':'آخرین معامله تازه')+' تأیید شد.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
  }catch(e){
   s.textContent='ناموفق یا تأییدنشده: '+(e?.name==='AbortError'?'مهلت اتصال ۱۰ ثانیه‌ای تمام شد':String(e?.message||e))+'\nهیچ اطلاعات سبدی خوانده یا تغییر داده نشده است.';
  }finally{b.disabled=false;}
