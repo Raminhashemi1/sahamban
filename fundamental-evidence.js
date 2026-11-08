@@ -109,9 +109,13 @@ function calculateEPS(data,expectedSymbol,adjustedShareBasis){
  let shares=byName.weighted_average_shares,shareBasisType='REPORTED_WEIGHTED_AVERAGE_SHARES';
  if(adjustedShareBasis!==undefined){
   const source=adjustedShareBasis?.source;
+  const financialPeriodStart=day(data.period_start),financialPeriodEnd=day(data.period_end);
+  const basisPeriodStart=day(adjustedShareBasis?.periodStart),basisPeriodEnd=day(adjustedShareBasis?.periodEnd);
   const validBasis=adjustedShareBasis?.status==='CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW'&&
    normalizeSymbol(adjustedShareBasis.symbol)===normalizeSymbol(expectedSymbol)&&
-   adjustedShareBasis.periodStart===data.period_start&&adjustedShareBasis.periodEnd===data.period_end&&adjustedShareBasis.unit==='SHARES'&&
+   financialPeriodStart!==null&&financialPeriodEnd!==null&&financialPeriodStart<=financialPeriodEnd&&
+   basisPeriodStart!==null&&basisPeriodEnd!==null&&basisPeriodStart===financialPeriodStart&&basisPeriodEnd===financialPeriodEnd&&
+   adjustedShareBasis.unit==='SHARES'&&
    Number.isFinite(adjustedShareBasis.weightedAverageShares)&&adjustedShareBasis.weightedAverageShares>0&&
    source&&typeof source.row==='string'&&source.row.trim()&&Number.isInteger(source.page)&&source.page>0;
   if(!validBasis)return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'],eps:null};
