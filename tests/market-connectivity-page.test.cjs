@@ -73,3 +73,6 @@ const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
 assert.equal(scripts.length,1,'exactly one self-contained script');
 new vm.Script(scripts[0]);
 console.log('PASS: standalone market diagnostic syntax, editable dynamic-size basket validation, Persian/Rial UI and no portfolio-storage access');
+
+// Execute the offline fail-closed scenarios in CI alongside the page contract check.
+require('./market-daily-endpoint-fallback.test.cjs');
