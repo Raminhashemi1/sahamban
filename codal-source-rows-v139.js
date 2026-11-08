@@ -8,13 +8,26 @@
  const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
  const AUDITS=new Set(['AUDITED','UNAUDITED','UNKNOWN']);
  const BASES=new Set(['STANDALONE','CONSOLIDATED','UNKNOWN']);
- const METRICS=new Set(['revenue','operating_profit','net_income','total_assets','total_liabilities','equity','operating_cash_flow']);
+ const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','equity_attributable_to_parent','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
+ const SHARE_METRICS=new Set(['shares_outstanding','weighted_average_shares','dividend_eligible_shares']);
  const ascii=value=>String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632));
  function date(value){
   const match=ascii(value).trim().match(/^(13\d\d|14\d\d)[/-](\d\d?)[/-](\d\d?)$/);
   if(!match)return null;
   const m=Number(match[2]),d=Number(match[3]);
   if(m<1||m>12||d<1||d>(m<=6?31:30))return null;
+  if(m===12&&d===30){
+   // Esfand 30 exists only in Persian leap years; fail closed if calendar data is unavailable.
+   try{
+    const formatter=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+    let leap=false;
+    for(let day=18;day<=22;day++){
+     const parts=Object.fromEntries(formatter.formatToParts(new Date(Date.UTC(Number(match[1])+622,2,day))).map(p=>[p.type,p.value]));
+     if(parts.year===String(Number(match[1]))&&parts.month==='12'&&parts.day==='30'){leap=true;break;}
+    }
+    if(!leap)return null;
+   }catch{return null;}
+  }
   return match[1]+'/'+String(m).padStart(2,'0')+'/'+String(d).padStart(2,'0');
  }
  function parseAmount(value){
@@ -22,14 +35,14 @@
   if(!/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,3})?$/.test(raw)||raw.length>24)return null;
   const n=Number(raw);return Number.isFinite(n)&&Number.isSafeInteger(Math.trunc(n))?n:null;
  }
- function review({fingerprint,periodEnd,unit,auditStatus,statementBasis,rows}={}){
+ function review({fingerprint,periodStart,periodEnd,unit,auditStatus,statementBasis,rows,dividendEvidence}={}){
   const errors=[];
   if(!fingerprint||fingerprint.status!=='LOCAL_FILE_FINGERPRINT_ONLY'||
      !/^[a-f0-9]{64}$/.test(String(fingerprint.sha256??''))||
      !fingerprint.filing||fingerprint.originVerified!==false||fingerprint.originalDocumentRead!==false)
     errors.push('FILE_FINGERPRINT_REQUIRED');
-  const end=date(periodEnd),published=date(ascii(fingerprint?.filing?.published||'').slice(0,10));
-  if(!end||!published||end>published)errors.push('INVALID_PERIOD');
+  const start=periodStart?date(periodStart):null,end=date(periodEnd),published=date(ascii(fingerprint?.filing?.published||'').slice(0,10));
+  if(!end||!published||end>published||(periodStart&&(!start||start>end)))errors.push('INVALID_PERIOD');
   if(!UNITS.has(unit))errors.push('INVALID_UNIT');
   if(!AUDITS.has(auditStatus))errors.push('INVALID_AUDIT_STATUS');
   if(!BASES.has(statementBasis))errors.push('INVALID_STATEMENT_BASIS');
@@ -42,16 +55,31 @@
       !label||label.length>160||/[\u0000-\u001f\u007f]/.test(label)){
     errors.push('INVALID_OR_DUPLICATE_ROW');continue;
    }
-   seen.add(name);fields.push({metric:name,amount,sourcePage:page,sourceRow:label,unit});
+   seen.add(name);fields.push({metric:name,amount,sourcePage:page,sourceRow:label,unit:SHARE_METRICS.has(name)?'SHARES':unit});
+  }
+  let dividend=null;
+  if(dividendEvidence!==undefined&&dividendEvidence!==null){
+   const d=dividendEvidence;
+   const sourceOk=(row,page)=>typeof row==='string'&&row.trim().length>0&&row.length<=160&&Number.isSafeInteger(Number(page))&&Number(page)>=1&&Number(page)<=99999;
+   if(!d||!['NOT_DECLARED','PROPOSED_BY_BOARD','APPROVED_BY_AGM'].includes(d.status))
+    errors.push('INVALID_DIVIDEND_STATUS');
+   else if(d.status!=='NOT_DECLARED'){
+    const recordDate=date(d.recordDate);
+    if(!recordDate||!sourceOk(d.recordDateSourceRow,d.recordDateSourcePage))errors.push('INVALID_OR_UNTRACEABLE_DIVIDEND_RECORD_DATE');
+    if(!sourceOk(d.approvalSourceRow,d.approvalSourcePage))errors.push('INVALID_OR_UNTRACEABLE_DIVIDEND_APPROVAL');
+    dividend={status:d.status,recordDate,approvalSourceRow:String(d.approvalSourceRow).trim(),
+     approvalSourcePage:Number(d.approvalSourcePage),recordDateSourceRow:String(d.recordDateSourceRow).trim(),
+     recordDateSourcePage:Number(d.recordDateSourcePage)};
+   }else dividend={status:d.status};
   }
   if(errors.length)return {status:'INSUFFICIENT_EVIDENCE',errors:[...new Set(errors)],fields:[],tradingSignalsEnabled:false};
   const filing=fingerprint.filing;
   return {status:'LOCAL_ROW_REFERENCES_UNVERIFIED',errors:[],tradingSignalsEnabled:false,
    evidence:{symbol:filing.symbol,tracingNo:filing.tracingNo,reportUrl:filing.reportUrl,
-    publicationDate:published,periodEnd:end,unit,auditStatus,statementBasis,
+    publicationDate:published,periodStart:start,periodEnd:end,unit,auditStatus,statementBasis,
     documentSha256:fingerprint.sha256,format:fingerprint.format,fileSizeBytes:fingerprint.fileSizeBytes,
-    source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',originVerified:false,originalDocumentRead:false,fields},
-   warning:'Values were manually entered and have not been independently checked against original CODAL content. No fundamental ratios or trade signals are authorized.'};
+    ...(dividend?{dividendEvidence:dividend}:{}),source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',originVerified:false,originalDocumentRead:false,fields},
+   warning:'Values were manually entered and have not been independently checked against original CODAL content. This packet remains unverified and cannot independently authorize ratios or trade signals.'};
  }
  function auditPacket(data){
   const checked=review(data);
@@ -61,24 +89,28 @@
   const packet={schema:'sahamban.codal.row-audit.v1',status:'LOCAL_ROW_REFERENCES_UNVERIFIED',
    financialEvidence:'INSUFFICIENT_EVIDENCE',verifiedMarketPrice:false,tradingSignalsEnabled:false,
    document:{symbol:e.symbol,tracingNo:e.tracingNo,reportUrl:e.reportUrl,publicationDate:e.publicationDate,
-    periodEnd:e.periodEnd,unit:e.unit,auditStatus:e.auditStatus,statementBasis:e.statementBasis,
+    periodStart:e.periodStart,periodEnd:e.periodEnd,unit:e.unit,auditStatus:e.auditStatus,statementBasis:e.statementBasis,
     sha256:e.documentSha256,format:e.format,fileSizeBytes:e.fileSizeBytes,
     originVerified:false,originalDocumentRead:false},
    source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',
    fields:e.fields.map(row=>({metric:row.metric,amount:row.amount,unit:row.unit,
     sourcePage:row.sourcePage,sourceRow:row.sourceRow})),
-   warning:'UNVERIFIED USER-ENTERED FIGURES. Compare against the original CODAL filing independently. Do not compute financial ratios, EPS, NAV, or trading signals.'};
+   warning:'UNVERIFIED USER-ENTERED FIGURES. Compare against the original CODAL filing independently. This packet alone does not authenticate figures or authorize financial analysis.'};
+  if(e.dividendEvidence)packet.dividendEvidence=e.dividendEvidence;
   return {status:'LOCAL_ROW_REFERENCES_UNVERIFIED',errors:[],packet};
  }
  function mount(win){
   const doc=win.document,root=doc.getElementById('codalRowsV139');if(!root)return;
   const input=id=>doc.getElementById(id);
-  const controls={end:input('codalRowsPeriodV139'),unit:input('codalRowsUnitV139'),
+  const controls={start:input('codalRowsPeriodStartV139'),end:input('codalRowsPeriodV139'),unit:input('codalRowsUnitV139'),
    audit:input('codalRowsAuditV139'),basis:input('codalRowsBasisV139'),
    metric:input('codalRowsMetricV139'),amount:input('codalRowsAmountV139'),
    page:input('codalRowsPageV139'),label:input('codalRowsLabelV139'),
    add:input('codalRowsAddV139'),run:input('codalRowsCheckV139'),export:input('codalRowsExportV139'),
-   summary:input('codalRowsSummaryV139'),rows:input('codalRowsListV139')};
+   summary:input('codalRowsSummaryV139'),rows:input('codalRowsListV139'),dividendStatus:input('codalRowsDividendStatusV139'),
+   dividendDate:input('codalRowsDividendDateV139'),dividendApprovalRow:input('codalRowsDividendApprovalRowV139'),
+   dividendApprovalPage:input('codalRowsDividendApprovalPageV139'),dividendRecordRow:input('codalRowsDividendRecordRowV139'),
+   dividendRecordPage:input('codalRowsDividendRecordPageV139')};
   if(Object.values(controls).some(v=>!v))return;
   let fingerprint=null,rows=[];
   function render(){
@@ -104,7 +136,7 @@
    if(!fingerprint||rows.length>=20){controls.summary.textContent='ابتدا فایل معتبر انتخاب کنید یا سقف ۲۰ ردیف رعایت شود.';return;}
    const candidate={metric:controls.metric.value,amount:controls.amount.value,page:controls.page.value,sourceRow:controls.label.value};
    const current=[...rows,candidate];
-   const r=review({fingerprint,periodEnd:controls.end.value,unit:controls.unit.value,auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows:current});
+   const r=review({fingerprint,periodStart:controls.start.value,periodEnd:controls.end.value,unit:controls.unit.value,auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows:current});
    if(r.errors.includes('INVALID_OR_DUPLICATE_ROW')||r.errors.includes('INVALID_ROWS_COUNT')){
     controls.summary.textContent='ردیف تکراری یا نامعتبر است. مقدار عددی بدون جداکننده، شماره صفحه و عنوان دقیق ردیف لازم است.';return;
    }
@@ -112,7 +144,11 @@
   });
   controls.run.addEventListener('click',()=>{
    const result=review({fingerprint,periodEnd:controls.end.value,unit:controls.unit.value,
-    auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows});
+    auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows,
+    dividendEvidence:controls.dividendStatus.value==='NOT_DECLARED'?{status:'NOT_DECLARED'}:{
+     status:controls.dividendStatus.value,recordDate:controls.dividendDate.value,
+     approvalSourceRow:controls.dividendApprovalRow.value,approvalSourcePage:controls.dividendApprovalPage.value,
+     recordDateSourceRow:controls.dividendRecordRow.value,recordDateSourcePage:controls.dividendRecordPage.value}});
    if(result.status!=='LOCAL_ROW_REFERENCES_UNVERIFIED'){
     controls.summary.textContent='اطلاعات ناکافی یا نامعتبر: '+result.errors.join('، ')+'. هیچ سیگنال یا نسبت مالی صادر نشد.';return;
    }
@@ -121,7 +157,11 @@
   });
   controls.export.addEventListener('click',()=>{
    const result=auditPacket({fingerprint,periodEnd:controls.end.value,unit:controls.unit.value,
-    auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows});
+    auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows,
+    dividendEvidence:controls.dividendStatus.value==='NOT_DECLARED'?{status:'NOT_DECLARED'}:{
+     status:controls.dividendStatus.value,recordDate:controls.dividendDate.value,
+     approvalSourceRow:controls.dividendApprovalRow.value,approvalSourcePage:controls.dividendApprovalPage.value,
+     recordDateSourceRow:controls.dividendRecordRow.value,recordDateSourcePage:controls.dividendRecordPage.value}});
    if(!result.packet){
     controls.summary.textContent='خروجی ساخته نشد: '+result.errors.join('، ')+'. ابتدا اطلاعات را اصلاح کنید.';
     return;

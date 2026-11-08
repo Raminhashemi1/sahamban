@@ -2,7 +2,7 @@
 /* v129 read-only decision assistant. Consumes only the separately verified history event. */
 (()=>{const $=id=>document.getElementById(id);const root=$('decisionSupportV129');if(!root)return;
  const status=$('decisionStatusV129'),summary=$('decisionSummaryV129'),table=$('decisionTableV129'),detail=$('decisionDetailV129'),select=$('decisionSymbolV129');
- let quotes=[],reports=[];const exportButton=$('decisionExportV129');
+ let quotes=[],reports=[],fundamentalReviews=new Map();const exportButton=$('decisionExportV129');
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
  const dateTehran=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return p.year+p.month+p.day;};
  const pretty=d=>String(d||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1/$2/$3').replace(/[0-9]/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)]);
@@ -33,9 +33,33 @@
   comparison.textContent='مقایسه تشخیصی همان نماد: '+fmt(base.count)+' پنجره ثابت ۱۰جلسه‌ای مستقل از انتخاب سیگنال؛ میانگین خالص نگهداری فرضی '+fmtPct(base.meanNetReturnPct)+'؛ اختلاف میانگین رویدادهای نامزد ورود با آن '+fmtPct(base.excessMeanNetReturnPct)+'. این دو نمونه از نظر زمان حضور در بازار هم‌ارز نیستند؛ مقایسه با شاخص کل بازار یا اثبات برتری راهبرد نیست.';
  }catch(e){comparison.textContent='مقایسه مستقل بازده در دسترس نیست: '+e.message;}
  detail.append(comparison);
+ const fundamental=fundamentalReviews.get(window.SahambanFundamentalEvidenceV150?.normalizeSymbol(r.symbol));
+ if(fundamental){
+  const fline=document.createElement('p');
+  fline.textContent='دروازه بنیادی: '+(fundamental.status==='FUNDAMENTAL_REVIEW_READY'?'حداقل شروط شواهد بنیادی عبور کرده است؛ این نتیجه ارزندگی یا توصیه خرید نیست.':'مسدود؛ '+(fundamental.reasons||[]).join('، '));
+  detail.append(fline);
+  if(fundamental.financialRatios){
+   const ratios=fundamental.financialRatios.ratios||{},valuation=fundamental.financialRatios.valuation||{};
+   const ratioLine=document.createElement('p');
+   ratioLine.textContent='حاشیه عملیاتی: '+(ratios.operatingMarginPct==null?'ناموجود':fmt(ratios.operatingMarginPct)+'٪')+
+    ' | حاشیه خالص: '+(ratios.netMarginPct==null?'ناموجود':fmt(ratios.netMarginPct)+'٪')+
+    ' | ROE: '+(ratios.roePct==null?'ناموجود':fmt(ratios.roePct)+'٪')+
+    ' | ROA: '+(ratios.roaPct==null?'ناموجود':fmt(ratios.roaPct)+'٪')+
+    ' | تبدیل جریان نقد: '+(ratios.operatingCashFlowToNetIncome==null?'ناموجود':fmt(ratios.operatingCashFlowToNetIncome));
+   detail.append(ratioLine);
+   const valLine=document.createElement('p');
+   valLine.textContent='P/E: '+(valuation.pe==null?'ناموجود':fmt(valuation.pe))+
+    ' | P/B: '+(valuation.pb==null?'ناموجود':fmt(valuation.pb))+
+    ' | P/S: '+(valuation.ps==null?'ناموجود':fmt(valuation.ps))+
+    ' | پرچم‌های بررسی: '+(fundamental.financialRatios.flags||[]).join('، ');
+   detail.append(valLine);
+  }
+ }else{
+  const fline=document.createElement('p');fline.textContent='دروازه بنیادی هنوز برای این نماد اجرا نشده است؛ نامزد تکنیکال به‌تنهایی مجوز بررسی ورود نیست.';detail.append(fline);
+ }
  const conditional=document.createElement('p');
  try{
-  const plan=window.SahambanDecisionV129.decisionPlan(r);
+  const plan=window.SahambanDecisionV129.decisionPlan(r,{fundamentalReview:fundamental});
   conditional.textContent='برنامه مشروط تا تاریخ '+pretty(plan.asOf)+': '+plan.when+' | شرط ابطال یا محدودیت: '+plan.invalidation+' | '+plan.dataStatus+' '+plan.evidence;
  }catch(e){conditional.textContent='برنامه اجرایی تأیید نشده: '+e.message;}
  detail.append(conditional);
@@ -55,6 +79,105 @@
    }finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}
   }catch(e){status.textContent='تهیه گزارش مستند انجام نشد: '+e.message;}
  });
+ const fundamentalFile=$('fundamentalEvidenceFileV150');
+ const fundamentalStatus=$('fundamentalReviewStatusV150');
+ const fundamentalDetail=$('fundamentalReviewDetailV150');
+ const attestation=$('fundamentalOriginalAttestationV150');
+ function clearFundamentalReview(){
+  fundamentalReviews.clear();
+  if(fundamentalFile)fundamentalFile.value='';
+  if(attestation)attestation.checked=false;
+  const actionInput=$('fundamentalCapitalActionsV150');if(actionInput)actionInput.value='';
+  if(fundamentalStatus)fundamentalStatus.textContent='بررسی بنیادی این نشست پاک شد؛ هیچ داده‌ای ذخیره یا ارسال نشده است.';
+  if(fundamentalDetail)fundamentalDetail.textContent='';
+  if(reports.length)showDetail();
+ }
+ async function runFundamentalReview(){
+  fundamentalReviews.clear();if(reports.length)showDetail();
+  if(!fundamentalFile?.files?.length){fundamentalStatus.textContent='ابتدا فایل JSON شواهد مالی را انتخاب کنید.';return;}
+  if(!attestation?.checked){fundamentalStatus.textContent='برای ادامه، تطبیق شخصی اصل گزارش، ردیف‌ها و واحدها را تأیید کنید.';return;}
+  const file=fundamentalFile.files[0];
+  if(file.size<=0||file.size>128*1024){fundamentalStatus.textContent='حجم فایل JSON باید بین ۱ بایت تا ۱۲۸ کیلوبایت باشد.';return;}
+  try{
+   const payload=JSON.parse(await file.text());
+   let data=payload?.financialEvidence&&typeof payload.financialEvidence==='object'?payload.financialEvidence:payload;
+   if(payload?.schema==='sahamban.codal.row-audit.v1'){
+    const doc=payload.document,rows=payload.fields;
+    if(!doc||!Array.isArray(rows)||!rows.length)throw Error('ساختار بسته ردیف‌های کدال ناقص است.');
+    const fields={};
+    for(const row of rows){
+     if(!row||typeof row.metric!=='string'||Object.prototype.hasOwnProperty.call(fields,row.metric))throw Error('ردیف مالی تکراری یا نامعتبر است.');
+     fields[row.metric]={amount:row.amount,unit:row.unit,source_row:row.sourceRow,source_page:row.sourcePage};
+    }
+    data={symbol:doc.symbol,tracing_no:doc.tracingNo,report_url:doc.reportUrl,
+     publication_date:doc.publicationDate,period_start:doc.periodStart,period_end:doc.periodEnd,unit:doc.unit,
+     audit_status:doc.auditStatus,statement_basis:doc.statementBasis,
+     document_sha256:doc.sha256,original_document_read:true,origin_verified:false,
+     source:'USER_ENTERED_LOCAL_PACKET_REQUIRES_HUMAN_ATTESTATION',fields,
+     ...(payload.dividendEvidence&&typeof payload.dividendEvidence==='object'?{
+      dividend_status:payload.dividendEvidence.status,
+      dividend_record_date:payload.dividendEvidence.recordDate,
+      dividend_approval_source_row:payload.dividendEvidence.approvalSourceRow,
+      dividend_approval_source_page:payload.dividendEvidence.approvalSourcePage,
+      dividend_record_date_source_row:payload.dividendEvidence.recordDateSourceRow,
+      dividend_record_date_source_page:payload.dividendEvidence.recordDateSourcePage
+     }:{})};
+   }
+   const expected=String(data?.symbol??'').trim();
+   if(!expected)throw Error('نماد در فایل شواهد مالی مشخص نشده است.');
+   if(!window.SahambanFundamentalGateV150?.evaluateFundamentalGate)throw Error('موتور بنیادی در مرورگر بارگذاری نشده است.');
+   const norm=window.SahambanFundamentalEvidenceV150.normalizeSymbol(expected);
+   const quote=quotes.find(x=>window.SahambanFundamentalEvidenceV150.normalizeSymbol(x.symbol)===norm);
+   const last=quote?.history?.at(-1);
+   const marketPriceEvidence=last&&Number.isFinite(Number(last.close))&&Number(last.close)>0?
+    {status:'VERIFIED_MARKET_CLOSE',symbol:quote.symbol,closeRialPerShare:Number(last.close),marketDate:last.date,source:'VERIFIED_HISTORICAL_QUOTE_EVENT'}:undefined;
+   const options={};
+   if(marketPriceEvidence){options.marketPriceEvidence=marketPriceEvidence;options.asOfDate=last.date;}
+   const actionsText=$('fundamentalCapitalActionsV150')?.value?.trim();
+   if(actionsText){
+    if(actionsText.length>64*1024)throw Error('حجم آرایه رویدادهای سرمایه بیش از ۶۴ کیلوبایت است.');
+    options.capitalActions=JSON.parse(actionsText);
+    if(!Array.isArray(options.capitalActions))throw Error('رویدادهای سرمایه باید به‌صورت آرایه JSON وارد شوند.');
+   }
+   const review=window.SahambanFundamentalGateV150.evaluateFundamentalGate(data,expected,options);
+   fundamentalReviews.set(norm,review);
+   fundamentalStatus.textContent=review.status==='FUNDAMENTAL_REVIEW_READY'?
+    'بررسی حداقلی بنیادی آماده بازبینی است. EPS: '+fmt(review.epsRialPerShare)+' ریال/سهم | DPS: '+(review.dpsRialPerShare==null?'ارائه نشده':fmt(review.dpsRialPerShare)+' ریال/سهم')+
+    ' | وضعیت نسبت‌ها: '+review.ratioStatus+'. عبور از این مرحله به‌تنهایی ارزندگی یا مجوز معامله نیست.':
+    'دروازه بنیادی مسدود است: '+(review.reasons||[]).join('، ');
+   const parts=[];
+   if(review.financialRatios){
+    const rr=review.financialRatios.ratios||{},v=review.financialRatios.valuation||{};
+    parts.push('حاشیه عملیاتی: '+(rr.operatingMarginPct==null?'ناموجود':fmt(rr.operatingMarginPct)+'٪'));
+    parts.push('حاشیه خالص: '+(rr.netMarginPct==null?'ناموجود':fmt(rr.netMarginPct)+'٪'));
+    parts.push('ROE: '+(rr.roePct==null?'ناموجود':fmt(rr.roePct)+'٪'));
+    parts.push('ROA: '+(rr.roaPct==null?'ناموجود':fmt(rr.roaPct)+'٪'));
+    parts.push('بدهی به حقوق مالکانه: '+(rr.liabilitiesToEquity==null?'ناموجود':fmt(rr.liabilitiesToEquity)));
+    parts.push('جریان نقد عملیاتی/سود خالص: '+(rr.operatingCashFlowToNetIncome==null?'ناموجود':fmt(rr.operatingCashFlowToNetIncome)));
+    parts.push('P/E: '+(v.pe==null?'ناموجود':fmt(v.pe))+' | P/B: '+(v.pb==null?'ناموجود':fmt(v.pb))+' | P/S: '+(v.ps==null?'ناموجود':fmt(v.ps)));
+    if(review.financialRatios.flags?.length)parts.push('پرچم‌های بررسی: '+review.financialRatios.flags.join('، '));
+   }
+   fundamentalDetail.textContent='نماد: '+review.symbol+' | دوره: '+(review.periodEnd||'نامشخص')+' | مبنا: '+(review.statementBasis||'نامشخص')+
+    ' | حسابرسی: '+(review.auditStatus||'نامشخص')+' | رویداد سرمایه: '+fmt(review.capitalAdjustmentCount||0)+' | EPS: '+(review.epsRialPerShare==null?'ناموجود':fmt(review.epsRialPerShare)+' ریال')+
+    (parts.length?'\n'+parts.join('\n'):'')+'\nتوجه: این نتایج از داده‌های کاربر و ردیف‌های ادعاشده محاسبه شده‌اند و اصالت سند/صحت رقم را مستقل اثبات نمی‌کنند.';
+   if(reports.length&&select.value&&window.SahambanFundamentalEvidenceV150.normalizeSymbol(select.value)===norm)showDetail();
+  }catch(e){fundamentalStatus.textContent='بررسی انجام نشد: '+e.message;fundamentalDetail.textContent='هیچ سیگنال یا داده‌ای تغییر نکرد.';}
+ }
+ function invalidateFundamentalReview(message){
+  fundamentalReviews.clear();
+  if(fundamentalStatus)fundamentalStatus.textContent=message;
+  if(fundamentalDetail)fundamentalDetail.textContent='';
+  if(reports.length)showDetail();
+ }
+ fundamentalFile?.addEventListener('change',()=>invalidateFundamentalReview('فایل شواهد تغییر کرد؛ بررسی قبلی باطل شد و اجرای مجدد لازم است.'));
+ $('fundamentalCapitalActionsV150')?.addEventListener('input',()=>invalidateFundamentalReview('آرایه رویدادهای سرمایه تغییر کرد؛ بررسی قبلی باطل شد و اجرای مجدد لازم است.'));
+ attestation?.addEventListener('change',()=>{if(!attestation.checked)invalidateFundamentalReview('تأیید اصل اسناد برداشته شد؛ دروازه بنیادی مسدود است.');});
+ $('fundamentalReviewRunV150')?.addEventListener('click',runFundamentalReview);
+ $('fundamentalReviewClearV150')?.addEventListener('click',clearFundamentalReview);
  $('decisionRunV129').addEventListener('click',run);select.addEventListener('change',showDetail);$('decisionSizeV129').addEventListener('click',()=>{const r=reports.find(x=>x.symbol===select.value),out=$('decisionSizeResultV129');if(!r||r.code!=='ENTRY_CANDIDATE'||r.stop===null){out.textContent='محاسبه حجم فقط برای نامزد ورود با حد ضرر معتبر فعال است؛ ابتدا شروط ورود را بررسی کنید.';return;}try{const capital=Number($('decisionCapitalV129').value),riskPercent=Number($('decisionRiskV129').value),x=window.SahambanDecisionV129.sizePosition({capital,riskPercent,entry:r.last,stop:r.stop});out.textContent='بودجه ریسک: '+fmt(x.riskBudget)+' ریال | حداکثر تعداد قابل تأمین از سرمایه و بودجه ریسک: '+fmt(x.quantity)+' سهم | ارزش خرید نظری: '+fmt(x.estimatedCost)+' ریال | زیان نظری تا حد ضرر: '+fmt(x.maxLoss)+' ریال | محدودکننده: '+(x.limitedBy==='BOTH_LIMITS'?'سرمایه و بودجه ریسک به‌طور هم‌زمان':x.limitedBy==='AVAILABLE_CASH'?'سرمایه در دسترس':'بودجه ریسک')+'. این محاسبه پیش از کارمزد است و لغزش، صف و محدودیت نقدشوندگی لحاظ نشده‌اند؛ خرید خودکار انجام نمی‌شود.';}catch(e){out.textContent=e.message;}});
- window.addEventListener('sahamban:verified-historical-quotes-v50',e=>{const a=e?.detail?.quotes;if(Array.isArray(a)){quotes=a;reports=[];table.replaceChildren();detail.replaceChildren();select.replaceChildren();summary.textContent='گزارش‌های قبلی با دریافت داده جدید پاک شدند؛ تحلیل مجدد لازم است.';if(exportButton)exportButton.disabled=true;status.textContent='تاریخچه تأییدشده جدید دریافت شد. گزارش قبلی معتبر نیست؛ «تحلیل همه نمادها» را دوباره بزنید.';}});
+ window.addEventListener('sahamban:verified-historical-quotes-v50',e=>{const a=e?.detail?.quotes;if(Array.isArray(a)){quotes=a;reports=[];fundamentalReviews.clear();
+  const evidenceFile=$('fundamentalEvidenceFileV150');if(evidenceFile)evidenceFile.value='';
+  const evidenceAttestation=$('fundamentalOriginalAttestationV150');if(evidenceAttestation)evidenceAttestation.checked=false;
+  const capitalInput=$('fundamentalCapitalActionsV150');if(capitalInput)capitalInput.value='';
+  table.replaceChildren();detail.replaceChildren();select.replaceChildren();summary.textContent='گزارش‌های قبلی با دریافت داده جدید پاک شدند؛ تحلیل مجدد لازم است.';if(exportButton)exportButton.disabled=true;status.textContent='تاریخچه تأییدشده جدید دریافت شد. گزارش قبلی معتبر نیست؛ «تحلیل همه نمادها» را دوباره بزنید.';}});
 })();

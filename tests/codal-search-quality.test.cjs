@@ -38,3 +38,19 @@ test('date metadata checks Jalali month/day bounds',()=>{
  assert.equal(validPublicationDate('1405/06/31'),true);
  assert.equal(validPublicationDate('1405/00/12'),false);
 });
+
+test('accepts Esfand 30 only in Persian leap years',()=>{
+ assert.equal(validPublicationDate('۱۴۰۳/۱۲/۳۰'),true);
+ assert.equal(validPublicationDate('۱۴۰۵/۱۲/۳۰'),false);
+ assert.equal(validPublicationDate('۱۴۰۵/۱۲/۲۹'),true);
+});
+test('covers a second leap-year cycle boundary',()=>{
+ assert.equal(validPublicationDate('1399/12/30'),true);
+ assert.equal(validPublicationDate('1400/12/30'),false);
+ assert.equal(validPublicationDate('1401/12/30'),false);
+ assert.equal(validPublicationDate('1404/12/30'),false);
+});
+test('rejects impossible CODAL publication clock times',()=>{
+ for(const value of ['1405/08/12 24:00','1405/08/12 12:60','1405/08/12 12:30:60','1405/08/12 99:99:99'])assert.equal(validPublicationDate(value),false);
+ assert.equal(validPublicationDate('1405/08/12 23:59:59'),true);
+});

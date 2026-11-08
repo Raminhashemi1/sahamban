@@ -57,8 +57,8 @@ test('module loaded in PWA and has no storage/network/exfiltration',()=>{
  new vm.Script(js);
  for(const id of ['codalRowsV139','codalRowsPeriodV139','codalRowsUnitV139','codalRowsAuditV139','codalRowsBasisV139','codalRowsAddV139','codalRowsCheckV139'])
   assert.ok(html.includes('id="'+id+'"'),id);
- assert.ok(sw.includes('codal-source-rows-v139.js?v=139.1'));
- assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.1')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
+ assert.ok(sw.includes('codal-source-rows-v139.js?v=139.4'));
+ assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.4')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
 
@@ -93,9 +93,53 @@ test('local export button is present and app code contains no network access',()
  const src=fs.readFileSync('codal-source-rows-v139.js','utf8');
  const sw=fs.readFileSync('sw.js','utf8');
  assert.ok(html.includes('id="codalRowsExportV139"'));
- assert.ok(html.includes('codal-source-rows-v139.js?v=139.1'));
- assert.ok(sw.includes('codal-source-rows-v139.js?v=139.1'));
+ assert.ok(html.includes('codal-source-rows-v139.js?v=139.4'));
+ assert.ok(sw.includes('codal-source-rows-v139.js?v=139.4'));
  assert.match(src,/createObjectURL/);
  assert.match(src,/revokeObjectURL/);
  assert.doesNotMatch(src,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
+});
+
+test('local CODAL row intake accepts Esfand 30 only in leap years',()=>{
+ assert.equal(rows.date('۱۴۰۳/۱۲/۳۰'),'1403/12/30');
+ assert.equal(rows.date('۱۴۰۵/۱۲/۳۰'),null);
+ assert.equal(rows.date('۱۴۰۵/۱۲/۲۹'),'1405/12/29');
+});
+test('local CODAL row intake covers the 1399 to 1400 leap-year boundary',()=>{
+ assert.equal(rows.date('۱۳۹۹/۱۲/۳۰'),'1399/12/30');
+ assert.equal(rows.date('۱۴۰۰/۱۲/۳۰'),null);
+});
+
+test('EPS source rows distinguish share counts from monetary filing units',()=>{
+ const x=sample();
+ x.rows=[
+  {metric:'net_income_attributable_to_parent',amount:'۲۰۰۰',page:'4',sourceRow:'سود قابل انتساب به مالکان اصلی'},
+  {metric:'weighted_average_shares',amount:'۱۰۰۰۰۰۰۰۰',page:'5',sourceRow:'میانگین موزون سهام'},
+  {metric:'shares_outstanding',amount:'۱۲۰۰۰۰۰۰۰',page:'5',sourceRow:'تعداد سهام پایان دوره'}
+ ];
+ const r=rows.review(x);
+ assert.equal(r.status,'LOCAL_ROW_REFERENCES_UNVERIFIED');
+ assert.equal(r.evidence.fields.find(v=>v.metric==='net_income_attributable_to_parent').unit,'MILLION_IRR');
+ assert.equal(r.evidence.fields.find(v=>v.metric==='weighted_average_shares').unit,'SHARES');
+ assert.equal(r.evidence.fields.find(v=>v.metric==='shares_outstanding').unit,'SHARES');
+ const packet=rows.auditPacket(x).packet;
+ assert.equal(packet.fields.find(v=>v.metric==='weighted_average_shares').unit,'SHARES');
+ assert.equal(packet.financialEvidence,'INSUFFICIENT_EVIDENCE');
+});
+
+test('AGM dividend provenance is allowlisted and requires approval and record-date source rows',()=>{
+ const x=sample();x.rows=[
+  {metric:'cash_dividend_approved_total',amount:'۱۰۰۰',page:'8',sourceRow:'کل سود نقدی مصوب'},
+  {metric:'dividend_eligible_shares',amount:'۱۰۰۰۰۰۰۰۰',page:'9',sourceRow:'سهام مشمول دریافت سود'}
+ ];
+ const missing=rows.auditPacket({...x,dividendEvidence:{status:'APPROVED_BY_AGM'}});
+ assert.equal(missing.status,'INSUFFICIENT_EVIDENCE');
+ const good=rows.auditPacket({...x,dividendEvidence:{status:'APPROVED_BY_AGM',recordDate:'۱۴۰۵/۰۸/۱۰',
+  approvalSourceRow:'مصوبه مجمع عمومی عادی',approvalSourcePage:'10',
+  recordDateSourceRow:'تاریخ ثبت جهت دریافت سود',recordDateSourcePage:'11'}});
+ assert.equal(good.status,'LOCAL_ROW_REFERENCES_UNVERIFIED');
+ assert.equal(good.packet.dividendEvidence.status,'APPROVED_BY_AGM');
+ assert.equal(good.packet.dividendEvidence.recordDate,'1405/08/10');
+ assert.equal(good.packet.dividendEvidence.approvalSourcePage,10);
+ assert.equal(good.packet.financialEvidence,'INSUFFICIENT_EVIDENCE');
 });

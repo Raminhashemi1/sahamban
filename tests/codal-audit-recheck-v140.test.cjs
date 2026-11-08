@@ -77,11 +77,29 @@ test('local UI is embedded without storage, network, or scripttag injections',()
  new vm.Script(js);
  for(const id of ['codalAuditJsonV140','codalAuditOriginalV140','codalAuditRecheckV140','codalAuditRecheckStatusV140'])
   assert.ok(html.includes('id="'+id+'"'),id);
- assert.ok(html.includes('./codal-audit-recheck-v140.js?v=140.0'));
+ assert.ok(html.includes('./codal-audit-recheck-v140.js?v=140.2'));
  const from=html.indexOf('<section class="card" id="codalRowsV139"');
  const inner=html.indexOf('<div class="card" id="codalAuditRecheckPanelV140"');
  const next=html.indexOf('<section class="card" id="decisionSupportV129"');
  assert.ok(from>=0 && from<inner && inner<next,'recheck must stay within the visible financial-row module');
- assert.ok(sw.includes('./codal-audit-recheck-v140.js?v=140.0'));
+ assert.ok(sw.includes('./codal-audit-recheck-v140.js?v=140.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(|innerHTML/);
+});
+
+test('recheck canonicalization preserves optional AGM dividend evidence metadata',async()=>{
+ const source=file(docBytes);
+ const h=await orig.inspect(source,{symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'},{subtle:webcrypto.subtle});
+ const result=rows.auditPacket({fingerprint:h,periodEnd:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',auditStatus:'AUDITED',
+  statementBasis:'STANDALONE',rows:[
+   {metric:'cash_dividend_approved_total',amount:'1000',page:'8',sourceRow:'کل سود نقدی مصوب'},
+   {metric:'dividend_eligible_shares',amount:'100000000',page:'9',sourceRow:'سهام مشمول دریافت سود'}
+  ],dividendEvidence:{status:'APPROVED_BY_AGM',recordDate:'۱۴۰۵/۰۸/۱۰',
+   approvalSourceRow:'مصوبه مجمع عمومی',approvalSourcePage:'10',
+   recordDateSourceRow:'تاریخ ثبت دریافت سود',recordDateSourcePage:'11'}});
+ assert.equal(result.status,'LOCAL_ROW_REFERENCES_UNVERIFIED');
+ assert.equal(recheck.validate(result.packet).status,'PACKET_STRUCTURE_UNVERIFIED');
+ const matched=await recheck.recheck(result.packet,source,{subtle:webcrypto.subtle});
+ assert.equal(matched.status,'LOCAL_FILE_BYTES_MATCH');
+ assert.equal(matched.figuresVerified,false);
 });

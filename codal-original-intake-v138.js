@@ -11,9 +11,21 @@
      !/^[0-9]{1,20}$/.test(String(record.tracingNo||''))||BigInt(record.tracingNo)<=0n||
      typeof record.published!=='string')return null;
   const published=record.published.replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776)).replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632));
-  const match=published.match(/^(13\d\d|14\d\d)[/-](\d\d?)[/-](\d\d?)(?:\s+\d\d?:\d\d(?::\d\d)?)?$/);
-  if(!match||Number(match[2])<1||Number(match[2])>12||Number(match[3])<1||
-     Number(match[3])>(Number(match[2])<=6?31:30))return null;
+  const match=published.match(/^(13\d\d|14\d\d)[/-](\d\d?)[/-](\d\d?)(?:\s+(\d\d?):(\d\d)(?::(\d\d))?)?$/);
+  const month=Number(match?.[2]),day=Number(match?.[3]);
+  if(!match||month<1||month>12||day<1||day>(month<=6?31:30)||
+     (match[4]!==undefined&&(Number(match[4])>23||Number(match[5])>59||(match[6]!==undefined&&Number(match[6])>59))))return null;
+  if(month===12&&day===30){
+   try{
+    const formatter=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+    let leap=false;
+    for(let d=18;d<=22;d++){
+     const parts=Object.fromEntries(formatter.formatToParts(new Date(Date.UTC(Number(match[1])+622,2,d))).map(p=>[p.type,p.value]));
+     if(parts.year===String(Number(match[1]))&&parts.month==='12'&&parts.day==='30'){leap=true;break;}
+    }
+    if(!leap)return null;
+   }catch{return null;}
+  }
   // The originating v137 metadata gate must already have accepted this URL.
   const url=typeof record.originalUrl==='string'?record.originalUrl:(typeof record.reportUrl==='string'?record.reportUrl:null);
   if(!url||!/^https:\/\/(?:www\.)?codal\.ir\/(?:Reports\/|DownloadFile\.aspx\?)/i.test(url))return null;
