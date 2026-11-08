@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares}=require('../capital-adjustments.js');
+const {calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares}=require('../capital-adjustments.js');
 const sample=()=>({symbol:'ونوین',tracing_no:'۱۲۳۴۵',
  report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
  effective_date:'۱۴۰۵/۰۸/۱۲',document_sha256:'b'.repeat(64),original_document_read:true,
@@ -124,4 +124,45 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
  assert.ok(wrongSymbol.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
  const wrongPeriod=calculateEPS(financial,'ونوین',{...basis,periodEnd:'۱۴۰۵/۰۳/۳۱'});
  assert.ok(wrongPeriod.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+});
+
+test('chronological bonus actions restate every earlier interval through all later factors',()=>{
+ const a=sample();a.effective_date='۱۴۰۵/۰۴/۰۱';a.pre_action_shares=1000000;a.post_action_shares=1500000;
+ const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
+ const first=calculateCapitalAdjustment(a,'ونوین'),second=calculateCapitalAdjustment(b,'ونوین');
+ const r=calculateMultiActionWeightedAverageShares([first,second],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
+ assert.equal(r.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
+ assert.equal(r.actions.length,2);
+ assert.equal(r.segments.length,3);
+ assert.equal(r.segments.reduce((n,x)=>n+x.days,0),r.totalDays);
+ assert.ok(r.segments.every(x=>Math.abs(x.adjustedShares-1800000)<1e-7));
+ assert.ok(Math.abs(r.weightedAverageShares-1800000)<1e-7);
+});
+test('multi-action restatement rejects unordered, duplicate-date and broken share-count chains',()=>{
+ const a=sample();a.effective_date='۱۴۰۵/۰۴/۰۱';a.pre_action_shares=1000000;a.post_action_shares=1500000;
+ const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
+ const x=calculateCapitalAdjustment(a,'ونوین'),y=calculateCapitalAdjustment(b,'ونوین');
+ assert.ok(calculateMultiActionWeightedAverageShares([y,x],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'}).errors.includes('CAPITAL_ACTIONS_NOT_STRICTLY_CHRONOLOGICAL'));
+ const same={...b,effective_date:'۱۴۰۵/۰۴/۰۱'};
+ const z=calculateCapitalAdjustment(same,'ونوین');
+ assert.ok(calculateMultiActionWeightedAverageShares([x,z],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'}).errors.includes('CAPITAL_ACTIONS_NOT_STRICTLY_CHRONOLOGICAL'));
+ const broken={...b,pre_action_shares:1400000};
+ const q=calculateCapitalAdjustment(broken,'ونوین');
+ assert.ok(calculateMultiActionWeightedAverageShares([x,q],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'}).errors.includes('CAPITAL_ACTION_SHARE_CHAIN_MISMATCH'));
+});
+test('multi-action EPS restatement is bound to same issuer and reporting period',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const a=sample();a.effective_date='۱۴۰۵/۰۴/۰۱';a.pre_action_shares=1000000;a.post_action_shares=1500000;
+ const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
+ const basis=calculateMultiActionWeightedAverageShares([calculateCapitalAdjustment(a,'ونوین'),calculateCapitalAdjustment(b,'ونوین')],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
+ const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
+ publication_date:'۱۴۰۶/۰۱/۱۵',period_end:'۱۴۰۵/۱۲/۲۹',unit:'MILLION_IRR',audit_status:'AUDITED',
+ statement_basis:'CONSOLIDATED',document_sha256:'d'.repeat(64),original_document_read:true,
+ fields:{net_income_attributable_to_parent:{amount:3600,source_row:'سود خالص قابل انتساب',source_page:4}}};
+ const eps=calculateEPS(financial,'ونوین',basis);
+ assert.equal(eps.status,'EPS_READY_FOR_REVIEW');
+ assert.equal(eps.eps.shareBasisType,'CAPITAL_ACTION_SEQUENCE_RESTATED_WEIGHTED_AVERAGE_SHARES');
+ assert.equal(eps.eps.capitalAdjustmentCount,2);
+ assert.ok(Math.abs(eps.eps.valueRialPerShare-2000)<1e-7);
+ assert.ok(calculateEPS(financial,'ونوین',{...basis,symbol:'فولاد'}).errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
 });
