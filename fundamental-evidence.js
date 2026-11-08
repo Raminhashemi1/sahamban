@@ -1,5 +1,26 @@
 'use strict';
-const {normalizeSymbol,toAsciiDigits,validPublicationDate}=require('./tests/codal-search-quality.cjs');
+(function(root,factory){
+ const validation=typeof module==='object'&&module.exports?require('./tests/codal-search-quality.cjs'):{
+  normalizeSymbol:value=>String(value??'').replace(/[\\s\\u200c\\u200e\\u200f\\ufeff]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase(),
+  toAsciiDigits:value=>String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632)),
+  validPublicationDate:value=>{
+   const s=String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632)).trim();
+   const m=s.match(/^(13\\d\\d|14\\d\\d)[/\\-](\\d\\d?)[/\\-](\\d\\d?)(?:\\s+(\\d\\d?):(\\d\\d)(?::(\\d\\d))?)?$/);
+   if(!m||Number(m[2])<1||Number(m[2])>12||Number(m[3])<1||Number(m[3])>(Number(m[2])<=6?31:30)||
+    (m[4]!==undefined&&(Number(m[4])>23||Number(m[5])>59||(m[6]!==undefined&&Number(m[6])>59))))return false;
+   if(Number(m[2])===12&&Number(m[3])===30){
+    try{const fmt=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+     for(let d=18;d<=22;d++){const p=Object.fromEntries(fmt.formatToParts(new Date(Date.UTC(Number(m[1])+622,2,d))).map(x=>[x.type,x.value]));
+      if(p.year===String(Number(m[1]))&&p.month==='12'&&p.day==='30')return true;}
+    }catch{}return false;
+   }return true;
+  }
+ };
+ const api=factory(validation);
+ if(typeof module==='object'&&module.exports)module.exports=api;
+ if(root)root.SahambanFundamentalEvidenceV150=api;
+})(typeof globalThis!=='undefined'?globalThis:null,function({normalizeSymbol,toAsciiDigits,validPublicationDate}){
+
 const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
 const SHARE_UNITS=new Set(['SHARES']);
 const AUDITS=new Set(['AUDITED','UNAUDITED']);
@@ -240,4 +261,5 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
   sources:checked.fields.map(x=>({metric:x.name,row:x.source_row,page:x.source_page})),
   note:'Ratios are calculated from one supplied reporting period and source rows. ROE/ROA are not annualized; ratios are not normalized for seasonality, exceptional items, group structure or accounting policy. Flags are review prompts, not ratings.'};
 }
-\nmodule.exports={safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
+\nreturn {normalizeSymbol,safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
+});
