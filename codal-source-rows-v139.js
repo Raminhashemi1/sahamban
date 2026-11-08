@@ -35,14 +35,14 @@
   if(!/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,3})?$/.test(raw)||raw.length>24)return null;
   const n=Number(raw);return Number.isFinite(n)&&Number.isSafeInteger(Math.trunc(n))?n:null;
  }
- function review({fingerprint,periodEnd,unit,auditStatus,statementBasis,rows,dividendEvidence}={}){
+ function review({fingerprint,periodStart,periodEnd,unit,auditStatus,statementBasis,rows,dividendEvidence}={}){
   const errors=[];
   if(!fingerprint||fingerprint.status!=='LOCAL_FILE_FINGERPRINT_ONLY'||
      !/^[a-f0-9]{64}$/.test(String(fingerprint.sha256??''))||
      !fingerprint.filing||fingerprint.originVerified!==false||fingerprint.originalDocumentRead!==false)
     errors.push('FILE_FINGERPRINT_REQUIRED');
-  const end=date(periodEnd),published=date(ascii(fingerprint?.filing?.published||'').slice(0,10));
-  if(!end||!published||end>published)errors.push('INVALID_PERIOD');
+  const start=periodStart?date(periodStart):null,end=date(periodEnd),published=date(ascii(fingerprint?.filing?.published||'').slice(0,10));
+  if(!end||!published||end>published||(periodStart&&(!start||start>end)))errors.push('INVALID_PERIOD');
   if(!UNITS.has(unit))errors.push('INVALID_UNIT');
   if(!AUDITS.has(auditStatus))errors.push('INVALID_AUDIT_STATUS');
   if(!BASES.has(statementBasis))errors.push('INVALID_STATEMENT_BASIS');
@@ -76,7 +76,7 @@
   const filing=fingerprint.filing;
   return {status:'LOCAL_ROW_REFERENCES_UNVERIFIED',errors:[],tradingSignalsEnabled:false,
    evidence:{symbol:filing.symbol,tracingNo:filing.tracingNo,reportUrl:filing.reportUrl,
-    publicationDate:published,periodEnd:end,unit,auditStatus,statementBasis,
+    publicationDate:published,periodStart:start,periodEnd:end,unit,auditStatus,statementBasis,
     documentSha256:fingerprint.sha256,format:fingerprint.format,fileSizeBytes:fingerprint.fileSizeBytes,
     ...(dividend?{dividendEvidence:dividend}:{}),source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',originVerified:false,originalDocumentRead:false,fields},
    warning:'Values were manually entered and have not been independently checked against original CODAL content. This packet remains unverified and cannot independently authorize ratios or trade signals.'};
@@ -89,7 +89,7 @@
   const packet={schema:'sahamban.codal.row-audit.v1',status:'LOCAL_ROW_REFERENCES_UNVERIFIED',
    financialEvidence:'INSUFFICIENT_EVIDENCE',verifiedMarketPrice:false,tradingSignalsEnabled:false,
    document:{symbol:e.symbol,tracingNo:e.tracingNo,reportUrl:e.reportUrl,publicationDate:e.publicationDate,
-    periodEnd:e.periodEnd,unit:e.unit,auditStatus:e.auditStatus,statementBasis:e.statementBasis,
+    periodStart:e.periodStart,periodEnd:e.periodEnd,unit:e.unit,auditStatus:e.auditStatus,statementBasis:e.statementBasis,
     sha256:e.documentSha256,format:e.format,fileSizeBytes:e.fileSizeBytes,
     originVerified:false,originalDocumentRead:false},
    source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',
@@ -102,7 +102,7 @@
  function mount(win){
   const doc=win.document,root=doc.getElementById('codalRowsV139');if(!root)return;
   const input=id=>doc.getElementById(id);
-  const controls={end:input('codalRowsPeriodV139'),unit:input('codalRowsUnitV139'),
+  const controls={start:input('codalRowsPeriodStartV139'),end:input('codalRowsPeriodV139'),unit:input('codalRowsUnitV139'),
    audit:input('codalRowsAuditV139'),basis:input('codalRowsBasisV139'),
    metric:input('codalRowsMetricV139'),amount:input('codalRowsAmountV139'),
    page:input('codalRowsPageV139'),label:input('codalRowsLabelV139'),
@@ -136,7 +136,7 @@
    if(!fingerprint||rows.length>=20){controls.summary.textContent='ابتدا فایل معتبر انتخاب کنید یا سقف ۲۰ ردیف رعایت شود.';return;}
    const candidate={metric:controls.metric.value,amount:controls.amount.value,page:controls.page.value,sourceRow:controls.label.value};
    const current=[...rows,candidate];
-   const r=review({fingerprint,periodEnd:controls.end.value,unit:controls.unit.value,auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows:current});
+   const r=review({fingerprint,periodStart:controls.start.value,periodEnd:controls.end.value,unit:controls.unit.value,auditStatus:controls.audit.value,statementBasis:controls.basis.value,rows:current});
    if(r.errors.includes('INVALID_OR_DUPLICATE_ROW')||r.errors.includes('INVALID_ROWS_COUNT')){
     controls.summary.textContent='ردیف تکراری یا نامعتبر است. مقدار عددی بدون جداکننده، شماره صفحه و عنوان دقیق ردیف لازم است.';return;
    }
