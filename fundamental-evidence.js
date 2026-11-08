@@ -149,4 +149,79 @@ function calculateDPS(data,expectedSymbol){
   formula:'AGM_approved_cash_dividend_total_in_IRR / shares_entitled_on_record_date'},
   note:'DPS is a gross arithmetic derivation from AGM-approved total cash dividends and record-date eligible shares. It is not independently verified against CODAL, does not include investor-specific tax or withholding, and is not a trading signal.'};
 }
-module.exports={safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS};
+
+function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,maxMarketAgeDays=7}={}){
+ const checked=checkFinancialEvidence(data,expectedSymbol);
+ if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,ratios:null,flags:[]};
+ const fields=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
+ const scale={IRR:1,THOUSAND_IRR:1000,MILLION_IRR:1000000}[data.unit];
+ const amount=name=>fields[name]?fields[name].amount*scale:null;
+ const revenue=amount('revenue'),operatingProfit=amount('operating_profit');
+ const netIncome=amount('net_income_attributable_to_parent')??amount('net_income');
+ const assets=amount('total_assets'),liabilities=amount('total_liabilities'),equity=amount('equity');
+ const operatingCashFlow=amount('operating_cash_flow');
+ const shares=fields.shares_outstanding?.amount??null;
+ const ratios={},flags=[];
+ const ratio=(n,d)=>Number.isFinite(n)&&Number.isFinite(d)&&d!==0?n/d:null;
+ if(revenue!==null&&revenue>0){
+  if(operatingProfit!==null)ratios.operatingMarginPct=ratio(operatingProfit,revenue)*100;
+  if(netIncome!==null)ratios.netMarginPct=ratio(netIncome,revenue)*100;
+  if(shares)ratios.salesPerShareRial=ratio(revenue,shares);
+ }else if(revenue!==null)flags.push('NON_POSITIVE_REVENUE');
+ if(netIncome!==null&&equity!==null){
+  if(equity>0)ratios.roePct=ratio(netIncome,equity)*100;
+  else flags.push('NON_POSITIVE_EQUITY_ROE_UNAVAILABLE');
+ }
+ if(netIncome!==null&&assets!==null&&assets>0)ratios.roaPct=ratio(netIncome,assets)*100;
+ if(liabilities!==null&&assets!==null&&assets>0)ratios.liabilitiesToAssetsPct=ratio(liabilities,assets)*100;
+ if(liabilities!==null&&equity!==null){
+  if(equity>0)ratios.liabilitiesToEquity=ratio(liabilities,equity);
+  else flags.push('LEVERAGE_RATIO_UNAVAILABLE_NON_POSITIVE_EQUITY');
+ }
+ if(operatingCashFlow!==null&&netIncome!==null){
+  if(netIncome>0){
+   ratios.operatingCashFlowToNetIncome=ratio(operatingCashFlow,netIncome);
+   if(ratios.operatingCashFlowToNetIncome<0)flags.push('NEGATIVE_OPERATING_CASH_FLOW_WITH_POSITIVE_EARNINGS');
+   else if(ratios.operatingCashFlowToNetIncome<0.8)flags.push('LOW_OPERATING_CASH_FLOW_CONVERSION');
+  }else flags.push('CASH_CONVERSION_NOT_INTERPRETABLE_WITH_NON_POSITIVE_EARNINGS');
+ }
+ if(operatingProfit!==null&&operatingProfit<0)flags.push('NEGATIVE_OPERATING_PROFIT');
+ if(netIncome!==null&&netIncome<0)flags.push('NEGATIVE_NET_INCOME');
+ if(ratios.liabilitiesToEquity!==undefined&&ratios.liabilitiesToEquity>2)flags.push('HIGH_LIABILITIES_TO_EQUITY_REVIEW');
+ let valuation={status:'NOT_PROVIDED',pe:null,pb:null,ps:null,marketDate:null};
+ if(marketPriceEvidence!==undefined){
+  const price=marketPriceEvidence;
+  const sourceOk=price&&price.status==='VERIFIED_MARKET_CLOSE'&&
+   normalizeSymbol(price.symbol)===normalizeSymbol(expectedSymbol)&&
+   Number.isFinite(price.closeRialPerShare)&&price.closeRialPerShare>0&&
+   validPublicationDate(price.marketDate)&&typeof price.source==='string'&&price.source.trim().length>0;
+  const marketAge=(a,b)=>{
+   const key=x=>{const m=toAsciiDigits(x).match(/^(13\\d\\d|14\\d\\d)[/-](\\d{1,2})[/-](\\d{1,2})$/);return m?m[1]+m[2].padStart(2,'0')+m[3].padStart(2,'0'):null;};
+   const ka=key(a),kb=key(b);return ka&&kb&&ka<=kb?Number(kb)-Number(ka):null;
+  };
+  const age=asOfDate?marketAge(price.marketDate,asOfDate):0;
+  if(!sourceOk||!asOfDate||!validPublicationDate(asOfDate)||age===null||age>maxMarketAgeDays){
+   valuation={status:'INSUFFICIENT_MARKET_PRICE_EVIDENCE',pe:null,pb:null,ps:null,marketDate:price?.marketDate??null};
+   flags.push('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE');
+  }else{
+   const eps=calculateEPS(data,expectedSymbol);
+   const bookValuePerShare=equity!==null&&shares?equity/shares:null;
+   const salesPerShare= revenue!==null&&shares?revenue/shares:null;
+   valuation={status:'VALUATION_MULTIPLES_READY_FOR_REVIEW',
+    pe:eps.status==='EPS_READY_FOR_REVIEW'&&eps.eps.valueRialPerShare>0?price.closeRialPerShare/eps.eps.valueRialPerShare:null,
+    pb:bookValuePerShare!==null&&bookValuePerShare>0?price.closeRialPerShare/bookValuePerShare:null,
+    ps:salesPerShare!==null&&salesPerShare>0?price.closeRialPerShare/salesPerShare:null,
+    marketPriceRialPerShare:price.closeRialPerShare,marketDate:price.marketDate,source:price.source,
+    note:'P/E, P/B and P/S are arithmetic multiples, not intrinsic value estimates or buy/sell thresholds.'};
+   if(valuation.pe===null)flags.push('PE_UNAVAILABLE_NON_POSITIVE_OR_UNSUPPORTED_EPS');
+   if(valuation.pb===null)flags.push('PB_UNAVAILABLE_NON_POSITIVE_BOOK_VALUE');
+   if(valuation.ps===null)flags.push('PS_UNAVAILABLE_NON_POSITIVE_SALES_PER_SHARE');
+  }
+ }
+ return {status:'FINANCIAL_RATIOS_READY_FOR_REVIEW',symbol:normalizeSymbol(expectedSymbol),
+  periodEnd:data.period_end,statementBasis:data.statement_basis,unit:'PERCENT_OR_MULTIPLE',
+  ratios,valuation,flags,
+  sources:checked.fields.map(x=>({metric:x.name,row:x.source_row,page:x.source_page})),
+  note:'Ratios are calculated from one supplied reporting period and source rows. ROE/ROA are not annualized; ratios are not normalized for seasonality, exceptional items, group structure or accounting policy. Flags are review prompts, not ratings.'};
+}
+\nmodule.exports={safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
