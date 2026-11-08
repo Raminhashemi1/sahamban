@@ -142,6 +142,8 @@ test('EPS requires monetary income unit to match the filing unit',()=>{
 test('DPS requires AGM-approved total cash dividend and record-date eligible shares',()=>{
  const {calculateDPS}=require('../fundamental-evidence.js');
  const a=sample();a.dividend_status='APPROVED_BY_AGM';a.dividend_record_date='۱۴۰۵/۰۸/۱۰';
+ a.dividend_approval_source_row='مصوبه مجمع عمومی عادی';a.dividend_approval_source_page=11;
+ a.dividend_record_date_source_row='تاریخ ثبت جهت دریافت سود نقدی';a.dividend_record_date_source_page=11;
  a.fields.cash_dividend_approved_total={amount:1000,source_row:'مبلغ سود نقدی مصوب مجمع',source_page:12};
  a.fields.dividend_eligible_shares={amount:100000000,unit:'SHARES',source_row:'تعداد سهام مشمول سود در تاریخ ثبت',source_page:13};
  const r=calculateDPS(a,'ونوین');
@@ -154,6 +156,8 @@ test('DPS requires AGM-approved total cash dividend and record-date eligible sha
 test('DPS refuses proposed or paid-only status and invalid record dates',()=>{
  const {calculateDPS}=require('../fundamental-evidence.js');
  const a=sample();a.dividend_status='PROPOSED_BY_BOARD';a.dividend_record_date='۱۴۰۵/۰۸/۱۰';
+ a.dividend_approval_source_row='پیشنهاد هیئت‌مدیره';a.dividend_approval_source_page=11;
+ a.dividend_record_date_source_row='تاریخ ثبت پیشنهادی';a.dividend_record_date_source_page=11;
  a.fields.cash_dividend_approved_total={amount:1000,source_row:'پیشنهاد سود نقدی',source_page:12};
  a.fields.dividend_eligible_shares={amount:100000000,unit:'SHARES',source_row:'سهام مشمول',source_page:13};
  assert.ok(calculateDPS(a,'ونوین').errors.includes('DIVIDEND_NOT_APPROVED_BY_AGM'));
@@ -177,4 +181,18 @@ test('DPS rejects negative approved dividend totals and currency-unit mismatch',
  assert.ok(calculateDPS(a,'ونوین').errors.includes('NEGATIVE_FINANCIAL_AMOUNT'));
  a.fields.cash_dividend_approved_total.amount=1000;a.fields.cash_dividend_approved_total.unit='IRR';
  assert.ok(calculateDPS(a,'ونوین').errors.includes('INVALID_FIELD_UNIT'));
+});
+
+test('DPS requires traceable AGM resolution and official record-date rows',()=>{
+ const {calculateDPS}=require('../fundamental-evidence.js');
+ const a=sample();a.dividend_status='APPROVED_BY_AGM';a.dividend_record_date='۱۴۰۵/۰۸/۱۰';
+ a.fields.cash_dividend_approved_total={amount:1000,source_row:'سود نقدی مصوب',source_page:12};
+ a.fields.dividend_eligible_shares={amount:100000000,unit:'SHARES',source_row:'سهام مشمول',source_page:13};
+ assert.ok(calculateDPS(a,'ونوین').errors.includes('UNTRACEABLE_DIVIDEND_APPROVAL_OR_RECORD_DATE'));
+ a.dividend_approval_source_row='مصوبه مجمع';a.dividend_approval_source_page=11;
+ a.dividend_record_date_source_row='تاریخ ثبت';a.dividend_record_date_source_page=11;
+ const r=calculateDPS(a,'ونوین');
+ assert.equal(r.status,'DPS_READY_FOR_REVIEW');
+ assert.equal(r.dps.approvalSource.page,11);
+ assert.equal(r.dps.recordDateSource.page,11);
 });
