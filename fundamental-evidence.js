@@ -111,7 +111,7 @@ function calculateEPS(data,expectedSymbol,adjustedShareBasis){
   const source=adjustedShareBasis?.source;
   const validBasis=adjustedShareBasis?.status==='CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW'&&
    normalizeSymbol(adjustedShareBasis.symbol)===normalizeSymbol(expectedSymbol)&&
-   adjustedShareBasis.periodEnd===data.period_end&&adjustedShareBasis.unit==='SHARES'&&
+   adjustedShareBasis.periodStart===data.period_start&&adjustedShareBasis.periodEnd===data.period_end&&adjustedShareBasis.unit==='SHARES'&&
    Number.isFinite(adjustedShareBasis.weightedAverageShares)&&adjustedShareBasis.weightedAverageShares>0&&
    source&&typeof source.row==='string'&&source.row.trim()&&Number.isInteger(source.page)&&source.page>0;
   if(!validBasis)return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'],eps:null};
