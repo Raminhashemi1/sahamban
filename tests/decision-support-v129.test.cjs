@@ -137,7 +137,7 @@ test('export button requires completed analysis and never writes holdings',()=>{
 test('fresh market history invalidates visible earlier buy and sell conclusions',()=>{
  const fs=require('node:fs');
  const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
- assert.match(ui,/reports=\[\];fundamentalReviews\.clear\(\);table\.replaceChildren\(\);detail\.replaceChildren\(\);select\.replaceChildren\(\)/);
+ assert.match(ui,/reports=\[\];fundamentalReviews\.clear\(\);[\s\S]*?table\.replaceChildren\(\);detail\.replaceChildren\(\);select\.replaceChildren\(\)/);
  assert.match(ui,/گزارش قبلی معتبر نیست/);
  assert.match(ui,/if\(exportButton\)exportButton\.disabled=true/);
 });
