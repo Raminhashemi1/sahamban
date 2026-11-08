@@ -102,3 +102,26 @@ test('EPS share adjustment refuses an action effective after the reporting perio
  assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
  assert.ok(r.errors.includes('INVALID_CAPITAL_ACTION_DAY_WEIGHTS_OR_PERIOD'));
 });
+
+test('capital-adjusted weighted-average shares flow into EPS with issuer and period binding',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const actionData=sample();actionData.effective_date='۱۴۰۵/۰۵/۱۲';
+ const action=calculateCapitalAdjustment(actionData,'ونوین');
+ const basis=calculateAdjustedWeightedAverageShares(action,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
+ const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',
+  report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
+  publication_date:'۱۴۰۵/۰۸/۱۲',period_end:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',
+  audit_status:'AUDITED',statement_basis:'CONSOLIDATED',document_sha256:'c'.repeat(64),
+  original_document_read:true,fields:{
+   net_income_attributable_to_parent:{amount:2000,source_row:'سود قابل انتساب به مالکان اصلی',source_page:4}
+  }};
+ const eps=calculateEPS(financial,'ونوین',basis);
+ assert.equal(eps.status,'EPS_READY_FOR_REVIEW');
+ assert.ok(Math.abs(eps.eps.valueRialPerShare-(2000000000/1500000))<1e-9);
+ assert.equal(eps.eps.shareBasisType,'CAPITAL_ACTION_RESTATED_WEIGHTED_AVERAGE_SHARES');
+ assert.equal(eps.eps.capitalAdjustmentPeriodEnd,financial.period_end);
+ const wrongSymbol=calculateEPS(financial,'ونوین',{...basis,symbol:'فولاد'});
+ assert.ok(wrongSymbol.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+ const wrongPeriod=calculateEPS(financial,'ونوین',{...basis,periodEnd:'۱۴۰۵/۰۳/۳۱'});
+ assert.ok(wrongPeriod.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+});
