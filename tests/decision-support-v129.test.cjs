@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 globalThis.SahambanTechnicalV50=require('../technical-indicators-v50.js');
 const api=require('../decision-support-v129.js');
+function fundamentalReview(overrides={}){return {status:'FUNDAMENTAL_REVIEW_READY',symbol:'TEST',entryEligible:true,financialEvidence:'READY_FOR_REVIEW',auditStatus:'AUDITED',statementBasis:'CONSOLIDATED',periodEnd:'۱۴۰۵/۰۶/۳۱',epsStatus:'EPS_READY_FOR_REVIEW',epsRialPerShare:1250,dpsStatus:'DPS_READY_FOR_REVIEW',...overrides};}
 function history(n=100){const end=new Date(Date.UTC(2026,10,3));return Array.from({length:n},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(n-1-i));const date=d.toISOString().slice(0,10).replaceAll('-','');const close=1000+i*2+Math.sin(i*1.7)*18;return {date,close,tradedValue:100000+i*1000};});}
 test('decision engine uses verified history and emits bounded, explainable scores',()=>{const q={symbol:'TEST',history:history()};const r=api.analyze(q,{today:'20261103'});assert.equal(r.symbol,'TEST');assert.ok(r.score>=0&&r.score<=100);assert.equal(r.reasons.length,5);assert.ok(['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code));assert.ok(r.marketDate==='20261103');});
 test('decision engine rejects stale history instead of generating a signal',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history().map(x=>({...x,date:new Date(Date.UTC(+x.date.slice(0,4),+x.date.slice(4,6)-1,+x.date.slice(6,8)-33)).toISOString().slice(0,10).replaceAll('-','')}))},{today:'20261103'}),/قدیمی/);});
@@ -42,7 +43,7 @@ test('decision UI distinguishes historical diagnostic from proven buy/sell skill
 });
 
 test('entry candidate is a date-stamped conditional review, never an automatic order',()=>{
- const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000});
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
  assert.equal(p.decision,'REVIEW_ENTRY');
  assert.equal(p.asOf,'20261104');
  assert.equal(p.automaticTrade,false);
@@ -51,9 +52,37 @@ test('entry candidate is a date-stamped conditional review, never an automatic o
  assert.match(p.evidence,/اعتبار بنیادی/);
 });
 test('entry review fails closed without valid risk level',()=>{
- const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:null,priorHigh:1100,priorLow:1000});
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:null,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
  assert.equal(p.decision,'NO_ACTION');
 });
+
+test('technical entry candidate is blocked without audited same-symbol positive EPS evidence',()=>{
+ const input={symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ const missing=api.decisionPlan(input);
+ assert.equal(missing.decision,'NO_ACTION');
+ assert.equal(missing.condition,'FUNDAMENTAL_EVIDENCE_REQUIRED');
+ assert.equal(missing.fundamentalGate,'BLOCKED');
+ for(const review of [
+  fundamentalReview({symbol:'OTHER'}),
+  fundamentalReview({auditStatus:'UNAUDITED'}),
+  fundamentalReview({epsRialPerShare:0}),
+  fundamentalReview({epsRialPerShare:-5}),
+  fundamentalReview({financialEvidence:'INSUFFICIENT_EVIDENCE'}),
+  fundamentalReview({epsStatus:'INSUFFICIENT_EVIDENCE'})
+ ]){
+  const p=api.decisionPlan(input,{fundamentalReview:review});
+  assert.equal(p.decision,'NO_ACTION');
+  assert.equal(p.condition,'FUNDAMENTAL_EVIDENCE_REQUIRED');
+ }
+});
+test('passing fundamental screen is disclosed but never upgrades technical candidate to a buy order',()=>{
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
+ assert.equal(p.decision,'REVIEW_ENTRY');
+ assert.equal(p.fundamentalGate,'PASSED_MINIMUM_SCREEN');
+ assert.equal(p.fundamentalContext.epsRialPerShare,1250);
+ assert.equal(p.automaticTrade,false);
+});
+
 test('risk exit and weak trend do not fabricate individualized sell instructions',()=>{
  const inputs={symbol:'TEST',marketDate:'20261104',last:900,priorHigh:1100,priorLow:1000};
  for(const [code,expected] of [['RISK_EXIT','REVIEW_EXIT_URGENT'],['EXIT_REVIEW','REVIEW_REDUCE'],['WAIT','NO_ACTION'],['AVOID','NO_ACTION']]){
