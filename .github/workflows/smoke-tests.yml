@@ -44,6 +44,7 @@ jobs:
       - run: node --check capital-adjustments.js
       - run: node --check decision-support-ui-v129.js
       - run: node --test tests/codal-search-quality.test.cjs tests/codal-source-rows-v139.test.cjs tests/codal-original-intake-v138.test.cjs tests/codal-browser-quality.test.cjs
+      - run: node --test tests/codal-audit-recheck-v140.test.cjs
       - run: node --test tests/portfolio-price-empty-v116.test.cjs
       - run: node --test tests/market-connectivity-page.test.cjs
       - run: node --test tests/market-symbol-lines.test.cjs
