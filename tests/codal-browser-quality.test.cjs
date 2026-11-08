@@ -38,3 +38,8 @@ test('browser validator covers the 1399 to 1400 leap-year boundary',()=>{
  assert.equal(check(body([item({PublishDateTime:'۱۳۹۹/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
  assert.notEqual(check(body([item({PublishDateTime:'۱۴۰۰/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
 });
+
+test('browser rejects impossible CODAL publication clock times',()=>{
+ for(const value of ['۱۴۰۵/۰۸/۱۲ ۲۴:۰۰','۱۴۰۵/۰۸/۱۲ ۱۲:۶۰','۱۴۰۵/۰۸/۱۲ ۱۲:۳۰:۶۰'])assert.notEqual(check(body([item({PublishDateTime:value})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.equal(check(body([item({PublishDateTime:'۱۴۰۵/۰۸/۱۲ ۲۳:۵۹:۵۹'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+});
