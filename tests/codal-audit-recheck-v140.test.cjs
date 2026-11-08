@@ -77,12 +77,12 @@ test('local UI is embedded without storage, network, or scripttag injections',()
  new vm.Script(js);
  for(const id of ['codalAuditJsonV140','codalAuditOriginalV140','codalAuditRecheckV140','codalAuditRecheckStatusV140'])
   assert.ok(html.includes('id="'+id+'"'),id);
- assert.ok(html.includes('./codal-audit-recheck-v140.js?v=140.0'));
+ assert.ok(html.includes('./codal-audit-recheck-v140.js?v=140.1'));
  const from=html.indexOf('<section class="card" id="codalRowsV139"');
  const inner=html.indexOf('<div class="card" id="codalAuditRecheckPanelV140"');
  const next=html.indexOf('<section class="card" id="decisionSupportV129"');
  assert.ok(from>=0 && from<inner && inner<next,'recheck must stay within the visible financial-row module');
- assert.ok(sw.includes('./codal-audit-recheck-v140.js?v=140.0'));
+ assert.ok(sw.includes('./codal-audit-recheck-v140.js?v=140.1'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(|innerHTML/);
 });
 
