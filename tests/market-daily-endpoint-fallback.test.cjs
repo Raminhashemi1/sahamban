@@ -96,7 +96,7 @@ for (const kind of ['wrong-date', 'wrong-price', 'missing', 'network-error']) {
 test('same-provider match with stale quote is not presented as fresh or full PASS', async () => {
   const { output } = await runCase('stale-match');
   assert.match(output, /^CORROBORATED_SAME_PROVIDER/);
-  assert.match(output, /وضعیت تازگی: STALE/);
+  assert.match(output, /وضعیت تازگی: UNVERIFIED_STALE_TRADE/);
   assert.match(output, /این نتیجه PASS کامل نیست/);
   assert.doesNotMatch(output, /^PASS/);
 });
