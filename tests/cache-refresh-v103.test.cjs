@@ -25,7 +25,7 @@ test('current cache generation installs before retiring older Sahamban caches',a
  assert.ok(prefetched.includes('./update-notice-v103.css?v=103.0'));
  await fire('activate');
  assert.equal(claimed,1);
- assert.deepEqual(deleted.sort(),['sahamban-static-v103-0','sahamban-static-v148-0','sahamban-static-v149-0','sahamban-static-v150-0','sahamban-static-v150-9','sahamban-static-v150-10','sahamban-static-v93-0']);
+ assert.deepEqual(deleted.sort(),['sahamban-static-v103-0','sahamban-static-v148-0','sahamban-static-v149-0','sahamban-static-v150-0','sahamban-static-v150-10','sahamban-static-v150-9','sahamban-static-v93-0']);
 });
 test('v103 navigation remains network first and falls back to offline index only for navigations',async()=>{
  const events={},root='https://example.test/sahamban/';
