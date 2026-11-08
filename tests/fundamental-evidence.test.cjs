@@ -208,6 +208,7 @@ test('financial ratios disclose margins, returns, leverage and cash conversion f
   total_assets:{amount:10000,source_row:'جمع دارایی‌ها',source_page:7},
   total_liabilities:{amount:6000,source_row:'جمع بدهی‌ها',source_page:7},
   equity:{amount:4000,source_row:'حقوق مالکانه',source_page:7},
+  equity_attributable_to_parent:{amount:4000,source_row:'حقوق مالکانه قابل انتساب به مالکان شرکت اصلی',source_page:7},
   operating_cash_flow:{amount:1000,source_row:'جریان نقد عملیاتی',source_page:9},
   shares_outstanding:{amount:100000000,unit:'SHARES',source_row:'تعداد سهام پایان دوره',source_page:2},
   weighted_average_shares:{amount:100000000,unit:'SHARES',source_row:'میانگین موزون سهام',source_page:2}
