@@ -27,3 +27,9 @@ test('browser prevents repeated tracing numbers from inflating matching letters'
 test('browser treats empty responses as unverified',()=>{
  assert.equal(check(body([]),'ونوین').status,'UNVERIFIED_EMPTY_SEARCH');
 });
+
+test('browser accepts Esfand 30 only in Persian leap years',()=>{
+ assert.equal(check(body([item({PublishDateTime:'۱۴۰۳/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.notEqual(check(body([item({PublishDateTime:'۱۴۰۵/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.equal(check(body([item({PublishDateTime:'۱۴۰۵/۱۲/۲۹'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+});
