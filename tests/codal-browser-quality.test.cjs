@@ -27,3 +27,17 @@ test('browser prevents repeated tracing numbers from inflating matching letters'
 test('browser treats empty responses as unverified',()=>{
  assert.equal(check(body([]),'ونوین').status,'UNVERIFIED_EMPTY_SEARCH');
 });
+
+test('browser accepts Esfand 30 only in Persian leap years',()=>{
+ assert.equal(check(body([item({PublishDateTime:'۱۴۰۳/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.notEqual(check(body([item({PublishDateTime:'۱۴۰۵/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.equal(check(body([item({PublishDateTime:'۱۴۰۵/۱۲/۲۹'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+});
+test('browser validator covers the 1399 to 1400 leap-year boundary',()=>{
+ assert.equal(check(body([item({PublishDateTime:'۱۳۹۹/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.notEqual(check(body([item({PublishDateTime:'۱۴۰۰/۱۲/۳۰'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+});
+test('browser rejects impossible CODAL publication clock times',()=>{
+ for(const value of ['۱۴۰۵/۰۸/۱۲ ۲۴:۰۰','۱۴۰۵/۰۸/۱۲ ۱۲:۶۰','۱۴۰۵/۰۸/۱۲ ۱۲:۳۰:۶۰'])assert.notEqual(check(body([item({PublishDateTime:value})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+ assert.equal(check(body([item({PublishDateTime:'۱۴۰۵/۰۸/۱۲ ۲۳:۵۹:۵۹'})]),'ونوین').status,'SEARCH_METADATA_VALIDATED');
+});
