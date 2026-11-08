@@ -11,12 +11,23 @@ function toAsciiDigits(value){
 }
 function validPublicationDate(value){
  const s=toAsciiDigits(value).trim();
- // CODAL uses local Jalali dates. Reject malformed and implausible values;
- // this checks metadata shape only, not authenticity of publication.
- const m=s.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+\d\d?:\d\d(?::\d\d)?)?$/);
+ // CODAL uses local Jalali dates; validate Esfand 30 against the Persian calendar.
+ const m=s.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+(\d\d?):(\d\d)(?::(\d\d))?)?$/);
  if(!m)return false;
+ if(m[4]!==undefined&&(Number(m[4])>23||Number(m[5])>59||(m[6]!==undefined&&Number(m[6])>59)))return false;
  const month=Number(m[2]),day=Number(m[3]);
- return month>=1&&month<=12&&day>=1&&day<=(month<=6?31:month<=11?30:30);
+ if(month<1||month>12||day<1||day>(month<=6?31:30))return false;
+ if(month===12&&day===30){
+  try{
+   const formatter=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+   for(let d=18;d<=22;d++){
+    const parts=Object.fromEntries(formatter.formatToParts(new Date(Date.UTC(Number(m[1])+622,2,d))).map(p=>[p.type,p.value]));
+    if(parts.year===String(Number(m[1]))&&parts.month==='12'&&parts.day==='30')return true;
+   }
+  }catch{}
+  return false;
+ }
+ return true;
 }
 function verifySearchMetadata(body,expectedSymbol){
  const total=Number(body?.Total),page=Number(body?.Page??1);
