@@ -151,6 +151,14 @@
 <div><label for="codalRowsPageV139">شماره صفحه فایل</label><input id="codalRowsPageV139" type="number" min="1" step="1"></div>
 <div><label for="codalRowsLabelV139">عنوان دقیق ردیف در سند</label><input id="codalRowsLabelV139" type="text" autocomplete="off" maxlength="160" placeholder="مثلاً سود (زیان) خالص"></div>
 </div>
+<div class="grid">
+<div><label for="codalRowsDividendStatusV139">وضعیت سود نقدی</label><select id="codalRowsDividendStatusV139"><option value="NOT_DECLARED">اعلام نشده</option><option value="PROPOSED_BY_BOARD">پیشنهاد هیئت‌مدیره</option><option value="APPROVED_BY_AGM">تصویب مجمع</option></select></div>
+<div><label for="codalRowsDividendDateV139">تاریخ ثبت دریافت سود (شمسی)</label><input id="codalRowsDividendDateV139" placeholder="۱۴۰۵/۰۸/۱۰"></div>
+<div><label for="codalRowsDividendApprovalRowV139">ردیف مصوبه مجمع/پیشنهاد</label><input id="codalRowsDividendApprovalRowV139" maxlength="160"></div>
+<div><label for="codalRowsDividendApprovalPageV139">صفحه مصوبه</label><input id="codalRowsDividendApprovalPageV139" type="number" min="1" step="1"></div>
+<div><label for="codalRowsDividendRecordRowV139">ردیف تاریخ ثبت دریافت سود</label><input id="codalRowsDividendRecordRowV139" maxlength="160"></div>
+<div><label for="codalRowsDividendRecordPageV139">صفحه تاریخ ثبت</label><input id="codalRowsDividendRecordPageV139" type="number" min="1" step="1"></div>
+</div>
 <div class="row"><button id="codalRowsAddV139" type="button" disabled>افزودن ردیف به پیش‌نویس</button><button id="codalRowsCheckV139" type="button" disabled>بررسی ساختار ارجاعات</button><button id="codalRowsExportV139" type="button" class="secondary" disabled>دریافت JSON شواهد تأییدنشده (فقط روی دستگاه)</button></div>
 <ul id="codalRowsListV139" aria-label="ردیف‌های ثبت‌شده"></ul>
 <p id="codalRowsSummaryV139" class="result" role="status" aria-live="polite">ابتدا فایل کدال را اثرانگشت‌گذاری کنید. اعداد تأیید نشده‌اند.</p>
