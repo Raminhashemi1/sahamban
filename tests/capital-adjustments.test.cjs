@@ -162,7 +162,7 @@ test('multi-action EPS restatement is bound to same issuer and reporting period'
  const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
  const basis=calculateMultiActionWeightedAverageShares([calculateCapitalAdjustment(a,'ونوین'),calculateCapitalAdjustment(b,'ونوین')],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
  const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
- publication_date:'۱۴۰۶/۰۱/۱۵',period_end:'۱۴۰۵/۱۲/۲۹',unit:'MILLION_IRR',audit_status:'AUDITED',
+ publication_date:'۱۴۰۶/۰۱/۱۵',period_start:'۱۴۰۵/۰۱/۰۱',period_end:'۱۴۰۵/۱۲/۲۹',unit:'MILLION_IRR',audit_status:'AUDITED',
  statement_basis:'CONSOLIDATED',document_sha256:'d'.repeat(64),original_document_read:true,
  fields:{net_income_attributable_to_parent:{amount:3600,source_row:'سود خالص قابل انتساب',source_page:4}}};
  const eps=calculateEPS(financial,'ونوین',basis);
