@@ -11,7 +11,8 @@
   if(!Number.isFinite(roundTripCostPct)||roundTripCostPct<0||roundTripCostPct>5)throw new RangeError('هزینه فرضی رفت‌وبرگشت باید بین صفر تا ۵ درصد باشد.');
   if(!globalThis.SahambanDecisionV129?.analyze)throw new Error('موتور قواعد ورود بارگذاری نشده است.');
   const dates=quote.history.map(x=>String(x?.date||'')),prices=quote.history.map(x=>Number(x?.close));
-  if(dates.some((d,i)=>!/^\d{8}$/.test(d)||(i>0&&d<=dates[i-1]))||prices.some(p=>!Number.isFinite(p)||p<=0))throw new RangeError('ترتیب تاریخ یا قیمت تاریخچه نامعتبر است.');
+  const validDate=s=>/^\d{8}$/.test(s)&&(()=>{const y=Number(s.slice(0,4)),m=Number(s.slice(4,6)),d=Number(s.slice(6,8)),x=new Date(Date.UTC(y,m-1,d));return x.getUTCFullYear()===y&&x.getUTCMonth()+1===m&&x.getUTCDate()===d;})();
+  if(dates.some((d,i)=>!validDate(d)||(i>0&&d<=dates[i-1]))||prices.some(p=>!Number.isFinite(p)||p<=0))throw new RangeError('ترتیب تاریخ یا قیمت تاریخچه نامعتبر است.');
   const marks=[],firstSignal=59,lastSignal=quote.history.length-2-holdingDays;let tested=0,skipped=0;
   for(let i=firstSignal;i<=lastSignal;i++){
    let r;try{r=globalThis.SahambanDecisionV129.analyze({symbol:quote.symbol,history:quote.history.slice(0,i+1)},{today:dates[i],maxAgeDays:0});}catch(e){skipped++;continue;}
