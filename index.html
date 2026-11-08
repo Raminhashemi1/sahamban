@@ -201,11 +201,8 @@
 <div class="card" id="fundamentalReviewPanelV150" aria-labelledby="fundamentalReviewTitleV150">
 <h3 id="fundamentalReviewTitleV150">بررسی بنیادی مستند و اتصال به تصمیم‌یار</h3>
 <p class="notice">فایل JSON شواهد مالی را به‌صورت محلی انتخاب کنید. این مسیر فقط ردیف‌ها، واحدها، نماد، دوره، وضعیت حسابرسیِ اظهارشده و محاسبات را کنترل می‌کند؛ هش فایل یا انتخاب سند به‌تنهایی اصالت کدال یا صحت ارقام را اثبات نمی‌کند. هیچ داده‌ای ارسال نمی‌شود.</p>
-<div class="grid">
-<div class="full"><label for="fundamentalEvidenceFileV150">فایل JSON شواهد مالی (حداکثر ۱۲۸ کیلوبایت)</label><input id="fundamentalEvidenceFileV150" type="file" accept=".json,application/json"></div>
-<div><label for="fundamentalAsOfV150">تاریخ مبنای قیمت بازار (شمسی)</label><input id="fundamentalAsOfV150" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۲"></div>
-<div><label for="fundamentalMarketPriceV150">قیمت پایانی تأییدشده (ریال/سهم، اختیاری)</label><input id="fundamentalMarketPriceV150" type="number" min="1" step="1" placeholder="قیمت آخرین روز تأییدشده"></div>
-</div>
+<div class="grid"><div class="full"><label for="fundamentalEvidenceFileV150">فایل JSON شواهد مالی (حداکثر ۱۲۸ کیلوبایت)</label><input id="fundamentalEvidenceFileV150" type="file" accept=".json,application/json"></div></div>
+<label><input id="fundamentalOriginalAttestationV150" type="checkbox"> اصل گزارش کدال و ردیف‌ها، واحدها، دوره مالی و وضعیت حسابرسی را شخصاً با یکدیگر تطبیق داده‌ام.</label>
 <div class="row"><button id="fundamentalReviewRunV150" type="button" class="secondary">بررسی شواهد بنیادی</button><button id="fundamentalReviewClearV150" type="button" class="secondary">پاک‌سازی بررسی این نشست</button></div>
 <p id="fundamentalReviewStatusV150" class="result" role="status" aria-live="polite">هنوز سند بنیادی برای نماد انتخابی بررسی نشده است.</p>
 <div id="fundamentalReviewDetailV150" class="result" aria-live="polite"></div>
