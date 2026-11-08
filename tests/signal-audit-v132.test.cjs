@@ -25,7 +25,7 @@ test('audit refuses to run if the decision engine is unavailable',()=>{
 
 
 test('audit rejects impossible Gregorian dates even when their text is eight digits and ordered',()=>{
- for(const invalid of ['20261131','20261301','20260229']){
+ for(const invalid of ['20261131','20261301']){
   const h=history();h[h.length-1].date=invalid;
   assert.throws(()=>audit.audit({symbol:'x',history:h}),/تاریخچه نامعتبر/);
  }
@@ -35,4 +35,11 @@ test('audit accepts a real Gregorian leap day in an otherwise ordered history',(
  const end=new Date(Date.UTC(2024,1,29));
  const h=Array.from({length:150},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(149-i));return {date:d.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
  assert.doesNotThrow(()=>audit.audit({symbol:'x',history:h}));
+});
+
+test('audit rejects a non-leap February 29 even when history remains ordered',()=>{
+ const end=new Date(Date.UTC(2026,1,28));
+ const h=Array.from({length:150},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(149-i));return {date:d.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
+ h[h.length-1].date='20260229';
+ assert.throws(()=>audit.audit({symbol:'x',history:h}),/تاریخچه نامعتبر/);
 });
