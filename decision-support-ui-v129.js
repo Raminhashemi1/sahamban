@@ -93,6 +93,7 @@
   if(reports.length)showDetail();
  }
  async function runFundamentalReview(){
+  fundamentalReviews.clear();if(reports.length)showDetail();
   if(!fundamentalFile?.files?.length){fundamentalStatus.textContent='ابتدا فایل JSON شواهد مالی را انتخاب کنید.';return;}
   if(!attestation?.checked){fundamentalStatus.textContent='برای ادامه، تطبیق شخصی اصل گزارش، ردیف‌ها و واحدها را تأیید کنید.';return;}
   const file=fundamentalFile.files[0];
@@ -162,6 +163,15 @@
    if(reports.length&&select.value&&window.SahambanFundamentalEvidenceV150.normalizeSymbol(select.value)===norm)showDetail();
   }catch(e){fundamentalStatus.textContent='بررسی انجام نشد: '+e.message;fundamentalDetail.textContent='هیچ سیگنال یا داده‌ای تغییر نکرد.';}
  }
+ function invalidateFundamentalReview(message){
+  fundamentalReviews.clear();
+  if(fundamentalStatus)fundamentalStatus.textContent=message;
+  if(fundamentalDetail)fundamentalDetail.textContent='';
+  if(reports.length)showDetail();
+ }
+ fundamentalFile?.addEventListener('change',()=>invalidateFundamentalReview('فایل شواهد تغییر کرد؛ بررسی قبلی باطل شد و اجرای مجدد لازم است.'));
+ $('fundamentalCapitalActionsV150')?.addEventListener('input',()=>invalidateFundamentalReview('آرایه رویدادهای سرمایه تغییر کرد؛ بررسی قبلی باطل شد و اجرای مجدد لازم است.'));
+ attestation?.addEventListener('change',()=>{if(!attestation.checked)invalidateFundamentalReview('تأیید اصل اسناد برداشته شد؛ دروازه بنیادی مسدود است.');});
  $('fundamentalReviewRunV150')?.addEventListener('click',runFundamentalReview);
  $('fundamentalReviewClearV150')?.addEventListener('click',clearFundamentalReview);
  $('decisionRunV129').addEventListener('click',run);select.addEventListener('change',showDetail);$('decisionSizeV129').addEventListener('click',()=>{const r=reports.find(x=>x.symbol===select.value),out=$('decisionSizeResultV129');if(!r||r.code!=='ENTRY_CANDIDATE'||r.stop===null){out.textContent='محاسبه حجم فقط برای نامزد ورود با حد ضرر معتبر فعال است؛ ابتدا شروط ورود را بررسی کنید.';return;}try{const capital=Number($('decisionCapitalV129').value),riskPercent=Number($('decisionRiskV129').value),x=window.SahambanDecisionV129.sizePosition({capital,riskPercent,entry:r.last,stop:r.stop});out.textContent='بودجه ریسک: '+fmt(x.riskBudget)+' ریال | حداکثر تعداد قابل تأمین از سرمایه و بودجه ریسک: '+fmt(x.quantity)+' سهم | ارزش خرید نظری: '+fmt(x.estimatedCost)+' ریال | زیان نظری تا حد ضرر: '+fmt(x.maxLoss)+' ریال | محدودکننده: '+(x.limitedBy==='BOTH_LIMITS'?'سرمایه و بودجه ریسک به‌طور هم‌زمان':x.limitedBy==='AVAILABLE_CASH'?'سرمایه در دسترس':'بودجه ریسک')+'. این محاسبه پیش از کارمزد است و لغزش، صف و محدودیت نقدشوندگی لحاظ نشده‌اند؛ خرید خودکار انجام نمی‌شود.';}catch(e){out.textContent=e.message;}});
