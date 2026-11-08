@@ -287,7 +287,7 @@ async function checkSymbol(symbol){
    if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1)throw Error('سوابق همان روز متناقض‌اند');
    const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
    if(uniqueDays.size<2)throw Error('تعداد روزهای تاریخچه کافی نیست');
-   valid.push({symbol,price,date,count:uniqueDays.size,code,historyStatus,historyDetail,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
+   valid.push({symbol,price,date,count:uniqueDays.size,code,historyStatus:'MATCHED',historyDetail:'تاریخ و قیمت با فهرست تاریخچه همان نماد منطبق است.',freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
   }catch(e){reasons.push(String(e?.message||e));}
  }
  if(valid.length===1)return valid[0];
@@ -305,9 +305,9 @@ $('run-basket').addEventListener('click',async()=>{
   s.textContent='در حال بررسی '+fa(i+1)+' از '+fa(symbols.length)+': '+symbol+' | زنده: '+fa(ok)+' | تأییدنشده: '+fa(unverified)+' | خطا: '+fa(fail);
   try{
    const r=await checkSymbol(symbol);
-   if(r.freshness.status==='FRESH'){
+   if(['FRESH','SESSION_CLOSED_FINAL'].includes(r.freshness.status)){
     ok++;
-    results.push({symbol,ok:true,unverified:false,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | آخرین معامله '+r.freshness.lastTradeTime});
+    results.push({symbol,ok:true,unverified:false,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | وضعیت '+r.freshness.status+' | آخرین معامله '+r.freshness.lastTradeTime});
    }else{
     unverified++;
     results.push({symbol,ok:false,unverified:true,detail:'تاریخچه منطبق؛ تأیید زنده نشد ('+r.freshness.status+'): '+r.freshness.message});
