@@ -196,3 +196,45 @@ test('DPS requires traceable AGM resolution and official record-date rows',()=>{
  assert.equal(r.dps.approvalSource.page,11);
  assert.equal(r.dps.recordDateSource.page,11);
 });
+
+test('financial ratios disclose margins, returns, leverage and cash conversion from traceable fields',()=>{
+ const {calculateFinancialRatios}=require('../fundamental-evidence.js');
+ const a=sample();a.audit_status='AUDITED';a.statement_basis='CONSOLIDATED';
+ a.fields={
+  revenue:{amount:8000,source_row:'درآمدهای عملیاتی',source_page:3},
+  operating_profit:{amount:1600,source_row:'سود عملیاتی',source_page:4},
+  net_income:{amount:1900,source_row:'سود خالص',source_page:5},
+  net_income_attributable_to_parent:{amount:2000,source_row:'سود قابل انتساب به مالکان اصلی',source_page:5},
+  total_assets:{amount:10000,source_row:'جمع دارایی‌ها',source_page:7},
+  total_liabilities:{amount:6000,source_row:'جمع بدهی‌ها',source_page:7},
+  equity:{amount:4000,source_row:'حقوق مالکانه',source_page:7},
+  operating_cash_flow:{amount:1000,source_row:'جریان نقد عملیاتی',source_page:9},
+  shares_outstanding:{amount:100000000,unit:'SHARES',source_row:'تعداد سهام پایان دوره',source_page:2},
+  weighted_average_shares:{amount:100000000,unit:'SHARES',source_row:'میانگین موزون سهام',source_page:2}
+ };
+ const price={status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'۱۴۰۵/۰۸/۱۱',source:'VERIFIED_DAILY_MARKET_HISTORY'};
+ const r=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:price,asOfDate:'۱۴۰۵/۰۸/۱۲'});
+ assert.equal(r.status,'FINANCIAL_RATIOS_READY_FOR_REVIEW');
+ assert.equal(r.ratios.operatingMarginPct,20);
+ assert.equal(r.ratios.netMarginPct,25);
+ assert.equal(r.ratios.roePct,50);
+ assert.equal(r.ratios.roaPct,20);
+ assert.equal(r.ratios.liabilitiesToAssetsPct,60);
+ assert.equal(r.ratios.liabilitiesToEquity,1.5);
+ assert.equal(r.ratios.operatingCashFlowToNetIncome,0.5);
+ assert.equal(r.valuation.pe,50);
+ assert.equal(r.valuation.pb,25);
+ assert.equal(r.valuation.ps,12.5);
+ assert.ok(r.flags.includes('LOW_OPERATING_CASH_FLOW_CONVERSION'));
+});
+test('valuation multiples are withheld for stale, unverified or wrong-symbol market prices',()=>{
+ const {calculateFinancialRatios}=require('../fundamental-evidence.js');
+ const a=sample();a.fields.weighted_average_shares={amount:100000000,unit:'SHARES',source_row:'میانگین موزون',source_page:2};
+ a.fields.net_income_attributable_to_parent={amount:2000,source_row:'سود منتسب',source_page:4};
+ const price={status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'۱۴۰۵/۰۷/۰۱',source:'VERIFIED_DAILY_MARKET_HISTORY'};
+ const stale=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:price,asOfDate:'۱۴۰۵/۰۸/۱۲'});
+ assert.equal(stale.valuation.status,'INSUFFICIENT_MARKET_PRICE_EVIDENCE');
+ const wrong=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:{...price,symbol:'فولاد',marketDate:'۱۴۰۵/۰۸/۱۱'},asOfDate:'۱۴۰۵/۰۸/۱۲'});
+ assert.equal(wrong.valuation.status,'INSUFFICIENT_MARKET_PRICE_EVIDENCE');
+ assert.ok(wrong.flags.includes('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE'));
+});
