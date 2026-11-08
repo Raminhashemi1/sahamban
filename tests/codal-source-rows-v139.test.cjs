@@ -109,3 +109,20 @@ test('local CODAL row intake covers the 1399 to 1400 leap-year boundary',()=>{
  assert.equal(rows.date('۱۳۹۹/۱۲/۳۰'),'1399/12/30');
  assert.equal(rows.date('۱۴۰۰/۱۲/۳۰'),null);
 });
+
+test('EPS source rows distinguish share counts from monetary filing units',()=>{
+ const x=sample();
+ x.rows=[
+  {metric:'net_income_attributable_to_parent',amount:'۲۰۰۰',page:'4',sourceRow:'سود قابل انتساب به مالکان اصلی'},
+  {metric:'weighted_average_shares',amount:'۱۰۰۰۰۰۰۰۰',page:'5',sourceRow:'میانگین موزون سهام'},
+  {metric:'shares_outstanding',amount:'۱۲۰۰۰۰۰۰۰',page:'5',sourceRow:'تعداد سهام پایان دوره'}
+ ];
+ const r=rows.review(x);
+ assert.equal(r.status,'LOCAL_ROW_REFERENCES_UNVERIFIED');
+ assert.equal(r.evidence.fields.find(v=>v.metric==='net_income_attributable_to_parent').unit,'MILLION_IRR');
+ assert.equal(r.evidence.fields.find(v=>v.metric==='weighted_average_shares').unit,'SHARES');
+ assert.equal(r.evidence.fields.find(v=>v.metric==='shares_outstanding').unit,'SHARES');
+ const packet=rows.auditPacket(x).packet;
+ assert.equal(packet.fields.find(v=>v.metric==='weighted_average_shares').unit,'SHARES');
+ assert.equal(packet.financialEvidence,'INSUFFICIENT_EVIDENCE');
+});
