@@ -43,7 +43,7 @@ test('capital action rejects impossible share direction and invalid rights price
  const bonus=sample();bonus.post_action_shares=bonus.pre_action_shares;
  assert.ok(calculateCapitalAdjustment(bonus,'ونوین').errors.includes('POST_ACTION_SHARES_MUST_INCREASE'));
  const rights=sample();rights.action_type='RIGHTS_ISSUE';rights.cum_rights_price=0;rights.subscription_price=800;
- assert.ok(calculateCapitalAdjustment(rights,'ونوین').errors.includes('INVALID_RIGHTS_PRICING_INPUTS'));
+ assert.ok(calculateCapitalAdjustment(rights,'ونوین').errors.includes('INVALID_RIGHTS_PRICING_INPUTS_OR_UNIT'));
 });
 test('capital action rejects unsupported type, invalid effective date and unsafe counts',()=>{
  const type=sample();type.action_type='CASH_DIVIDEND';
