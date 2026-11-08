@@ -51,3 +51,8 @@ test('covers a second leap-year cycle boundary',()=>{
  assert.equal(validPublicationDate('1401/12/30'),false);
  assert.equal(validPublicationDate('1404/12/30'),false);
 });
+
+test('rejects impossible CODAL publication clock times',()=>{
+ for(const value of ['1405/08/12 24:00','1405/08/12 12:60','1405/08/12 12:30:60','1405/08/12 99:99:99'])assert.equal(validPublicationDate(value),false);
+ assert.equal(validPublicationDate('1405/08/12 23:59:59'),true);
+});
