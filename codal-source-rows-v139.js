@@ -15,6 +15,18 @@
   if(!match)return null;
   const m=Number(match[2]),d=Number(match[3]);
   if(m<1||m>12||d<1||d>(m<=6?31:30))return null;
+  if(m===12&&d===30){
+   // Esfand 30 exists only in Persian leap years; fail closed if calendar data is unavailable.
+   try{
+    const formatter=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+    let leap=false;
+    for(let day=18;day<=22;day++){
+     const parts=Object.fromEntries(formatter.formatToParts(new Date(Date.UTC(Number(match[1])+622,2,day))).map(p=>[p.type,p.value]));
+     if(parts.year===String(Number(match[1]))&&parts.month==='12'&&parts.day==='30'){leap=true;break;}
+    }
+    if(!leap)return null;
+   }catch{return null;}
+  }
   return match[1]+'/'+String(m).padStart(2,'0')+'/'+String(d).padStart(2,'0');
  }
  function parseAmount(value){
