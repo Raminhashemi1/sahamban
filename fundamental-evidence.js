@@ -215,31 +215,35 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
  let valuation={status:'NOT_PROVIDED',pe:null,pb:null,ps:null,marketDate:null};
  if(marketPriceEvidence!==undefined){
   const price=marketPriceEvidence;
+  const marketOrdinal=value=>{
+   const s=toAsciiDigits(value).trim();
+   const g=s.match(/^(\\d{4})(\\d{2})(\\d{2})$/);
+   if(g){
+    const d=new Date(Date.UTC(Number(g[1]),Number(g[2])-1,Number(g[3])));
+    if(d.getUTCFullYear()!==Number(g[1])||d.getUTCMonth()+1!==Number(g[2])||d.getUTCDate()!==Number(g[3]))return null;
+    return Math.floor(d.getTime()/86400000);
+   }
+   const normalized=day(s);if(!normalized)return null;
+   const [year,month,dayNum]=normalized.split('/').map(Number);
+   try{
+    const fmt=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+    let start=null;
+    for(let d=19;d<=22;d++){
+     const candidate=new Date(Date.UTC(year+621,2,d));
+     const parts=Object.fromEntries(fmt.formatToParts(candidate).map(p=>[p.type,p.value]));
+     if(parts.year===String(year)&&parts.month==='1'&&parts.day==='1'){start=candidate;break;}
+    }
+    if(!start)return null;
+    const offset=(month<=6?(month-1)*31:month<=11?186+(month-7)*30:336)+dayNum-1;
+    return Math.floor(start.getTime()/86400000)+offset;
+   }catch{return null;}
+  };
   const sourceOk=price&&price.status==='VERIFIED_MARKET_CLOSE'&&
    normalizeSymbol(price.symbol)===normalizeSymbol(expectedSymbol)&&
    Number.isFinite(price.closeRialPerShare)&&price.closeRialPerShare>0&&
-   validPublicationDate(price.marketDate)&&typeof price.source==='string'&&price.source.trim().length>0;
-  const marketAge=(from,to)=>{
-   const ordinal=value=>{
-    const normalized=day(value);if(!normalized)return null;
-    const [year,month,dayNum]=normalized.split('/').map(Number);
-    try{
-     const fmt=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
-     let start=null;
-     for(let d=19;d<=22;d++){
-      const candidate=new Date(Date.UTC(year+621,2,d));
-      const parts=Object.fromEntries(fmt.formatToParts(candidate).map(p=>[p.type,p.value]));
-      if(parts.year===String(year)&&parts.month==='1'&&parts.day==='1'){start=candidate;break;}
-     }
-     if(!start)return null;
-     const offset=(month<=6?(month-1)*31:month<=11?186+(month-7)*30:336)+dayNum-1;
-     return Math.floor(start.getTime()/86400000)+offset;
-    }catch{return null;}
-   };
-   const a=ordinal(from),b=ordinal(to);return a!==null&&b!==null&&a<=b?b-a:null;
-  };
-  const age=asOfDate?marketAge(price.marketDate,asOfDate):null;
-  if(!sourceOk||!asOfDate||!validPublicationDate(asOfDate)||age===null||age>maxMarketAgeDays){
+   marketOrdinal(price.marketDate)!==null&&typeof price.source==='string'&&price.source.trim().length>0;
+  const age=asOfDate?(()=>{const a=marketOrdinal(price.marketDate),b=marketOrdinal(asOfDate);return a!==null&&b!==null&&a<=b?b-a:null;})():null;
+  if(!sourceOk||!asOfDate||marketOrdinal(asOfDate)===null||age===null||age>maxMarketAgeDays){
    valuation={status:'INSUFFICIENT_MARKET_PRICE_EVIDENCE',pe:null,pb:null,ps:null,marketDate:price?.marketDate??null};
    flags.push('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE');
   }else{
