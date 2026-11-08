@@ -8,7 +8,8 @@
  const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
  const AUDITS=new Set(['AUDITED','UNAUDITED','UNKNOWN']);
  const BASES=new Set(['STANDALONE','CONSOLIDATED','UNKNOWN']);
- const METRICS=new Set(['revenue','operating_profit','net_income','total_assets','total_liabilities','equity','operating_cash_flow']);
+ const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
+ const SHARE_METRICS=new Set(['shares_outstanding','weighted_average_shares','dividend_eligible_shares']);
  const ascii=value=>String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632));
  function date(value){
   const match=ascii(value).trim().match(/^(13\d\d|14\d\d)[/-](\d\d?)[/-](\d\d?)$/);
@@ -54,7 +55,7 @@
       !label||label.length>160||/[\u0000-\u001f\u007f]/.test(label)){
     errors.push('INVALID_OR_DUPLICATE_ROW');continue;
    }
-   seen.add(name);fields.push({metric:name,amount,sourcePage:page,sourceRow:label,unit});
+   seen.add(name);fields.push({metric:name,amount,sourcePage:page,sourceRow:label,unit:SHARE_METRICS.has(name)?'SHARES':unit});
   }
   if(errors.length)return {status:'INSUFFICIENT_EVIDENCE',errors:[...new Set(errors)],fields:[],tradingSignalsEnabled:false};
   const filing=fingerprint.filing;
@@ -63,7 +64,7 @@
     publicationDate:published,periodEnd:end,unit,auditStatus,statementBasis,
     documentSha256:fingerprint.sha256,format:fingerprint.format,fileSizeBytes:fingerprint.fileSizeBytes,
     source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',originVerified:false,originalDocumentRead:false,fields},
-   warning:'Values were manually entered and have not been independently checked against original CODAL content. No fundamental ratios or trade signals are authorized.'};
+   warning:'Values were manually entered and have not been independently checked against original CODAL content. This packet remains unverified and cannot independently authorize ratios or trade signals.'};
  }
  function auditPacket(data){
   const checked=review(data);
@@ -79,7 +80,7 @@
    source:'USER_ENTERED_NOT_AUTOMATICALLY_EXTRACTED',
    fields:e.fields.map(row=>({metric:row.metric,amount:row.amount,unit:row.unit,
     sourcePage:row.sourcePage,sourceRow:row.sourceRow})),
-   warning:'UNVERIFIED USER-ENTERED FIGURES. Compare against the original CODAL filing independently. Do not compute financial ratios, EPS, NAV, or trading signals.'};
+   warning:'UNVERIFIED USER-ENTERED FIGURES. Compare against the original CODAL filing independently. This packet alone does not authenticate figures or authorize financial analysis.'};
   return {status:'LOCAL_ROW_REFERENCES_UNVERIFIED',errors:[],packet};
  }
  function mount(win){
