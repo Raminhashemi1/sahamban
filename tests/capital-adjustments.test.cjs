@@ -42,7 +42,7 @@ test('capital action refuses missing or mismatched CODAL evidence',()=>{
 test('capital action rejects impossible share direction and invalid rights prices',()=>{
  const bonus=sample();bonus.post_action_shares=bonus.pre_action_shares;
  assert.ok(calculateCapitalAdjustment(bonus,'ونوین').errors.includes('POST_ACTION_SHARES_MUST_INCREASE'));
- const rights=sample();rights.action_type='RIGHTS_ISSUE';rights.cum_rights_price=0;rights.subscription_price=800;
+ const rights=sample();rights.action_type='RIGHTS_ISSUE';rights.cum_rights_price=0;rights.subscription_price=800;rights.cum_rights_price_date='۱۴۰۵/۰۸/۱۱';
  assert.ok(calculateCapitalAdjustment(rights,'ونوین').errors.includes('INVALID_RIGHTS_PRICING_INPUTS_OR_UNIT'));
 });
 test('capital action rejects unsupported type, invalid effective date and unsafe counts',()=>{
@@ -81,7 +81,7 @@ test('weighted-average EPS denominator retrospectively adjusts bonus shares and 
  assert.equal(b.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
  assert.equal(b.weightedAverageShares,1500000);
  const rights=sample();rights.effective_date='۱۴۰۵/۰۵/۱۲';rights.action_type='RIGHTS_ISSUE';rights.pre_action_shares=1000000;rights.post_action_shares=1250000;
- rights.cum_rights_price=1000;rights.subscription_price=800;rights.cum_rights_price_date='۱۴۰۵/۰۸/۱۱';rights.price_unit='IRR_PER_SHARE';
+ rights.cum_rights_price=1000;rights.subscription_price=800;rights.cum_rights_price_date='۱۴۰۵/۰۵/۱۱';rights.price_unit='IRR_PER_SHARE';
  rights.cum_rights_price_source_row='قیمت قبل از مجمع';rights.cum_rights_price_source_page=4;
  rights.subscription_price_source_row='قیمت پذیره نویسی';rights.subscription_price_source_page=5;
  const action=calculateCapitalAdjustment(rights,'ونوین');
@@ -175,7 +175,7 @@ test('mixed bonus and rights actions compound only retrospective EPS factors for
  const bonus=sample();bonus.effective_date='۱۴۰۵/۰۴/۰۱';bonus.pre_action_shares=1000000;bonus.post_action_shares=1500000;
  const rights=sample();rights.effective_date='۱۴۰۵/۰۷/۰۱';rights.action_type='RIGHTS_ISSUE';
  rights.pre_action_shares=1500000;rights.post_action_shares=1875000;
- rights.cum_rights_price=1000;rights.subscription_price=800;rights.cum_rights_price_date='۱۴۰۵/۰۸/۱۱';rights.price_unit='IRR_PER_SHARE';
+ rights.cum_rights_price=1000;rights.subscription_price=800;rights.cum_rights_price_date='۱۴۰۵/۰۶/۳۱';rights.price_unit='IRR_PER_SHARE';
  rights.cum_rights_price_source_row='قیمت پایانی پیش از حق‌تقدم';rights.cum_rights_price_source_page=4;
  rights.subscription_price_source_row='قیمت پذیره‌نویسی حق‌تقدم';rights.subscription_price_source_page=5;
  const first=calculateCapitalAdjustment(bonus,'ونوین'),second=calculateCapitalAdjustment(rights,'ونوین');
@@ -184,4 +184,15 @@ test('mixed bonus and rights actions compound only retrospective EPS factors for
  assert.ok(Math.abs(r.segments[0].adjustedShares-1562500)<1e-7);
  assert.ok(Math.abs(r.segments[1].adjustedShares-1562500)<1e-7);
  assert.equal(r.segments[2].adjustedShares,1875000);
+});
+
+test('rights issue rejects cum-rights prices dated on or after the effective date or too far before it',()=>{
+ const a=sample();a.action_type='RIGHTS_ISSUE';a.pre_action_shares=1000000;a.post_action_shares=1250000;
+ a.cum_rights_price=1000;a.subscription_price=800;a.price_unit='IRR_PER_SHARE';
+ a.cum_rights_price_source_row='قیمت پایانی';a.cum_rights_price_source_page=4;
+ a.subscription_price_source_row='قیمت پذیره‌نویسی';a.subscription_price_source_page=5;
+ a.cum_rights_price_date='۱۴۰۵/۰۸/۱۲';
+ assert.ok(calculateCapitalAdjustment(a,'ونوین').errors.includes('INVALID_OR_STALE_CUM_RIGHTS_PRICE_DATE'));
+ a.cum_rights_price_date='۱۴۰۵/۰۸/۰۱';
+ assert.ok(calculateCapitalAdjustment(a,'ونوین').errors.includes('INVALID_OR_STALE_CUM_RIGHTS_PRICE_DATE'));
 });
