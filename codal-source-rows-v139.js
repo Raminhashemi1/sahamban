@@ -8,7 +8,7 @@
  const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
  const AUDITS=new Set(['AUDITED','UNAUDITED','UNKNOWN']);
  const BASES=new Set(['STANDALONE','CONSOLIDATED','UNKNOWN']);
- const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
+ const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','equity_attributable_to_parent','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
  const SHARE_METRICS=new Set(['shares_outstanding','weighted_average_shares','dividend_eligible_shares']);
  const ascii=value=>String(value??'').replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776)).replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632));
  function date(value){
