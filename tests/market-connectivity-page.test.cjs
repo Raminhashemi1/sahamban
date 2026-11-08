@@ -60,7 +60,7 @@ assert.match(html,/if\(valid.length!==1\)/);
 assert.match(html,/آخرین معامله:/);
 assert.match(html,/تازگی پاسخ قیمت:/);
 assert.match(html,/تاریخچه جداگانه تأیید نشد:/);
-assert.match(html,/valid\.push\(\{symbol,price,date,count:uniqueDays\.size,code,historyStatus,historyDetail,freshness:/);
+assert.match(html,/valid\.push\(\{symbol,price,date,count:uniqueDays\.size,code,historyStatus:'MATCHED',historyDetail:/);
 assert.ok(html.indexOf('const freshness=quoteFreshness(info?.finalLastDate||date,info?.lastHEven);') < html.indexOf('verifyPublicClosingHistory(date,price,hist);'));
 
 assert.match(html,/rejectionReasons\.push\(reason\)/);
