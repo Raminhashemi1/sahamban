@@ -47,3 +47,28 @@ test('a declared dividend without approved AGM evidence remains disclosed as ins
  assert.equal(r.dpsStatus,'INSUFFICIENT_EVIDENCE');
  assert.ok(r.dpsErrors.includes('DIVIDEND_NOT_APPROVED_BY_AGM'));
 });
+
+test('minimum fundamental gate exposes descriptive quality ratios and fresh market multiples',()=>{
+ const a=sample();
+ Object.assign(a.fields,{
+  revenue:{amount:8000,source_row:'درآمد عملیاتی',source_page:3},
+  operating_profit:{amount:1600,source_row:'سود عملیاتی',source_page:4},
+  net_income:{amount:1900,source_row:'سود خالص',source_page:5},
+  total_assets:{amount:10000,source_row:'جمع دارایی‌ها',source_page:7},
+  total_liabilities:{amount:6000,source_row:'جمع بدهی‌ها',source_page:7},
+  equity:{amount:4000,source_row:'حقوق مالکانه',source_page:7},
+  equity_attributable_to_parent:{amount:4000,source_row:'حقوق مالکانه قابل انتساب',source_page:7},
+  operating_cash_flow:{amount:1000,source_row:'جریان نقد عملیاتی',source_page:9},
+  shares_outstanding:{amount:100000000,unit:'SHARES',source_row:'تعداد سهام',source_page:2}
+ });
+ const r=evaluateFundamentalGate(a,'ونوین',{
+  marketPriceEvidence:{status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'20261105',source:'VERIFIED_HISTORICAL_QUOTE_EVENT'},
+  asOfDate:'20261106'
+ });
+ assert.equal(r.status,'FUNDAMENTAL_REVIEW_READY');
+ assert.equal(r.financialRatios.ratios.operatingMarginPct,20);
+ assert.equal(r.financialRatios.ratios.roePct,50);
+ assert.equal(r.financialRatios.valuation.pe,50);
+ assert.equal(r.financialRatios.valuation.pb,25);
+ assert.equal(r.financialRatios.valuation.ps,12.5);
+});
