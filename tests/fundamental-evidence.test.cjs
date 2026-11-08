@@ -77,3 +77,15 @@ test('monetary fields cannot override the filing currency unit',()=>{
  const a=sample();a.fields.net_income.unit='SHARES';
  assert.ok(checkFinancialEvidence(a,'ونوین').errors.includes('INVALID_FIELD_UNIT'));
 });
+
+test('CODAL report URL serial must match the declared tracing number',()=>{
+ const mismatch=sample();mismatch.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=99999';
+ const r=checkFinancialEvidence(mismatch,'ونوین');
+ assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(r.errors.includes('REPORT_TRACING_MISMATCH'));
+ assert.equal(r.fields.length,0);
+ const missing=sample();missing.report_url='https://www.codal.ir/Reports/Decision.aspx?OtherId=12345';
+ assert.ok(checkFinancialEvidence(missing,'ونوین').errors.includes('REPORT_TRACING_MISMATCH'));
+ const match=sample();match.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=۱۲۳۴۵';
+ assert.equal(checkFinancialEvidence(match,'ونوین').status,'READY_FOR_REVIEW');
+});
