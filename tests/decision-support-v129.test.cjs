@@ -170,3 +170,9 @@ test('holdout UI communicates Wilson uncertainty as descriptive, not forecast co
  assert.match(sample,/positiveRateUncertainty/);
  assert.match(sample,/مستقل نیستند/);
 });
+
+test('fundamental entry gate normalizes Arabic and Persian issuer letter variants',()=>{
+ const input={symbol:'نوين',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ const p=api.decisionPlan(input,{fundamentalReview:fundamentalReview({symbol:'نوین'})});
+ assert.equal(p.decision,'REVIEW_ENTRY');
+});
