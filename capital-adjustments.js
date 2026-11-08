@@ -1,7 +1,12 @@
 'use strict';
 /* Evidence-gated corporate-action factors. Arithmetic review only; no automatic history rewrite. */
-const {safeReportUrl}=require('./fundamental-evidence.js');
-const {normalizeSymbol,toAsciiDigits,validPublicationDate}=require('./tests/codal-search-quality.cjs');
+(function(root,factory){
+ const evidence=typeof module==='object'&&module.exports?require('./fundamental-evidence.js'):root?.SahambanFundamentalEvidenceV150;
+ const api=factory(evidence);
+ if(typeof module==='object'&&module.exports)module.exports=api;
+ if(root)root.SahambanCapitalAdjustmentsV150=api;
+})(typeof globalThis!=='undefined'?globalThis:null,function(evidence){
+ const {safeReportUrl,normalizeSymbol,toAsciiDigits,validPublicationDate}=evidence;
 const ACTIONS=new Set(['BONUS_ISSUE','STOCK_SPLIT','REVERSE_SPLIT','RIGHTS_ISSUE']);
 function positiveSafeInteger(value){return Number.isSafeInteger(value)&&value>0;}
 function jalaliKey(value){
@@ -150,4 +155,5 @@ function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,pe
   note:'Review-only chronological IAS 33-style restatement for up to 20 verified-input corporate actions. Each action must be independently verified; sequence and day counts are derived from Jalali effective dates. This arithmetic does not authenticate source documents.'};
 }
 
-module.exports={calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
+return {calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
+});
