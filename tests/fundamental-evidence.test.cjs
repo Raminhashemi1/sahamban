@@ -33,3 +33,47 @@ test('rejects unrecognized metrics and strings as numeric amounts',()=>{
  const r=checkFinancialEvidence(a,'ونوین');
  assert.ok(r.errors.includes('UNSUPPORTED_METRIC'));assert.ok(r.errors.includes('UNTRACEABLE_FIELD'));
 });
+
+test('rejects negative balance-sheet totals and non-positive share counts',()=>{
+ const negativeAssets=sample();negativeAssets.fields.total_assets={amount:-1,source_row:'جمع دارایی‌ها',source_page:3};
+ assert.ok(checkFinancialEvidence(negativeAssets,'ونوین').errors.includes('NEGATIVE_BALANCE_SHEET_TOTAL'));
+ const zeroShares=sample();zeroShares.fields.shares_outstanding={amount:0,unit:'SHARES',source_row:'تعداد سهام',source_page:2};
+ assert.ok(checkFinancialEvidence(zeroShares,'ونوین').errors.includes('INVALID_SHARES_OUTSTANDING'));
+ const negativeShares=sample();negativeShares.fields.shares_outstanding={amount:-10,unit:'SHARES',source_row:'تعداد سهام',source_page:2};
+ assert.ok(checkFinancialEvidence(negativeShares,'ونوین').errors.includes('INVALID_SHARES_OUTSTANDING'));
+});
+test('checks balance-sheet equation with a documented rounding tolerance',()=>{
+ const a=sample();
+ a.fields.total_assets={amount:1000,source_row:'جمع دارایی‌ها',source_page:3};
+ a.fields.total_liabilities={amount:600,source_row:'جمع بدهی‌ها',source_page:3};
+ a.fields.equity={amount:400,source_row:'حقوق صاحبان سهام',source_page:3};
+ const pass=checkFinancialEvidence(a,'ونوین');
+ assert.equal(pass.status,'READY_FOR_REVIEW');
+ assert.equal(pass.accountingCheck.status,'PASS_WITH_ROUNDING_TOLERANCE');
+ a.fields.equity.amount=350;
+ const fail=checkFinancialEvidence(a,'ونوین');
+ assert.equal(fail.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(fail.errors.includes('BALANCE_SHEET_EQUATION_MISMATCH'));
+ assert.equal(fail.fields.length,0);
+});
+test('rounding tolerance does not silently accept a material balance-sheet difference',()=>{
+ const a=sample();
+ a.fields.total_assets={amount:100000,source_row:'جمع دارایی‌ها',source_page:3};
+ a.fields.total_liabilities={amount:60000,source_row:'جمع بدهی‌ها',source_page:3};
+ a.fields.equity={amount:39800,source_row:'حقوق صاحبان سهام',source_page:3};
+ const r=checkFinancialEvidence(a,'ونوین');
+ assert.ok(r.errors.includes('BALANCE_SHEET_EQUATION_MISMATCH'));
+});
+test('share counts carry a distinct unit and cannot inherit a currency unit',()=>{
+ const a=sample();
+ a.fields.shares_outstanding={amount:1000000,unit:'SHARES',source_row:'تعداد سهام',source_page:2};
+ const r=checkFinancialEvidence(a,'ونوین');
+ assert.equal(r.status,'READY_FOR_REVIEW');
+ assert.equal(r.fields.find(x=>x.name==='shares_outstanding').unit,'SHARES');
+ a.fields.shares_outstanding.unit='MILLION_IRR';
+ assert.ok(checkFinancialEvidence(a,'ونوین').errors.includes('INVALID_FIELD_UNIT'));
+});
+test('monetary fields cannot override the filing currency unit',()=>{
+ const a=sample();a.fields.net_income.unit='SHARES';
+ assert.ok(checkFinancialEvidence(a,'ونوین').errors.includes('INVALID_FIELD_UNIT'));
+});
