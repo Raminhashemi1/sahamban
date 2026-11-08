@@ -25,7 +25,7 @@ const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
 const SHARE_UNITS=new Set(['SHARES']);
 const AUDITS=new Set(['AUDITED','UNAUDITED']);
 const BASES=new Set(['STANDALONE','CONSOLIDATED']);
-const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
+const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','equity_attributable_to_parent','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
 function safeReportUrl(raw){
  if(typeof raw!=='string'||raw.length>2048||!raw.trim()||raw.startsWith('//')||/[\s\\\u0000-\u001f\u007f]/.test(raw))return null;
  if(!raw.startsWith('/')&&!/^https:\/\//i.test(raw))return null;
@@ -178,8 +178,10 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
  const scale={IRR:1,THOUSAND_IRR:1000,MILLION_IRR:1000000}[data.unit];
  const amount=name=>fields[name]?fields[name].amount*scale:null;
  const revenue=amount('revenue'),operatingProfit=amount('operating_profit');
- const netIncome=amount('net_income_attributable_to_parent')??amount('net_income');
+ const netIncome=amount('net_income')??amount('net_income_attributable_to_parent');
+ const parentIncome=amount('net_income_attributable_to_parent');
  const assets=amount('total_assets'),liabilities=amount('total_liabilities'),equity=amount('equity');
+ const returnEquity=amount('equity_attributable_to_parent')??(data.statement_basis==='STANDALONE'?equity:null);
  const operatingCashFlow=amount('operating_cash_flow');
  const shares=fields.shares_outstanding?.amount??null;
  const ratios={},flags=[];
@@ -190,10 +192,10 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
   if(netIncome!==null)ratios.netMarginPct=pct(netIncome,revenue);
   if(shares)ratios.salesPerShareRial=ratio(revenue,shares);
  }else if(revenue!==null)flags.push('NON_POSITIVE_REVENUE');
- if(netIncome!==null&&equity!==null){
-  if(equity>0)ratios.roePct=pct(netIncome,equity);
-  else flags.push('NON_POSITIVE_EQUITY_ROE_UNAVAILABLE');
- }
+ if(parentIncome!==null&&returnEquity!==null){
+  if(returnEquity>0)ratios.roePct=pct(parentIncome,returnEquity);
+  else flags.push('NON_POSITIVE_PARENT_EQUITY_ROE_UNAVAILABLE');
+ }else if(parentIncome!==null)flags.push('ROE_REQUIRES_PARENT_ATTRIBUTABLE_EQUITY_FOR_CONSOLIDATED_STATEMENTS');
  if(netIncome!==null&&assets!==null&&assets>0)ratios.roaPct=pct(netIncome,assets);
  if(liabilities!==null&&assets!==null&&assets>0)ratios.liabilitiesToAssetsPct=pct(liabilities,assets);
  if(liabilities!==null&&equity!==null){
@@ -242,7 +244,7 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
    flags.push('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE');
   }else{
    const eps=calculateEPS(data,expectedSymbol);
-   const bookValuePerShare=equity!==null&&shares?equity/shares:null;
+   const bookValuePerShare=returnEquity!==null&&shares?returnEquity/shares:null;
    const salesPerShare= revenue!==null&&shares?revenue/shares:null;
    valuation={status:'VALUATION_MULTIPLES_READY_FOR_REVIEW',
     pe:eps.status==='EPS_READY_FOR_REVIEW'&&eps.eps.valueRialPerShare>0?price.closeRialPerShare/eps.eps.valueRialPerShare:null,
