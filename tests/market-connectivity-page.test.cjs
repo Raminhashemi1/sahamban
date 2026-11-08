@@ -14,7 +14,7 @@ assert.match(html,/UNVERIFIED_OUTSIDE_SESSION/);
 assert.match(html,/UNVERIFIED_STALE_SESSION_DATE/);
 assert.match(html,/UNVERIFIED_STALE_TRADE/);
 assert.match(html,/۱۵ دقیقه/);
-assert.match(html,/q\.freshness\.status!=='FRESH'/);
+assert.match(html,/!\['FRESH','SESSION_CLOSED_FINAL'\]\.includes\(q\.freshness\.status\)/);
 assert.match(html,/اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق/);
 assert.match(html,/تأیید تازگی قیمت زنده: انجام نشد/);
 assert.match(html,/ریال/);
@@ -54,7 +54,7 @@ assert.match(html,/q\.freshness\.status==='FRESH'\?'FRESH_QUOTE_HISTORY_PENDING'
 assert.match(html,/تطبیق تاریخچه روزانه: هنوز تأیید نشده است/);
 assert.ok(html.includes("GetClosingPriceDaily/'+code+'/'+date"));
 assert.match(html,/MATCHED_DAILY_ENDPOINT/);
-assert.ok(html.indexOf("if(q.historyStatus==='PENDING_TODAY_ROW')") < html.indexOf("if(q.freshness.status!=='FRESH')"));
+assert.ok(html.indexOf("if(q.historyStatus==='MATCHED_DAILY_ENDPOINT')") < html.indexOf("if(!['FRESH','SESSION_CLOSED_FINAL'].includes(q.freshness.status))"));
 assert.match(html,/if\(valid.length!==1\)/);
 
 assert.match(html,/آخرین معامله:/);
