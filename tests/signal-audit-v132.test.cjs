@@ -30,3 +30,9 @@ test('audit rejects impossible Gregorian dates even when their text is eight dig
   assert.throws(()=>audit.audit({symbol:'x',history:h}),/تاریخچه نامعتبر/);
  }
 });
+
+test('audit accepts a real Gregorian leap day in an otherwise ordered history',()=>{
+ const end=new Date(Date.UTC(2024,1,29));
+ const h=Array.from({length:150},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(149-i));return {date:d.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
+ assert.doesNotThrow(()=>audit.audit({symbol:'x',history:h}));
+});
