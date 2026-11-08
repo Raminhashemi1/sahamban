@@ -5,7 +5,7 @@ const {normalizeSymbol,toAsciiDigits,validPublicationDate}=require('./tests/coda
 const ACTIONS=new Set(['BONUS_ISSUE','STOCK_SPLIT','REVERSE_SPLIT','RIGHTS_ISSUE']);
 function positiveSafeInteger(value){return Number.isSafeInteger(value)&&value>0;}
 function jalaliKey(value){
- const m=toAsciiDigits(value).trim().match(/^(13\\d\\d|14\\d\\d)[/-](\\d{1,2})[/-](\\d{1,2})$/);
+ const m=toAsciiDigits(value).trim().match(/^(13\d\d|14\d\d)[/-](\d{1,2})[/-](\d{1,2})$/);
  if(!m||!validPublicationDate(value))return null;
  return m[1]+String(Number(m[2])).padStart(2,'0')+String(Number(m[3])).padStart(2,'0');
 }
