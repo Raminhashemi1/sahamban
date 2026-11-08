@@ -112,7 +112,14 @@
      audit_status:doc.auditStatus,statement_basis:doc.statementBasis,
      document_sha256:doc.sha256,original_document_read:true,origin_verified:false,
      source:'USER_ENTERED_LOCAL_PACKET_REQUIRES_HUMAN_ATTESTATION',fields,
-     ...(payload.dividendEvidence&&typeof payload.dividendEvidence==='object'?payload.dividendEvidence:{})};
+     ...(payload.dividendEvidence&&typeof payload.dividendEvidence==='object'?{
+      dividend_status:payload.dividendEvidence.status,
+      dividend_record_date:payload.dividendEvidence.recordDate,
+      dividend_approval_source_row:payload.dividendEvidence.approvalSourceRow,
+      dividend_approval_source_page:payload.dividendEvidence.approvalSourcePage,
+      dividend_record_date_source_row:payload.dividendEvidence.recordDateSourceRow,
+      dividend_record_date_source_page:payload.dividendEvidence.recordDateSourcePage
+     }:{})};
    }
    const expected=String(data?.symbol??'').trim();
    if(!expected)throw Error('نماد در فایل شواهد مالی مشخص نشده است.');
