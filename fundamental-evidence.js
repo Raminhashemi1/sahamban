@@ -162,18 +162,19 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
  const operatingCashFlow=amount('operating_cash_flow');
  const shares=fields.shares_outstanding?.amount??null;
  const ratios={},flags=[];
- const ratio=(n,d)=>Number.isFinite(n)&&Number.isFinite(d)&&d!==0?n/d:null;
+ const ratio=(n,d)=>Number.isFinite(n)&&Number.isFinite(d)&&d!==0&&Number.isFinite(n/d)?n/d:null;
+ const pct=(n,d)=>{const x=ratio(n,d);return x===null?null:x*100;};
  if(revenue!==null&&revenue>0){
-  if(operatingProfit!==null)ratios.operatingMarginPct=ratio(operatingProfit,revenue)*100;
-  if(netIncome!==null)ratios.netMarginPct=ratio(netIncome,revenue)*100;
+  if(operatingProfit!==null)ratios.operatingMarginPct=pct(operatingProfit,revenue);
+  if(netIncome!==null)ratios.netMarginPct=pct(netIncome,revenue);
   if(shares)ratios.salesPerShareRial=ratio(revenue,shares);
  }else if(revenue!==null)flags.push('NON_POSITIVE_REVENUE');
  if(netIncome!==null&&equity!==null){
-  if(equity>0)ratios.roePct=ratio(netIncome,equity)*100;
+  if(equity>0)ratios.roePct=pct(netIncome,equity);
   else flags.push('NON_POSITIVE_EQUITY_ROE_UNAVAILABLE');
  }
- if(netIncome!==null&&assets!==null&&assets>0)ratios.roaPct=ratio(netIncome,assets)*100;
- if(liabilities!==null&&assets!==null&&assets>0)ratios.liabilitiesToAssetsPct=ratio(liabilities,assets)*100;
+ if(netIncome!==null&&assets!==null&&assets>0)ratios.roaPct=pct(netIncome,assets);
+ if(liabilities!==null&&assets!==null&&assets>0)ratios.liabilitiesToAssetsPct=pct(liabilities,assets);
  if(liabilities!==null&&equity!==null){
   if(equity>0)ratios.liabilitiesToEquity=ratio(liabilities,equity);
   else flags.push('LEVERAGE_RATIO_UNAVAILABLE_NON_POSITIVE_EQUITY');
@@ -195,11 +196,26 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
    normalizeSymbol(price.symbol)===normalizeSymbol(expectedSymbol)&&
    Number.isFinite(price.closeRialPerShare)&&price.closeRialPerShare>0&&
    validPublicationDate(price.marketDate)&&typeof price.source==='string'&&price.source.trim().length>0;
-  const marketAge=(a,b)=>{
-   const key=x=>{const m=toAsciiDigits(x).match(/^(13\\d\\d|14\\d\\d)[/-](\\d{1,2})[/-](\\d{1,2})$/);return m?m[1]+m[2].padStart(2,'0')+m[3].padStart(2,'0'):null;};
-   const ka=key(a),kb=key(b);return ka&&kb&&ka<=kb?Number(kb)-Number(ka):null;
+  const marketAge=(from,to)=>{
+   const ordinal=value=>{
+    const normalized=day(value);if(!normalized)return null;
+    const [year,month,dayNum]=normalized.split('/').map(Number);
+    try{
+     const fmt=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+     let start=null;
+     for(let d=19;d<=22;d++){
+      const candidate=new Date(Date.UTC(year+621,2,d));
+      const parts=Object.fromEntries(fmt.formatToParts(candidate).map(p=>[p.type,p.value]));
+      if(parts.year===String(year)&&parts.month==='1'&&parts.day==='1'){start=candidate;break;}
+     }
+     if(!start)return null;
+     const offset=(month<=6?(month-1)*31:month<=11?186+(month-7)*30:336)+dayNum-1;
+     return Math.floor(start.getTime()/86400000)+offset;
+    }catch{return null;}
+   };
+   const a=ordinal(from),b=ordinal(to);return a!==null&&b!==null&&a<=b?b-a:null;
   };
-  const age=asOfDate?marketAge(price.marketDate,asOfDate):0;
+  const age=asOfDate?marketAge(price.marketDate,asOfDate):null;
   if(!sourceOk||!asOfDate||!validPublicationDate(asOfDate)||age===null||age>maxMarketAgeDays){
    valuation={status:'INSUFFICIENT_MARKET_PRICE_EVIDENCE',pe:null,pb:null,ps:null,marketDate:price?.marketDate??null};
    flags.push('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE');
