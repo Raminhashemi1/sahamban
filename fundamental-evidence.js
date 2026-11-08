@@ -29,6 +29,10 @@ function checkFinancialEvidence(data,expectedSymbol){
  if(!/^\d{1,20}$/.test(tracing)||BigInt(tracing||'0')<=0n)errors.push('INVALID_TRACING');
  const url=safeReportUrl(data.report_url);
  if(!url)errors.push('INVALID_REPORT_URL');
+ else {
+  const reportSerial=new URL(url).searchParams.get('LetterSerial');
+  if(!reportSerial||toAsciiDigits(reportSerial).trim()!==tracing)errors.push('REPORT_TRACING_MISMATCH');
+ }
  const pub=day(data.publication_date),end=day(data.period_end);
  if(!pub||!end)errors.push('INVALID_DATES');
  if(pub&&end&&end>pub)errors.push('PERIOD_AFTER_PUBLICATION');
