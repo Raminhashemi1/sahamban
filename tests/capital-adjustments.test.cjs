@@ -130,6 +130,14 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
  assert.ok(wrongSymbol.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
  const wrongEnd=calculateEPS(financial,'ونوین',{...basis,periodEnd:'۱۴۰۵/۰۳/۳۱'});
  assert.ok(wrongEnd.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+ const missingFinancialStart={...financial};delete missingFinancialStart.period_start;
+ assert.ok(calculateEPS(missingFinancialStart,'ونوین',basis).errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+ const invalidFinancialStart={...financial,period_start:'۱۴۰۵/۱۳/۰۱'};
+ assert.ok(calculateEPS(invalidFinancialStart,'ونوین',basis).errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+ const missingBasisStart={...basis};delete missingBasisStart.periodStart;
+ assert.ok(calculateEPS(financial,'ونوین',missingBasisStart).errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
+ const normalizedBasis={...basis,periodStart:'1405/1/1',periodEnd:'1405/6/31'};
+ assert.equal(calculateEPS(financial,'ونوین',normalizedBasis).status,'EPS_READY_FOR_REVIEW');
 });
 
 test('chronological bonus actions restate every earlier interval through all later factors',()=>{
