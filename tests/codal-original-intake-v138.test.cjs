@@ -97,3 +97,14 @@ test('changing file invalidates old fingerprint and discards in-flight hashing',
  assert.equal(accepts,0);
  assert.match(els.codalOriginalStatusV138.textContent,/باطل/);
 });
+
+test('filing intake rejects Esfand 30 outside leap years and accepts leap-year boundaries',()=>{
+ assert.ok(intake.safeFiling({...record(),published:'۱۳۹۹/۱۲/۳۰'}));
+ assert.equal(intake.safeFiling({...record(),published:'۱۴۰۰/۱۲/۳۰'}),null);
+ assert.ok(intake.safeFiling({...record(),published:'۱۴۰۳/۱۲/۳۰'}));
+ assert.equal(intake.safeFiling({...record(),published:'۱۴۰۵/۱۲/۳۰'}),null);
+});
+test('filing intake rejects impossible publication clock times',()=>{
+ for(const published of ['۱۴۰۵/۰۸/۱۳ ۲۴:۰۰','۱۴۰۵/۰۸/۱۳ ۱۲:۶۰','۱۴۰۵/۰۸/۱۳ ۱۲:۳۰:۶۰'])assert.equal(intake.safeFiling({...record(),published}),null);
+ assert.ok(intake.safeFiling({...record(),published:'۱۴۰۵/۰۸/۱۳ ۲۳:۵۹:۵۹'}));
+});
