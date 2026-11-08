@@ -45,7 +45,7 @@
  }
  // A conditional, date-stamped interpretation of rule output, not an order.
  // No user holdings, brokerage access, execution or network calls.
- function decisionPlan(r){
+ function decisionPlan(r,{fundamentalReview}={}){
   if(!r||!['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code)||
     !validDate(r.marketDate)||!Number.isFinite(r.last)||r.last<=0||
     !Number.isFinite(r.priorHigh)||r.priorHigh<=0||
@@ -55,12 +55,24 @@
    dataStatus:'قیمت پایانی تاریخ ذکرشده؛ لزوماً قیمت لحظه‌ای یا قابل معامله نیست.',
    evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.'};
   if(r.code==='ENTRY_CANDIDATE'){
+   const sameSymbol=String(fundamentalReview?.symbol??'').replace(/\\s/g,'').toUpperCase()===String(r.symbol).replace(/\\s/g,'').toUpperCase();
+   const fundamentalReady=fundamentalReview?.status==='FUNDAMENTAL_REVIEW_READY'&&
+    fundamentalReview.entryEligible===true&&sameSymbol&&fundamentalReview.financialEvidence==='READY_FOR_REVIEW'&&
+    fundamentalReview.auditStatus==='AUDITED'&&fundamentalReview.epsStatus==='EPS_READY_FOR_REVIEW'&&
+    Number.isFinite(fundamentalReview.epsRialPerShare)&&fundamentalReview.epsRialPerShare>0;
+   if(!fundamentalReady)return {...common,decision:'NO_ACTION',
+    when:'این فقط نامزد تکنیکال است. تا ارائه شواهد بنیادی حسابرسی‌شده، هم‌نماد و دارای EPS مثبت، بررسی ورود متوقف می‌ماند.',
+    invalidation:'تطبیق نماد، دوره، اصل صورت مالی، مبنای تلفیقی/جداگانه و محاسبه EPS باید مستقل بررسی شوند؛ عبور از این دروازه به‌تنهایی به معنی ارزندگی نیست.',
+    condition:'FUNDAMENTAL_EVIDENCE_REQUIRED',fundamentalGate:'BLOCKED'};
    if(!Number.isFinite(r.stop)||r.stop<=0||r.stop>=r.last)
     return {...common,decision:'NO_ACTION',when:'تا داشتن حد ریسک معتبر و بررسی شواهد مستقل هیچ ورودی مجاز نیست.',invalidation:'',condition:'NO_VALID_RISK_LEVEL'};
    return {...common,decision:'REVIEW_ENTRY',
     when:'فقط در صورت تأیید هویت نماد، تاریخ و قیمت تازه، نقدشوندگی و پابرجابودن شکست سقف '+r.priorHigh+' ریال در داده مستقل، ورود را بررسی کنید.',
     invalidation:'اگر مبنای روند نقض شود یا قیمت به زیر سطح ساختاری '+r.stop+' ریال برسد، فرضیه ورود باطل و خطر خروج باید دوباره بررسی شود.',
-    condition:'VERIFY_FRESH_QUOTE_AND_LIQUIDITY'};
+    condition:'VERIFY_FRESH_QUOTE_AND_LIQUIDITY',fundamentalGate:'PASSED_MINIMUM_SCREEN',
+    fundamentalContext:{auditStatus:fundamentalReview.auditStatus,statementBasis:fundamentalReview.statementBasis,
+     periodEnd:fundamentalReview.periodEnd,epsRialPerShare:fundamentalReview.epsRialPerShare,
+     dpsStatus:fundamentalReview.dpsStatus??'NOT_PROVIDED'}};
   }
   if(r.code==='RISK_EXIT')return {...common,decision:'REVIEW_EXIT_URGENT',
    when:'قیمت پایانی در تاریخ گزارش به زیر کف ۲۰ جلسه قبل رسیده است؛ اگر سهم را دارید، ریسک خروج و امکان معامله را فوراً بررسی کنید.',
