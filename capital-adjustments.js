@@ -42,6 +42,9 @@ function calculateCapitalAdjustment(data,expectedSymbol){
   if(after<=before)return {status:'INSUFFICIENT_EVIDENCE',errors:['RIGHTS_ISSUE_REQUIRES_NEW_SHARES'],adjustment:null};
   const cumPrice=data.cum_rights_price,subscription=data.subscription_price;
   const sourceOk=(row,page)=>typeof row==='string'&&row.trim().length>0&&row.length<=240&&Number.isInteger(page)&&page>0&&page<=99999;
+  const cumPriceOrdinal=jalaliOrdinal(data.cum_rights_price_date),effectiveOrdinal=jalaliOrdinal(effective);
+  if(cumPriceOrdinal===null||effectiveOrdinal===null||cumPriceOrdinal>=effectiveOrdinal||effectiveOrdinal-cumPriceOrdinal>7)
+   return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_OR_STALE_CUM_RIGHTS_PRICE_DATE'],adjustment:null};
   if(!Number.isFinite(cumPrice)||cumPrice<=0||!Number.isFinite(subscription)||subscription<0||data.price_unit!=='IRR_PER_SHARE')
    return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_RIGHTS_PRICING_INPUTS_OR_UNIT'],adjustment:null};
   if(!sourceOk(data.cum_rights_price_source_row,data.cum_rights_price_source_page)||
@@ -52,7 +55,7 @@ function calculateCapitalAdjustment(data,expectedSymbol){
   historicalPriceMultiplier=theoreticalExRightsPrice/cumPrice;
   // IAS 33 bonus element: restate pre-rights shares by fair value immediately before rights / TERP.
   epsRetrospectiveShareMultiplier=cumPrice/theoreticalExRightsPrice;
-  rightsPricingSource={cumRightsPrice:{row:data.cum_rights_price_source_row,page:data.cum_rights_price_source_page},
+  rightsPricingSource={cumRightsPrice:{row:data.cum_rights_price_source_row,page:data.cum_rights_price_source_page,marketDate:data.cum_rights_price_date},
    subscriptionPrice:{row:data.subscription_price_source_row,page:data.subscription_price_source_page},unit:data.price_unit};
  }else{
   theoreticalExRightsPrice=null;
