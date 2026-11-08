@@ -79,7 +79,8 @@ async function runCase(kind) {
 
 test('same-date same-price daily record corroborates quote, not an independent provider', async () => {
   const { output, paths } = await runCase('matching');
-  assert.match(output, /^PASS/);
+  assert.match(output, /^CORROBORATED_SAME_PROVIDER/);
+  assert.match(output, /این نتیجه PASS کامل نیست/);
   assert.match(output, /مسیر روزانه دوم TSETMC/);
   assert.match(output, /نه منبع مستقل/);
   assert.ok(paths.some(x => x.endsWith('/ClosingPrice/GetClosingPriceDaily/' + instrumentCode + '/' + day)));
