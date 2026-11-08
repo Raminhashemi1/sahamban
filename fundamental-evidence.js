@@ -4,7 +4,7 @@ const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
 const SHARE_UNITS=new Set(['SHARES']);
 const AUDITS=new Set(['AUDITED','UNAUDITED']);
 const BASES=new Set(['STANDALONE','CONSOLIDATED']);
-const METRICS=new Set(['revenue','operating_profit','net_income','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding']);
+const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding','weighted_average_shares']);
 function safeReportUrl(raw){
  if(typeof raw!=='string'||raw.length>2048||!raw.trim()||raw.startsWith('//')||/[\s\\\u0000-\u001f\u007f]/.test(raw))return null;
  if(!raw.startsWith('/')&&!/^https:\/\//i.test(raw))return null;
@@ -57,8 +57,8 @@ function checkFinancialEvidence(data,expectedSymbol){
   if((name==='total_assets'||name==='total_liabilities')&&row.amount<0){
    errors.push('NEGATIVE_BALANCE_SHEET_TOTAL');continue;
   }
-  if(name==='shares_outstanding'&&row.amount<=0){
-   errors.push('INVALID_SHARES_OUTSTANDING');continue;
+  if((name==='shares_outstanding'||name==='weighted_average_shares')&&row.amount<=0){
+   errors.push(name==='shares_outstanding'?'INVALID_SHARES_OUTSTANDING':'INVALID_WEIGHTED_AVERAGE_SHARES');continue;
   }
   fields.push({name,amount:row.amount,unit:fieldUnit,source_row:row.source_row,source_page:row.source_page});
  }
@@ -76,4 +76,24 @@ function checkFinancialEvidence(data,expectedSymbol){
    errors,fields:errors.length?[]:fields,accountingCheck,
    note:'READY_FOR_REVIEW does not authenticate the published report or authorize trading signals. Balance-sheet checks are arithmetic consistency checks only.'};
 }
-module.exports={safeReportUrl,checkFinancialEvidence};
+function calculateEPS(data,expectedSymbol){
+ const checked=checkFinancialEvidence(data,expectedSymbol);
+ if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,eps:null};
+ const byName=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
+ const income=byName.net_income_attributable_to_parent,shares=byName.weighted_average_shares;
+ if(!income||!shares)return {status:'INSUFFICIENT_EVIDENCE',errors:['EPS_REQUIRES_PARENT_ATTRIBUTABLE_NET_INCOME_AND_WEIGHTED_AVERAGE_SHARES'],eps:null};
+ if(shares.unit!=='SHARES'||!Number.isFinite(shares.amount)||shares.amount<=0)
+  return {status:'INSUFFICIENT_EVIDENCE',errors:['INVALID_WEIGHTED_AVERAGE_SHARES'],eps:null};
+ const scale={IRR:1,THOUSAND_IRR:1000,MILLION_IRR:1000000}[income.unit];
+ if(!scale||income.unit!==data.unit)return {status:'INSUFFICIENT_EVIDENCE',errors:['EPS_UNIT_MISMATCH'],eps:null};
+ const numerator=income.amount*scale;
+ if(!Number.isFinite(numerator))return {status:'INSUFFICIENT_EVIDENCE',errors:['EPS_NUMERATOR_OUT_OF_RANGE'],eps:null};
+ const eps=numerator/shares.amount;
+ if(!Number.isFinite(eps))return {status:'INSUFFICIENT_EVIDENCE',errors:['EPS_RESULT_OUT_OF_RANGE'],eps:null};
+ return {status:'EPS_READY_FOR_REVIEW',eps:{valueRialPerShare:eps,currency:'IRR',periodEnd:data.period_end,
+  statementBasis:data.statement_basis,netIncomeSource:{row:income.source_row,page:income.source_page},
+  weightedAverageSharesSource:{row:shares.source_row,page:shares.source_page},
+  formula:'net_income_attributable_to_parent_in_IRR / weighted_average_shares'},
+  note:'EPS is an arithmetic derivation from user-supplied, traceable rows; it is not independently verified against CODAL and is not a trading signal.'};
+}
+module.exports={safeReportUrl,checkFinancialEvidence,calculateEPS};
