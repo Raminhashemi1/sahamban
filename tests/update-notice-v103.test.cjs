@@ -18,7 +18,7 @@ test('v103 update banner accessible and keyboard friendly',()=>{
  assert.match(css,/\[hidden\]/);assert.match(css,/safe-area-inset-bottom/);
 });
 test('v103 assets are shipped inside current offline cache generation',()=>{
- assert.match(sw,/sahamban-static-v149-[1-9][0-9]*/);
+ assert.match(sw,/sahamban-static-v150-[1-9][0-9]*/);
  assert.doesNotMatch(sw,/const CACHE='sahamban-static-v93-0'/);
  for(const file of ['update-notice-v103.js?v=103.0','update-notice-v103.css?v=103.0']){
   assert.ok(html.includes(file),file+' html');assert.ok(sw.includes(file),file+' sw');
