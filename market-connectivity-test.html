@@ -281,7 +281,7 @@ async function checkSymbol(symbol){
    if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1)throw Error('سوابق همان روز متناقض‌اند');
    const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
    if(uniqueDays.size<2)throw Error('تعداد روزهای تاریخچه کافی نیست');
-   valid.push({symbol,price,date,count:uniqueDays.size,code,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
+   valid.push({symbol,price,date,count:uniqueDays.size,code,historyStatus,historyDetail,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
   }catch(e){reasons.push(String(e?.message||e));}
  }
  if(valid.length===1)return valid[0];
