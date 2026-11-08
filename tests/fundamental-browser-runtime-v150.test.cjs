@@ -49,7 +49,7 @@ test('fundamental intake is wired into the PWA and decision detail without persi
  for(const id of ['fundamentalReviewPanelV150','fundamentalEvidenceFileV150','fundamentalOriginalAttestationV150','fundamentalReviewRunV150','fundamentalReviewStatusV150','fundamentalReviewDetailV150'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(html.indexOf('fundamental-evidence.js?v=150.4')<html.indexOf('fundamental-decision-gate-v150.js?v=150.3'));
- assert.ok(html.indexOf('fundamental-decision-gate-v150.js?v=150.3')<html.indexOf('decision-support-ui-v129.js?v=129.14'));
+ assert.ok(html.indexOf('fundamental-decision-gate-v150.js?v=150.3')<html.indexOf('decision-support-ui-v129.js?v=129.15'));
  assert.ok(sw.includes('fundamental-evidence.js?v=150.4'));
  assert.ok(sw.includes('capital-adjustments.js?v=150.2'));
  assert.ok(ui.includes('period_start:doc.periodStart'));
