@@ -55,8 +55,11 @@ function checkFinancialEvidence(data,expectedSymbol){
   if(isShareMetric?!SHARE_UNITS.has(fieldUnit):fieldUnit!==data.unit){
    errors.push('INVALID_FIELD_UNIT');continue;
   }
-  if((name==='total_assets'||name==='total_liabilities'||name==='cash_dividend_approved_total')&&row.amount<0){
+  if((name==='total_assets'||name==='total_liabilities')&&row.amount<0){
    errors.push('NEGATIVE_BALANCE_SHEET_TOTAL');continue;
+  }
+  if(name==='cash_dividend_approved_total'&&row.amount<0){
+   errors.push('NEGATIVE_FINANCIAL_AMOUNT');continue;
   }
   if((name==='shares_outstanding'||name==='weighted_average_shares'||name==='dividend_eligible_shares')&&row.amount<=0){
    errors.push(name==='shares_outstanding'?'INVALID_SHARES_OUTSTANDING':'INVALID_WEIGHTED_AVERAGE_SHARES');continue;
