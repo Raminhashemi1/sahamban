@@ -57,8 +57,8 @@ test('module loaded in PWA and has no storage/network/exfiltration',()=>{
  new vm.Script(js);
  for(const id of ['codalRowsV139','codalRowsPeriodV139','codalRowsUnitV139','codalRowsAuditV139','codalRowsBasisV139','codalRowsAddV139','codalRowsCheckV139'])
   assert.ok(html.includes('id="'+id+'"'),id);
- assert.ok(sw.includes('codal-source-rows-v139.js?v=139.1'));
- assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.1')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
+ assert.ok(sw.includes('codal-source-rows-v139.js?v=139.2'));
+ assert.ok(html.indexOf('codal-source-rows-v139.js?v=139.2')<html.indexOf('codal-original-intake-v138.js?v=138.2'));
  assert.doesNotMatch(js,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
 
@@ -93,8 +93,8 @@ test('local export button is present and app code contains no network access',()
  const src=fs.readFileSync('codal-source-rows-v139.js','utf8');
  const sw=fs.readFileSync('sw.js','utf8');
  assert.ok(html.includes('id="codalRowsExportV139"'));
- assert.ok(html.includes('codal-source-rows-v139.js?v=139.1'));
- assert.ok(sw.includes('codal-source-rows-v139.js?v=139.1'));
+ assert.ok(html.includes('codal-source-rows-v139.js?v=139.2'));
+ assert.ok(sw.includes('codal-source-rows-v139.js?v=139.2'));
  assert.match(src,/createObjectURL/);
  assert.match(src,/revokeObjectURL/);
  assert.doesNotMatch(src,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
