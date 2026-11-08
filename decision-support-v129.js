@@ -56,7 +56,7 @@
    dataStatus:'قیمت پایانی تاریخ ذکرشده؛ لزوماً قیمت لحظه‌ای یا قابل معامله نیست.',
    evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.'};
   if(r.code==='ENTRY_CANDIDATE'){
-   const sameSymbol=String(fundamentalReview?.symbol??'').replace(/\s/g,'').toUpperCase()===String(r.symbol).replace(/\s/g,'').toUpperCase();
+   const sameSymbol=normalizeSymbol(fundamentalReview?.symbol)===normalizeSymbol(r.symbol);
    const fundamentalReady=fundamentalReview?.status==='FUNDAMENTAL_REVIEW_READY'&&
     fundamentalReview.entryEligible===true&&sameSymbol&&fundamentalReview.financialEvidence==='READY_FOR_REVIEW'&&
     fundamentalReview.auditStatus==='AUDITED'&&fundamentalReview.epsStatus==='EPS_READY_FOR_REVIEW'&&
