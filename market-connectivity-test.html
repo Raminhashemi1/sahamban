@@ -400,7 +400,11 @@ $('run').addEventListener('click',async()=>{
    s.textContent='اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق.\nتطبیق قیمت پایانی با تاریخچه: موفق.\nتأیید تازگی قیمت زنده: انجام نشد.\nوضعیت تازگی: '+q.freshness.status+'\n'+q.freshness.message+'\nنماد: فولاد | قیمت پایانی: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\nبرای PASS زنده باید آزمون در ساعات معاملات تهران و با تاریخ امروز و زمان آخرین معامله حداکثر ۱۵ دقیقه قدیمی انجام شود. سبد شخصی بررسی یا تغییر نشده است.';
    return;
   }
-  s.textContent='PASS — قیمت با '+(q.historyStatus==='MATCHED_DAILY_ENDPOINT'?'مسیر روزانه دوم TSETMC':'فهرست تاریخچه روزانه')+' تطبیق دارد و آخرین معامله تازه است.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\n'+(q.historyDetail||'')+'\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
+  if(q.historyStatus==='MATCHED_DAILY_ENDPOINT'){
+   s.textContent='CORROBORATED_SAME_PROVIDER — تاریخ و قیمت با مسیر روزانه دوم TSETMC تطبیق دارد و آخرین معامله تازه است، اما فهرست تاریخچه امروز هنوز تکمیل نشده است. این نتیجه PASS کامل نیست.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\n'+q.historyDetail+'\nسبد شخصی بررسی یا تغییر نشده است.';
+   return;
+  }
+  s.textContent='PASS — قیمت با فهرست تاریخچه روزانه تطبیق دارد و آخرین معامله تازه است.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
  }catch(e){
   s.textContent='ناموفق یا تأییدنشده: '+(e?.name==='AbortError'?'مهلت اتصال ۱۰ ثانیه‌ای تمام شد':String(e?.message||e))+'\nهیچ اطلاعات سبدی خوانده یا تغییر داده نشده است.';
  }finally{b.disabled=false;}
