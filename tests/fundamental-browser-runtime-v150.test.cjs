@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 test('fundamental evidence and decision gate load as browser globals without CommonJS or network',()=>{
- const context=vm.createContext({});
+ const context=vm.createContext({URL});
  for(const path of ['fundamental-evidence.js','capital-adjustments.js','fundamental-decision-gate-v150.js']){
   new vm.Script(fs.readFileSync(path,'utf8'),{filename:path}).runInContext(context);
  }
@@ -35,7 +35,7 @@ test('fundamental evidence and decision gate load as browser globals without Com
  assert.equal(review.financialRatios.ratios.operatingMarginPct,20);
 });
 test('browser global validation still rejects non-leap Esfand 30 and invalid CODAL host',()=>{
- const context=vm.createContext({});
+ const context=vm.createContext({URL});
  new vm.Script(fs.readFileSync('fundamental-evidence.js','utf8')).runInContext(context);
  const api=context.SahambanFundamentalEvidenceV150;
  assert.equal(api.validPublicationDate('1405/12/30'),false);
@@ -61,7 +61,7 @@ test('fundamental intake is wired into the PWA and decision detail without persi
 });
 
 test('browser gate applies a verified corporate-action sequence to EPS and P/E',()=>{
- const context=vm.createContext({});
+ const context=vm.createContext({URL});
  for(const path of ['fundamental-evidence.js','capital-adjustments.js','fundamental-decision-gate-v150.js'])
   new vm.Script(fs.readFileSync(path,'utf8'),{filename:path}).runInContext(context);
  const data={symbol:'ونوین',tracing_no:'12345',report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
