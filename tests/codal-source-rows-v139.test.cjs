@@ -99,3 +99,9 @@ test('local export button is present and app code contains no network access',()
  assert.match(src,/revokeObjectURL/);
  assert.doesNotMatch(src,/localStorage|sessionStorage|XMLHttpRequest|sendBeacon|fetch\(/);
 });
+
+test('local CODAL row intake accepts Esfand 30 only in leap years',()=>{
+ assert.equal(rows.date('۱۴۰۳/۱۲/۳۰'),'1403/12/30');
+ assert.equal(rows.date('۱۴۰۵/۱۲/۳۰'),null);
+ assert.equal(rows.date('۱۴۰۵/۱۲/۲۹'),'1405/12/29');
+});
