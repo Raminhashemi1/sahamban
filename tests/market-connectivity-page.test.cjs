@@ -52,7 +52,7 @@ assert.match(html,/sameDay.length===0&&date===tehranMarketNow\(\)\.date/);
 assert.match(html,/lastDates\[0\]<date/);
 assert.match(html,/q\.freshness\.status==='FRESH'\?'FRESH_QUOTE_HISTORY_PENDING':'UNVERIFIED_HISTORY_NOT_PUBLISHED'/);
 assert.match(html,/تطبیق تاریخچه روزانه: هنوز تأیید نشده است/);
-assert.match(html,/GetClosingPriceDaily\\/'\+code\+'\\/'\+date/);
+assert.ok(html.includes("GetClosingPriceDaily/'+code+'/'+date"));
 assert.match(html,/MATCHED_DAILY_ENDPOINT/);
 assert.ok(html.indexOf("if(q.historyStatus==='PENDING_TODAY_ROW')") < html.indexOf("if(q.freshness.status!=='FRESH')"));
 assert.match(html,/if\(valid.length!==1\)/);
