@@ -75,16 +75,17 @@ test('rights issue refuses untraceable or wrongly denominated prices',()=>{
  assert.ok(calculateCapitalAdjustment(a,'ونوین').errors.includes('UNTRACEABLE_RIGHTS_PRICING_INPUTS'));
 });
 test('weighted-average EPS denominator retrospectively adjusts bonus shares and time-weights rights issues',()=>{
- const bonus=calculateCapitalAdjustment(sample(),'ونوین');
- const b=calculateAdjustedWeightedAverageShares(bonus,{daysBefore:180,daysAfter:180});
+ const bonusData=sample();bonusData.effective_date='۱۴۰۵/۰۵/۱۲';
+ const bonus=calculateCapitalAdjustment(bonusData,'ونوین');
+ const b=calculateAdjustedWeightedAverageShares(bonus,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
  assert.equal(b.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
  assert.equal(b.weightedAverageShares,1500000);
- const rights=sample();rights.action_type='RIGHTS_ISSUE';rights.pre_action_shares=1000000;rights.post_action_shares=1250000;
+ const rights=sample();rights.effective_date='۱۴۰۵/۰۵/۱۲';rights.action_type='RIGHTS_ISSUE';rights.pre_action_shares=1000000;rights.post_action_shares=1250000;
  rights.cum_rights_price=1000;rights.subscription_price=800;rights.price_unit='IRR_PER_SHARE';
  rights.cum_rights_price_source_row='قیمت قبل از مجمع';rights.cum_rights_price_source_page=4;
  rights.subscription_price_source_row='قیمت پذیره نویسی';rights.subscription_price_source_page=5;
  const action=calculateCapitalAdjustment(rights,'ونوین');
- const weighted=calculateAdjustedWeightedAverageShares(action,{daysBefore:180,daysAfter:180});
+ const weighted=calculateAdjustedWeightedAverageShares(action,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
  assert.equal(weighted.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
  assert.ok(Math.abs(weighted.weightedAverageShares-((1000000*(1000/960)+1250000)/2))<1e-7);
  assert.equal(weighted.source.page,6);
@@ -93,4 +94,11 @@ test('weighted-average EPS denominator fails closed on invalid weights or action
  const action=calculateCapitalAdjustment(sample(),'ونوین');
  assert.equal(calculateAdjustedWeightedAverageShares(action,{daysBefore:-1,daysAfter:365}).status,'INSUFFICIENT_EVIDENCE');
  assert.equal(calculateAdjustedWeightedAverageShares({status:'INSUFFICIENT_EVIDENCE'},{daysBefore:1,daysAfter:1}).status,'INSUFFICIENT_EVIDENCE');
+});
+
+test('EPS share adjustment refuses an action effective after the reporting period',()=>{
+ const a=calculateCapitalAdjustment(sample(),'ونوین');
+ const r=calculateAdjustedWeightedAverageShares(a,{daysBefore:180,daysAfter:180,periodEnd:'۱۴۰۵/۰۶/۳۱'});
+ assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(r.errors.includes('INVALID_CAPITAL_ACTION_DAY_WEIGHTS_OR_PERIOD'));
 });
