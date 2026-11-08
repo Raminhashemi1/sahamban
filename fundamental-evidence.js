@@ -171,7 +171,7 @@ function calculateDPS(data,expectedSymbol){
   note:'DPS is a gross arithmetic derivation from AGM-approved total cash dividends and record-date eligible shares. It is not independently verified against CODAL, does not include investor-specific tax or withholding, and is not a trading signal.'};
 }
 
-function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,maxMarketAgeDays=7}={}){
+function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,maxMarketAgeDays=7,adjustedShareBasis}={}){
  const checked=checkFinancialEvidence(data,expectedSymbol);
  if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,ratios:null,flags:[]};
  const fields=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
@@ -247,7 +247,7 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
    valuation={status:'INSUFFICIENT_MARKET_PRICE_EVIDENCE',pe:null,pb:null,ps:null,marketDate:price?.marketDate??null};
    flags.push('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE');
   }else{
-   const eps=calculateEPS(data,expectedSymbol);
+   const eps=calculateEPS(data,expectedSymbol,adjustedShareBasis);
    const bookValuePerShare=returnEquity!==null&&shares?returnEquity/shares:null;
    const salesPerShare= revenue!==null&&shares?revenue/shares:null;
    valuation={status:'VALUATION_MULTIPLES_READY_FOR_REVIEW',
@@ -268,5 +268,5 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
   note:'Ratios are calculated from one supplied reporting period and source rows. ROE/ROA are not annualized; ratios are not normalized for seasonality, exceptional items, group structure or accounting policy. Flags are review prompts, not ratings.'};
 }
  
-return {normalizeSymbol,safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
+return {normalizeSymbol,toAsciiDigits,validPublicationDate,safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios};
 });
