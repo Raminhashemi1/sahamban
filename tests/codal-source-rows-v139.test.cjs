@@ -105,3 +105,8 @@ test('local CODAL row intake accepts Esfand 30 only in leap years',()=>{
  assert.equal(rows.date('۱۴۰۵/۱۲/۳۰'),null);
  assert.equal(rows.date('۱۴۰۵/۱۲/۲۹'),'1405/12/29');
 });
+
+test('local CODAL row intake covers the 1399 to 1400 leap-year boundary',()=>{
+ assert.equal(rows.date('۱۳۹۹/۱۲/۳۰'),'1399/12/30');
+ assert.equal(rows.date('۱۴۰۰/۱۲/۳۰'),null);
+});
