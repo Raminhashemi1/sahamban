@@ -239,3 +239,14 @@ test('valuation multiples are withheld for stale, unverified or wrong-symbol mar
  assert.equal(wrong.valuation.status,'INSUFFICIENT_MARKET_PRICE_EVIDENCE');
  assert.ok(wrong.flags.includes('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE'));
 });
+
+test('valuation multiples accept verified Gregorian market-history dates and reject future closes',()=>{
+ const {calculateFinancialRatios}=require('../fundamental-evidence.js');
+ const a=sample();a.fields.weighted_average_shares={amount:100000000,unit:'SHARES',source_row:'میانگین موزون',source_page:2};
+ a.fields.net_income_attributable_to_parent={amount:2000,source_row:'سود منتسب',source_page:4};
+ const base={status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,source:'VERIFIED_HISTORICAL_QUOTE_EVENT'};
+ const ok=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:{...base,marketDate:'20261105'},asOfDate:'20261106'});
+ assert.equal(ok.valuation.status,'VALUATION_MULTIPLES_READY_FOR_REVIEW');
+ const future=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:{...base,marketDate:'20261107'},asOfDate:'20261106'});
+ assert.equal(future.valuation.status,'INSUFFICIENT_MARKET_PRICE_EVIDENCE');
+});
