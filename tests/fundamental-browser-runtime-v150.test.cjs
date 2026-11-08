@@ -48,10 +48,10 @@ test('fundamental intake is wired into the PWA and decision detail without persi
  const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
  for(const id of ['fundamentalReviewPanelV150','fundamentalEvidenceFileV150','fundamentalOriginalAttestationV150','fundamentalReviewRunV150','fundamentalReviewStatusV150','fundamentalReviewDetailV150'])
   assert.ok(html.includes('id="'+id+'"'),id);
- assert.ok(html.indexOf('fundamental-evidence.js?v=150.1')<html.indexOf('fundamental-decision-gate-v150.js?v=150.1'));
- assert.ok(html.indexOf('fundamental-decision-gate-v150.js?v=150.1')<html.indexOf('decision-support-ui-v129.js?v=129.11'));
- assert.ok(sw.includes('fundamental-evidence.js?v=150.1'));
- assert.ok(sw.includes('fundamental-decision-gate-v150.js?v=150.1'));
+ assert.ok(html.indexOf('fundamental-evidence.js?v=150.2')<html.indexOf('fundamental-decision-gate-v150.js?v=150.2'));
+ assert.ok(html.indexOf('fundamental-decision-gate-v150.js?v=150.2')<html.indexOf('decision-support-ui-v129.js?v=129.12'));
+ assert.ok(sw.includes('fundamental-evidence.js?v=150.2'));
+ assert.ok(sw.includes('fundamental-decision-gate-v150.js?v=150.2'));
  assert.match(ui,/decisionPlan\(r,\{fundamentalReview:fundamental\}\)/);
  assert.match(ui,/VERIFIED_HISTORICAL_QUOTE_EVENT/);
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon|fetch\(/);
