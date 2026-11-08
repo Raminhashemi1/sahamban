@@ -4,7 +4,7 @@ const UNITS=new Set(['IRR','THOUSAND_IRR','MILLION_IRR']);
 const SHARE_UNITS=new Set(['SHARES']);
 const AUDITS=new Set(['AUDITED','UNAUDITED']);
 const BASES=new Set(['STANDALONE','CONSOLIDATED']);
-const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding','weighted_average_shares']);
+const METRICS=new Set(['revenue','operating_profit','net_income','net_income_attributable_to_parent','total_assets','total_liabilities','equity','operating_cash_flow','shares_outstanding','weighted_average_shares','cash_dividend_approved_total','dividend_eligible_shares']);
 function safeReportUrl(raw){
  if(typeof raw!=='string'||raw.length>2048||!raw.trim()||raw.startsWith('//')||/[\s\\\u0000-\u001f\u007f]/.test(raw))return null;
  if(!raw.startsWith('/')&&!/^https:\/\//i.test(raw))return null;
@@ -51,14 +51,14 @@ function checkFinancialEvidence(data,expectedSymbol){
    errors.push('UNTRACEABLE_FIELD');continue;
   }
   const fieldUnit=row.unit??(name==='shares_outstanding'?'SHARES':data.unit);
-  const isShareMetric=name==='shares_outstanding'||name==='weighted_average_shares';
+  const isShareMetric=name==='shares_outstanding'||name==='weighted_average_shares'||name==='dividend_eligible_shares';
   if(isShareMetric?!SHARE_UNITS.has(fieldUnit):fieldUnit!==data.unit){
    errors.push('INVALID_FIELD_UNIT');continue;
   }
-  if((name==='total_assets'||name==='total_liabilities')&&row.amount<0){
+  if((name==='total_assets'||name==='total_liabilities'||name==='cash_dividend_approved_total')&&row.amount<0){
    errors.push('NEGATIVE_BALANCE_SHEET_TOTAL');continue;
   }
-  if((name==='shares_outstanding'||name==='weighted_average_shares')&&row.amount<=0){
+  if((name==='shares_outstanding'||name==='weighted_average_shares'||name==='dividend_eligible_shares')&&row.amount<=0){
    errors.push(name==='shares_outstanding'?'INVALID_SHARES_OUTSTANDING':'INVALID_WEIGHTED_AVERAGE_SHARES');continue;
   }
   fields.push({name,amount:row.amount,unit:fieldUnit,source_row:row.source_row,source_page:row.source_page});
@@ -97,4 +97,29 @@ function calculateEPS(data,expectedSymbol){
   formula:'net_income_attributable_to_parent_in_IRR / weighted_average_shares'},
   note:'EPS is an arithmetic derivation from user-supplied, traceable rows; it is not independently verified against CODAL and is not a trading signal.'};
 }
-module.exports={safeReportUrl,checkFinancialEvidence,calculateEPS};
+
+function calculateDPS(data,expectedSymbol){
+ const checked=checkFinancialEvidence(data,expectedSymbol);
+ if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,dps:null};
+ const errors=[];
+ if(data.dividend_status!=='APPROVED_BY_AGM')errors.push('DIVIDEND_NOT_APPROVED_BY_AGM');
+ const recordDate=day(data.dividend_record_date);
+ if(!recordDate)errors.push('INVALID_DIVIDEND_RECORD_DATE');
+ const byName=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
+ const total=byName.cash_dividend_approved_total,shares=byName.dividend_eligible_shares;
+ if(!total||!shares)errors.push('DPS_REQUIRES_APPROVED_CASH_DIVIDEND_TOTAL_AND_RECORD_DATE_ELIGIBLE_SHARES');
+ if(errors.length)return {status:'INSUFFICIENT_EVIDENCE',errors,dps:null};
+ const scale={IRR:1,THOUSAND_IRR:1000,MILLION_IRR:1000000}[total.unit];
+ if(!scale||total.unit!==data.unit||shares.unit!=='SHARES')
+  return {status:'INSUFFICIENT_EVIDENCE',errors:['DPS_UNIT_MISMATCH'],dps:null};
+ const totalRial=total.amount*scale;
+ if(!Number.isFinite(totalRial))return {status:'INSUFFICIENT_EVIDENCE',errors:['DPS_NUMERATOR_OUT_OF_RANGE'],dps:null};
+ const dps=totalRial/shares.amount;
+ if(!Number.isFinite(dps))return {status:'INSUFFICIENT_EVIDENCE',errors:['DPS_RESULT_OUT_OF_RANGE'],dps:null};
+ return {status:'DPS_READY_FOR_REVIEW',dps:{valueRialPerShare:dps,currency:'IRR',recordDate:data.dividend_record_date,
+  dividendStatus:data.dividend_status,totalDividendSource:{row:total.source_row,page:total.source_page},
+  eligibleSharesSource:{row:shares.source_row,page:shares.source_page},
+  formula:'AGM_approved_cash_dividend_total_in_IRR / shares_entitled_on_record_date'},
+  note:'DPS is a gross arithmetic derivation from AGM-approved total cash dividends and record-date eligible shares. It is not independently verified against CODAL, does not include investor-specific tax or withholding, and is not a trading signal.'};
+}
+module.exports={safeReportUrl,checkFinancialEvidence,calculateEPS,calculateDPS};
