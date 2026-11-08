@@ -96,4 +96,74 @@ function calculateAdjustedWeightedAverageShares(actionResult,{daysBefore,daysAft
   formula:'((pre_action_shares * eps_retrospective_share_multiplier * days_before) + (post_action_shares * days_after)) / total_period_days',
   note:'Review-only IAS 33-style denominator adjustment for one corporate action. Day weights and source share counts require independent verification; do not combine multiple actions without chronological restatement.'};
 }
-module.exports={calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,ACTIONS};
+
+function jalaliOrdinal(value){
+ const key=jalaliKey(value);if(!key)return null;
+ const year=Number(key.slice(0,4)),month=Number(key.slice(4,6)),day=Number(key.slice(6,8));
+ try{
+  const fmt=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+  let start=null;
+  for(let d=19;d<=22;d++){
+   const candidate=new Date(Date.UTC(year+621,2,d));
+   const parts=Object.fromEntries(fmt.formatToParts(candidate).map(p=>[p.type,p.value]));
+   if(parts.year===String(year)&&parts.month==='1'&&parts.day==='1'){start=candidate;break;}
+  }
+  if(!start)return null;
+  const offset=(month<=6?(month-1)*31:month<=11?186+(month-7)*30:336)+day-1;
+  return Math.floor(start.getTime()/86400000)+offset;
+ }catch{return null;}
+}
+function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,periodEnd}={}){
+ const fail=code=>({status:'INSUFFICIENT_EVIDENCE',errors:[code],weightedAverageShares:null,segments:[]});
+ if(!Array.isArray(actionResults)||!actionResults.length||actionResults.length>20)return fail('INVALID_CAPITAL_ACTION_SEQUENCE');
+ const start=jalaliOrdinal(periodStart),end=jalaliOrdinal(periodEnd);
+ if(start===null||end===null||end<start)return fail('INVALID_REPORTING_PERIOD');
+ const actions=[];
+ for(const result of actionResults){
+  if(result?.status!=='CAPITAL_ADJUSTMENT_READY_FOR_REVIEW'||!result.adjustment)return fail('UNVERIFIED_CAPITAL_ACTION_IN_SEQUENCE');
+  const a=result.adjustment,ordinal=jalaliOrdinal(a.effectiveDate);
+  if(ordinal===null||ordinal<start||ordinal>end||!positiveSafeInteger(a.preActionShares)||
+   !positiveSafeInteger(a.postActionShares)||!Number.isFinite(a.epsRetrospectiveShareMultiplier)||
+   a.epsRetrospectiveShareMultiplier<=0||!a.source||!/^\\d{1,20}$/.test(String(a.source.tracingNo))||
+   typeof a.source.row!=='string'||!a.source.row.trim()||!Number.isInteger(a.source.page)||a.source.page<1)
+   return fail('INVALID_ACTION_DATE_SHARE_COUNTS_OR_PROVENANCE');
+  actions.push({...a,ordinal});
+ }
+ const symbol=normalizeSymbol(actions[0].symbol);
+ if(!symbol||actions.some(a=>normalizeSymbol(a.symbol)!==symbol))return fail('CAPITAL_ACTION_SYMBOL_MISMATCH');
+ for(let i=1;i<actions.length;i++){
+  if(actions[i].ordinal<=actions[i-1].ordinal)return fail('CAPITAL_ACTIONS_NOT_STRICTLY_CHRONOLOGICAL');
+  if(actions[i].preActionShares!==actions[i-1].postActionShares)return fail('CAPITAL_ACTION_SHARE_CHAIN_MISMATCH');
+ }
+ const segments=[];
+ for(let i=0;i<=actions.length;i++){
+  const segStart=i===0?start:actions[i-1].ordinal;
+  const segEnd=i===actions.length?end:actions[i].ordinal-1;
+  const days=Math.max(0,segEnd-segStart+1);
+  if(!days)continue;
+  const baseShares=i===0?actions[0].preActionShares:actions[i-1].postActionShares;
+  let factor=1;
+  for(let j=i;j<actions.length;j++)factor*=actions[j].epsRetrospectiveShareMultiplier;
+  const adjustedShares=baseShares*factor;
+  if(!Number.isFinite(adjustedShares)||adjustedShares<=0)return fail('MULTI_ACTION_SHARE_FACTOR_OUT_OF_RANGE');
+  segments.push({from:i===0?periodStart:actions[i-1].effectiveDate,
+   through:i===actions.length?periodEnd:actions[i].effectiveDate,
+   days,baseShares,subsequentRestatementFactor:factor,adjustedShares});
+ }
+ const totalDays=end-start+1,weightedTotal=segments.reduce((sum,x)=>sum+x.adjustedShares*x.days,0);
+ const weightedAverageShares=weightedTotal/totalDays;
+ if(segments.reduce((sum,x)=>sum+x.days,0)!==totalDays||!Number.isFinite(weightedAverageShares)||weightedAverageShares<=0)
+  return fail('MULTI_ACTION_WEIGHTED_AVERAGE_OUT_OF_RANGE');
+ return {status:'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW',symbol:actions[0].symbol,
+  periodStart,periodEnd,weightedAverageShares,unit:'SHARES',totalDays,
+  actions:actions.map(a=>({actionType:a.actionType,effectiveDate:a.effectiveDate,
+   preActionShares:a.preActionShares,postActionShares:a.postActionShares,
+   epsRetrospectiveShareMultiplier:a.epsRetrospectiveShareMultiplier,
+   source:{tracingNo:a.source.tracingNo,row:a.source.row,page:a.source.page}})),
+  sources:actions.map(a=>({tracingNo:a.source.tracingNo,row:a.source.row,page:a.source.page})),
+  source:actions.at(-1).source,segments,
+  formula:'For each period segment, use the share count after the preceding action multiplied by every later action retrospective EPS factor; day-weight each segment over the full reporting period.',
+  note:'Review-only chronological IAS 33-style restatement for up to 20 verified-input corporate actions. Each action must be independently verified; sequence and day counts are derived from Jalali effective dates. This arithmetic does not authenticate source documents.'};
+}
+
+module.exports={calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
