@@ -89,3 +89,51 @@ test('CODAL report URL serial must match the declared tracing number',()=>{
  const match=sample();match.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=۱۲۳۴۵';
  assert.equal(checkFinancialEvidence(match,'ونوین').status,'READY_FOR_REVIEW');
 });
+
+test('EPS requires parent-attributable income and weighted-average shares with explicit units',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const a=sample();
+ assert.equal(calculateEPS(a,'ونوین').status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(calculateEPS(a,'ونوین').errors.includes('EPS_REQUIRES_PARENT_ATTRIBUTABLE_NET_INCOME_AND_WEIGHTED_AVERAGE_SHARES'));
+ a.fields.net_income_attributable_to_parent={amount:2500,source_row:'سود خالص قابل انتساب به مالکان شرکت اصلی',source_page:4};
+ a.fields.weighted_average_shares={amount:500000000,unit:'SHARES',source_row:'میانگین موزون تعداد سهام',source_page:8};
+ const result=calculateEPS(a,'ونوین');
+ assert.equal(result.status,'EPS_READY_FOR_REVIEW');
+ assert.equal(result.eps.valueRialPerShare,5);
+ assert.equal(result.eps.currency,'IRR');
+ assert.equal(result.eps.periodEnd,a.period_end);
+ assert.match(result.note,/not independently verified/);
+});
+test('EPS scales filing units correctly and preserves losses as negative EPS',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const a=sample();a.fields.net_income_attributable_to_parent={amount:-2,source_row:'زیان قابل انتساب',source_page:4};
+ a.fields.weighted_average_shares={amount:1000000,unit:'SHARES',source_row:'میانگین موزون سهام',source_page:8};
+ const r=calculateEPS(a,'ونوین');
+ assert.equal(r.status,'EPS_READY_FOR_REVIEW');
+ assert.equal(r.eps.valueRialPerShare,-2);
+});
+test('EPS rejects missing or invalid weighted-average share evidence',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const a=sample();a.fields.net_income_attributable_to_parent={amount:2500,source_row:'سود قابل انتساب',source_page:4};
+ a.fields.weighted_average_shares={amount:0,unit:'SHARES',source_row:'میانگین موزون سهام',source_page:8};
+ const r=calculateEPS(a,'ونوین');
+ assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(r.errors.includes('INVALID_WEIGHTED_AVERAGE_SHARES'));
+ assert.equal(r.eps,null);
+});
+test('EPS never substitutes closing shares outstanding for weighted-average shares',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const a=sample();a.fields.net_income_attributable_to_parent={amount:2500,source_row:'سود قابل انتساب',source_page:4};
+ a.fields.shares_outstanding={amount:500000000,unit:'SHARES',source_row:'تعداد سهام پایان دوره',source_page:8};
+ const r=calculateEPS(a,'ونوین');
+ assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(r.errors.includes('EPS_REQUIRES_PARENT_ATTRIBUTABLE_NET_INCOME_AND_WEIGHTED_AVERAGE_SHARES'));
+});
+test('EPS requires monetary income unit to match the filing unit',()=>{
+ const {calculateEPS}=require('../fundamental-evidence.js');
+ const a=sample();a.fields.net_income_attributable_to_parent={amount:2500,unit:'IRR',source_row:'سود قابل انتساب',source_page:4};
+ a.fields.weighted_average_shares={amount:500000000,unit:'SHARES',source_row:'میانگین موزون سهام',source_page:8};
+ const r=calculateEPS(a,'ونوین');
+ assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(r.errors.includes('INVALID_FIELD_UNIT'));
+});
