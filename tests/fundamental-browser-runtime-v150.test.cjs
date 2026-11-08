@@ -58,7 +58,7 @@ test('fundamental intake is wired into the PWA and decision detail without persi
  assert.match(ui,/decisionPlan\(r,\{fundamentalReview:fundamental\}\)/);
  assert.match(ui,/VERIFIED_HISTORICAL_QUOTE_EVENT/);
  assert.match(ui,/fundamentalFile\?\.addEventListener\('change'/);
- assert.match(ui,/fundamentalCapitalActionsV150\)\?\.addEventListener\('input'/);
+ assert.ok(ui.includes("$('fundamentalCapitalActionsV150')?.addEventListener('input'"));
  assert.match(ui,/fundamentalReviews\.clear\(\);if\(reports\.length\)showDetail\(\);/);
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon|fetch\(/);
 });
