@@ -38,3 +38,9 @@ test('date metadata checks Jalali month/day bounds',()=>{
  assert.equal(validPublicationDate('1405/06/31'),true);
  assert.equal(validPublicationDate('1405/00/12'),false);
 });
+
+test('accepts Esfand 30 only in Persian leap years',()=>{
+ assert.equal(validPublicationDate('۱۴۰۳/۱۲/۳۰'),true);
+ assert.equal(validPublicationDate('۱۴۰۵/۱۲/۳۰'),false);
+ assert.equal(validPublicationDate('۱۴۰۵/۱۲/۲۹'),true);
+});
