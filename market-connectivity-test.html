@@ -76,9 +76,21 @@ small{opacity:.75}
   for(const x of body.Letters){
    const symbol=normalize(x?.Symbol),title=String(x?.Title??'').trim(),tracing=ascii(x?.TracingNo).trim();
    const publication=ascii(x?.PublishDateTime||x?.SentDateTime||'').trim();
-   const date=publication.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+\d\d?:\d\d(?::\d\d)?)?$/);
+   const date=publication.match(/^(13\d\d|14\d\d)[/\-](\d\d?)[/\-](\d\d?)(?:\s+(\d\d?):(\d\d)(?::(\d\d))?)?$/);
    const month=Number(date?.[2]),day=Number(date?.[3]);
-   const dateValid=Boolean(date&&month>=1&&month<=12&&day>=1&&day<=(month<=6?31:30));
+   let dateValid=Boolean(date&&month>=1&&month<=12&&day>=1&&day<=(month<=6?31:30)&&
+    (date[4]===undefined||(Number(date[4])<=23&&Number(date[5])<=59&&(date[6]===undefined||Number(date[6])<=59))));
+   if(dateValid&&month===12&&day===30){
+    // Esfand 30 is valid only when the official Persian calendar has that day.
+    try{
+     const formatter=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+     dateValid=false;
+     for(let gregorianDay=18;gregorianDay<=22;gregorianDay++){
+      const parts=Object.fromEntries(formatter.formatToParts(new Date(Date.UTC(Number(date[1])+622,2,gregorianDay))).map(p=>[p.type,p.value]));
+      if(parts.year===String(Number(date[1]))&&parts.month==='12'&&parts.day==='30'){dateValid=true;break;}
+     }
+    }catch{dateValid=false;}
+   }
    let reason='';
    if(symbol!==expected)reason='SYMBOL_MISMATCH';
    else if(!title||title.length>500)reason='INVALID_TITLE';
