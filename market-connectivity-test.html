@@ -350,8 +350,24 @@ $('run').addEventListener('click',async()=>{
      const lastDates=[...new Set(hist.map(x=>String(x?.dEven??'')).filter(x=>/^\d{8}$/.test(x)))].sort().reverse().slice(0,3);
      const missingToday=sameDay.length===0&&date===tehranMarketNow().date&&lastDates.length>0&&lastDates[0]<date;
      if(missingToday){
-      historyStatus='PENDING_TODAY_ROW';
-      historyDetail='تاریخچه هنوز رکورد امروز '+date+' را منتشر نکرده است. آخرین تاریخ‌های موجود: '+lastDates.join('، ');
+      // The bulk daily-list endpoint may lag. Cross-check the exact date through
+      // the dedicated daily endpoint; this is corroboration from a second route,
+      // not a different data provider. Never infer a match from the quote alone.
+      try{
+       const daily=(await get('/ClosingPrice/GetClosingPriceDaily/'+code+'/'+date))?.closingPriceDaily;
+       const dailyDate=String(daily?.dEven??'');
+       const dailyPrice=Number(daily?.pClosing);
+       if(dailyDate===String(date)&&Number.isFinite(dailyPrice)&&dailyPrice===price){
+        historyStatus='MATCHED_DAILY_ENDPOINT';
+        historyDetail='قیمت با مسیر روزانه جداگانه TSETMC نیز تطبیق کرد: '+date+' | '+fa(dailyPrice)+' ریال. مسیر فهرست تاریخچه هنوز آخرین رکورد امروز را نشان نمی‌دهد؛ این تأیید از همان ارائه‌دهنده است، نه منبع مستقل.';
+       }else{
+        historyStatus='PENDING_TODAY_ROW';
+        historyDetail='فهرست تاریخچه هنوز رکورد امروز را ندارد و مسیر روزانه دوم نیز تطبیق نداد. پاسخ مسیر روزانه: تاریخ '+(dailyDate||'نامشخص')+' | قیمت '+(Number.isFinite(dailyPrice)?fa(dailyPrice):'نامشخص')+' ریال. آخرین تاریخ‌های فهرست: '+lastDates.join('، ');
+       }
+      }catch(dailyError){
+       historyStatus='PENDING_TODAY_ROW';
+       historyDetail='فهرست تاریخچه هنوز رکورد امروز را ندارد؛ مسیر روزانه دوم نیز قابل تأیید نبود: '+String(dailyError?.message||dailyError).slice(0,180)+'. آخرین تاریخ‌های فهرست: '+lastDates.join('، ');
+      }
      }else{
       verifyPublicClosingHistory(date,price,hist);
      }
@@ -377,14 +393,14 @@ $('run').addEventListener('click',async()=>{
   }
   const q=valid[0];
   if(q.historyStatus==='PENDING_TODAY_ROW'){
-   s.textContent='اتصال TSETMC و دریافت قیمت امروز: موفق.\nتازگی آخرین معامله: '+q.freshness.status+(q.freshness.lastTradeTime?' ('+q.freshness.lastTradeTime+' تهران)':'')+'.\nتطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار.\nوضعیت: '+(q.freshness.status==='FRESH'?'FRESH_QUOTE_HISTORY_PENDING':'UNVERIFIED_HISTORY_NOT_PUBLISHED')+' — تأیید کامل انجام نشده است.\nنماد: فولاد | قیمت پایانی پاسخ: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\n'+q.historyDetail+'\nاین تأخیر احتمالی انتشار تاریخچه است و به معنی خطای اتصال یا تأیید کامل قیمت نیست. برای بررسی دوباره، بعداً فقط یک بار آزمون کنید.';
+   s.textContent='اتصال TSETMC و دریافت قیمت امروز: موفق.\nتازگی آخرین معامله: '+q.freshness.status+(q.freshness.lastTradeTime?' ('+q.freshness.lastTradeTime+' تهران)':'')+'.\nتطبیق تاریخچه روزانه: هنوز تأیید نشده است.\nوضعیت: '+(q.freshness.status==='FRESH'?'FRESH_QUOTE_HISTORY_PENDING':'UNVERIFIED_HISTORY_NOT_PUBLISHED')+' — تأیید کامل انجام نشده است.\nنماد: فولاد | قیمت پایانی پاسخ: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\n'+q.historyDetail+'\nقیمت فقط با دریافت و تطبیق رکورد روزانه تأیید می‌شود؛ برای بررسی دوباره بعداً فقط یک بار آزمون کنید.';
    return;
   }
   if(q.freshness.status!=='FRESH'){
    s.textContent='اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق.\nتطبیق قیمت پایانی با تاریخچه: موفق.\nتأیید تازگی قیمت زنده: انجام نشد.\nوضعیت تازگی: '+q.freshness.status+'\n'+q.freshness.message+'\nنماد: فولاد | قیمت پایانی: '+fa(q.price)+' ریال | تاریخ بازار: '+q.date+'\nبرای PASS زنده باید آزمون در ساعات معاملات تهران و با تاریخ امروز و زمان آخرین معامله حداکثر ۱۵ دقیقه قدیمی انجام شود. سبد شخصی بررسی یا تغییر نشده است.';
    return;
   }
-  s.textContent='PASS — قیمت و تاریخچه منطبق و آخرین معامله تازه است.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
+  s.textContent='PASS — قیمت با '+(q.historyStatus==='MATCHED_DAILY_ENDPOINT'?'مسیر روزانه دوم TSETMC':'فهرست تاریخچه روزانه')+' تطبیق دارد و آخرین معامله تازه است.\nنماد: فولاد\nقیمت پایانی: '+fa(q.price)+' ریال\nتاریخ بازار: '+q.date+'\nآخرین معامله: '+q.freshness.lastTradeTime+' به وقت تهران ('+fa(q.freshness.ageMinutes)+' دقیقه قبل)\n'+(q.historyDetail||'')+'\nاین نتیجه فقط آزمون خواندنی است؛ سبد شخصی بررسی یا تغییر نشده است.';
  }catch(e){
   s.textContent='ناموفق یا تأییدنشده: '+(e?.name==='AbortError'?'مهلت اتصال ۱۰ ثانیه‌ای تمام شد':String(e?.message||e))+'\nهیچ اطلاعات سبدی خوانده یا تغییر داده نشده است.';
  }finally{b.disabled=false;}
