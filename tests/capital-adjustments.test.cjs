@@ -95,8 +95,8 @@ test('weighted-average EPS denominator retrospectively adjusts bonus shares and 
 });
 test('weighted-average EPS denominator fails closed on invalid weights or action status',()=>{
  const action=calculateCapitalAdjustment(sample(),'ونوین');
- assert.equal(calculateAdjustedWeightedAverageShares(action,{daysBefore:-1,daysAfter:365}).status,'INSUFFICIENT_EVIDENCE');
- assert.equal(calculateAdjustedWeightedAverageShares({status:'INSUFFICIENT_EVIDENCE'},{daysBefore:1,daysAfter:1}).status,'INSUFFICIENT_EVIDENCE');
+ assert.equal(calculateAdjustedWeightedAverageShares(action,{periodStart:'۱۴۰۵/۰۱/۰۱'}).status,'INSUFFICIENT_EVIDENCE');
+ assert.equal(calculateAdjustedWeightedAverageShares({status:'INSUFFICIENT_EVIDENCE'},{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۰۶/۳۱'}).status,'INSUFFICIENT_EVIDENCE');
 });
 
 test('EPS share adjustment refuses an action effective after the reporting period',()=>{
@@ -121,7 +121,8 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
  const eps=calculateEPS(financial,'ونوین',basis);
  assert.equal(eps.status,'EPS_READY_FOR_REVIEW');
  assert.ok(Math.abs(eps.eps.valueRialPerShare-(2000000000/1500000))<1e-9);
- assert.equal(eps.eps.shareBasisType,'CAPITAL_ACTION_RESTATED_WEIGHTED_AVERAGE_SHARES');
+ assert.equal(eps.eps.shareBasisType,'CAPITAL_ACTION_SEQUENCE_RESTATED_WEIGHTED_AVERAGE_SHARES');
+ assert.equal(eps.eps.capitalAdjustmentCount,1);
  assert.equal(eps.eps.capitalAdjustmentPeriodEnd,financial.period_end);
  const wrongSymbol=calculateEPS(financial,'ونوین',{...basis,symbol:'فولاد'});
  assert.ok(wrongSymbol.errors.includes('INVALID_OR_MISMATCHED_CAPITAL_ADJUSTED_SHARE_BASIS'));
