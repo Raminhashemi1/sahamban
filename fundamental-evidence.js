@@ -108,6 +108,10 @@ function calculateDPS(data,expectedSymbol){
  if(data.dividend_status!=='APPROVED_BY_AGM')errors.push('DIVIDEND_NOT_APPROVED_BY_AGM');
  const recordDate=day(data.dividend_record_date);
  if(!recordDate)errors.push('INVALID_DIVIDEND_RECORD_DATE');
+ const sourceOk=(row,page)=>typeof row==='string'&&row.trim().length>0&&row.length<=240&&Number.isInteger(page)&&page>0&&page<=99999;
+ if(!sourceOk(data.dividend_approval_source_row,data.dividend_approval_source_page)||
+    !sourceOk(data.dividend_record_date_source_row,data.dividend_record_date_source_page))
+  errors.push('UNTRACEABLE_DIVIDEND_APPROVAL_OR_RECORD_DATE');
  const byName=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
  const total=byName.cash_dividend_approved_total,shares=byName.dividend_eligible_shares;
  if(!total||!shares)errors.push('DPS_REQUIRES_APPROVED_CASH_DIVIDEND_TOTAL_AND_RECORD_DATE_ELIGIBLE_SHARES');
@@ -120,7 +124,10 @@ function calculateDPS(data,expectedSymbol){
  const dps=totalRial/shares.amount;
  if(!Number.isFinite(dps))return {status:'INSUFFICIENT_EVIDENCE',errors:['DPS_RESULT_OUT_OF_RANGE'],dps:null};
  return {status:'DPS_READY_FOR_REVIEW',dps:{valueRialPerShare:dps,currency:'IRR',recordDate:data.dividend_record_date,
-  dividendStatus:data.dividend_status,totalDividendSource:{row:total.source_row,page:total.source_page},
+  dividendStatus:data.dividend_status,
+  approvalSource:{row:data.dividend_approval_source_row,page:data.dividend_approval_source_page},
+  recordDateSource:{row:data.dividend_record_date_source_row,page:data.dividend_record_date_source_page},
+  totalDividendSource:{row:total.source_row,page:total.source_page},
   eligibleSharesSource:{row:shares.source_row,page:shares.source_page},
   formula:'AGM_approved_cash_dividend_total_in_IRR / shares_entitled_on_record_date'},
   note:'DPS is a gross arithmetic derivation from AGM-approved total cash dividends and record-date eligible shares. It is not independently verified against CODAL, does not include investor-specific tax or withholding, and is not a trading signal.'};
