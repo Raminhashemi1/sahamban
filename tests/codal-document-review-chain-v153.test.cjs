@@ -33,7 +33,7 @@ test('v153 review chain requires both distinct metadata and byte observations bu
 test('v153 blocks document download when metadata association fails',async()=>{
  let downloads=0;
  const rejected=await reviewCodalDocumentChain(file(),filing(),{
-  metadataFetcher:async()=>res(JSON.stringify({Letters:[{...letter(),Symbol:'فولاد'}]}),metadataUrl,{'content-type':'application/json'}),
+  metadataFetcher:async()=>res(JSON.stringify({Letters:[{...letter(),Symbol:'فولاد'}],Total:1,Page:1}),metadataUrl,{'content-type':'application/json'}),
   documentFetcher:async()=>{downloads++;return res(doc,report);}
  });
  assert.equal(rejected.status,'CODAL_REVIEW_INSUFFICIENT');
