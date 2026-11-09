@@ -13,7 +13,7 @@ test('cost-aware event study reports gross, net, stress and drawdown consistentl
  assert.ok(r.stressNetWinRatePct<=r.netWinRatePct);
  assert.equal(r.adequateSample,false);
 });
-test('event audit refuses unverified historical price basis',()=>{assert.throws(()=>audit.audit({symbol:'x',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',historyPriceBasisEvidence:'NOT_ESTABLISHED'}),/مبنای تعدیل/);assert.throws(()=>audit.audit({symbol:'x',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/مبنای تعدیل/);});
+test('event audit refuses unverified historical price basis',()=>{assert.throws(()=>audit.audit({symbol:'x',history:history(),historyPriceBasisEvidence:'NOT_ESTABLISHED'}),/مبنای تعدیل/);assert.throws(()=>audit.audit({symbol:'x',history:history()}),/مبنای تعدیل/);});
 test('cost assumptions are bounded and drawdown compounds sequential event returns',()=>{
  assert.throws(()=>audit.audit({symbol:'x',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'},{roundTripCostPct:-1}),/بین صفر/);
  assert.throws(()=>audit.audit({symbol:'x',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'},{roundTripCostPct:6}),/بین صفر/);
@@ -28,14 +28,14 @@ test('audit refuses to run if the decision engine is unavailable',()=>{
 test('audit rejects impossible Gregorian dates even when their text is eight digits and ordered',()=>{
  for(const invalid of ['20261131','20261301']){
   const h=history();h[h.length-1].date=invalid;
-  assert.throws(()=>audit.audit({symbol:'x',history:h}),/تاریخچه نامعتبر/);
+  assert.throws(()=>audit.audit({symbol:'x',history:h,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/تاریخچه نامعتبر/);
  }
 });
 
 test('audit accepts a real Gregorian leap day in an otherwise ordered history',()=>{
  const end=new Date(Date.UTC(2024,1,29));
  const h=Array.from({length:150},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(149-i));return {date:d.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
- assert.doesNotThrow(()=>audit.audit({symbol:'x',history:h}));
+ assert.doesNotThrow(()=>audit.audit({symbol:'x',history:h,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}));
 });
 
 test('audit rejects a non-leap February 29 even when history remains ordered',()=>{
