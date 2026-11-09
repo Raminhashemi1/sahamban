@@ -42,5 +42,5 @@ test('audit rejects a non-leap February 29 even when history remains ordered',()
  const end=new Date(Date.UTC(2026,1,28));
  const h=Array.from({length:150},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(149-i));return {date:d.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
  h[h.length-1].date='20260229';
- assert.throws(()=>audit.audit({symbol:'x',history:h}),/تاریخچه نامعتبر/);
+ assert.throws(()=>audit.audit({symbol:'x',history:h,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/تاریخچه نامعتبر/);
 });
