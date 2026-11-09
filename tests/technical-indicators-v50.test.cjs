@@ -43,6 +43,14 @@ test('technical selector activates from visible portfolio symbols without treati
  assert.equal(selector.disabled,false);
  assert.equal(selector.children[0].textContent,'فولاد');
  assert.match(result.textContent,/تعداد نقاط تاریخی معتبر/);
+ assert.match(result.textContent,/مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است/);
+ assert.match(status.textContent,/مبنای تعدیل قیمت تاریخی/);
+});
+test('technical panel never portrays missing basis metadata as independently attested',()=>{
+ const source=fs.readFileSync('technical-analysis-v50.js','utf8');
+ assert.match(source,/historyPriceBasisEvidence==='INDEPENDENTLY_ATTESTED'/);
+ assert.match(source,/SMA، RSI و MACD فقط تشخیصی‌اند/);
+ assert.match(source,/مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است/);
 });
 
 test('broker import visible rows publish symbol names to technical selector without sending prices',()=>{
