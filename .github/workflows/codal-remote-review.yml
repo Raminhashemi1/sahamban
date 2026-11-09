@@ -5,7 +5,9 @@ on:
     paths:
       - 'codal-remote-byte-corroboration-v152.cjs'
       - 'codal-search-association-v153.cjs'
-      - 'tests/codal-search-association-v153.test.cjs'
+      - 'codal-document-review-chain-v153.cjs'
+      - 'tests/codal-document-review-chain-v153.test.cjs'
+      - 'tests/codal-search-association-v153.test.cjs tests/codal-document-review-chain-v153.test.cjs'
       - 'codal-original-intake-v138.js'
       - 'tests/codal-audit-recheck-v140.test.cjs'
       - '.github/workflows/codal-remote-review.yml'
