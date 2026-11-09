@@ -58,8 +58,9 @@ function calculateCapitalAdjustment(data,expectedSymbol){
   const newShares=after-before;
   theoreticalExRightsPrice=(cumPrice*before+subscription*newShares)/after;
   historicalPriceMultiplier=theoreticalExRightsPrice/cumPrice;
-  // IAS 33 bonus element: restate pre-rights shares by fair value immediately before rights / TERP.
-  epsRetrospectiveShareMultiplier=cumPrice/theoreticalExRightsPrice;
+  // IAS 33 bonus element exists only when subscription price is below fair value.
+  // A nil/negative bonus element must never reverse-restatement prior-period EPS shares.
+  epsRetrospectiveShareMultiplier=Math.max(1,cumPrice/theoreticalExRightsPrice);
   rightsPricingSource={cumRightsPrice:{row:data.cum_rights_price_source_row,page:data.cum_rights_price_source_page,marketDate:data.cum_rights_price_date},
    subscriptionPrice:{row:data.subscription_price_source_row,page:data.subscription_price_source_page},unit:data.price_unit};
  }else{
