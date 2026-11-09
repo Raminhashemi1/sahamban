@@ -5,6 +5,22 @@
 > Audited baseline: `main` at `48853697ae7df9e20b75dffdb1d957d9563ca9a2`
 > Status: first-pass repository / pull-request inventory. This is a control register, not a claim that every source file has received a line-by-line audit.
 
+## 0. Mandatory fresh-session bootstrap (cross-chat / context-reset)
+
+This project must not depend on the previous ChatGPT page, conversation history, or model memory. At the beginning of every new conversation, new coding-agent session, or context-window reset, the assistant/agent must:
+
+1. Read `AGENTS.md` and this file from the current default branch (`main`).
+2. Read `README.md`, verify the current `main` HEAD SHA, and note the progress-register revision.
+3. Search existing GitHub PRs/issues (open, closed, merged) for the requested task and inspect related code, branches, changed files, commits, reviews, CI and deployment/integration state.
+4. Reconstruct the last completed step, exact incomplete step, existing tests, dependencies and blockers before proposing or making changes.
+5. Continue from the existing implementation if work is partial. Do not recreate modules, tests, or files merely because the conversation changed.
+6. If the register is stale, reconcile it against GitHub and update it before continuing.
+7. If the register or repository cannot be accessed, do not guess or modify project files; explain the missing evidence/access.
+
+The first response in a fresh session must briefly report the reviewed `main` SHA, progress-register revision, related existing PRs/implementations, completion state, and precise continuation point. The user should not need to repeat project history.
+
+`AGENTS.md` is the agent-facing instruction entry point; `START_HERE.md` is the human-readable entry point. Both point to this durable register. The README links to the entry point.
+
 ## 1. Mandatory change-control rule
 
 Before any future Sahamban change:
@@ -110,6 +126,14 @@ This list is a milestone index derived from PR titles/descriptions, not a substi
 6. Audit CODAL PRs #152–#155 against merged #143/#146/#148/#150/#151 and map any remaining gaps.
 7. Continue module-by-module source and deployment audit, recording verified callers, data flows, storage writes, tests, CI and deployment status.
 
-## 9. Change log
+## 9. Session handoff record
+
+- Last audited `main` baseline: `48853697ae7df9e20b75dffdb1d957d9563ca9a2` (2026-11-09).
+- Current documentation work branch: `docs/master-progress-audit-20261109`.
+- Current documentation PR: #163 (draft; not merged at the time this register was updated).
+- Exact next step after this documentation handoff: review and merge PR #163 only after user approval; then resume the ordered audit actions in section 8, starting with the dependency graph for PRs #152–#162. Re-check `main` and PR states first because they may have changed.
+
+## 10. Change log
 
 - 2026-11-09: Initial PR/repository inventory created from GitHub history and current main baseline. No production code, data, PR state, or deployment was changed during this audit.
+- 2026-11-09: Added a cross-session bootstrap protocol in `AGENTS.md`, a human entry point in `START_HERE.md`, and a README pointer. The protocol requires every fresh conversation/context reset to re-read the register and verify GitHub before continuing.
