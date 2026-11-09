@@ -46,7 +46,7 @@
  async function screen(raw,{fetcher,today,onProgress}={}){
   const names=parseNames(raw),results=new Array(names.length);let next=0,done=0;
   if(!/^[0-9]{8}$/.test(String(today??'')))throw new Error('تاریخ مبنای بازار مشخص نیست.');
-  async function worker(){while(next<names.length){const i=next++;try{const quote=await discoverOne(names[i],{fetcher});const report=globalThis.SahambanDecisionV129.analyze(quote,{today,maxAgeDays:7});results[i]={symbol:names[i].symbol,ok:true,report};}catch(e){results[i]={symbol:names[i].symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به منبع بازار تمام شد':e.message};}done++;onProgress?.(done,names.length);}}
+  async function worker(){while(next<names.length){const i=next++;try{const quote=await discoverOne(names[i],{fetcher});const report=globalThis.SahambanDecisionV129.analyze(quote,{today,maxAgeDays:7});if(quote.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED'){report.code='DATA_BASIS_UNVERIFIED';report.action='عدم صدور سیگنال؛ مبنای تعدیل قیمت تاریخی تأیید نشده';report.reason='مبنای تعدیل تاریخچه قیمت از منبع بازار مستقلاً احراز نشده است. امتیاز تکنیکال صرفاً تشخیصی است و نامزد ورود، خروج یا حد ضرر صادر نمی‌شود.';report.stop=null;report.target=null;report.riskPerShare=null;report.dataBasisStatus='UNKNOWN_NOT_ATTESTED';}results[i]={symbol:names[i].symbol,ok:true,report,quote};}catch(e){results[i]={symbol:names[i].symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به منبع بازار تمام شد':e.message};}done++;onProgress?.(done,names.length);}}
   await Promise.all(Array.from({length:Math.min(2,names.length)},()=>worker()));
   return results;
  }
