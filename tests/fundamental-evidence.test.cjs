@@ -224,8 +224,9 @@ test('financial ratios disclose margins, returns, leverage and cash conversion f
  assert.equal(r.ratios.liabilitiesToEquity,1.5);
  assert.ok(Math.abs(r.ratios.operatingCashFlowToNetIncome-(1000/1900))<1e-12);
  assert.equal(r.valuation.pe,50);
- assert.equal(r.valuation.pb,25);
- assert.equal(r.valuation.ps,12.5);
+ assert.equal(r.valuation.pb,null);
+ assert.equal(r.valuation.ps,null);
+ assert.ok(r.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
  assert.ok(r.flags.includes('LOW_OPERATING_CASH_FLOW_CONVERSION'));
 });
 test('valuation multiples are withheld for stale, unverified or wrong-symbol market prices',()=>{
@@ -249,4 +250,27 @@ test('valuation multiples accept verified Gregorian market-history dates and rej
  assert.equal(ok.valuation.status,'VALUATION_MULTIPLES_READY_FOR_REVIEW');
  const future=calculateFinancialRatios(a,'ونوین',{marketPriceEvidence:{...base,marketDate:'20261107'},asOfDate:'20261106'});
  assert.equal(future.valuation.status,'INSUFFICIENT_MARKET_PRICE_EVIDENCE');
+});
+
+test('P/B and P/S require point-in-time share evidence without altering EPS or P/E',()=>{
+ const {calculateFinancialRatios}=require('../fundamental-evidence.js');
+ const a=sample();a.audit_status='AUDITED';a.statement_basis='STANDALONE';
+ Object.assign(a.fields,{
+  revenue:{amount:8000,source_row:'درآمد',source_page:4},
+  equity:{amount:4000,source_row:'حقوق مالکانه',source_page:7},
+  net_income_attributable_to_parent:{amount:2000,source_row:'سود منتسب',source_page:5},
+  weighted_average_shares:{amount:100000000,unit:'SHARES',source_row:'میانگین موزون',source_page:3},
+  shares_outstanding:{amount:100000000,unit:'SHARES',source_row:'تعداد پایان دوره',source_page:3}
+ });
+ const options={marketPriceEvidence:{status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'۱۴۰۵/۰۸/۱۱',source:'VERIFIED_DAILY_MARKET_HISTORY'},asOfDate:'۱۴۰۵/۰۸/۱۲'};
+ const absent=calculateFinancialRatios(a,'ونوین',options);
+ assert.equal(absent.valuation.pe,50);assert.equal(absent.valuation.pb,null);assert.equal(absent.valuation.ps,null);
+ const basis={symbol:'ونوین',sharesOutstanding:200000000,unit:'SHARES',asOfDate:'۱۴۰۵/۰۸/۱۱',sourceRow:'تعداد سهام تاریخ قیمت',sourcePage:9};
+ const valid=calculateFinancialRatios(a,'ونوین',{...options,valuationShareBasis:basis});
+ assert.equal(valid.valuation.pe,50);assert.equal(valid.valuation.pb,50);assert.equal(valid.valuation.ps,25);
+ assert.equal(valid.valuation.valuationSharesAsOfDate,'۱۴۰۵/۰۸/۱۱');
+ for(const invalid of [{...basis,symbol:'فولاد'},{...basis,asOfDate:'۱۴۰۵/۰۸/۱۰'},{...basis,sourceRow:''},{...basis,sharesOutstanding:1.5}]){
+  const bad=calculateFinancialRatios(a,'ونوین',{...options,valuationShareBasis:invalid});
+  assert.equal(bad.valuation.pb,null);assert.equal(bad.valuation.ps,null);assert.equal(bad.valuation.pe,50);
+ }
 });
