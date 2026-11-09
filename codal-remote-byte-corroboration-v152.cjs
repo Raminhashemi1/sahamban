@@ -32,7 +32,12 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
  // One deadline covers both the initial request and all streamed bytes. A custom
  // fetcher/reader may ignore AbortSignal; racing avoids an indefinite pending review.
  const deadline=Number.isInteger(timeoutMs)&&timeoutMs>=1&&timeoutMs<=12000?timeoutMs:12000;
- const signal=AbortSignal.timeout(deadline);
+ let signal;
+ try{
+  if(typeof AbortSignal==='undefined'||typeof AbortSignal.timeout!=='function')
+   return fail('REMOTE_TIMEOUT_UNAVAILABLE');
+  signal=AbortSignal.timeout(deadline);
+ }catch{return fail('REMOTE_TIMEOUT_UNAVAILABLE');}
  const expired=new Promise((_,reject)=>{
   const abort=()=>reject(new Error('CODAL_REMOTE_TIMEOUT'));
   if(signal.aborted)abort();
