@@ -32,3 +32,12 @@
 - شواهد واقعی / موارد نامشخص:
 - تصمیم و تأیید مورد نیاز:
 - **فقط یک کار بعدی:**
+
+## 2026-11-09 — cross-session readback rehearsal (same chat; not a new-chat test)
+
+- Read `HANDOFF.md`, `MASTER-PLAN.md`, `PROJECT-STATE.md`, `PROJECT-CONTINUITY.md` from the PR164 branch using a fresh repository fetch, without relying on prior chat explanations.
+- Recovered: repo `Raminhashemi1/sahamban`, branch `feat/day2-history-basis-gates-20261109`, Day 2 historical price-basis gates, PR164 Draft, unresolved Smoke CI failure, live three-mode validation not completed, roadmap days 1/3/4/5 not verified.
+- Confirmed PR head for this rehearsal: `16a17fc8dc3d3bc327869db43906e39660a9641b`, OPEN / DRAFT / not merged.
+- Exact-head CI observed: 9 success, 1 failure (Sahamban smoke tests: https://github.com/Raminhashemi1/sahamban/actions/runs/42682075393), 1 in progress (Portfolio pilot mobile safety: https://github.com/Raminhashemi1/sahamban/actions/runs/42682075237). This observation becomes historical after this log commit; verify new head live.
+- Readback checks PASSED in the current chat. **An actual brand-new conversation has not yet been tested**, and its external GitHub access must still be verified.
+- No roadmap reconstruction, code changes, merge, deployment or market-data attestation. Next user input required for roadmap completion: the original five-day plan text or a source reference.
