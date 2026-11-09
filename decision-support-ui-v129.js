@@ -195,5 +195,5 @@
   const evidenceAttestation=$('fundamentalOriginalAttestationV150');if(evidenceAttestation)evidenceAttestation.checked=false;
   const capitalInput=$('fundamentalCapitalActionsV150');if(capitalInput)capitalInput.value='';
   const valuationInput=$('fundamentalValuationSharesV150');if(valuationInput)valuationInput.value='';
-  table.replaceChildren();detail.replaceChildren();select.replaceChildren();summary.textContent='گزارش‌های قبلی با دریافت داده جدید پاک شدند؛ تحلیل مجدد لازم است.';if(exportButton)exportButton.disabled=true;status.textContent='تاریخچه بازار دریافت شد؛ مبنای تعدیل قیمت مستقلاً تأیید نشده است. گزارش قبلی پاک شد؛ برای مشاهده تحلیل تشخیصی «تحلیل همه نمادها» را بزنید.';}});
+  table.replaceChildren();detail.replaceChildren();select.replaceChildren();summary.textContent='گزارش‌های قبلی با دریافت داده جدید پاک شدند؛ تحلیل مجدد لازم است.';if(exportButton)exportButton.disabled=true;status.textContent='گزارش قبلی معتبر نیست؛ تاریخچه بازار دریافت شد اما مبنای تعدیل قیمت مستقلاً تأیید نشده است. برای مشاهده تحلیل تشخیصی «تحلیل همه نمادها» را بزنید.';}});
 })();
