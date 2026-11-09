@@ -23,7 +23,7 @@
    const format=new Intl.DateTimeFormat('en-US-u-ca-persian',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit'});
    if(format.resolvedOptions().calendar!=='persian')return null;
    const parts=Object.fromEntries(format.formatToParts(date).filter(x=>['year','month','day'].includes(x.type)).map(x=>[x.type,x.value]));
-   if(!/^(13|14)\d{2}$/.test(parts.year)||!(/^\d{2}$/.test(parts.month)&&/^\d{2}$/.test(parts.day)))return null;
+   if(!/^(13|14)\d{2}$/.test(parts.year)||!/^\d{2}$/.test(parts.month)||!/^\d{2}$/.test(parts.day)||+parts.month<1||+parts.month>12||+parts.day<1||+parts.day>31)return null;
    return parts.year+'/'+parts.month+'/'+parts.day;
   }catch{return null;}
  };
