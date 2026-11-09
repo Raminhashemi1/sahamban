@@ -18,7 +18,7 @@ function fetcherFor(payload,opts){return async (url,init)=>{
  assert.equal(url,endpoint);assert.equal(init.redirect,'manual');
  assert.equal(init.credentials,'omit');assert.equal(init.cache,'no-store');
  assert.equal(init.headers.Accept,'application/json');
- return response(payload,opts);
+ return response(typeof payload==='string'?payload:{Total:1,Page:1,...payload},opts);
 };}
 test('v153 reviews a unique metadata association but never authorizes trading',async()=>{
  const result=await checkCodalSearchAssociation(filing(),{fetcher:fetcherFor({Letters:[letter()],Total:1,Page:1})});
@@ -78,4 +78,18 @@ test('v153 bounds unresponsive fetch and stalled response streams',async()=>{
   const stalled=await checkCodalSearchAssociation(filing(),{fetcher:async()=>remote,timeoutMs:30});
   assert.equal(stalled.reason,'SEARCH_DEADLINE_EXCEEDED');assert.equal(stalled.entryEligible,false);
  }finally{clearTimeout(keepAlive);}
+});
+
+test('v153 requires a provably unique search result count, not merely one visible page row',async()=>{
+ for(const payload of [
+  {Letters:[letter()],Total:2,Page:1},
+  {Letters:[letter()],Total:1,Page:2},
+  {Letters:[letter()],Page:1},
+  {Letters:[letter()],Total:1}
+ ]){
+  const fetcher=async()=>response(payload);
+  const r=await checkCodalSearchAssociation(filing(),{fetcher});
+  assert.equal(r.reason,'SEARCH_RESULT_COUNT_OR_PAGE_UNVERIFIED');
+  assert.equal(r.entryEligible,false);
+ }
 });
