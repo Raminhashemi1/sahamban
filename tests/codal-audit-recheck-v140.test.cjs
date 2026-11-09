@@ -282,3 +282,24 @@ test('v152 fails closed when filing metadata or local file inspection throws',as
  assert.equal(failed.reason,'LOCAL_FILE_INSPECTION_FAILED');
  assert.equal(failed.entryEligible,false);
 });
+
+test('v152 fails closed when the runtime cannot provide a bounded timeout primitive',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const filing={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'AbortSignal');
+ try{
+  Object.defineProperty(globalThis,'AbortSignal',{configurable:true,writable:true,value:function AbortSignalUnavailable(){}});
+  let called=0;
+  const result=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{called++;return officialResponse(bytes)}});
+  assert.equal(result.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+  assert.equal(result.reason,'REMOTE_TIMEOUT_UNAVAILABLE');
+  assert.equal(result.entryEligible,false);
+  assert.equal(called,0);
+ }finally{
+  if(descriptor)Object.defineProperty(globalThis,'AbortSignal',descriptor);
+ }
+});
