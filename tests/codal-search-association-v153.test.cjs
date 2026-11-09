@@ -123,3 +123,15 @@ test('v153 rejects PDF query mismatch even if the hs token is identical',async()
   assert.equal(result.reason,'SEARCH_PDF_URL_MISMATCH');
  }
 });
+
+test('v153 compares normalized calendar date and rejects prefix-extended publication dates',async()=>{
+ for(const when of ['1403/09/14 11:22:33','۱۴۰۳/۰۹/۱۴ ۱۱:۲۲:۳۳','١٤٠٣/٠٩/١٤ ١١:٢٢:٣٣','۱۴۰۳/۹/۱۴ ۲۳:۲۳:۳۵']){
+  const r=await checkCodalSearchAssociation(filing(),{fetcher:fetcherFor({Letters:[{...letter(),PublishDateTime:when}]})});
+  assert.equal(r.status,'CODAL_SEARCH_METADATA_MATCH_REVIEW_ONLY',when);
+ }
+ for(const when of ['۱۴۰۳/۰۹/۱۴۰ ۱۲:۰۰:۰۰','۱۴۰۳/۰۹/۱۴xyz','۱۴۰۳/۰۹/۱۵ ۰۰:۰۰:۰۰']){
+  const r=await checkCodalSearchAssociation(filing(),{fetcher:fetcherFor({Letters:[{...letter(),PublishDateTime:when}]})});
+  assert.equal(r.reason,'SEARCH_PUBLICATION_DATE_MISMATCH',when);
+  assert.equal(r.entryEligible,false);
+ }
+});
