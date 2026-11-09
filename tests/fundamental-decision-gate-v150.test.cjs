@@ -71,7 +71,7 @@ test('minimum fundamental gate exposes descriptive quality ratios and fresh mark
  assert.equal(r.status,'FUNDAMENTAL_REVIEW_READY');
  assert.equal(r.financialRatios.ratios.operatingMarginPct,20);
  assert.equal(r.financialRatios.ratios.roePct,50);
- assert.equal(r.financialRatios.valuation.pe,50);
+ assert.equal(r.financialRatios.valuation.pe,null);
  assert.equal(r.financialRatios.valuation.pb,null);
  assert.equal(r.financialRatios.valuation.ps,null);
  assert.ok(r.financialRatios.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
@@ -118,12 +118,12 @@ test('fundamental gate forwards explicitly documented point-in-time share basis 
  };
  const valid=evaluateFundamentalGate(a,'ونوین',options);
  assert.equal(valid.status,'FUNDAMENTAL_REVIEW_READY');
- assert.equal(valid.financialRatios.valuation.pe,50);
+ assert.equal(valid.financialRatios.valuation.pe,null);
  assert.equal(valid.financialRatios.valuation.pb,50);
- assert.equal(valid.financialRatios.valuation.ps,25);
+ assert.equal(valid.financialRatios.valuation.ps,null);
  assert.equal(valid.financialRatios.valuation.valuationSharesAsOfDate,'20261105');
  const invalid=evaluateFundamentalGate(a,'ونوین',{...options,valuationShareBasis:{...options.valuationShareBasis,asOfDate:'20261104'}});
- assert.equal(invalid.financialRatios.valuation.pe,50);
+ assert.equal(invalid.financialRatios.valuation.pe,null);
  assert.equal(invalid.financialRatios.valuation.pb,null);
  assert.equal(invalid.financialRatios.valuation.ps,null);
  assert.ok(invalid.financialRatios.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
