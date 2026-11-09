@@ -13,6 +13,7 @@ test('cost-aware event study reports gross, net, stress and drawdown consistentl
  assert.ok(r.stressNetWinRatePct<=r.netWinRatePct);
  assert.equal(r.adequateSample,false);
 });
+test('event audit refuses unverified historical price basis',()=>{assert.throws(()=>audit.audit({symbol:'x',history:history(),historyPriceBasisEvidence:'NOT_ESTABLISHED'}),/مبنای تعدیل/);assert.throws(()=>audit.audit({symbol:'x',history:history()}),/مبنای تعدیل/);});
 test('cost assumptions are bounded and drawdown compounds sequential event returns',()=>{
  assert.throws(()=>audit.audit({symbol:'x',history:history()},{roundTripCostPct:-1}),/بین صفر/);
  assert.throws(()=>audit.audit({symbol:'x',history:history()},{roundTripCostPct:6}),/بین صفر/);
