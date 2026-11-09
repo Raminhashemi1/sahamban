@@ -66,7 +66,7 @@ function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDa
   periodEnd:data.period_end,periodStart:data.period_start??null,epsStatus:eps.status,epsRialPerShare:eps.eps.valueRialPerShare,
   capitalAdjustmentCount:adjustedShareBasis?.actions?.length??0,capitalAdjustmentBasis:adjustedShareBasis,
   epsSource:eps.eps.netIncomeSource,weightedAverageSharesSource:eps.eps.weightedAverageSharesSource,
-  dpsStatus:dps.status,dpsRialPerShare:dps.valueRialPerShare,dpsErrors:dps.errors,
+  dpsStatus:dps.status,dpsRialPerShare:dps.valueRialPerShare,dpsErrors:dps.errors,dpsCapitalReconciliation:dps.capitalReconciliation,
   accountingCheck:checked.accountingCheck,financialRatios:ratios.status==='FINANCIAL_RATIOS_READY_FOR_REVIEW'?ratios:null,
   ratioStatus:ratios.status,ratioErrors:ratios.errors||[],
   // Client-supplied fields and user attestations cannot prove CODAL origin. Fail closed.
