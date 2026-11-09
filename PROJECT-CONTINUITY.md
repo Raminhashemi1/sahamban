@@ -17,6 +17,17 @@
 9. If this ledger conflicts with the live repository, stop and reconcile the discrepancy; live GitHub evidence wins for code/CI state, while the user-approved roadmap wins for scope.
 10. End each session by producing a concise handoff from this ledger: what changed, exact SHA, verified results, unresolved blockers, and the single next task.
 
+
+## 0A. Split project memory files
+
+- [HANDOFF.md](HANDOFF.md): operational entry point for new chats, current blocker and one next action.
+- [MASTER-PLAN.md](MASTER-PLAN.md): controlled original five-day scope; missing days explicitly NOT_YET_CONFIRMED.
+- [PROJECT-STATE.md](PROJECT-STATE.md): concise status snapshot, not a substitute for checking live GitHub.
+- [DECISIONS.md](DECISIONS.md): rationale and approval policy; scope changes require user approval.
+- [WORK-LOG.md](WORK-LOG.md): append-only history of implementation and evidence.
+
+This ledger remains the detailed continuity source and must be kept consistent with the split files. All six files currently live on the PR164 branch, not necessarily on main. Any new chat should start at HANDOFF.md and verify exact-head CI before editing.
+
 ## 1. Project identity and active workspace
 
 - Project: **سهام‌بان (Sahamban)**
@@ -158,3 +169,10 @@ Append a new dated entry below at the end of every work session:
 - Current PR #164 head after these documentation commits: `cd7b072b0368f110c445ac0eeff030de8bcc51ab`. PR remains open and Draft. These documentation-only commits did not produce a new workflow run in the latest query; do not infer test success from them.
 - No code behavior changed in these two documentation commits. No merge or deployment performed.
 - Next single task remains: diagnose the Smoke workflow failure on the current exact PR head, beginning with live workflow status/logs.
+
+
+#### 2026-11-09 — five-file cross-chat memory implemented
+- Created MASTER-PLAN.md, PROJECT-STATE.md, DECISIONS.md, WORK-LOG.md, and HANDOFF.md on branch `feat/day2-history-basis-gates-20261109`.
+- Indexed their links in README and this ledger. The complete original five-day roadmap remains missing; no days 1/3/4/5 were invented.
+- GitHub CI and current PR head must be rechecked on each new chat; this documentation operation does not claim green CI, financial source authentication, merge, or deployment.
+- Next action remains diagnosis of Smoke CI failure before moving to another day-two technical task.
