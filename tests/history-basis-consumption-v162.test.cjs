@@ -70,3 +70,18 @@ test('sample UI discloses the basis gate and ranking excludes unknown data',()=>
  const x={ok:true,symbol:'TEST',report:{code:'ENTRY_CANDIDATE',score:99,last:1000,stop:900},quote:{history:rows(70),historyPriceBasisEvidence:'NOT_ESTABLISHED'}};
  assert.equal(ranking.quality(x).eligible,false);
 });
+
+test('external screener labels unknown basis and suppresses its technical entry report',async()=>{
+ globalThis.SahambanDecisionV129={analyze(){return {code:'ENTRY_CANDIDATE',action:'candidate',reason:'candidate',score:90,stop:900,target:1200,riskPerShare:100};}};
+ const fetcher=async url=>{
+  const payload=url.includes('/Instrument/GetInstrumentSearch/')
+   ?{instrumentSearch:[{insCode:'123456789012345',lVal18AFC:'TEST'}]}
+   :{closingPriceDaily:rows(70).map(x=>({dEven:x.date,pClosing:x.close,qTotCap:x.tradedValue}))};
+  return {ok:true,headers:{get:()=> 'application/json'},json:async()=>payload};
+ };
+ const result=await discovery.screen('TEST',{fetcher,today:'20261109'});
+ assert.equal(result[0].ok,true);
+ assert.equal(result[0].quote.historyPriceBasis,'UNKNOWN_NOT_ATTESTED');
+ assert.equal(result[0].report.code,'DATA_BASIS_UNVERIFIED');
+ assert.equal(result[0].report.stop,null);
+});
