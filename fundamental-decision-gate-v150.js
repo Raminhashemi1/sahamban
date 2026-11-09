@@ -9,7 +9,7 @@
  if(root)root.SahambanFundamentalGateV150=api;
 })(typeof globalThis!=='undefined'?globalThis:null,function(evidence,capital){
  const {normalizeSymbol,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios}=evidence;
-function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDate,capitalActions,valuationShareBasis}={}){
+function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDate,capitalActions,valuationShareBasis,dividendCapitalReconciliation}={}){
  const checked=checkFinancialEvidence(data,expectedSymbol);
  if(checked.status!=='READY_FOR_REVIEW')
   return {status:'FUNDAMENTAL_REVIEW_BLOCKED',symbol:normalizeSymbol(expectedSymbol),
@@ -48,10 +48,18 @@ function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDa
    epsStatus:eps.status,epsRialPerShare:eps.eps.valueRialPerShare,entryEligible:false};
  const ratios=calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,adjustedShareBasis:adjustedShareBasis||undefined,valuationShareBasis});
  const byName=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
- let dps={status:'NOT_PROVIDED',valueRialPerShare:null,errors:[]};
+ let dps={status:'NOT_PROVIDED',valueRialPerShare:null,errors:[],capitalReconciliation:null};
  if(data.dividend_status!==undefined||byName.cash_dividend_approved_total||byName.dividend_eligible_shares){
-  const result=calculateDPS(data,expectedSymbol);
-  dps={status:result.status,valueRialPerShare:result.dps?.valueRialPerShare??null,errors:result.errors||[]};
+  let result;
+  if(data.dividend_status!=='APPROVED_BY_AGM'){
+   result=calculateDPS(data,expectedSymbol);
+  }else if(!dividendCapitalReconciliation||typeof dividendCapitalReconciliation!=='object'){
+   result={status:'INSUFFICIENT_EVIDENCE',errors:['DPS_CAPITAL_ACTION_RECONCILIATION_REQUIRED'],dps:null};
+  }else{
+   result=capital.reviewDPSWithCapitalReconciliation(data,expectedSymbol,dividendCapitalReconciliation);
+  }
+  dps={status:result.status,valueRialPerShare:result.dps?.valueRialPerShare??null,
+   errors:result.errors||[],capitalReconciliation:result.reconciliation??null};
  }
  return {status:'FUNDAMENTAL_REVIEW_READY',symbol:normalizeSymbol(expectedSymbol),
   financialEvidence:checked.status,auditStatus:data.audit_status,statementBasis:data.statement_basis,
