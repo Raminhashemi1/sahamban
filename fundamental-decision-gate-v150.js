@@ -9,7 +9,7 @@
  if(root)root.SahambanFundamentalGateV150=api;
 })(typeof globalThis!=='undefined'?globalThis:null,function(evidence,capital){
  const {normalizeSymbol,checkFinancialEvidence,calculateEPS,calculateDPS,calculateFinancialRatios}=evidence;
-function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDate,capitalActions}={}){
+function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDate,capitalActions,valuationShareBasis}={}){
  const checked=checkFinancialEvidence(data,expectedSymbol);
  if(checked.status!=='READY_FOR_REVIEW')
   return {status:'FUNDAMENTAL_REVIEW_BLOCKED',symbol:normalizeSymbol(expectedSymbol),
@@ -46,7 +46,7 @@ function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDa
   return {status:'FUNDAMENTAL_REVIEW_BLOCKED',symbol:normalizeSymbol(expectedSymbol),
    reasons:['NON_POSITIVE_EPS_BLOCKS_ENTRY_CANDIDATE'],financialEvidence:checked.status,
    epsStatus:eps.status,epsRialPerShare:eps.eps.valueRialPerShare,entryEligible:false};
- const ratios=calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,adjustedShareBasis:adjustedShareBasis||undefined});
+ const ratios=calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,adjustedShareBasis:adjustedShareBasis||undefined,valuationShareBasis});
  const byName=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
  let dps={status:'NOT_PROVIDED',valueRialPerShare:null,errors:[]};
  if(data.dividend_status!==undefined||byName.cash_dividend_approved_total||byName.dividend_eligible_shares){
