@@ -124,7 +124,8 @@ test('v152 keeps numeric TracingNo separate from opaque LetterSerial and support
  assert.ok(download);
  const wrong=verifiedUrl({...base,letterSerial:'anotherValidToken123'});
  assert.equal(wrong,null);
- const noToken=verifiedUrl(({letterSerial,...rest})=>rest)(base);
+ const {letterSerial,...withoutToken}=base;
+ const noToken=verifiedUrl(withoutToken);
  assert.equal(noToken,null);
 });
 test('v152 independently compares official-hosted response bytes but never elevates provenance to trading authorization',async()=>{
