@@ -161,11 +161,18 @@ This list is a milestone index derived from PR titles/descriptions, not a substi
 4. Rebase #156–#161 from current main before any integration; preserve the distinct review-only responsibilities and tests.
 5. Keep all market-history outputs review-only until live source, identity, price basis, and calendar contracts are independently reviewed. Do not connect them to valuation, stored history, order flow, or trading authorization without a separate approved change.
 
+
+## 8C. Documentation CI refresh after the deeper audit update (2026-11-09)
+
+- The section 8B update created commit e57b43080735f3dd06946aad009fabe2351dd968, which became PR #163 head (9 ahead / 0 behind main).
+- At the latest check-runs read for that exact head, 10/12 checks had completed successfully and 2 remained in progress (webkit-mobile and browser). The earlier 11/11 success applies to the preceding head bb76a5f802746ef17420c5a4ef79c9f1d6ae6706 only; do not transfer that result to e57b430.
+- This follow-up register commit itself creates another PR head and triggers fresh CI. Re-fetch PR #163 head and check-runs before treating the documentation PR as green. No merge approval has been given.
+
 ## 9. Session handoff record
 
 - Last audited `main` baseline: `48853697ae7df9e20b75dffdb1d957d9563ca9a2` (2026-11-09).
 - Current documentation work branch: `docs/master-progress-audit-20261109`.
-- Current documentation PR: #163 (Draft, open, unmerged); latest head bb76a5f802746ef17420c5a4ef79c9f1d6ae6706, 8 commits ahead / 0 behind main, exact-head CI 11/11 successful.
+- Current documentation PR: #163 (Draft, open, unmerged). At the last recorded check, head e57b43080735f3dd06946aad009fabe2351dd968 was 9 commits ahead / 0 behind main with 10/12 checks successful and 2 in progress; this register update creates a new head and fresh checks, so re-fetch the latest PR head/status.
 - Exact next step: do not merge #163 without explicit user approval. Continue with the revised engineering actions in section 8B, beginning with a #157 downstream provenance/UI proposal and a #161-to-#160 composition-test proposal. Recheck main, PR states, and deployment before any code change.
 
 ## 10. Change log
@@ -175,3 +182,5 @@ This list is a milestone index derived from PR titles/descriptions, not a substi
 - 2026-11-09: Rechecked PR #163 CI at previous head, verified adapter source on `main`, inspected its two main app entry points and #157's unmerged basis guard; documented the pre-merge branch fallback to prevent lost context before documentation is merged.
 
 - 2026-11-09: Completed deeper runtime/dependency audit for #156–#162: checked current branch divergence and exact-head CI; scanned all 56 scripts loaded by main index.html for #161 adapter references; confirmed #157 metadata is not consumed by the technical-analysis UI; documented that #162 does not fetch the three TSE Client modes. PR #163 remains Draft and unmerged.
+
+- 2026-11-09: Recorded the refreshed PR #163 CI snapshot: the preceding docs head e57b430 had 10/12 checks successful and 2 in progress; this update creates a new head and requires a fresh check run.
