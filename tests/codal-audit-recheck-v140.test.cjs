@@ -322,3 +322,19 @@ test('v152 fails closed when the runtime cannot provide a bounded timeout primit
   if(descriptor)Object.defineProperty(globalThis,'AbortSignal',descriptor);
  }
 });
+
+test('v152 rejects contradictory originalUrl and reportUrl before local file reads or fetch',async()=>{
+ const {verifiedUrl,compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const correct='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d';
+ const conflicting='https://www.codal.ir/Reports/Other.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d';
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',
+  published:'۱۴۰۵/۰۸/۱۳',originalUrl:correct,reportUrl:conflicting};
+ assert.equal(verifiedUrl(filing),null);
+ let fileReads=0,networkCalls=0;
+ const file={name:'proof.pdf',size:15,arrayBuffer:async()=>{fileReads++;return new ArrayBuffer(15);}};
+ const result=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{networkCalls++;throw Error('should not fetch')}});
+ assert.equal(result.reason,'INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');
+ assert.equal(fileReads,0);assert.equal(networkCalls,0);
+ assert.equal(result.entryEligible,false);
+ assert.ok(verifiedUrl({...filing,reportUrl:correct}));
+});
