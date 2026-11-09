@@ -188,3 +188,35 @@ test('v152 rejects mismatched response URLs, hidden redirects and remote bodies 
  assert.equal(tooBig.reason,'REMOTE_STREAM_ERROR_OR_TOO_LARGE');
  assert.equal(tooBig.entryEligible,false);
 });
+
+test('v152 bounds an unresponsive CODAL fetch even if custom fetcher ignores abort',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const data=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'x.pdf',size:data.length,arrayBuffer:async()=>data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)};
+ const start=Date.now();
+ const result=await compareRemoteCodalFile(file,filing,{fetcher:()=>new Promise(()=>{}),timeoutMs:35});
+ assert.equal(result.reason,'REMOTE_DEADLINE_EXCEEDED');
+ assert.equal(result.entryEligible,false);
+ assert.ok(Date.now()-start<3000);
+});
+test('v152 times out stalled streams and does not block on a stalled cancel',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const data=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'x.pdf',size:data.length,arrayBuffer:async()=>data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)};
+ const fetcher=async()=>{
+  const response=officialResponse(data);
+  Object.defineProperty(response,'body',{value:{getReader:()=>({
+   read:()=>new Promise(()=>{}),cancel:()=>new Promise(()=>{})
+  })}});
+  return response;
+ };
+ const start=Date.now();
+ const result=await compareRemoteCodalFile(file,filing,{fetcher,timeoutMs:35});
+ assert.equal(result.reason,'REMOTE_DEADLINE_EXCEEDED');
+ assert.equal(result.tradingSignalsEnabled,false);
+ assert.ok(Date.now()-start<3000);
+});
