@@ -25,6 +25,14 @@ test('direct analysis never emits actionable codes or risk levels for unattested
   assert.match(r.reason,/صرفاً تشخیصی/);
  }
 });
+test('unattested diagnostics remain non-actionable in plans and audit exports',()=>{
+ const r=api.analyze({symbol:'TEST',history:history()},{today:'20261103'});
+ const audit=api.exportAudit([r],{generatedAt:'2026-11-04T17:00:00Z'});
+ assert.equal(audit.results[0].classification,'DATA_BASIS_UNVERIFIED');
+ assert.equal(audit.results[0].conditionalDecision,'NO_ACTION');
+ assert.equal(audit.results[0].automatedOrder,false);
+ assert.equal(api.decisionPlan(r).condition,'DATA_BASIS_UNVERIFIED');
+});
 test('decision engine rejects stale history instead of generating a signal',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history().map(x=>({...x,date:new Date(Date.UTC(+x.date.slice(0,4),+x.date.slice(4,6)-1,+x.date.slice(6,8)-33)).toISOString().slice(0,10).replaceAll('-','')}))},{today:'20261103'}),/قدیمی/);});
 test('decision engine rejects insufficient history and invalid ordering',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history(40)},{today:'20261103'}),/۶۰/);const h=history();h[20].date=h[19].date;assert.throws(()=>api.analyze({symbol:'TEST',history:h},{today:'20261103'}),/مرتب/);});
 test('position sizing is risk-budget based and bounded to 5 percent',()=>{const x=api.sizePosition({capital:100000000,riskPercent:1,entry:1200,stop:1100});assert.equal(x.riskBudget,1000000);assert.equal(x.quantity,10000);assert.equal(x.quantity*(1200-1100),1000000);assert.throws(()=>api.sizePosition({capital:1e8,riskPercent:6,entry:1200,stop:1100}),/حداکثر/);assert.throws(()=>api.sizePosition({capital:1e8,riskPercent:1,entry:1000,stop:1100}),/حد ضرر/);});
