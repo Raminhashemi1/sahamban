@@ -83,6 +83,68 @@ function calculateCapitalAdjustment(data,expectedSymbol){
  },note:'A review-only corporate-action factor derived from user-entered, traceable source rows. It does not authenticate the CODAL document, establish the legally effective share count, adjust accounting EPS automatically, or authorize trading.'};
 }
 
+function reconcileDividendRecordDateShares({symbol,expectedSymbol,openingShares,openingDate,recordDate,openingSource,capitalActionResults,reportedEligibleShares}={}){
+ const fail=code=>({status:'INSUFFICIENT_EVIDENCE',errors:[code],reconciledShares:null,comparison:'NOT_PERFORMED'});
+ if(!normalizeSymbol(expectedSymbol)||normalizeSymbol(symbol)!==normalizeSymbol(expectedSymbol))return fail('DIVIDEND_SHARE_SYMBOL_MISMATCH');
+ if(!positiveSafeInteger(openingShares))return fail('INVALID_OPENING_SHARE_COUNT');
+ const opening=jalaliOrdinal(openingDate),record=jalaliOrdinal(recordDate);
+ if(opening===null||record===null||record<opening)return fail('INVALID_DIVIDEND_SHARE_RECONCILIATION_DATES');
+ if(!openingSource||typeof openingSource.row!=='string'||!openingSource.row.trim()||!Number.isInteger(openingSource.page)||openingSource.page<1)return fail('UNTRACEABLE_OPENING_SHARE_COUNT');
+ if(!Array.isArray(capitalActionResults)||capitalActionResults.length>20)return fail('INVALID_DIVIDEND_CAPITAL_ACTION_SEQUENCE');
+ const actions=[];
+ for(const result of capitalActionResults){
+  if(result?.status!=='CAPITAL_ADJUSTMENT_READY_FOR_REVIEW'||!result.adjustment)return fail('UNVERIFIED_CAPITAL_ACTION_IN_DIVIDEND_SEQUENCE');
+  const a=result.adjustment,ordinal=jalaliOrdinal(a.effectiveDate);
+  if(ordinal===null||ordinal<opening||ordinal>record||!positiveSafeInteger(a.preActionShares)||!positiveSafeInteger(a.postActionShares)||
+   !a.source||!/^\d{1,20}$/.test(String(a.source.tracingNo))||typeof a.source.row!=='string'||!a.source.row.trim()||!Number.isInteger(a.source.page)||a.source.page<1)
+   return fail('INVALID_DIVIDEND_ACTION_DATE_COUNTS_OR_PROVENANCE');
+  actions.push({...a,ordinal});
+ }
+ actions.sort((a,b)=>a.ordinal-b.ordinal);
+ const symbolKey=normalizeSymbol(expectedSymbol);
+ if(actions.some(a=>normalizeSymbol(a.symbol)!==symbolKey))return fail('DIVIDEND_CAPITAL_ACTION_SYMBOL_MISMATCH');
+ let shares=openingShares,previous=opening;
+ for(const a of actions){
+  if(a.ordinal<=previous)return fail('DUPLICATE_OR_NON_CHRONOLOGICAL_DIVIDEND_ACTION_DATE');
+  if(a.preActionShares!==shares)return fail('DIVIDEND_CAPITAL_ACTION_SHARE_CHAIN_MISMATCH');
+  shares=a.postActionShares;previous=a.ordinal;
+ }
+ if(reportedEligibleShares!==undefined){
+  if(!positiveSafeInteger(reportedEligibleShares))return fail('INVALID_REPORTED_DIVIDEND_ELIGIBLE_SHARES');
+  if(reportedEligibleShares!==shares)return {status:'INSUFFICIENT_EVIDENCE',errors:['DIVIDEND_ELIGIBLE_SHARES_DO_NOT_MATCH_ACTION_CHAIN'],reconciledShares:shares,reportedEligibleShares,comparison:'MISMATCH'};
+ }
+ return {status:'DIVIDEND_RECORD_DATE_SHARES_READY_FOR_REVIEW',symbol:expectedSymbol,recordDate,openingShares,openingDate,
+  reconciledShares:shares,reportedEligibleShares:reportedEligibleShares??null,comparison:reportedEligibleShares===undefined?'NOT_COMPARED':'MATCH',
+  actionCount:actions.length,sources:actions.map(a=>({tracingNo:a.source.tracingNo,row:a.source.row,page:a.source.page})),
+  openingSource:{row:openingSource.row,page:openingSource.page},
+  note:'Arithmetic share-count chain only. This does not determine legal dividend entitlement, treasury-share exclusions, settlement eligibility, or authenticate source documents; AGM/record-date evidence and applicable rules require independent review.'};
+}
+
+function reviewDPSWithCapitalReconciliation(data,expectedSymbol,{openingShares,openingDate,openingSource,capitalActions,coverageEvidence}={}){
+ const fail=(code,reconciliation=null)=>({status:'INSUFFICIENT_EVIDENCE',errors:[code],dps:null,reconciliation});
+ if(!data||typeof data!=='object'||Array.isArray(data))return fail('MISSING_DIVIDEND_EVIDENCE');
+ // Completeness is a documented claim for arithmetic review, not independent provenance verification.
+ if(coverageEvidence?.completeThroughRecordDate!==true||typeof coverageEvidence.sourceRow!=='string'||
+  !coverageEvidence.sourceRow.trim()||coverageEvidence.sourceRow.length>240||
+  !Number.isInteger(coverageEvidence.sourcePage)||coverageEvidence.sourcePage<1||coverageEvidence.sourcePage>99999)
+  return fail('DIVIDEND_CAPITAL_ACTION_COVERAGE_NOT_DOCUMENTED');
+ const checked=evidence.checkFinancialEvidence(data,expectedSymbol);
+ if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,dps:null,reconciliation:null};
+ const reportedShares=checked.fields.find(x=>x.name==='dividend_eligible_shares')?.amount;
+ if(!positiveSafeInteger(reportedShares))return fail('DIVIDEND_ELIGIBLE_SHARES_MISSING_OR_UNSAFE');
+ if(!Array.isArray(capitalActions)||capitalActions.length>20)return fail('INVALID_DIVIDEND_CAPITAL_ACTION_SEQUENCE');
+ const results=capitalActions.map(action=>calculateCapitalAdjustment(action,expectedSymbol));
+ const reconciliation=reconcileDividendRecordDateShares({symbol:data.symbol,expectedSymbol,openingShares,openingDate,
+  recordDate:data.dividend_record_date,openingSource,capitalActionResults:results,reportedEligibleShares:reportedShares});
+ if(reconciliation.status!=='DIVIDEND_RECORD_DATE_SHARES_READY_FOR_REVIEW'||reconciliation.comparison!=='MATCH')
+  return fail('DIVIDEND_SHARE_RECONCILIATION_REQUIRED',reconciliation);
+ const dpsResult=evidence.calculateDPS(data,expectedSymbol);
+ if(dpsResult.status!=='DPS_READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:dpsResult.errors,dps:null,reconciliation};
+ return {status:'DPS_RECONCILED_FOR_REVIEW',errors:[],dps:dpsResult.dps,reconciliation,
+  coverageSource:{row:coverageEvidence.sourceRow,page:coverageEvidence.sourcePage},
+  note:'Arithmetic review only; declared coverage and user-entered sources are not independently authenticated. This result does not establish legal dividend entitlement or authorize investment decisions.'};
+}
+
 function calculateAdjustedWeightedAverageShares(actionResult,{periodStart,periodEnd}={}){
  return calculateMultiActionWeightedAverageShares([actionResult],{periodStart,periodEnd});
 }
@@ -156,5 +218,5 @@ function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,pe
   note:'Review-only chronological IAS 33-style restatement for up to 20 verified-input corporate actions. Each action must be independently verified; sequence and day counts are derived from Jalali effective dates. This arithmetic does not authenticate source documents.'};
 }
 
-return {calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
+return {calculateCapitalAdjustment,reconcileDividendRecordDateShares,reviewDPSWithCapitalReconciliation,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
 });
