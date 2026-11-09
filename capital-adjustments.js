@@ -192,5 +192,5 @@ function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,pe
   note:'Review-only chronological IAS 33-style restatement for up to 20 verified-input corporate actions. Each action must be independently verified; sequence and day counts are derived from Jalali effective dates. This arithmetic does not authenticate source documents.'};
 }
 
-return {calculateCapitalAdjustment,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
+return {calculateCapitalAdjustment,reconcileDividendRecordDateShares,calculateAdjustedWeightedAverageShares,calculateMultiActionWeightedAverageShares,ACTIONS};
 });
