@@ -57,7 +57,7 @@
  // A conditional, date-stamped interpretation of rule output, not an order.
  // No user holdings, brokerage access, execution or network calls.
  function decisionPlan(r,{fundamentalReview}={}){
-  if(!r||!['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code)||
+  if(!r||!['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT','DATA_BASIS_UNVERIFIED'].includes(r.code)||
     !validDate(r.marketDate)||!Number.isFinite(r.last)||r.last<=0||
     !Number.isFinite(r.priorHigh)||r.priorHigh<=0||
     !Number.isFinite(r.priorLow)||r.priorLow<=0)
@@ -65,7 +65,7 @@
   const common={symbol:r.symbol,asOf:r.marketDate,automaticTrade:false,
    dataStatus:'قیمت پایانی تاریخ ذکرشده؛ لزوماً قیمت لحظه‌ای یا قابل معامله نیست.',
    evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.',historyPriceBasisEvidence:r.historyPriceBasisEvidence??'NOT_ESTABLISHED'};
-   if(common.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED')return {...common,decision:'NO_ACTION',when:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ برنامه ورود یا خروج صادر نمی‌شود.',invalidation:'پس از ارائه شواهد مستقل و قابل ممیزی درباره مبنای تاریخچه، تحلیل باید از ابتدا اجرا شود.',condition:'DATA_BASIS_UNVERIFIED',historicalPriceBasis:'UNKNOWN_NOT_ATTESTED'};
+   if(common.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED'||r.code==='DATA_BASIS_UNVERIFIED')return {...common,decision:'NO_ACTION',when:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ برنامه ورود یا خروج صادر نمی‌شود.',invalidation:'پس از ارائه شواهد مستقل و قابل ممیزی درباره مبنای تاریخچه، تحلیل باید از ابتدا اجرا شود.',condition:'DATA_BASIS_UNVERIFIED',historicalPriceBasis:'UNKNOWN_NOT_ATTESTED'};
   if(r.code==='ENTRY_CANDIDATE'){
    const sameSymbol=normalizeSymbol(fundamentalReview?.symbol)===normalizeSymbol(r.symbol);
    const fundamentalReady=fundamentalReview?.status==='FUNDAMENTAL_REVIEW_READY'&&
