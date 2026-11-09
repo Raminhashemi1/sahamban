@@ -21,19 +21,29 @@ function verifiedUrl(filing){
  if(u.searchParams.size!==1||serial.length!==1||!/^[0-9]{1,20}$/.test(serial[0])||serial[0]!==safe.tracingNo)return null;
  return {url:u.href,filing:safe};
 }
-async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subtle=webcrypto.subtle}={}){
+async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subtle=webcrypto.subtle,timeoutMs=12000}={}){
  const identity=verifiedUrl(filing);
  if(!identity)return fail('INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');
  if(typeof fetcher!=='function')return fail('NETWORK_FETCH_UNAVAILABLE');
  const local=await intake.inspect(file,filing,{subtle});
  if(local.status!=='LOCAL_FILE_FINGERPRINT_ONLY')return fail('LOCAL_FILE_'+(local.reason||'UNREADABLE'));
+ // One deadline covers both the initial request and all streamed bytes. A custom
+ // fetcher/reader may ignore AbortSignal; racing avoids an indefinite pending review.
+ const deadline=Number.isInteger(timeoutMs)&&timeoutMs>=1&&timeoutMs<=12000?timeoutMs:12000;
+ const signal=AbortSignal.timeout(deadline);
+ const expired=new Promise((_,reject)=>{
+  const abort=()=>reject(new Error('CODAL_REMOTE_TIMEOUT'));
+  if(signal.aborted)abort();
+  else signal.addEventListener('abort',abort,{once:true});
+ });
+ const withinDeadline=p=>Promise.race([p,expired]);
  let response;
  try{
   // The caller cannot opt into automatic redirects; any 3xx is rejected.
-  response=await fetcher(identity.url,{method:'GET',redirect:'manual',
+  response=await withinDeadline(fetcher(identity.url,{method:'GET',redirect:'manual',
    cache:'no-store',credentials:'omit',headers:{Accept:'application/pdf,application/octet-stream,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
-   signal:AbortSignal.timeout(12000)});
- }catch{return fail('REMOTE_FETCH_FAILED');}
+   signal}));
+ }catch{return fail(signal.aborted?'REMOTE_DEADLINE_EXCEEDED':'REMOTE_FETCH_FAILED');}
  if(!response||response.status!==200||response.redirected===true||!response.body||typeof response.body.getReader!=='function')
   return fail('REMOTE_HTTP_STATUS_OR_STREAM_UNAVAILABLE');
  // A caller-provided fetch function must still disclose the actual response URL.
@@ -47,7 +57,7 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
  let size=0,head=Buffer.alloc(0);
  try{
   for(;;){
-   const {done,value}=await reader.read();
+   const {done,value}=await withinDeadline(reader.read());
    if(done)break;
    if(!(value instanceof Uint8Array)||value.length===0)throw Error('INVALID_STREAM');
    size+=value.length;
@@ -56,8 +66,9 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
    digest.update(value);
   }
  }catch{
-  await reader.cancel().catch(()=>{});
-  return fail('REMOTE_STREAM_ERROR_OR_TOO_LARGE');
+  // Cancellation can itself stall on a broken or adversarial stream.
+  try{Promise.resolve(reader.cancel()).catch(()=>{});}catch{}
+  return fail(signal.aborted?'REMOTE_DEADLINE_EXCEEDED':'REMOTE_STREAM_ERROR_OR_TOO_LARGE');
  }
  if(size===0||size!==local.fileSizeBytes)return fail('REMOTE_SIZE_MISMATCH');
  // A matching hash is not sufficient if the file is a forged container or HTML page.
