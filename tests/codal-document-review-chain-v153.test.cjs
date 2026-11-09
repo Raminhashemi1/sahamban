@@ -78,3 +78,42 @@ test('v153 will not fetch a report HTML page as PDF or invent a missing download
  assert.equal(attempted,0);
  assert.equal(result.entryEligible,false);
 });
+
+test('v153 refuses a matching spreadsheet container from a PDF download URL',async()=>{
+ const spreadsheet=Buffer.from([80,75,3,4,1,2,3,4,5,6]);
+ const local={name:'fake.xlsx',size:spreadsheet.length,
+  arrayBuffer:async()=>spreadsheet.buffer.slice(spreadsheet.byteOffset,spreadsheet.byteOffset+spreadsheet.byteLength)};
+ const result=await reviewCodalDocumentChain(local,filing(),{
+  metadataFetcher,
+  documentFetcher:async(url)=>res(spreadsheet,url,{'content-type':'application/octet-stream'})
+ });
+ assert.equal(result.stage,'DOCUMENT');
+ assert.equal(result.reason,'DOWNLOADED_FILE_NOT_PDF');
+ assert.equal(result.entryEligible,false);
+ assert.equal(result.originVerified,false);
+});
+test('v153 enforces one total timeout budget across metadata and document fetches',async()=>{
+ const budget=180;
+ const keepAlive=setTimeout(()=>{},600);
+ try{
+  const start=Date.now();
+  let attempted=0;
+  const result=await reviewCodalDocumentChain(file(),filing(),{
+   timeoutMs:budget,
+   metadataFetcher:async(url,opts)=>{
+    await new Promise(resolve=>setTimeout(resolve,115));
+    return metadataFetcher(url,opts);
+   },
+   documentFetcher:async()=>{
+    attempted++;
+    return new Promise(()=>{});
+   }
+  });
+  const elapsed=Date.now()-start;
+  assert.equal(attempted,1);
+  assert.equal(result.stage,'DOCUMENT');
+  assert.equal(result.status,'CODAL_REVIEW_INSUFFICIENT');
+  assert.ok(['REMOTE_DEADLINE_EXCEEDED','REVIEW_DEADLINE_EXCEEDED'].includes(result.reason),result.reason);
+  assert.ok(elapsed<280,'combined review exceeded total budget: '+elapsed+'ms');
+ }finally{clearTimeout(keepAlive);}
+});
