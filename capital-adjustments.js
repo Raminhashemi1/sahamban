@@ -28,9 +28,11 @@ function calculateCapitalAdjustment(data,expectedSymbol){
   // TracingNo identifies the filing; LetterSerial is a distinct document token.
   const serial=new URL(url).searchParams.get('LetterSerial');
   const declared=data.letter_serial;
-  if(typeof declared!=='string'||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(declared))
-   errors.push('MISSING_OR_INVALID_LETTER_SERIAL');
-  else if(!serial||serial!==declared)errors.push('REPORT_LETTER_SERIAL_MISMATCH');
+  if(!serial)errors.push('REPORT_LETTER_SERIAL_MISSING');
+  else if(declared!==undefined&&
+   (typeof declared!=='string'||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(declared)))
+   errors.push('INVALID_LETTER_SERIAL');
+  else if(declared!==undefined&&serial!==declared)errors.push('REPORT_LETTER_SERIAL_MISMATCH');
  }
  const effective=toAsciiDigits(data.effective_date).trim();
  if(!validPublicationDate(effective))errors.push('INVALID_EFFECTIVE_DATE');
