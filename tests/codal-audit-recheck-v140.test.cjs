@@ -226,3 +226,41 @@ test('v152 times out stalled streams and does not block on a stalled cancel',asy
  assert.equal(result.tradingSignalsEnabled,false);
  assert.ok(Date.now()-start<3000);
 });
+
+test('v152 rejects hostile response metadata and reader failures without throwing or authorizing trading',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const cases=[
+  {get status(){throw Error('untrusted status');}},
+  {status:200,redirected:false,url:filing.reportUrl,
+   get headers(){throw Error('malformed headers')},
+   body:{getReader:()=>({read:async()=>({done:true})})}},
+  {status:200,redirected:false,url:filing.reportUrl,
+   headers:{get:()=>null},body:{getReader(){throw Error('locked reader')}}}
+ ];
+ for(const response of cases){
+  const result=await compareRemoteCodalFile(file,filing,{fetcher:async()=>response});
+  assert.equal(result.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+  assert.equal(result.originVerified,false);
+  assert.equal(result.entryEligible,false);
+ }
+});
+test('v152 rejects mismatched response URL and attempts best-effort stream cleanup',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ let cancels=0;
+ const response={status:200,redirected:false,url:'https://host.invalid/forged',
+  headers:{get:()=>null},body:{getReader:()=>({}),cancel:()=>{cancels++;return Promise.resolve()}}};
+ const r=await compareRemoteCodalFile(file,filing,{fetcher:async()=>response});
+ assert.equal(r.reason,'REMOTE_RESPONSE_URL_MISMATCH');
+ assert.equal(cancels,1);
+ assert.equal(r.tradingSignalsEnabled,false);
+});
