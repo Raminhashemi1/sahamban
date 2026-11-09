@@ -54,3 +54,18 @@
 - Updated MASTER-PLAN.md at commit `ab58e6817148645051a52cc601c0b251301a4ee8` without changing the order or inferring completion of any day.
 - Day 2 historical price-basis safeguards/PR164 are a subtask, not a replacement for the complete day-two objective.
 - No code, trades, deployment or merge performed as part of this roadmap restoration.
+
+
+## 2026-11-09 — Day 2 engineering closeout; handoff to real-data validation
+
+- Branch: `feat/day2-history-basis-gates-20261109`; PR #164 remains Draft, not merged/deployed.
+- Starting roadmap/document head: `3e00e33f8bb7e555e061cc10ed1c2ed0ec4935b7`.
+- Commit `23bb57ffe93e7d949d348360f295f90fe3b756ad`: repaired prospective-signal-ledger synthetic fixture to supply explicitly attested **synthetic** basis in positive tests, added negative cases for missing/unknown/self-attested basis. No live source status was upgraded.
+- Commit `959f69926d068740bb6defcd403187880f7d92fd`: fixed fixed-rule-evaluator test assumptions and added no-action regression for unverified basis.
+- Commit `5dbccc48846354592cee756798f67da24a3b0ca6`: core `decisionPlan` safely accepts `DATA_BASIS_UNVERIFIED` reports for `NO_ACTION` and audit export without accidentally enabling review/trade outcomes.
+- Root-cause investigation: earlier Smoke failed on prospective ledger because v129 now fails closed for unattested series. Subsequent CI exposed the fixed-rule-evaluator test assumption, then the actual audit-export incompatibility; addressed without bypassing the guard.
+- **Exact code SHA CI:** `5dbccc48846354592cee756798f67da24a3b0ca6`, **11/11 GitHub workflows SUCCESS**, zero failed; verified through workflow runs for that exact SHA. Smoke (including Chromium browser): https://github.com/Raminhashemi1/sahamban/actions/runs/42684555862 ; WebKit: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555936 ; mobile: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555869 .
+- Day 2 **software integration and regression-test work** is closed out as evidenced above. This does **not** mean independent provider authentication, true three-mode source validation, financial readiness or permission to trade has been attained.
+- Mandatory carryover aligned to the original Day 3 master-plan goal (testing real exchange data): independently capture TSETMC mode 0/1/2 with exact provenance and validate action events; implement trusted source-evidence boundary. These are NOT complete; the system must remain fail-closed. Preserve original limitations until separately verified.
+- Documentation-only commits after the tested code SHA do not inherit exact-head success automatically. The next chat must check live head/CI again.
+- **Next single task:** in a new conversation, read HANDOFF + MASTER-PLAN and live PR/CI, then begin evidence-based real TSETMC three-mode capture/validation; do not infer authenticity from a mere adjustment flag.
