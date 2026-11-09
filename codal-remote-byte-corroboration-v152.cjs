@@ -14,12 +14,29 @@ function verifiedUrl(filing){
  try{u=new URL(safe.reportUrl);}catch{return null;}
  if(u.protocol!=='https:'||!['codal.ir','www.codal.ir'].includes(u.hostname.toLowerCase())||
   u.username||u.password||u.port||u.hash)return null;
- if(!(/^\/Reports\/[A-Za-z0-9._/-]+\.aspx$/i.test(u.pathname)||/^\/DownloadFile\.aspx$/i.test(u.pathname)))return null;
- // Reject parameter smuggling; this verifier supports only the exact filing serial.
- if([...u.searchParams.keys()].some(key=>key!=='LetterSerial'))return null;
- const serial=u.searchParams.getAll('LetterSerial');
- if(u.searchParams.size!==1||serial.length!==1||!/^[0-9]{1,20}$/.test(serial[0])||serial[0]!==safe.tracingNo)return null;
- return {url:u.href,filing:safe};
+ const decision=/^\/Reports\/[A-Za-z0-9._/-]+\.aspx$/i.test(u.pathname);
+ const download=/^(?:\/DownloadFile\.aspx|\/Reports\/DownloadFile\.aspx)$/i.test(u.pathname);
+ if(!decision&&!download)return null;
+ // CODAL's TracingNo is a numeric filing identifier. LetterSerial/hs is a
+ // separate opaque document token; never compare these two different fields.
+ const token=download?u.searchParams.getAll('hs'):u.searchParams.getAll('LetterSerial');
+ const expected=filing&&typeof filing.letterSerial==='string'?filing.letterSerial:null;
+ if(!expected||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(expected)||
+  token.length!==1||token[0]!==expected)return null;
+ const allowed=download?new Set(['hs','ft','let']):new Set(['LetterSerial','rt','let','ct','ft']);
+ if([...u.searchParams.keys()].some(key=>!allowed.has(key)))return null;
+ for(const key of allowed)if(u.searchParams.getAll(key).length>1)return null;
+ if(download){
+  const ft=u.searchParams.get('ft'),letType=u.searchParams.get('let');
+  if(ft!==null&&!/^\d{1,4}$/.test(ft))return null;
+  if(letType!==null&&!/^\d{1,3}$/.test(letType))return null;
+ }else{
+  for(const key of ['rt','let','ct','ft']){
+   const value=u.searchParams.get(key);
+   if(value!==null&&!/^-?\d{1,4}$/.test(value))return null;
+  }
+ }
+ return {url:u.href,filing:safe,letterSerial:expected};
 }
 async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subtle=webcrypto.subtle,timeoutMs=12000}={}){
  let identity,local;
