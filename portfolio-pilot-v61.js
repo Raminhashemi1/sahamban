@@ -327,7 +327,7 @@
  // Never promote current-price agreement to raw-price provenance.
  function labelUnverifiedHistoricalBasis(quote){
   const insCode=String(quote.insCode??'');
-  if(!/^\\d{8,25}$/.test(insCode))throw Error('شناسه ابزار برای منشأ تاریخچه نامعتبر است.');
+  if(!/^\d{8,25}$/.test(insCode))throw Error('شناسه ابزار برای منشأ تاریخچه نامعتبر است.');
   return {...quote,
    historyPriceBasis:'UNKNOWN_NOT_ATTESTED',
    historyPriceBasisEvidence:'NOT_ESTABLISHED',
