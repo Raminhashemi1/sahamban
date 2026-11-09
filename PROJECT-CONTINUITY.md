@@ -25,7 +25,7 @@
 - Active pull request: [PR #164](https://github.com/Raminhashemi1/sahamban/pull/164)
 - PR title: `fix: fail closed on unattested historical price basis`
 - PR status at last checkpoint: **OPEN / DRAFT / NOT MERGED**
-- Last recorded branch head: `ec2f16ec1c5292e33daf011d9a5bb11e118e96e8`
+- Last recorded branch head: `cd7b072b0368f110c445ac0eeff030de8bcc51ab`
 - Latest continuity/evidence document: [DAY2-HISTORY-BASIS-EVIDENCE-GATES.md](DAY2-HISTORY-BASIS-EVIDENCE-GATES.md)
 
 **Mandatory preflight in every new chat:** fetch PR #164 and its current head; fetch branch head; fetch recent commits; list workflow runs for that exact SHA; inspect this ledger. Do not assume the SHAs or statuses above are still current.
@@ -94,7 +94,7 @@ At commit `2da4254a3c112eda2c47b9f0de2446ada2cb1906`, the 11 reported workflows 
 
 The failed test must be diagnosed from its current logs and reproduced/fixed on the current branch head. Do not assume it is fixed by subsequent documentation changes.
 
-At commit `ec2f16ec1c5292e33daf011d9a5bb11e118e96e8`, all 11 workflows were observed **in progress** at the last query. Their final results were not yet available at checkpoint time. Re-query exact-head CI before making any claim.
+At commit `ec2f16ec1c5292e33daf011d9a5bb11e118e96e8`, all 11 workflows were observed **in progress** at the last query. Their final results were not yet available at checkpoint time. Subsequent commits only added documentation (`PROJECT-CONTINUITY.md` and a README link); the current documentation-only head `cd7b072b0368f110c445ac0eeff030de8bcc51ab` had no workflow runs returned at the latest query. Re-query exact-head CI before making any claim.
 
 Previously observed successful workflows on an earlier SHA included WebKit mobile acceptance proxy, Technical Indicators v50 Safety, PWA asset inventory, Mobile connectivity diagnostic safety, Professional Risk v49 Safety, and other lifecycle/safety checks. These older green runs do not replace exact-head validation.
 
@@ -150,3 +150,11 @@ Append a new dated entry below at the end of every work session:
 - Added `DAY2-HISTORY-BASIS-EVIDENCE-GATES.md` at commit `ec2f16ec1c5292e33daf011d9a5bb11e118e96e8`.
 - Initialized this continuity ledger. No merge or deployment performed.
 - Next single task: diagnose the Smoke workflow failure on the current exact PR head.
+
+
+#### 2026-11-09 — continuity protocol established
+- Added `PROJECT-CONTINUITY.md` (commit `27ab1cfa70182e475c3ad0dd4778f989b1bc3b7d`) as the single cross-chat source of truth. It contains the operating contract, Day 2 scope, PR relationships, evidence-vs-status distinctions, CI facts, blockers, next task and mandatory handoff format.
+- Linked the continuity ledger from `README.md` (commit `cd7b072b0368f110c445ac0eeff030de8bcc51ab`).
+- Current PR #164 head after these documentation commits: `cd7b072b0368f110c445ac0eeff030de8bcc51ab`. PR remains open and Draft. These documentation-only commits did not produce a new workflow run in the latest query; do not infer test success from them.
+- No code behavior changed in these two documentation commits. No merge or deployment performed.
+- Next single task remains: diagnose the Smoke workflow failure on the current exact PR head, beginning with live workflow status/logs.
