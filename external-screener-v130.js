@@ -27,7 +27,7 @@
   if(new Set(hist.map(x=>x.date)).size!==hist.length)throw new Error('تاریخچه دارای تاریخ تکراری است؛ تحلیل متوقف شد.');
   if(hist.length>12000)throw new Error('حجم تاریخچه خارج از محدوده امن است.');
   const history=hist.slice(-250);
-  return {symbol:identity.symbol,insCode:identity.insCode,marketDate:history.at(-1).date,history};
+  return {symbol:identity.symbol,insCode:identity.insCode,marketDate:history.at(-1).date,history,historyPriceBasis:'UNKNOWN_NOT_ATTESTED',historyPriceBasisEvidence:'NOT_ESTABLISHED',capitalAdjustmentAllowed:false,historicalPriceSource:{provider:'TSETMC',endpoint:'/ClosingPrice/GetClosingPriceDailyList/'+identity.insCode+'/0',dateField:'dEven',priceField:'pClosing',dateCalendar:'GREGORIAN_YYYYMMDD',adjustmentBasis:'UNKNOWN_NOT_ATTESTED'}};
  }
  async function getJson(path,{fetcher=fetch,timeoutMs=15000}={}){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
