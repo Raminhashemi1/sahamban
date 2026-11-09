@@ -44,16 +44,30 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
    cache:'no-store',credentials:'omit',headers:{Accept:'application/pdf,application/octet-stream,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
    signal}));
  }catch{return fail(signal.aborted?'REMOTE_DEADLINE_EXCEEDED':'REMOTE_FETCH_FAILED');}
- if(!response||response.status!==200||response.redirected===true||!response.body||typeof response.body.getReader!=='function')
-  return fail('REMOTE_HTTP_STATUS_OR_STREAM_UNAVAILABLE');
- // A caller-provided fetch function must still disclose the actual response URL.
- // Never claim corroboration for opaque/unknown or redirected sources.
- if(typeof response.url!=='string'||response.url!==identity.url)
-  return fail('REMOTE_RESPONSE_URL_MISMATCH');
- const declared=response.headers?.get?.('content-length');
- if(declared!==null&&declared!==undefined&&(!/^\d+$/.test(declared)||Number(declared)>Math.min(MAX_BYTES,local.fileSizeBytes)))
-  return fail('REMOTE_CONTENT_LENGTH_INVALID');
- const reader=response.body.getReader(),digest=createHash('sha256');
+ // Rejected responses must not strand an open connection.
+ // Never await cancellation: a broken stream may stall it indefinitely.
+ const discard=()=>{
+  try{Promise.resolve(response?.body?.cancel?.()).catch(()=>{});}catch{}
+ };
+ let reader,declared;
+ try{
+  if(!response||response.status!==200||response.redirected===true||
+   !response.body||typeof response.body.getReader!=='function'){
+   discard();return fail('REMOTE_HTTP_STATUS_OR_STREAM_UNAVAILABLE');
+  }
+  if(typeof response.url!=='string'||response.url!==identity.url){
+   discard();return fail('REMOTE_RESPONSE_URL_MISMATCH');
+  }
+  declared=response.headers?.get?.('content-length');
+  if(declared!==null&&declared!==undefined&&
+   (!/^\d+$/.test(declared)||Number(declared)>Math.min(MAX_BYTES,local.fileSizeBytes))){
+   discard();return fail('REMOTE_CONTENT_LENGTH_INVALID');
+  }
+  reader=response.body.getReader();
+ }catch{
+  discard();return fail('REMOTE_RESPONSE_METADATA_OR_READER_FAILED');
+ }
+ const digest=createHash('sha256');
  let size=0,head=Buffer.alloc(0);
  try{
   for(;;){
