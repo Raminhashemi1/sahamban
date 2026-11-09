@@ -26,6 +26,29 @@ test('record-date share reconciliation rejects broken, future-dated and untracea
  assert.ok(reconcileDividendRecordDateShares({...base,openingSource:null}).errors.includes('UNTRACEABLE_OPENING_SHARE_COUNT'));
 });
 
+test('optional DPS review requires documented capital-chain coverage and matching record-date shares',()=>{
+ const {reviewDPSWithCapitalReconciliation}=require('../capital-adjustments.js');
+ const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
+  publication_date:'۱۴۰۵/۰۸/۲۶',period_start:'۱۴۰۵/۰۱/۰۱',period_end:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',
+  audit_status:'AUDITED',statement_basis:'CONSOLIDATED',document_sha256:'a'.repeat(64),original_document_read:true,
+  dividend_status:'APPROVED_BY_AGM',dividend_record_date:'۱۴۰۵/۰۸/۱۵',
+  dividend_approval_source_row:'مصوبه سود نقدی',dividend_approval_source_page:8,
+  dividend_record_date_source_row:'تاریخ ثبت',dividend_record_date_source_page:9,
+  fields:{cash_dividend_approved_total:{amount:1500,source_row:'مبلغ مصوب',source_page:8},
+   dividend_eligible_shares:{amount:1500000,unit:'SHARES',source_row:'سهام مشمول',source_page:9}}};
+ const original=JSON.stringify(financial);
+ const args={openingShares:1000000,openingDate:'۱۴۰۵/۰۸/۰۱',openingSource:{row:'سهام در تاریخ مبنا',page:2},
+  capitalActions:[sample()],coverageEvidence:{completeThroughRecordDate:true,sourceRow:'فهرست رویدادهای سرمایه',sourcePage:5}};
+ const ok=reviewDPSWithCapitalReconciliation(financial,'ونوین',args);
+ assert.equal(ok.status,'DPS_RECONCILED_FOR_REVIEW');assert.equal(ok.dps.valueRialPerShare,1000);
+ assert.equal(ok.reconciliation.comparison,'MATCH');assert.equal(JSON.stringify(financial),original);
+ const mismatch=reviewDPSWithCapitalReconciliation({...financial,fields:{...financial.fields,dividend_eligible_shares:{...financial.fields.dividend_eligible_shares,amount:1400000}}},'ونوین',args);
+ assert.equal(mismatch.status,'INSUFFICIENT_EVIDENCE');assert.equal(mismatch.dps,null);
+ assert.equal(mismatch.reconciliation.comparison,'MISMATCH');
+ assert.ok(reviewDPSWithCapitalReconciliation(financial,'ونوین',{...args,coverageEvidence:undefined}).errors.includes('DIVIDEND_CAPITAL_ACTION_COVERAGE_NOT_DOCUMENTED'));
+ assert.ok(reviewDPSWithCapitalReconciliation(financial,'فولاد',args).status==='INSUFFICIENT_EVIDENCE');
+});
+
 test('bonus issue returns historical price factor from pre/post share counts',()=>{
  const r=calculateCapitalAdjustment(sample(),'ونوین');
  assert.equal(r.status,'CAPITAL_ADJUSTMENT_READY_FOR_REVIEW');
