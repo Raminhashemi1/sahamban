@@ -103,3 +103,61 @@ test('recheck canonicalization preserves optional AGM dividend evidence metadata
  assert.equal(matched.status,'LOCAL_FILE_BYTES_MATCH');
  assert.equal(matched.figuresVerified,false);
 });
+
+test('v152 independently compares official-hosted response bytes but never elevates provenance to trading authorization',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const official={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const file=(()=>{const b=Buffer.from('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES');return {name:'original.pdf',size:b.length,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength)};})();
+ let requested;
+ const fetcher=async (url,opts)=>{
+  requested={url,opts};
+  return new Response(Buffer.from('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES'),{status:200});
+ };
+ const match=await compareRemoteCodalFile(file,official,{fetcher});
+ assert.equal(match.status,'CODAL_REMOTE_BYTES_MATCH_REVIEW_ONLY');
+ assert.equal(match.sha256,require('node:crypto').createHash('sha256').update('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES').digest('hex'));
+ for(const key of ['originVerified','figuresVerified','entryEligible','tradingSignalsEnabled'])
+  assert.equal(match[key],false);
+ assert.equal(requested.url,official.reportUrl);
+ assert.equal(requested.opts.redirect,'manual');
+ assert.equal(requested.opts.credentials,'omit');
+ assert.equal(requested.opts.cache,'no-store');
+});
+test('v152 rejects forged CODAL identity, unsafe URLs and redirect responses before any trust elevation',async()=>{
+ const {compareRemoteCodalFile,verifiedUrl}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const base={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const bytes=Buffer.from('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES');
+ const file={name:'original.pdf',size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ for(const reportUrl of [
+  'https://codal.ir.evil.example/Reports/Decision.aspx?LetterSerial=12345',
+  'http://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=54321',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345&LetterSerial=12345',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345#fragment',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
+ ].slice(0,5)){
+  assert.equal(verifiedUrl({...base,reportUrl}),null);
+  let called=0;
+  const r=await compareRemoteCodalFile(file,{...base,reportUrl},{fetcher:async()=>{called++;return new Response(bytes);}});
+  assert.equal(called,0);assert.equal(r.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ }
+ let redirected=await compareRemoteCodalFile(file,base,{fetcher:async()=>new Response(null,{status:302,headers:{location:'https://evil.example/'}})});
+ assert.equal(redirected.reason,'REMOTE_HTTP_STATUS_OR_STREAM_UNAVAILABLE');
+ assert.equal(redirected.entryEligible,false);
+});
+test('v152 rejects modified bytes, missing network and oversize remote responses without leaking any financial evidence',async()=>{
+ const {compareRemoteCodalFile,MAX_BYTES}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const bytes=Buffer.from('%PDF-1.7\\nORIGINAL');
+ const file={name:'original.pdf',size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const modified=await compareRemoteCodalFile(file,filing,{fetcher:async()=>new Response(Buffer.from('%PDF-1.7\\nMODIFIED'))});
+ assert.equal(modified.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ assert.equal(modified.originVerified,false);
+ const tooLong=await compareRemoteCodalFile(file,filing,{fetcher:async()=>new Response(bytes,{headers:{'content-length':String(MAX_BYTES+1)}})});
+ assert.equal(tooLong.reason,'REMOTE_CONTENT_LENGTH_INVALID');
+ const unavailable=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{throw Error('network offline');}});
+ assert.equal(unavailable.reason,'REMOTE_FETCH_FAILED');
+});
