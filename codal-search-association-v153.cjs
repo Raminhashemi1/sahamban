@@ -90,6 +90,9 @@ async function checkCodalSearchAssociation(filing,{fetcher=globalThis.fetch,time
   catch{return fail('INVALID_SEARCH_JSON');}
   if(!data||typeof data!=='object'||Array.isArray(data)||data.IsAttacker===true)
    return fail('INVALID_SEARCH_RESPONSE');
+  // A single row on one page is not sufficient when CODAL reports more
+  // than one overall match. Require unambiguous totals from the API.
+  if(data.Total!==1||data.Page!==1)return fail('SEARCH_RESULT_COUNT_OR_PAGE_UNVERIFIED');
   return corroborateLetter(data.Letters,identity);
  }catch{
   discard();
