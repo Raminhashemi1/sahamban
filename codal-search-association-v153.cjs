@@ -45,9 +45,14 @@ function corroborateLetter(letters,identity){
   return fail('SEARCH_REPORT_URL_MISMATCH');
  if(typeof letter.PublishDateTime!=='string'||!letter.PublishDateTime.startsWith(identity.filing.published))
   return fail('SEARCH_PUBLICATION_DATE_MISMATCH');
+ // Derive the download location from the same search record; do not assume
+ // the HTML Decision.aspx page contains the local PDF bytes.
+ const pdf=parseCodalDocumentUrl(letter.PdfUrl,'hs');
+ const pdfUrl=pdf&&pdf.token===identity.letterSerial?
+  new URL(letter.PdfUrl,'https://www.codal.ir/').href:null;
  return {status:'CODAL_SEARCH_METADATA_MATCH_REVIEW_ONLY',
   symbol:identity.filing.symbol,tracingNo:identity.filing.tracingNo,
-  letterSerial:identity.letterSerial,reportUrl:identity.url,
+  letterSerial:identity.letterSerial,reportUrl:identity.url,pdfUrl,
   published:identity.filing.published,
   originVerified:false,figuresVerified:false,entryEligible:false,tradingSignalsEnabled:false,
   note:'Exact metadata match against a CODAL search response only. This does not authenticate financial values, guarantee that the response was independently audited, or grant trading authority.'};
