@@ -30,7 +30,32 @@ test('rejects unverifiable instrument codes instead of assigning source metadata
  }
 });
 test('pilot historical event uses the tagged quote, without relabeling as verified raw prices',()=>{
- assert.match(source,/quote:labelUnverifiedHistoricalBasis\(\{symbol:holding\.symbol,marketDate:historyEndDate,history:history\.slice\(-250\),insCode\}\)/);
+ assert.match(source,/quote:labelUnverifiedHistoricalBasis\(\{/);
+ assert.match(source,/historyCalendarConversion:\{/);
+ assert.match(source,/calendarConversionStatus=startJalali&&endJalali\?'CALENDAR_ONLY_CONVERTED':'CONVERSION_UNAVAILABLE'/);
  assert.match(source,/new CustomEvent\('sahamban:verified-historical-quotes-v50'/);
  assert.doesNotMatch(source,/historyPriceBasis:'RAW_UNADJUSTED'/);
+});
+
+test('Gregorian TSETMC market dates convert to Jalali labels at Nowruz without changing calendar basis',()=>{
+ const start=source.indexOf(' function marketGregorianToJalali(day){');
+ const end=source.indexOf(' // A daily history response contains pClosing',start);
+ assert.ok(start>=0&&end>start);
+ const convert=vm.runInNewContext(source.slice(start,end)+'\nmarketGregorianToJalali',{Date,Intl,Object,Number,String});
+ for(const [marketDay,expected] of [
+  ['20260320','1404/12/29'],
+  ['20260321','1405/01/01'],
+  ['20261109','1405/08/18'],
+  ['20240229','1402/12/10']
+ ]){
+  assert.equal(convert(marketDay),expected,marketDay);
+ }
+ for(const invalid of ['20260229','20261301','20260011','20261131','14050818','2026-11-09','2026110912',''])assert.equal(convert(invalid),null,invalid);
+});
+test('calendar conversion fails closed when runtime lacks Persian calendar support',()=>{
+ const start=source.indexOf(' function marketGregorianToJalali(day){');
+ const end=source.indexOf(' // A daily history response contains pClosing',start);
+ const intl={DateTimeFormat:class {resolvedOptions(){return {calendar:'gregory'}};formatToParts(){return []}}};
+ const convert=vm.runInNewContext(source.slice(start,end)+'\nmarketGregorianToJalali',{Date,Intl:intl,Object,Number,String});
+ assert.equal(convert('20260321'),null);
 });
