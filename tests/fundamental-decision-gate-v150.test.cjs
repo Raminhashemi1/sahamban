@@ -69,6 +69,7 @@ test('minimum fundamental gate exposes descriptive quality ratios and fresh mark
  assert.equal(r.financialRatios.ratios.operatingMarginPct,20);
  assert.equal(r.financialRatios.ratios.roePct,50);
  assert.equal(r.financialRatios.valuation.pe,50);
- assert.equal(r.financialRatios.valuation.pb,25);
- assert.equal(r.financialRatios.valuation.ps,12.5);
+ assert.equal(r.financialRatios.valuation.pb,null);
+ assert.equal(r.financialRatios.valuation.ps,null);
+ assert.ok(r.financialRatios.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
 });
