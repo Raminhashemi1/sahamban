@@ -54,7 +54,7 @@ test('App script and service worker version match',()=>{
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
   assert.ok(sw.includes('portfolio-pilot-v51.html'));
   assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
- assert.ok(sw.includes('technical-analysis-v50.js?v=50.20'));
+ assert.ok(sw.includes('technical-analysis-v50.js?v=50.21'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
@@ -80,7 +80,7 @@ test('Real broker holdings valuation is read-only with independent quote validat
  assert.ok(!portfolioLive.includes("sahamban:verified-historical-quotes-v50',{detail:{quotes:quotes.map"));
  assert.ok(portfolioLive.includes("const historyButton=$('technicalHistoryAllV50')"));
  assert.ok(portfolioLive.includes("sahamban:verified-historical-quotes-v50',{detail:{quotes}}"));
- assert.ok(html.includes('technical-analysis-v50.js?v=50.20'));
+ assert.ok(html.includes('technical-analysis-v50.js?v=50.21'));
 
  assert.ok(portfolioLive.includes('تأیید و ذخیره انتخاب'));
  assert.ok(!portfolioLive.includes("localStorage.setItem(HOLDINGS_KEY")&&!portfolioLive.includes("localStorage.removeItem(HOLDINGS_KEY"));
