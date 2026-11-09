@@ -195,8 +195,11 @@ test('v152 bounds an unresponsive CODAL fetch even if custom fetcher ignores abo
   reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
  const data=Buffer.from('%PDF-1.7\\nTEST');
  const file={name:'x.pdf',size:data.length,arrayBuffer:async()=>data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)};
+ // AbortSignal.timeout uses an unref'ed timer; keep the synthetic test process alive.
+ const keepAlive=setTimeout(()=>{},250);
  const start=Date.now();
  const result=await compareRemoteCodalFile(file,filing,{fetcher:()=>new Promise(()=>{}),timeoutMs:35});
+ clearTimeout(keepAlive);
  assert.equal(result.reason,'REMOTE_DEADLINE_EXCEEDED');
  assert.equal(result.entryEligible,false);
  assert.ok(Date.now()-start<3000);
@@ -214,8 +217,11 @@ test('v152 times out stalled streams and does not block on a stalled cancel',asy
   })}});
   return response;
  };
+ // AbortSignal.timeout uses an unref'ed timer; keep the synthetic test process alive.
+ const keepAlive=setTimeout(()=>{},250);
  const start=Date.now();
  const result=await compareRemoteCodalFile(file,filing,{fetcher,timeoutMs:35});
+ clearTimeout(keepAlive);
  assert.equal(result.reason,'REMOTE_DEADLINE_EXCEEDED');
  assert.equal(result.tradingSignalsEnabled,false);
  assert.ok(Date.now()-start<3000);
