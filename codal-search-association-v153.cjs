@@ -26,6 +26,14 @@ function matchingDocumentUrl(value,expected,key){
  const source=parseCodalDocumentUrl(value,key),selected=parseCodalDocumentUrl(expected,key);
  return !!source&&!!selected&&source.pathname===selected.pathname&&source.params===selected.params;
 }
+function normalizedDate(value){
+ if(typeof value!=='string')return null;
+ const normalized=value.trim().replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776))
+  .replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632));
+ const match=normalized.match(/^(13\d{2}|14\d{2})[/-](\d{1,2})[/-](\d{1,2})(?:\s|$)/);
+ if(!match)return null;
+ return match[1]+'/'+String(Number(match[2])).padStart(2,'0')+'/'+String(Number(match[3])).padStart(2,'0');
+}
 function corroborateLetter(letters,identity){
  if(!Array.isArray(letters)||letters.length!==1)return fail('SEARCH_RESULT_NOT_UNIQUE');
  const letter=letters[0];
@@ -43,7 +51,8 @@ function corroborateLetter(letters,identity){
    return fail('SEARCH_PDF_URL_MISMATCH');
  }else if(!matchingDocumentUrl(letter.Url,identity.url,'LetterSerial'))
   return fail('SEARCH_REPORT_URL_MISMATCH');
- if(typeof letter.PublishDateTime!=='string'||!letter.PublishDateTime.startsWith(identity.filing.published))
+ const expectedDate=normalizedDate(identity.filing.published);
+ if(!expectedDate||normalizedDate(letter.PublishDateTime)!==expectedDate)
   return fail('SEARCH_PUBLICATION_DATE_MISMATCH');
  // Derive the download location from the same search record; do not assume
  // the HTML Decision.aspx page contains the local PDF bytes.
