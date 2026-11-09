@@ -9,6 +9,17 @@
  const {safeReportUrl,normalizeSymbol,toAsciiDigits,validPublicationDate}=evidence;
 const ACTIONS=new Set(['BONUS_ISSUE','STOCK_SPLIT','REVERSE_SPLIT','RIGHTS_ISSUE']);
 function positiveSafeInteger(value){return Number.isSafeInteger(value)&&value>0;}
+function hasDuplicateActionSources(actions){
+ const seen=new Set();
+ for(const action of actions){
+  const source=action.source;
+  const key=[toAsciiDigits(source.tracingNo).trim(),
+   String(source.row).trim().normalize('NFKC'),String(source.page)].join('\\u0000');
+  if(seen.has(key))return true;
+  seen.add(key);
+ }
+ return false;
+}
 function jalaliKey(value){
  const m=toAsciiDigits(value).trim().match(/^(13\d\d|14\d\d)[/-](\d{1,2})[/-](\d{1,2})$/);
  if(!m||!validPublicationDate(value))return null;
@@ -100,6 +111,7 @@ function reconcileDividendRecordDateShares({symbol,expectedSymbol,openingShares,
    return fail('INVALID_DIVIDEND_ACTION_DATE_COUNTS_OR_PROVENANCE');
   actions.push({...a,ordinal});
  }
+ if(hasDuplicateActionSources(actions))return fail('DUPLICATE_CAPITAL_ACTION_SOURCE');
  actions.sort((a,b)=>a.ordinal-b.ordinal);
  const symbolKey=normalizeSymbol(expectedSymbol);
  if(actions.some(a=>normalizeSymbol(a.symbol)!==symbolKey))return fail('DIVIDEND_CAPITAL_ACTION_SYMBOL_MISMATCH');
@@ -181,6 +193,7 @@ function calculateMultiActionWeightedAverageShares(actionResults,{periodStart,pe
    return fail('INVALID_ACTION_DATE_SHARE_COUNTS_OR_PROVENANCE');
   actions.push({...a,ordinal});
  }
+ if(hasDuplicateActionSources(actions))return fail('DUPLICATE_CAPITAL_ACTION_SOURCE');
  const symbol=normalizeSymbol(actions[0].symbol);
  if(!symbol||actions.some(a=>normalizeSymbol(a.symbol)!==symbol))return fail('CAPITAL_ACTION_SYMBOL_MISMATCH');
  for(let i=1;i<actions.length;i++){
