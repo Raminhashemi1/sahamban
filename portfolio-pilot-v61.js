@@ -322,6 +322,24 @@
   }
  }
  function statusMessage(message){const node=$('technicalStatusV50');if(node)node.textContent=message;}
+ // TSETMC dEven is a Gregorian YYYYMMDD date (without a time-of-day).
+ // Convert calendar labels at UTC noon to avoid local-day rollover.
+ // The conversion is not a price-basis attestation or a trading signal.
+ function marketGregorianToJalali(day){
+  const value=String(day??'');
+  if(!/^(19|20|21)\d{6}$/.test(value))return null;
+  const y=Number(value.slice(0,4)),m=Number(value.slice(4,6)),d=Number(value.slice(6));
+  const utc=new Date(Date.UTC(y,m-1,d,12));
+  if(utc.getUTCFullYear()!==y||utc.getUTCMonth()+1!==m||utc.getUTCDate()!==d)return null;
+  try{
+   const fmt=new Intl.DateTimeFormat('en-US-u-ca-persian',{timeZone:'UTC',
+    year:'numeric',month:'2-digit',day:'2-digit'});
+   if(fmt.resolvedOptions().calendar!=='persian')return null;
+   const parts=Object.fromEntries(fmt.formatToParts(utc).filter(p=>['year','month','day'].includes(p.type)).map(p=>[p.type,p.value]));
+   if(!/^(13|14)\d{2}$/.test(parts.year)||!/^\d{2}$/.test(parts.month)||!/^\d{2}$/.test(parts.day))return null;
+   return parts.year+'/'+parts.month+'/'+parts.day;
+  }catch{return null;}
+ }
  // A daily history response contains pClosing and dEven, but does not
  // independently attest whether historical prices are already adjusted.
  // Never promote current-price agreement to raw-price provenance.
@@ -384,7 +402,16 @@
     if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
     const historyStartDate=history[0].date,historyEndDate=history[history.length-1].date;
     const diagnosticCandidate={...enrichedCandidate,historyStartDate,historyEndDate,historyCount:history.length};
-    return {ok:true,quote:labelUnverifiedHistoricalBasis({symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode}),candidate:diagnosticCandidate};
+    const startJalali=marketGregorianToJalali(historyStartDate);
+    const endJalali=marketGregorianToJalali(historyEndDate);
+    const calendarConversionStatus=startJalali&&endJalali?'CALENDAR_ONLY_CONVERTED':'CONVERSION_UNAVAILABLE';
+    return {ok:true,quote:labelUnverifiedHistoricalBasis({
+     symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode,
+     historyCalendarConversion:{
+      status:calendarConversionStatus,gregorianStart:historyStartDate,gregorianEnd:historyEndDate,
+      jalaliStart:startJalali,jalaliEnd:endJalali,
+      priceAdjustmentBasis:'UNKNOWN_NOT_ATTESTED',capitalAdjustmentAllowed:false}
+    }),candidate:diagnosticCandidate};
    }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);
