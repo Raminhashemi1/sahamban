@@ -260,15 +260,23 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
     marketOrdinal(basis.asOfDate)!==null&&marketOrdinal(basis.asOfDate)===marketOrdinal(price.marketDate)&&
     typeof basis.sourceRow==='string'&&basis.sourceRow.trim().length>0&&basis.sourceRow.length<=240&&
     Number.isInteger(basis.sourcePage)&&basis.sourcePage>0&&basis.sourcePage<=99999;
+   // P/E and P/S are 12-month flow multiples. Do not silently treat an interim
+   // period's EPS or sales as annual/TTM results; a calendar-year equivalent
+   // needs 365/366 covered days and must end no later than the market quote.
+   const startOrdinal=marketOrdinal(data.period_start),endOrdinal=marketOrdinal(data.period_end),quoteOrdinal=marketOrdinal(price.marketDate);
+   const coverageDays=startOrdinal!==null&&endOrdinal!==null&&endOrdinal>=startOrdinal?endOrdinal-startOrdinal+1:null;
+   const isFullYearCoverage=(coverageDays===365||coverageDays===366)&&quoteOrdinal>=endOrdinal;
+   if(!isFullYearCoverage)flags.push('PE_PS_REQUIRE_COMPLETE_TWELVE_MONTH_EARNINGS_AND_REVENUE');
    const datedShares=validShareBasis?basis.sharesOutstanding:null;
    const bookValuePerShare=returnEquity!==null&&datedShares?returnEquity/datedShares:null;
    const salesPerShare=revenue!==null&&datedShares?revenue/datedShares:null;
    if(!validShareBasis)flags.push('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS');
    valuation={status:'VALUATION_MULTIPLES_READY_FOR_REVIEW',
-    pe:eps.status==='EPS_READY_FOR_REVIEW'&&eps.eps.valueRialPerShare>0?price.closeRialPerShare/eps.eps.valueRialPerShare:null,
+    pe:isFullYearCoverage&&eps.status==='EPS_READY_FOR_REVIEW'&&eps.eps.valueRialPerShare>0?price.closeRialPerShare/eps.eps.valueRialPerShare:null,
     pb:bookValuePerShare!==null&&bookValuePerShare>0?price.closeRialPerShare/bookValuePerShare:null,
-    ps:salesPerShare!==null&&salesPerShare>0?price.closeRialPerShare/salesPerShare:null,
+    ps:isFullYearCoverage&&salesPerShare!==null&&salesPerShare>0?price.closeRialPerShare/salesPerShare:null,
     marketPriceRialPerShare:price.closeRialPerShare,marketDate:price.marketDate,source:price.source,
+    financialFlowCoverageDays:coverageDays,financialFlowPeriodStart:data.period_start??null,financialFlowPeriodEnd:data.period_end,
     valuationSharesAsOfDate:validShareBasis?basis.asOfDate:null,valuationSharesSource:validShareBasis?{row:basis.sourceRow,page:basis.sourcePage}:null,
     note:'P/E, P/B and P/S are arithmetic multiples, not intrinsic value estimates or buy/sell thresholds.'};
    if(valuation.pe===null)flags.push('PE_UNAVAILABLE_NON_POSITIVE_OR_UNSUPPORTED_EPS');
