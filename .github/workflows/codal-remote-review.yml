@@ -7,7 +7,7 @@ on:
       - 'codal-search-association-v153.cjs'
       - 'codal-document-review-chain-v153.cjs'
       - 'tests/codal-document-review-chain-v153.test.cjs'
-      - 'tests/codal-search-association-v153.test.cjs tests/codal-document-review-chain-v153.test.cjs'
+      - 'tests/codal-search-association-v153.test.cjs'
       - 'codal-original-intake-v138.js'
       - 'tests/codal-audit-recheck-v140.test.cjs'
       - '.github/workflows/codal-remote-review.yml'
@@ -28,4 +28,4 @@ jobs:
         with:
           node-version: '20'
       - name: Run CODAL source and remote corroboration tests
-        run: node --test tests/codal-audit-recheck-v140.test.cjs tests/codal-search-association-v153.test.cjs
+        run: node --test tests/codal-audit-recheck-v140.test.cjs tests/codal-search-association-v153.test.cjs tests/codal-document-review-chain-v153.test.cjs
