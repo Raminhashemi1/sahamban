@@ -31,6 +31,21 @@ test('rights issue calculates TERP and historical price multiplier',()=>{
  assert.ok(Math.abs(r.adjustment.epsRetrospectiveShareMultiplier-(1000/960))<1e-12);
  assert.equal(r.adjustment.newShares,250000);
 });
+test('rights issue at or above cum-rights fair value has no IAS 33 bonus element',()=>{
+ for(const subscriptionPrice of [1000,1200]){
+  const a=sample();a.action_type='RIGHTS_ISSUE';a.pre_action_shares=1000000;a.post_action_shares=1250000;
+  a.cum_rights_price=1000;a.subscription_price=subscriptionPrice;a.cum_rights_price_date='۱۴۰۵/۰۸/۱۱';a.price_unit='IRR_PER_SHARE';
+  a.cum_rights_price_source_row='قیمت پایانی سهم پیش از مجمع';a.cum_rights_price_source_page=4;
+  a.subscription_price_source_row='قیمت پذیره‌نویسی حق‌تقدم';a.subscription_price_source_page=5;
+  const r=calculateCapitalAdjustment(a,'ونوین');
+  assert.equal(r.status,'CAPITAL_ADJUSTMENT_READY_FOR_REVIEW');
+  assert.ok(r.adjustment.theoreticalExRightsPrice>=1000);
+  assert.ok(r.adjustment.epsRetrospectiveShareMultiplier>=1);
+  assert.equal(r.adjustment.epsRetrospectiveShareMultiplier,1);
+  assert.equal(r.adjustment.historicalPriceMultiplier,r.adjustment.theoreticalExRightsPrice/1000);
+ }
+});
+
 test('capital action refuses missing or mismatched CODAL evidence',()=>{
  const badSerial=sample();badSerial.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=999';
  assert.ok(calculateCapitalAdjustment(badSerial,'ونوین').errors.includes('REPORT_TRACING_MISMATCH'));
