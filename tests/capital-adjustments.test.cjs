@@ -200,7 +200,7 @@ test('capital-adjusted weighted-average shares flow into EPS with issuer and per
 
 test('chronological bonus actions restate every earlier interval through all later factors',()=>{
  const a=sample();a.effective_date='۱۴۰۵/۰۴/۰۱';a.pre_action_shares=1000000;a.post_action_shares=1500000;
- const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
+ const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;b.source_row='مصوبه رویداد دوم';b.source_page=7;
  const first=calculateCapitalAdjustment(a,'ونوین'),second=calculateCapitalAdjustment(b,'ونوین');
  const r=calculateMultiActionWeightedAverageShares([first,second],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
  assert.equal(r.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
@@ -212,20 +212,20 @@ test('chronological bonus actions restate every earlier interval through all lat
 });
 test('multi-action restatement rejects unordered, duplicate-date and broken share-count chains',()=>{
  const a=sample();a.effective_date='۱۴۰۵/۰۴/۰۱';a.pre_action_shares=1000000;a.post_action_shares=1500000;
- const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
+ const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;b.source_row='مصوبه رویداد دوم';b.source_page=7;
  const x=calculateCapitalAdjustment(a,'ونوین'),y=calculateCapitalAdjustment(b,'ونوین');
  assert.ok(calculateMultiActionWeightedAverageShares([y,x],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'}).errors.includes('CAPITAL_ACTIONS_NOT_STRICTLY_CHRONOLOGICAL'));
- const same={...b,effective_date:'۱۴۰۵/۰۴/۰۱'};
+ const same={...b,effective_date:'۱۴۰۵/۰۴/۰۱',source_row:'مصوبه هم‌تاریخ',source_page:8};
  const z=calculateCapitalAdjustment(same,'ونوین');
  assert.ok(calculateMultiActionWeightedAverageShares([x,z],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'}).errors.includes('CAPITAL_ACTIONS_NOT_STRICTLY_CHRONOLOGICAL'));
- const broken={...b,pre_action_shares:1400000};
+ const broken={...b,pre_action_shares:1400000,source_row:'مصوبه زنجیره معیوب',source_page:9};
  const q=calculateCapitalAdjustment(broken,'ونوین');
  assert.ok(calculateMultiActionWeightedAverageShares([x,q],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'}).errors.includes('CAPITAL_ACTION_SHARE_CHAIN_MISMATCH'));
 });
 test('multi-action EPS restatement is bound to same issuer and reporting period',()=>{
  const {calculateEPS}=require('../fundamental-evidence.js');
  const a=sample();a.effective_date='۱۴۰۵/۰۴/۰۱';a.pre_action_shares=1000000;a.post_action_shares=1500000;
- const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;
+ const b=sample();b.effective_date='۱۴۰۵/۰۷/۰۱';b.pre_action_shares=1500000;b.post_action_shares=1800000;b.source_row='مصوبه رویداد دوم';b.source_page=7;
  const basis=calculateMultiActionWeightedAverageShares([calculateCapitalAdjustment(a,'ونوین'),calculateCapitalAdjustment(b,'ونوین')],{periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
  const financial={symbol:'ونوین',tracing_no:'۱۲۳۴۵',report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
  publication_date:'۱۴۰۶/۰۱/۱۵',period_start:'۱۴۰۵/۰۱/۰۱',period_end:'۱۴۰۵/۱۲/۲۹',unit:'MILLION_IRR',audit_status:'AUDITED',
@@ -242,7 +242,7 @@ test('multi-action EPS restatement is bound to same issuer and reporting period'
 test('mixed bonus and rights actions compound only retrospective EPS factors for earlier segments',()=>{
  const bonus=sample();bonus.effective_date='۱۴۰۵/۰۴/۰۱';bonus.pre_action_shares=1000000;bonus.post_action_shares=1500000;
  const rights=sample();rights.effective_date='۱۴۰۵/۰۷/۰۱';rights.action_type='RIGHTS_ISSUE';
- rights.pre_action_shares=1500000;rights.post_action_shares=1875000;
+ rights.pre_action_shares=1500000;rights.post_action_shares=1875000;rights.source_row='مصوبه حق‌تقدم';rights.source_page=7;
  rights.cum_rights_price=1000;rights.subscription_price=800;rights.cum_rights_price_date='۱۴۰۵/۰۶/۳۱';rights.price_unit='IRR_PER_SHARE';
  rights.cum_rights_price_source_row='قیمت پایانی پیش از حق‌تقدم';rights.cum_rights_price_source_page=4;
  rights.subscription_price_source_row='قیمت پذیره‌نویسی حق‌تقدم';rights.subscription_price_source_page=5;
