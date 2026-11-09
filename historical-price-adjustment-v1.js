@@ -11,7 +11,7 @@
  const dateKey=value=>{
   const raw=toAsciiDigits(value).trim();
   if(!validPublicationDate(raw))return null;
-  const m=raw.match(/^(13\\d{2}|14\\d{2})[/-](\\d{1,2})[/-](\\d{1,2})$/);
+  const m=raw.match(/^(13\d{2}|14\d{2})[/-](\d{1,2})[/-](\d{1,2})$/);
   return m?m[1]+m[2].padStart(2,'0')+m[3].padStart(2,'0'):null;
  };
  const safeText=value=>typeof value==='string'&&value.trim().length>0&&value.length<=240;
@@ -35,7 +35,7 @@
     return fail('UNREVIEWED_CAPITAL_ACTION');
    const a=result.adjustment,when=dateKey(a.effectiveDate),source=a.source;
    if(!when||!normalizeSymbol(a.symbol)||normalizeSymbol(a.symbol)!==symbol||
-      !source||!/^\\d{1,20}$/.test(String(source.tracingNo??''))||
+      !source||!/^\d{1,20}$/.test(String(source.tracingNo??''))||
       !safeText(source.row)||!Number.isInteger(source.page)||source.page<1||source.page>99999||
       !Number.isFinite(a.historicalPriceMultiplier)||a.historicalPriceMultiplier<=0||
       !Number.isSafeInteger(a.preActionShares)||a.preActionShares<=0||
