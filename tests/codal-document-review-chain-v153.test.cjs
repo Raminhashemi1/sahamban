@@ -2,12 +2,12 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {reviewCodalDocumentChain}=require('../codal-document-review-chain-v153.cjs');
 const serial='qr1ypqX8jr8rIaRvVJxoNA==';
-const report='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d';
+const report='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0&ft=-1';
 const filing=()=>({symbol:'وبملت',tracingNo:'1278431',letterSerial:serial,published:'۱۴۰۳/۰۹/۱۴',reportUrl:report});
 const doc=Buffer.from('%PDF-1.7\nsynthetic-original');
 const file=()=>({name:'proof.pdf',size:doc.length,arrayBuffer:async()=>doc.buffer.slice(doc.byteOffset,doc.byteOffset+doc.byteLength)});
 const metadataUrl='https://search.codal.ir/api/search/v2/q?TracingNo=1278431';
-const letter=()=>({TracingNo:1278431,Symbol:'وبملت',PublishDateTime:'۱۴۰۳/۰۹/۱۴ ۱۱:۲۲:۳۳',Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d',
+const letter=()=>({TracingNo:1278431,Symbol:'وبملت',PublishDateTime:'۱۴۰۳/۰۹/۱۴ ۱۱:۲۲:۳۳',Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0&ft=-1',
  PdfUrl:'DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1005&let=6'});
 function res(data,url,headers){
  const r=new Response(data,{status:200,headers});
