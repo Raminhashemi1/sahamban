@@ -25,8 +25,12 @@ function calculateCapitalAdjustment(data,expectedSymbol){
  const url=safeReportUrl(data.report_url);
  if(!url)errors.push('INVALID_REPORT_URL');
  else{
+  // TracingNo identifies the filing; LetterSerial is a distinct document token.
   const serial=new URL(url).searchParams.get('LetterSerial');
-  if(!serial||toAsciiDigits(serial).trim()!==tracing)errors.push('REPORT_TRACING_MISMATCH');
+  const declared=data.letter_serial;
+  if(typeof declared!=='string'||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(declared))
+   errors.push('MISSING_OR_INVALID_LETTER_SERIAL');
+  else if(!serial||serial!==declared)errors.push('REPORT_LETTER_SERIAL_MISMATCH');
  }
  const effective=toAsciiDigits(data.effective_date).trim();
  if(!validPublicationDate(effective))errors.push('INVALID_EFFECTIVE_DATE');
