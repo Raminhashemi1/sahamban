@@ -5,12 +5,25 @@ globalThis.SahambanTechnicalV50=require('../technical-indicators-v50.js');
 const api=require('../decision-support-v129.js');
 function fundamentalReview(overrides={}){return {status:'FUNDAMENTAL_REVIEW_READY',symbol:'TEST',entryEligible:true,financialEvidence:'READY_FOR_REVIEW',auditStatus:'AUDITED',statementBasis:'CONSOLIDATED',periodEnd:'۱۴۰۵/۰۶/۳۱',epsStatus:'EPS_READY_FOR_REVIEW',epsRialPerShare:1250,dpsStatus:'DPS_READY_FOR_REVIEW',...overrides};}
 function history(n=100){const end=new Date(Date.UTC(2026,10,3));return Array.from({length:n},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(n-1-i));const date=d.toISOString().slice(0,10).replaceAll('-','');const close=1000+i*2+Math.sin(i*1.7)*18;return {date,close,tradedValue:100000+i*1000};});}
-test('decision engine uses verified history and emits bounded, explainable scores',()=>{const q={symbol:'TEST',history:history()};const r=api.analyze(q,{today:'20261103'});assert.equal(r.symbol,'TEST');assert.ok(r.score>=0&&r.score<=100);assert.equal(r.reasons.length,5);assert.ok(['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code));assert.ok(r.marketDate==='20261103');});
+test('decision engine uses attested history and emits bounded, explainable scores',()=>{const q={symbol:'TEST',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'};const r=api.analyze(q,{today:'20261103'});assert.equal(r.symbol,'TEST');assert.ok(r.score>=0&&r.score<=100);assert.equal(r.reasons.length,5);assert.ok(['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code));assert.ok(r.marketDate==='20261103');});
 test('technical diagnostics preserve explicit historical price-basis evidence',()=>{
  const unknown=api.analyze({symbol:'TEST',history:history()},{today:'20261103'});
  assert.equal(unknown.historyPriceBasisEvidence,'NOT_ESTABLISHED');
  const attested=api.analyze({symbol:'TEST',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'},{today:'20261103'});
  assert.equal(attested.historyPriceBasisEvidence,'INDEPENDENTLY_ATTESTED');
+});
+test('direct analysis never emits actionable codes or risk levels for unattested history',()=>{
+ for(const evidence of [undefined,'NOT_ESTABLISHED','UNKNOWN_NOT_ATTESTED','SELF_ATTESTED']){
+  const r=api.analyze({symbol:'TEST',history:history(),historyPriceBasisEvidence:evidence},{today:'20261103'});
+  assert.equal(r.code,'DATA_BASIS_UNVERIFIED');
+  assert.equal(r.stop,null);
+  assert.equal(r.target,null);
+  assert.equal(r.riskPerShare,null);
+  assert.equal(r.dataBasisStatus,'UNKNOWN_NOT_ATTESTED');
+  assert.ok(Number.isFinite(r.sma20));
+  assert.ok(Number.isFinite(r.rsi));
+  assert.match(r.reason,/صرفاً تشخیصی/);
+ }
 });
 test('decision engine rejects stale history instead of generating a signal',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history().map(x=>({...x,date:new Date(Date.UTC(+x.date.slice(0,4),+x.date.slice(4,6)-1,+x.date.slice(6,8)-33)).toISOString().slice(0,10).replaceAll('-','')}))},{today:'20261103'}),/قدیمی/);});
 test('decision engine rejects insufficient history and invalid ordering',()=>{assert.throws(()=>api.analyze({symbol:'TEST',history:history(40)},{today:'20261103'}),/۶۰/);const h=history();h[20].date=h[19].date;assert.throws(()=>api.analyze({symbol:'TEST',history:h},{today:'20261103'}),/مرتب/);});
