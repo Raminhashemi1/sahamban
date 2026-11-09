@@ -5,7 +5,7 @@ const {verifiedUrl}=require('./codal-remote-byte-corroboration-v152.cjs');
 const MAX_METADATA_BYTES=256*1024;
 function fail(reason){return {status:'CODAL_METADATA_INSUFFICIENT',reason,
  originVerified:false,figuresVerified:false,entryEligible:false,tradingSignalsEnabled:false};}
-function tokenFromUrl(value,key){
+function parseCodalDocumentUrl(value,key){
  if(typeof value!=='string'||!value||value.length>2048)return null;
  try{
   const u=new URL(value,'https://www.codal.ir/');
@@ -13,10 +13,18 @@ function tokenFromUrl(value,key){
    u.username||u.password||u.port||u.hash)return null;
   if(key==='LetterSerial'&&!/^\/Reports\/[A-Za-z0-9._/-]+\.aspx$/i.test(u.pathname))return null;
   if(key==='hs'&&!/^(?:\/DownloadFile\.aspx|\/Reports\/DownloadFile\.aspx)$/i.test(u.pathname))return null;
+  const keys=key==='hs'?new Set(['hs','ft','let']):new Set(['LetterSerial','rt','let','ct','ft']);
+  if([...u.searchParams.keys()].some(k=>!keys.has(k)||u.searchParams.getAll(k).length!==1))return null;
   if(u.searchParams.getAll(key).length!==1)return null;
   const token=u.searchParams.get(key);
-  return token&&/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(token)?token:null;
+  if(!token||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(token))return null;
+  const params=[...u.searchParams.entries()].sort(([a],[b])=>a.localeCompare(b));
+  return {pathname:u.pathname.toLowerCase(),token,params:JSON.stringify(params)};
  }catch{return null;}
+}
+function matchingDocumentUrl(value,expected,key){
+ const source=parseCodalDocumentUrl(value,key),selected=parseCodalDocumentUrl(expected,key);
+ return !!source&&!!selected&&source.pathname===selected.pathname&&source.params===selected.params;
 }
 function corroborateLetter(letters,identity){
  if(!Array.isArray(letters)||letters.length!==1)return fail('SEARCH_RESULT_NOT_UNIQUE');
@@ -25,11 +33,16 @@ function corroborateLetter(letters,identity){
  const tracing=String(letter.TracingNo);
  if(tracing!==identity.filing.tracingNo||letter.Symbol!==identity.filing.symbol)
   return fail('SEARCH_FILING_IDENTITY_MISMATCH');
- if(typeof letter.Url!=='string'||tokenFromUrl(letter.Url,'LetterSerial')!==identity.letterSerial)
-  return fail('SEARCH_LETTER_SERIAL_MISMATCH');
  const expected=new URL(identity.url);
- if(expected.pathname.toLowerCase().endsWith('downloadfile.aspx')&&
-  tokenFromUrl(letter.PdfUrl,'hs')!==identity.letterSerial)return fail('SEARCH_PDF_TOKEN_MISMATCH');
+ const download=expected.pathname.toLowerCase().endsWith('downloadfile.aspx');
+ const reportToken=parseCodalDocumentUrl(letter.Url,'LetterSerial');
+ if(!reportToken||reportToken.token!==identity.letterSerial)
+  return fail('SEARCH_LETTER_SERIAL_MISMATCH');
+ if(download){
+  if(!matchingDocumentUrl(letter.PdfUrl,identity.url,'hs'))
+   return fail('SEARCH_PDF_URL_MISMATCH');
+ }else if(!matchingDocumentUrl(letter.Url,identity.url,'LetterSerial'))
+  return fail('SEARCH_REPORT_URL_MISMATCH');
  if(typeof letter.PublishDateTime!=='string'||!letter.PublishDateTime.startsWith(identity.filing.published))
   return fail('SEARCH_PUBLICATION_DATE_MISMATCH');
  return {status:'CODAL_SEARCH_METADATA_MATCH_REVIEW_ONLY',
