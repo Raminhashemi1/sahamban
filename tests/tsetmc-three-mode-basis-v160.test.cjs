@@ -53,7 +53,10 @@ test('rejects invalid, duplicate, impossible dates and non-positive prices',()=>
   {dailyHistory:[...base.dailyHistory,base.dailyHistory[0]]},
   {noneAdjusted:base.noneAdjusted.map((x,i)=>i?x:{...x,date:20260230})},
   {capitalPlusDividends:base.capitalPlusDividends.map((x,i)=>i?x:{...x,close:0})},
-  {capitalOnly:base.capitalOnly.map((x,i)=>i?x:{...x,date:'14050101'})}
+  {capitalOnly:base.capitalOnly.map((x,i)=>i?x:{...x,date:'14050101'})},
+  {dailyHistory:base.dailyHistory.map((x,i)=>i?x:{...x,close:'1000'})},
+  {noneAdjusted:base.noneAdjusted.map((x,i)=>i?x:{...x,close:true})},
+  {capitalOnly:base.capitalOnly.map((x,i)=>i?x:{...x,close:null})}
  ];
  for(const patch of badCases)assert.equal(classify({...fixture(),...patch}).status,'UNKNOWN_NOT_ATTESTED');
 });
