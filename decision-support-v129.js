@@ -27,7 +27,17 @@
   else if(score<40){action='فعلاً عدم ورود',code='AVOID',reason='امتیاز شروط روند و مومنتوم پایین است؛ برای ورود عجله نکنید.';}
   const stop=priorLow,riskPerShare=last-stop,target=last+2*riskPerShare;
   const reasons=[['روند صعودی (قیمت > SMA20 > SMA50)',trend],['RSI در بازه ۵۰ تا ۶۸',healthyRsi],['MACD مثبت و رو به تقویت',positiveMacd],['بازده ۲۰ جلسه مثبت',positiveMomentum],['شکست سقف ۲۰ جلسه قبل',breakout]];
-  return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,action,code,reason,stop:stop<last?stop:null,target:stop<last?target:null,riskPerShare:stop<last?riskPerShare:null,historyPriceBasisEvidence:q.historyPriceBasisEvidence??'NOT_ESTABLISHED',reasons};
+  // Fail closed at the engine boundary, not only in individual screen wrappers.
+  // Indicator values remain descriptive; no entry/exit classification or risk levels survive.
+  const basisAttested=q.historyPriceBasisEvidence==='INDEPENDENTLY_ATTESTED';
+  return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,
+   action:basisAttested?action:'عدم صدور سیگنال؛ مبنای تعدیل تاریخچه تأیید نشده',
+   code:basisAttested?code:'DATA_BASIS_UNVERIFIED',
+   reason:basisAttested?reason:'مبنای تعدیل تاریخچه قیمت مستقلاً تأیید نشده است؛ اندیکاتورها صرفاً تشخیصی‌اند.',
+   stop:basisAttested&&stop<last?stop:null,target:basisAttested&&stop<last?target:null,
+   riskPerShare:basisAttested&&stop<last?riskPerShare:null,
+   dataBasisStatus:basisAttested?'INDEPENDENTLY_ATTESTED':'UNKNOWN_NOT_ATTESTED',
+   historyPriceBasisEvidence:q.historyPriceBasisEvidence??'NOT_ESTABLISHED',reasons};
  }
  function sizePosition({capital,riskPercent,entry,stop}){
   for(const [k,v] of Object.entries({capital,riskPercent,entry,stop}))
