@@ -322,6 +322,24 @@
   }
  }
  function statusMessage(message){const node=$('technicalStatusV50');if(node)node.textContent=message;}
+ // A daily history response contains pClosing and dEven, but does not
+ // independently attest whether historical prices are already adjusted.
+ // Never promote current-price agreement to raw-price provenance.
+ function labelUnverifiedHistoricalBasis(quote){
+  const insCode=String(quote.insCode??'');
+  if(!/^\\d{8,25}$/.test(insCode))throw Error('شناسه ابزار برای منشأ تاریخچه نامعتبر است.');
+  return {...quote,
+   historyPriceBasis:'UNKNOWN_NOT_ATTESTED',
+   historyPriceBasisEvidence:'NOT_ESTABLISHED',
+   capitalAdjustmentAllowed:false,
+   historicalPriceSource:{
+    provider:'TSETMC',
+    endpoint:'/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0',
+    dateField:'dEven',priceField:'pClosing',
+    dateCalendar:'GREGORIAN_YYYYMMDD',
+    adjustmentBasis:'UNKNOWN_NOT_ATTESTED'
+   }};
+ }
  // Independent historical-series flow: does not require today's quote to pass freshness checks.
  async function getHistoricalOne(holding){
   const search=await fetchJson('/Instrument/GetInstrumentSearch/'+encodeURIComponent(holding.symbol));
@@ -366,7 +384,7 @@
     if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
     const historyStartDate=history[0].date,historyEndDate=history[history.length-1].date;
     const diagnosticCandidate={...enrichedCandidate,historyStartDate,historyEndDate,historyCount:history.length};
-    return {ok:true,quote:{symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode},candidate:diagnosticCandidate};
+    return {ok:true,quote:labelUnverifiedHistoricalBasis({symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode}),candidate:diagnosticCandidate};
    }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);
