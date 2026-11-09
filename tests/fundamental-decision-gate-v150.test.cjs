@@ -181,5 +181,5 @@ test('main fundamental gate reports DPS only after record-date capital-action sh
  }},'ونوین',{dividendCapitalReconciliation:reconciliation});
  assert.equal(mismatch.dpsStatus,'INSUFFICIENT_EVIDENCE');
  assert.equal(mismatch.dpsRialPerShare,null);
- assert.ok(mismatch.dpsErrors.includes('DPS_SHARE_RECONCILIATION_REQUIRED'));
+ assert.ok(mismatch.dpsErrors.includes('DIVIDEND_SHARE_RECONCILIATION_REQUIRED'));
 });
