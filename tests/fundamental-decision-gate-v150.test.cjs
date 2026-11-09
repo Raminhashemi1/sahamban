@@ -20,7 +20,7 @@ test('audited same-symbol evidence with positive attributable EPS passes minimum
  assert.equal(r.epsRialPerShare,20);
  assert.equal(r.auditStatus,'AUDITED');
  assert.equal(r.statementBasis,'CONSOLIDATED');
- assert.match(r.note,/does not establish fair value/);
+ assert.match(r.note,/No valuation or investment recommendation/);
 });
 test('unaudited evidence cannot pass the entry prerequisite',()=>{
  const a=sample();a.audit_status='UNAUDITED';
