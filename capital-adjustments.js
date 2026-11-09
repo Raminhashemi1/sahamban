@@ -95,7 +95,7 @@ function reconcileDividendRecordDateShares({symbol,expectedSymbol,openingShares,
   if(result?.status!=='CAPITAL_ADJUSTMENT_READY_FOR_REVIEW'||!result.adjustment)return fail('UNVERIFIED_CAPITAL_ACTION_IN_DIVIDEND_SEQUENCE');
   const a=result.adjustment,ordinal=jalaliOrdinal(a.effectiveDate);
   if(ordinal===null||ordinal<opening||ordinal>record||!positiveSafeInteger(a.preActionShares)||!positiveSafeInteger(a.postActionShares)||
-   !a.source||!/^\\d{1,20}$/.test(String(a.source.tracingNo))||typeof a.source.row!=='string'||!a.source.row.trim()||!Number.isInteger(a.source.page)||a.source.page<1)
+   !a.source||!/^\d{1,20}$/.test(String(a.source.tracingNo))||typeof a.source.row!=='string'||!a.source.row.trim()||!Number.isInteger(a.source.page)||a.source.page<1)
    return fail('INVALID_DIVIDEND_ACTION_DATE_COUNTS_OR_PROVENANCE');
   actions.push({...a,ordinal});
  }
