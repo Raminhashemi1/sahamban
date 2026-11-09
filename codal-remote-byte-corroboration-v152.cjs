@@ -15,8 +15,10 @@ function verifiedUrl(filing){
  if(u.protocol!=='https:'||!['codal.ir','www.codal.ir'].includes(u.hostname.toLowerCase())||
   u.username||u.password||u.port||u.hash)return null;
  if(!(/^\/Reports\/[A-Za-z0-9._/-]+\.aspx$/i.test(u.pathname)||/^\/DownloadFile\.aspx$/i.test(u.pathname)))return null;
+ // Reject parameter smuggling; this verifier supports only the exact filing serial.
+ if([...u.searchParams.keys()].some(key=>key!=='LetterSerial'))return null;
  const serial=u.searchParams.getAll('LetterSerial');
- if(serial.length!==1||!/^[0-9]{1,20}$/.test(serial[0])||serial[0]!==safe.tracingNo)return null;
+ if(u.searchParams.size!==1||serial.length!==1||!/^[0-9]{1,20}$/.test(serial[0])||serial[0]!==safe.tracingNo)return null;
  return {url:u.href,filing:safe};
 }
 async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subtle=webcrypto.subtle}={}){
@@ -32,10 +34,14 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
    cache:'no-store',credentials:'omit',headers:{Accept:'application/pdf,application/octet-stream,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
    signal:AbortSignal.timeout(12000)});
  }catch{return fail('REMOTE_FETCH_FAILED');}
- if(!response||response.status!==200||!response.body||typeof response.body.getReader!=='function')
+ if(!response||response.status!==200||response.redirected===true||!response.body||typeof response.body.getReader!=='function')
   return fail('REMOTE_HTTP_STATUS_OR_STREAM_UNAVAILABLE');
+ // A caller-provided fetch function must still disclose the actual response URL.
+ // Never claim corroboration for opaque/unknown or redirected sources.
+ if(typeof response.url!=='string'||response.url!==identity.url)
+  return fail('REMOTE_RESPONSE_URL_MISMATCH');
  const declared=response.headers?.get?.('content-length');
- if(declared!==null&&declared!==undefined&&(!/^\d+$/.test(declared)||Number(declared)>MAX_BYTES))
+ if(declared!==null&&declared!==undefined&&(!/^\d+$/.test(declared)||Number(declared)>Math.min(MAX_BYTES,local.fileSizeBytes)))
   return fail('REMOTE_CONTENT_LENGTH_INVALID');
  const reader=response.body.getReader(),digest=createHash('sha256');
  let size=0,head=Buffer.alloc(0);
@@ -45,7 +51,7 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
    if(done)break;
    if(!(value instanceof Uint8Array)||value.length===0)throw Error('INVALID_STREAM');
    size+=value.length;
-   if(size>MAX_BYTES)throw Error('TOO_LARGE');
+   if(size>MAX_BYTES||size>local.fileSizeBytes)throw Error('TOO_LARGE');
    if(head.length<8)head=Buffer.concat([head,Buffer.from(value.subarray(0,8-head.length))]);
    digest.update(value);
   }
