@@ -5,6 +5,7 @@ function history(n=250){
  const d=Date.UTC(2026,10,3);
  return Array.from({length:n},(_,i)=>{const day=new Date(d-(n-1-i)*86400000);return {date:day.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
 }
+test('holdout refuses unverified or missing historical price basis',()=>{assert.throws(()=>evaluate({symbol:'x',history:history(),historyPriceBasisEvidence:'NOT_ESTABLISHED'}),/مبنای تعدیل/);assert.throws(()=>evaluate({symbol:'x',history:history()}),/مبنای تعدیل/);});
 test('chronological 60/40 split only uses history available on signal date',()=>{
  const seen=[],old=globalThis.SahambanDecisionV129;
  globalThis.SahambanDecisionV129={analyze(q,{today}){const last=q.history.at(-1);assert.equal(today,last.date);seen.push(q.history.length);return {code:q.history.length%17===0?'ENTRY_CANDIDATE':'WAIT'};}};
