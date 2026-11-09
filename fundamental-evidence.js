@@ -50,9 +50,15 @@ function checkFinancialEvidence(data,expectedSymbol){
  if(!/^\d{1,20}$/.test(tracing)||BigInt(tracing||'0')<=0n)errors.push('INVALID_TRACING');
  const url=safeReportUrl(data.report_url);
  if(!url)errors.push('INVALID_REPORT_URL');
- else {
+ else{
+  // CODAL TracingNo is numeric; LetterSerial is an independent opaque token.
+  // User-entered values are consistency checks, not independent proof of origin.
   const reportSerial=new URL(url).searchParams.get('LetterSerial');
-  if(!reportSerial||toAsciiDigits(reportSerial).trim()!==tracing)errors.push('REPORT_TRACING_MISMATCH');
+  const declared=data.letter_serial;
+  if(typeof declared!=='string'||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(declared))
+   errors.push('MISSING_OR_INVALID_LETTER_SERIAL');
+  else if(!reportSerial||reportSerial!==declared)
+   errors.push('REPORT_LETTER_SERIAL_MISMATCH');
  }
  const pub=day(data.publication_date),end=day(data.period_end);
  if(!pub||!end)errors.push('INVALID_DATES');
