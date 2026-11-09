@@ -56,6 +56,14 @@ test('bounded market sample suppresses signal, audit and holdout until basis is 
  assert.equal(ranking.rank(out.results).ranked.length,0);
 });
 
+test('portfolio historical quote source explicitly propagates unknown TSETMC price basis',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'..','portfolio-pilot-v61.js'),'utf8');
+ assert.match(source,/historyPriceBasis:'UNKNOWN_NOT_ATTESTED'/);
+ assert.match(source,/historyPriceBasisEvidence:'NOT_ESTABLISHED'/);
+ assert.match(source,/capitalAdjustmentAllowed:false/);
+ assert.match(source,/provider:'TSETMC'/);
+ assert.match(source,/priceField:'pClosing'/);
+});
 test('decision UI fails closed for missing and explicitly unknown history basis',()=>{
  const source=fs.readFileSync(path.join(__dirname,'..','decision-support-ui-v129.js'),'utf8');
  assert.match(source,/function guardUnattestedHistoryBasis\(report,quote\)/);
