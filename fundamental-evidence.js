@@ -175,7 +175,7 @@ function calculateDPS(data,expectedSymbol){
   note:'DPS is a gross arithmetic derivation from AGM-approved total cash dividends and record-date eligible shares. It is not independently verified against CODAL, does not include investor-specific tax or withholding, and is not a trading signal.'};
 }
 
-function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,maxMarketAgeDays=7,adjustedShareBasis}={}){
+function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfDate,maxMarketAgeDays=7,adjustedShareBasis,valuationShareBasis}={}){
  const checked=checkFinancialEvidence(data,expectedSymbol);
  if(checked.status!=='READY_FOR_REVIEW')return {status:'INSUFFICIENT_EVIDENCE',errors:checked.errors,ratios:null,flags:[]};
  const fields=Object.fromEntries(checked.fields.map(x=>[x.name,x]));
@@ -252,13 +252,24 @@ function calculateFinancialRatios(data,expectedSymbol,{marketPriceEvidence,asOfD
    flags.push('VALUATION_MULTIPLES_WITHHELD_STALE_OR_UNVERIFIED_PRICE');
   }else{
    const eps=calculateEPS(data,expectedSymbol,adjustedShareBasis);
-   const bookValuePerShare=returnEquity!==null&&shares?returnEquity/shares:null;
-   const salesPerShare= revenue!==null&&shares?revenue/shares:null;
+   // P/B and P/S require an explicitly dated market-date share basis; EPS uses its own denominator.
+   const basis=valuationShareBasis;
+   const validShareBasis=basis&&typeof basis==='object'&&!Array.isArray(basis)&&
+    normalizeSymbol(basis.symbol)===normalizeSymbol(expectedSymbol)&&
+    Number.isSafeInteger(basis.sharesOutstanding)&&basis.sharesOutstanding>0&&basis.unit==='SHARES'&&
+    marketOrdinal(basis.asOfDate)!==null&&marketOrdinal(basis.asOfDate)===marketOrdinal(price.marketDate)&&
+    typeof basis.sourceRow==='string'&&basis.sourceRow.trim().length>0&&basis.sourceRow.length<=240&&
+    Number.isInteger(basis.sourcePage)&&basis.sourcePage>0&&basis.sourcePage<=99999;
+   const datedShares=validShareBasis?basis.sharesOutstanding:null;
+   const bookValuePerShare=returnEquity!==null&&datedShares?returnEquity/datedShares:null;
+   const salesPerShare=revenue!==null&&datedShares?revenue/datedShares:null;
+   if(!validShareBasis)flags.push('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS');
    valuation={status:'VALUATION_MULTIPLES_READY_FOR_REVIEW',
     pe:eps.status==='EPS_READY_FOR_REVIEW'&&eps.eps.valueRialPerShare>0?price.closeRialPerShare/eps.eps.valueRialPerShare:null,
     pb:bookValuePerShare!==null&&bookValuePerShare>0?price.closeRialPerShare/bookValuePerShare:null,
     ps:salesPerShare!==null&&salesPerShare>0?price.closeRialPerShare/salesPerShare:null,
     marketPriceRialPerShare:price.closeRialPerShare,marketDate:price.marketDate,source:price.source,
+    valuationSharesAsOfDate:validShareBasis?basis.asOfDate:null,valuationSharesSource:validShareBasis?{row:basis.sourceRow,page:basis.sourcePage}:null,
     note:'P/E, P/B and P/S are arithmetic multiples, not intrinsic value estimates or buy/sell thresholds.'};
    if(valuation.pe===null)flags.push('PE_UNAVAILABLE_NON_POSITIVE_OR_UNSUPPORTED_EPS');
    if(valuation.pb===null)flags.push('PB_UNAVAILABLE_NON_POSITIVE_BOOK_VALUE');
