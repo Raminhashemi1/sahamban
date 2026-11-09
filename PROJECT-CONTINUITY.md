@@ -114,9 +114,9 @@ Previously observed successful workflows on an earlier SHA included WebKit mobil
 - [x] Core decision engine has a fail-closed path for unverified historical price basis (code change recorded; re-verify current file).
 - [x] Regression tests added for direct analysis and audit/plan propagation (test additions recorded; exact-head CI still required).
 - [x] Evidence requirements and release gates documented in `DAY2-HISTORY-BASIS-EVIDENCE-GATES.md`.
-- [ ] Diagnose and fix `prospective-signal-ledger.test.cjs` failure if it remains on current head.
-- [ ] Run all 11 CI workflows successfully on one exact final PR head.
-- [ ] Review v129 → v133 integration end-to-end and prove no ranking/holdout/audit/UI path bypasses the guard.
+- [x] Diagnosed and fixed `prospective-signal-ledger.test.cjs` failure and subsequent `fixed-rule-evaluator` + audit export failures; exact-head Smoke green at `5dbccc48`.
+- [x] 11/11 workflows successful on exact **code head** `5dbccc48846354592cee756798f67da24a3b0ca6` (documentation commits afterward require rechecking exact newest head).
+- [x] Verified synthetic fail-closed integration paths v129→v133, holdout/audit/UI through Smoke and Chromium on code head `5dbccc48`; source-authenticated production validation remains a separate gate.
 - [ ] Obtain and retain real TSETMC responses for modes 0, 1, 2 and the daily-history endpoint, with capture time, exact instrument, endpoint/mode, raw artifact digest and documented source provenance.
 - [ ] Independently cross-check representative real corporate actions (effective date, capital/share-count continuity, cash dividend/ex-date, units and ratios) against primary records.
 - [ ] Implement a trusted evidence-verification boundary that binds approval to instrument, date coverage, exact dataset digest, mode and reviewer record; a plain caller-supplied string is insufficient.
@@ -127,7 +127,7 @@ Do not mark Day 2 complete until every mandatory item is either completed with e
 
 ## 9. Next action — do only this first
 
-**Diagnose the Smoke CI failure on the current PR head.**
+**Historical instruction (completed on code SHA `5dbccc48`): Diagnose the Smoke CI failure.**
 
 Steps:
 1. Fetch the live PR #164 head SHA and current status.
@@ -182,3 +182,11 @@ Append a new dated entry below at the end of every work session:
 - User supplied the original five-day plan as a screenshot, subsequently transcribed in `MASTER-PLAN.md` at `ab58e6817148645051a52cc601c0b251301a4ee8`.
 - Preserved five-day order. PR164 is identified as a Day 2 subtask rather than a redefinition of the entire day.
 - No automatic promotion of day completion, merge or deployment. Exact-head CI and the Smoke failure remain active gates.
+
+
+#### 2026-11-09 — Day 2 software closeout, accurate carryover to Day 3
+- Three newly recorded fixes: `23bb57ffe93e7d949d348360f295f90fe3b756ad` (prospective ledger fixtures and new unattested regression); `959f69926d068740bb6defcd403187880f7d92fd` (fixed-rule-evaluator tests and unattested regression); `5dbccc48846354592cee756798f67da24a3b0ca6` (decision-plan accepts blocked diagnostic codes for safe audit export).
+- GitHub Actions **11/11 SUCCESS at code SHA `5dbccc48846354592cee756798f67da24a3b0ca6`**. Smoke/browser: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555862 ; WebKit mobile: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555936 ; portfolio mobile: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555869 . Recheck live exact-head after subsequent docs changes.
+- User requested ending Day 2 work and continuing the remaining development tomorrow. The **software integration and regression test stage** is closed out. The *independent real-data verification and release authorization* gates remain open and have NOT been waived. No PR merge, deployment, trading or holdings modification occurred.
+- Aligned to original master plan: Day 3 = real market data testing, buy/sell calculation checks and major bug fixes. First task tomorrow is independent capture and provenance validation for TSETMC adjustment modes 0/1/2 and the daily close basis, without unlocking financial signals.
+- The earlier section 9 Smoke diagnosis instructions are historical and are superseded by the latest HANDOFF.md. The final technical code commit green status must not be attributed to later documentation SHAs without new verification.
