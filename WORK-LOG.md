@@ -41,3 +41,16 @@
 - Exact-head CI observed: 9 success, 1 failure (Sahamban smoke tests: https://github.com/Raminhashemi1/sahamban/actions/runs/42682075393), 1 in progress (Portfolio pilot mobile safety: https://github.com/Raminhashemi1/sahamban/actions/runs/42682075237). This observation becomes historical after this log commit; verify new head live.
 - Readback checks PASSED in the current chat. **An actual brand-new conversation has not yet been tested**, and its external GitHub access must still be verified.
 - No roadmap reconstruction, code changes, merge, deployment or market-data attestation. Next user input required for roadmap completion: the original five-day plan text or a source reference.
+
+
+## 2026-11-09 — restoration of the original five-day roadmap
+
+- Source: user-supplied screenshot of the original five-day table in the current conversation.
+- Day 1: review existing capability connections, data validity and unfinished work.
+- Day 2: complete missing connections between analysis engine, ranking and decision assistant.
+- Day 3: real market-data tests, buy/sell calculations and high-priority bug fixes.
+- Day 4: UI completion, mobile tests, security and subscription review.
+- Day 5: final testing and a usable build for pilot users.
+- Updated MASTER-PLAN.md at commit `ab58e6817148645051a52cc601c0b251301a4ee8` without changing the order or inferring completion of any day.
+- Day 2 historical price-basis safeguards/PR164 are a subtask, not a replacement for the complete day-two objective.
+- No code, trades, deployment or merge performed as part of this roadmap restoration.
