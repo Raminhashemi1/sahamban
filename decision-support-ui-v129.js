@@ -88,6 +88,7 @@
   if(fundamentalFile)fundamentalFile.value='';
   if(attestation)attestation.checked=false;
   const actionInput=$('fundamentalCapitalActionsV150');if(actionInput)actionInput.value='';
+   const shareInput=$('fundamentalValuationSharesV150');if(shareInput)shareInput.value='';
   if(fundamentalStatus)fundamentalStatus.textContent='بررسی بنیادی این نشست پاک شد؛ هیچ داده‌ای ذخیره یا ارسال نشده است.';
   if(fundamentalDetail)fundamentalDetail.textContent='';
   if(reports.length)showDetail();
@@ -139,6 +140,13 @@
     options.capitalActions=JSON.parse(actionsText);
     if(!Array.isArray(options.capitalActions))throw Error('رویدادهای سرمایه باید به‌صورت آرایه JSON وارد شوند.');
    }
+   const valuationSharesText=$('fundamentalValuationSharesV150')?.value?.trim();
+   if(valuationSharesText){
+    if(valuationSharesText.length>4096)throw Error('حجم مبنای تعداد سهام بیش از ۴ کیلوبایت است.');
+    const basis=JSON.parse(valuationSharesText);
+    if(!basis||typeof basis!=='object'||Array.isArray(basis))throw Error('مبنای تعداد سهام باید شیء JSON معتبر باشد.');
+    options.valuationShareBasis=basis;
+   }
    const review=window.SahambanFundamentalGateV150.evaluateFundamentalGate(data,expected,options);
    fundamentalReviews.set(norm,review);
    fundamentalStatus.textContent=review.status==='FUNDAMENTAL_REVIEW_READY'?
@@ -155,6 +163,7 @@
     parts.push('بدهی به حقوق مالکانه: '+(rr.liabilitiesToEquity==null?'ناموجود':fmt(rr.liabilitiesToEquity)));
     parts.push('جریان نقد عملیاتی/سود خالص: '+(rr.operatingCashFlowToNetIncome==null?'ناموجود':fmt(rr.operatingCashFlowToNetIncome)));
     parts.push('P/E: '+(v.pe==null?'ناموجود':fmt(v.pe))+' | P/B: '+(v.pb==null?'ناموجود':fmt(v.pb))+' | P/S: '+(v.ps==null?'ناموجود':fmt(v.ps)));
+    if(v.valuationSharesAsOfDate)parts.push('مبنای تعداد سهام P/B و P/S: '+v.valuationSharesAsOfDate+' | ردیف سند: '+(v.valuationSharesSource?.row||'ناموجود'));
     if(review.financialRatios.flags?.length)parts.push('پرچم‌های بررسی: '+review.financialRatios.flags.join('، '));
    }
    fundamentalDetail.textContent='نماد: '+review.symbol+' | دوره: '+(review.periodEnd||'نامشخص')+' | مبنا: '+(review.statementBasis||'نامشخص')+
@@ -171,6 +180,7 @@
  }
  fundamentalFile?.addEventListener('change',()=>invalidateFundamentalReview('فایل شواهد تغییر کرد؛ بررسی قبلی باطل شد و اجرای مجدد لازم است.'));
  $('fundamentalCapitalActionsV150')?.addEventListener('input',()=>invalidateFundamentalReview('آرایه رویدادهای سرمایه تغییر کرد؛ بررسی قبلی باطل شد و اجرای مجدد لازم است.'));
+ $('fundamentalValuationSharesV150')?.addEventListener('input',()=>invalidateFundamentalReview('مبنای تاریخ‌دار تعداد سهام تغییر کرد؛ بررسی قبلی باطل شد.'));
  attestation?.addEventListener('change',()=>{if(!attestation.checked)invalidateFundamentalReview('تأیید اصل اسناد برداشته شد؛ دروازه بنیادی مسدود است.');});
  $('fundamentalReviewRunV150')?.addEventListener('click',runFundamentalReview);
  $('fundamentalReviewClearV150')?.addEventListener('click',clearFundamentalReview);
@@ -179,5 +189,6 @@
   const evidenceFile=$('fundamentalEvidenceFileV150');if(evidenceFile)evidenceFile.value='';
   const evidenceAttestation=$('fundamentalOriginalAttestationV150');if(evidenceAttestation)evidenceAttestation.checked=false;
   const capitalInput=$('fundamentalCapitalActionsV150');if(capitalInput)capitalInput.value='';
+  const valuationInput=$('fundamentalValuationSharesV150');if(valuationInput)valuationInput.value='';
   table.replaceChildren();detail.replaceChildren();select.replaceChildren();summary.textContent='گزارش‌های قبلی با دریافت داده جدید پاک شدند؛ تحلیل مجدد لازم است.';if(exportButton)exportButton.disabled=true;status.textContent='تاریخچه تأییدشده جدید دریافت شد. گزارش قبلی معتبر نیست؛ «تحلیل همه نمادها» را دوباره بزنید.';}});
 })();
