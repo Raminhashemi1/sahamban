@@ -338,3 +338,23 @@ test('v152 rejects contradictory originalUrl and reportUrl before local file rea
  assert.equal(result.entryEligible,false);
  assert.ok(verifiedUrl({...filing,reportUrl:correct}));
 });
+
+test('v152 starts the timeout before local file inspection and bounds a stalled File read',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',
+  published:'۱۴۰۵/۰۸/۱۳',reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ let networkCalls=0;
+ const file={name:'stalled.pdf',size:20,arrayBuffer:()=>new Promise(()=>{})};
+ const keepAlive=setTimeout(()=>{},500);
+ try{
+  const start=Date.now();
+  const result=await compareRemoteCodalFile(file,filing,{
+   timeoutMs:45,fetcher:async()=>{networkCalls++;throw Error('network must not be reached');}
+  });
+  assert.equal(result.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+  assert.equal(result.reason,'LOCAL_FILE_INSPECTION_DEADLINE_EXCEEDED');
+  assert.equal(networkCalls,0);
+  assert.equal(result.entryEligible,false);
+  assert.ok(Date.now()-start<250,'local file inspection escaped deadline');
+ }finally{clearTimeout(keepAlive);}
+});
