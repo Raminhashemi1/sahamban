@@ -21,6 +21,8 @@ The first response in a fresh session must briefly report the reviewed `main` SH
 
 `AGENTS.md` is the agent-facing instruction entry point; `START_HERE.md` is the human-readable entry point. Both point to this durable register. The README links to the entry point.
 
+**Before PR #163 merges:** `AGENTS.md`, `START_HERE.md`, and this register are proposed files on branch `docs/master-progress-audit-20261109`, not yet present on `main`. A new session must locate PR #163, verify its current state/head SHA, and read the proposed files from that verified branch if they are absent from `main`. Do not mistake passing checks for merge or claim every ordinary ChatGPT conversation automatically loads repository instructions.
+
 ## 1. Mandatory change-control rule
 
 Before any future Sahamban change:
@@ -126,14 +128,25 @@ This list is a milestone index derived from PR titles/descriptions, not a substi
 6. Audit CODAL PRs #152–#155 against merged #143/#146/#148/#150/#151 and map any remaining gaps.
 7. Continue module-by-module source and deployment audit, recording verified callers, data flows, storage writes, tests, CI and deployment status.
 
+## 8A. Follow-up source and CI inspection (2026-11-09)
+
+- `main` was rechecked at commit `48853697ae7df9e20b75dffdb1d957d9563ca9a2` via GitHub commit search and branch compare; PR #163 was 5 commits ahead and 0 behind that baseline before this follow-up edit.
+- PR #163 remains **open, Draft, unmerged**. On its prior head `bb54b4460b0fa621ec39f9ddba2bd5ab9892df20`, all 11 returned PR workflow runs were completed successfully. New documentation commits require a new head/CI check; do not carry over the 11/11 claim to unverified commits.
+- The exact adapter source `tse-client-three-mode-adapter-v161.js` exists on `main` (blob `158cb94b9df35ae1232c2930bac22acbf4c92128`). PR #161 changes only `.github/workflows/smoke-tests.yml` and `tests/tse-client-three-mode-adapter-v161.test.cjs`, not the adapter source: **do not rebuild the adapter**.
+- `main`'s `index.html` script list does **not** load the adapter, and `portfolio-pilot-v61.js` has no `buildTseClientThreeModeSeries` or adapter reference. This establishes no integration in those inspected entry points; other possible callers or deployments have NOT received an exhaustive audit.
+- PR #157 is open and unmerged. The reviewed diff adds `labelUnverifiedHistoricalBasis` with `historyPriceBasis:'UNKNOWN_NOT_ATTESTED'`, `capitalAdjustmentAllowed:false`, Jalali date labels and tests. On `main`, `getHistoricalOne` still returns `{symbol,marketDate,history,insCode}` without that provenance guard. **Do not mark main's daily history as proven raw**. Assess porting the existing #157 change; do not invent a second guard.
+- `main`'s smoke workflow has neither the #157 basis-guard regression nor the #161 adapter regression; both are in their separate unmerged PRs.
+- **Next engineering audit:** inspect #157 against the current pilot and its callers, and #161 against any remaining entry points/deployment bundles; prepare an integration/dependency proposal, without merging or changing finance flows without approval.
+
 ## 9. Session handoff record
 
 - Last audited `main` baseline: `48853697ae7df9e20b75dffdb1d957d9563ca9a2` (2026-11-09).
 - Current documentation work branch: `docs/master-progress-audit-20261109`.
 - Current documentation PR: #163 (draft; not merged at the time this register was updated).
-- Exact next step after this documentation handoff: review and merge PR #163 only after user approval; then resume the ordered audit actions in section 8, starting with the dependency graph for PRs #152–#162. Re-check `main` and PR states first because they may have changed.
+- Exact next step: check the latest PR #163 head and CI after the documentation updates. Review and merge #163 **only with explicit user approval**. Then continue the already-started source audit of #157/#161 and the wider #152–#162 dependency graph; first re-check `main`, PR states, and deployment.
 
 ## 10. Change log
 
 - 2026-11-09: Initial PR/repository inventory created from GitHub history and current main baseline. No production code, data, PR state, or deployment was changed during this audit.
 - 2026-11-09: Added a cross-session bootstrap protocol in `AGENTS.md`, a human entry point in `START_HERE.md`, and a README pointer. The protocol requires every fresh conversation/context reset to re-read the register and verify GitHub before continuing.
+- 2026-11-09: Rechecked PR #163 CI at previous head, verified adapter source on `main`, inspected its two main app entry points and #157's unmerged basis guard; documented the pre-merge branch fallback to prevent lost context before documentation is merged.
