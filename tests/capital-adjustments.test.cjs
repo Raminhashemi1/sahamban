@@ -264,3 +264,33 @@ test('rights issue rejects cum-rights prices dated on or after the effective dat
  a.cum_rights_price_date='۱۴۰۵/۰۸/۰۱';
  assert.ok(calculateCapitalAdjustment(a,'ونوین').errors.includes('INVALID_OR_STALE_CUM_RIGHTS_PRICE_DATE'));
 });
+
+test('weighted-average EPS chain rejects the same CODAL source row reused as a second dated action',()=>{
+ const firstData=sample();firstData.effective_date='۱۴۰۵/۰۴/۰۱';
+ firstData.pre_action_shares=1000000;firstData.post_action_shares=1500000;
+ const duplicateData={...firstData,effective_date:'۱۴۰۵/۰۷/۰۱',
+  pre_action_shares:1500000,post_action_shares:1800000};
+ const first=calculateCapitalAdjustment(firstData,'ونوین');
+ const duplicate=calculateCapitalAdjustment(duplicateData,'ونوین');
+ const result=calculateMultiActionWeightedAverageShares([first,duplicate],
+  {periodStart:'۱۴۰۵/۰۱/۰۱',periodEnd:'۱۴۰۵/۱۲/۲۹'});
+ assert.equal(result.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(result.errors.includes('DUPLICATE_CAPITAL_ACTION_SOURCE'));
+});
+
+test('DPS record-date reconciliation rejects a duplicated source row even if its date and share chain are altered',()=>{
+ const {reconcileDividendRecordDateShares}=require('../capital-adjustments.js');
+ const firstData=sample();firstData.effective_date='۱۴۰۵/۰۸/۰۵';
+ const duplicateData={...firstData,effective_date:'۱۴۰۵/۰۸/۱۰',
+  pre_action_shares:1500000,post_action_shares:2000000};
+ const first=calculateCapitalAdjustment(firstData,'ونوین');
+ const duplicate=calculateCapitalAdjustment(duplicateData,'ونوین');
+ const result=reconcileDividendRecordDateShares({
+  symbol:'ونوین',expectedSymbol:'ونوین',openingShares:1000000,
+  openingDate:'۱۴۰۵/۰۸/۰۱',recordDate:'۱۴۰۵/۰۸/۱۵',
+  openingSource:{row:'سهام ابتدای دوره',page:2},
+  capitalActionResults:[first,duplicate],reportedEligibleShares:2000000
+ });
+ assert.equal(result.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(result.errors.includes('DUPLICATE_CAPITAL_ACTION_SOURCE'));
+});
