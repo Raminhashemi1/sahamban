@@ -5,7 +5,7 @@ function history(n=250){
  const d=Date.UTC(2026,10,3);
  return Array.from({length:n},(_,i)=>{const day=new Date(d-(n-1-i)*86400000);return {date:day.toISOString().slice(0,10).replaceAll('-',''),close:1000+i*2};});
 }
-test('holdout refuses unverified or missing historical price basis',()=>{assert.throws(()=>evaluate({symbol:'x',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',historyPriceBasisEvidence:'NOT_ESTABLISHED'}),/مبنای تعدیل/);assert.throws(()=>evaluate({symbol:'x',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/مبنای تعدیل/);});
+test('holdout refuses unverified or missing historical price basis',()=>{assert.throws(()=>evaluate({symbol:'x',history:history(),historyPriceBasisEvidence:'NOT_ESTABLISHED'}),/مبنای تعدیل/);assert.throws(()=>evaluate({symbol:'x',history:history()}),/مبنای تعدیل/);});
 test('chronological 60/40 split only uses history available on signal date',()=>{
  const seen=[],old=globalThis.SahambanDecisionV129;
  globalThis.SahambanDecisionV129={analyze(q,{today}){const last=q.history.at(-1);assert.equal(today,last.date);seen.push(q.history.length);return {code:q.history.length%17===0?'ENTRY_CANDIDATE':'WAIT'};}};
@@ -28,8 +28,8 @@ test('holdout fails closed on too-short, unordered or malformed histories',()=>{
  try{
   assert.throws(()=>evaluate({symbol:'نماد',history:history(150),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/۲۰۰/);
   const duplicate=history();duplicate[40].date=duplicate[39].date;
-  assert.throws(()=>evaluate({symbol:'نماد',history:duplicate}),/نامعتبر/);
-  const zero=history();zero[70].close=0;assert.throws(()=>evaluate({symbol:'نماد',history:zero}),/نامعتبر/);
+  assert.throws(()=>evaluate({symbol:'نماد',history:duplicate,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/نامعتبر/);
+  const zero=history();zero[70].close=0;assert.throws(()=>evaluate({symbol:'نماد',history:zero,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/نامعتبر/);
   assert.throws(()=>evaluate({symbol:'نماد',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'},{costPct:8}),/بین صفر/);
   assert.throws(()=>evaluate({symbol:'نماد',history:history(),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'},{trainingShare:.8}),/۶۰/);
  }finally{globalThis.SahambanDecisionV129=old;}
