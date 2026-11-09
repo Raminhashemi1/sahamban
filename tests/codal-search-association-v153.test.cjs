@@ -102,10 +102,10 @@ test('v153 requires the complete CODAL report URL, not just a matching LetterSer
   {...letter(),Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&rt=3&let=6&ct=0&ft=-1'},
   {...letter(),Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0&ft=-1&extra=1'}
  ];
- for(const bad of cases){
+ for(const [index,bad] of cases.entries()){
   const result=await checkCodalSearchAssociation(filing(),{fetcher:fetcherFor({Letters:[bad]})});
   assert.equal(result.status,'CODAL_METADATA_INSUFFICIENT');
-  assert.equal(result.reason,'SEARCH_REPORT_URL_MISMATCH');
+  assert.equal(result.reason,index<3?'SEARCH_REPORT_URL_MISMATCH':'SEARCH_LETTER_SERIAL_MISMATCH');
   assert.equal(result.entryEligible,false);
  }
  const reordered={...letter(),Url:'/Reports/Decision.aspx?ft=-1&ct=0&let=6&rt=3&LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3D%3D'};
