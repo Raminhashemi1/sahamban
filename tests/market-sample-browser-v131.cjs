@@ -26,13 +26,13 @@ async function main(){
   await page.locator('#marketSampleRunV131').click();
   await page.waitForFunction(()=>document.querySelectorAll('#marketSampleResultsV131 details').length===6,{timeout:30000});
   assert.equal(requests.length,7);
-  assert.equal(await page.locator('#marketQualifiedRankV133 li').count(),6);
-  assert.match(await page.locator('#marketSampleResultsV131').innerText(),/فاصله حد ضرر/);
+  assert.equal(await page.locator('#marketQualifiedRankV133 li').count(),0,'Unattested price basis must suppress all entry ranks');
+  assert.match(await page.locator('#marketSampleResultsV131').innerText(),/تأیید مستقل مبنای تعدیل تاریخچه الزامی‌اند/);
   assert.equal(requests.filter(x=>x.includes('GetTradeTop')).length,1);
   assert.match(await page.locator('#marketSampleResultsV131').innerText(),/نمونه بررسی‌شده/);
   await page.locator('#marketSampleResultsV131 details summary').first().click();
-  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/بررسی گذشته‌نگر/);
-  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/ارزیابی زمانی مستقل/);
+  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/آزمون گذشته قابل محاسبه نیست/);
+  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/بررسی زمانی مجزا قابل محاسبه نیست/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),storage);
   assert.deepEqual(errors,[]);
   await context.close();
