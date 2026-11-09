@@ -22,7 +22,8 @@
    const line=(label,value,suffix='')=>label+': '+(value===null?'تاریخچه کافی نیست':fmt(value)+suffix);
    result.textContent=[
     'نماد: '+q.symbol,
-    'آخرین تاریخ بازار تأییدشده: '+String(q.marketDate||'نامشخص').replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]),
+    'آخرین تاریخ ثبت‌شده بازار: '+String(q.marketDate||'نامشخص').replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]),
+    q.historyPriceBasisEvidence==='INDEPENDENTLY_ATTESTED'?'مبنای تعدیل قیمت: دارای گواهی مستقل (نیازمند بررسی سند مرجع)':'هشدار: مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ SMA، RSI و MACD فقط تشخیصی‌اند و نباید مبنای سیگنال خرید یا فروش قرار گیرند.',
     'تعداد نقاط تاریخی معتبر: '+fmt(indicators.count),
     ...(q.resolutionNote?[q.resolutionNote]:[]),
     line('قیمت پایانی آخرین روز',indicators.lastClose,' ریال'),
@@ -32,7 +33,7 @@
     line('خط سیگنال MACD (9)',signal,' ریال'),
     line('میله‌نگار MACD',hist,' ریال')
    ].join('\n');
-   status.textContent='تحلیل فقط از تاریخچه قیمت پایانی معتبرِ دریافت‌شده در همین نشست محاسبه شد؛ اطلاعات سبد ذخیره یا ارسال نشده است.';
+   status.textContent='محاسبه اندیکاتورها روی تاریخچه دریافت‌شده انجام شد؛ مبنای تعدیل قیمت تاریخی تا دریافت گواهی مستقل نامشخص است. هیچ داده سبد ذخیره یا ارسال نشد.';
   }catch(e){result.textContent='تحلیل محاسبه نشد: '+e.message;}
  }
  window.addEventListener('sahamban:portfolio-symbols-v50',event=>{
@@ -85,7 +86,7 @@
  window.addEventListener('sahamban:verified-historical-quotes-v50',event=>{
   const incoming=event?.detail?.quotes;
   if(!Array.isArray(incoming)){status.textContent='داده تاریخی دریافت‌شده ساختار معتبر ندارد.';return;}
-  status.textContent='داده قیمت تأییدشده دریافت شد؛ فهرست نمادها در حال به‌روزرسانی است.';
+  status.textContent='تاریخچه دریافت شد؛ اعتبار مبنای تعدیل هنوز احراز نشده است و فهرست نمادها در حال به‌روزرسانی است.';
   quotes=[...new Map(incoming.filter(q=>q&&typeof q.symbol==='string'&&q.symbol.trim()).map(q=>[q.symbol,q])).values()];
   selector.replaceChildren();
   for(const q of quotes){
@@ -99,7 +100,7 @@
   if(quotes.length){
    selector.value=quotes[0].symbol;
    const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);
-   status.textContent='تاریخچه قابل استفاده برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شد.'+(failed.length?'؛ برای دیدن و کپی گزارش کامل شناسه‌های کاندیدا، نماد ناموفق را انتخاب کن و دکمه کپی گزارش را بزن.':' همه نمادها موفق بودند.');
+   status.textContent='تاریخچه برای '+fmt(withHistory)+' نماد از '+fmt(quotes.length)+' نماد دریافت شد؛ مبنای تعدیل مستقل تأیید نشده است.'+(failed.length?'؛ برای دیدن و کپی گزارش کامل شناسه‌های کاندیدا، نماد ناموفق را انتخاب کن و دکمه کپی گزارش را بزن.':' همه نمادها موفق بودند.');
    show();
   }else{
    result.textContent='هیچ نماد تأییدشده‌ای به بخش تکنیکال نرسید. دریافت قیمت پایانی همه نمادها را دوباره اجرا کنید و پیام وضعیت بخش کارگزاری را بررسی کنید.';
