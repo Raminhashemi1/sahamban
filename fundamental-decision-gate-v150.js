@@ -60,8 +60,12 @@ function evaluateFundamentalGate(data,expectedSymbol,{marketPriceEvidence,asOfDa
   epsSource:eps.eps.netIncomeSource,weightedAverageSharesSource:eps.eps.weightedAverageSharesSource,
   dpsStatus:dps.status,dpsRialPerShare:dps.valueRialPerShare,dpsErrors:dps.errors,
   accountingCheck:checked.accountingCheck,financialRatios:ratios.status==='FINANCIAL_RATIOS_READY_FOR_REVIEW'?ratios:null,
-  ratioStatus:ratios.status,ratioErrors:ratios.errors||[],entryEligible:true,
-  note:'A minimum evidence gate only: audited same-issuer statements and positive EPS are prerequisites. It does not establish fair value, growth, solvency, liquidity, valuation attractiveness or expected return.'};
+  ratioStatus:ratios.status,ratioErrors:ratios.errors||[],
+  // Client-supplied fields and user attestations cannot prove CODAL origin. Fail closed.
+  // An independent, trusted verification service is required before any entry review.
+  originStatus:'UNVERIFIED_USER_SUPPLIED',entryEligible:false,
+  entryBlockReasons:['CODAL_SOURCE_NOT_INDEPENDENTLY_VERIFIED'],
+  note:'Review-only financial arithmetic. Neither a user-entered origin_verified flag, a file hash, nor a checked attestation proves official CODAL provenance. Entry review is blocked until independently verified source evidence exists. No valuation or investment recommendation is made.'};
 }
 return {evaluateFundamentalGate};
 });

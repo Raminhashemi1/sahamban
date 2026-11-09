@@ -12,12 +12,15 @@ const sample=()=>({symbol:'ونوین',tracing_no:'۱۲۳۴۵',
 test('audited same-symbol evidence with positive attributable EPS passes minimum fundamental screen',()=>{
  const r=evaluateFundamentalGate(sample(),'ونوین');
  assert.equal(r.status,'FUNDAMENTAL_REVIEW_READY');
- assert.equal(r.entryEligible,true);
+ assert.equal(r.entryEligible,false);
+ assert.equal(r.originStatus,'UNVERIFIED_USER_SUPPLIED');
+ assert.ok(r.entryBlockReasons.includes('CODAL_SOURCE_NOT_INDEPENDENTLY_VERIFIED'));
+
  assert.equal(r.epsStatus,'EPS_READY_FOR_REVIEW');
  assert.equal(r.epsRialPerShare,20);
  assert.equal(r.auditStatus,'AUDITED');
  assert.equal(r.statementBasis,'CONSOLIDATED');
- assert.match(r.note,/does not establish fair value/);
+ assert.match(r.note,/No valuation or investment recommendation/);
 });
 test('unaudited evidence cannot pass the entry prerequisite',()=>{
  const a=sample();a.audit_status='UNAUDITED';
@@ -71,4 +74,30 @@ test('minimum fundamental gate exposes descriptive quality ratios and fresh mark
  assert.equal(r.financialRatios.valuation.pe,50);
  assert.equal(r.financialRatios.valuation.pb,25);
  assert.equal(r.financialRatios.valuation.ps,12.5);
+});
+
+test('self-reported CODAL verification and local attestation cannot authorize entry review',()=>{
+ for(const patch of [
+  {origin_verified:true},
+  {origin_verified:true,source:'VERIFIED_OFFICIAL_CODAL'},
+  {origin_verified:true,source:'CODAL',attested_by_user:true,figures_verified:true},
+  {origin_verified:false,source:'USER_ENTERED_LOCAL_PACKET_REQUIRES_HUMAN_ATTESTATION'}
+ ]){
+  const r=evaluateFundamentalGate({...sample(),...patch},'ونوین');
+  assert.equal(r.status,'FUNDAMENTAL_REVIEW_READY');
+  assert.equal(r.entryEligible,false);
+  assert.deepEqual(r.entryBlockReasons,['CODAL_SOURCE_NOT_INDEPENDENTLY_VERIFIED']);
+ }
+});
+
+test('real fundamental gate cannot authorize technical entry on a self-certified CODAL file',()=>{
+ const {decisionPlan}=require('../decision-support-v129.js');
+ const financial={...sample(),origin_verified:true,source:'VERIFIED_OFFICIAL_CODAL'};
+ const review=evaluateFundamentalGate(financial,'ونوین');
+ const technical={symbol:'ونوین',code:'ENTRY_CANDIDATE',marketDate:'20261106',
+  last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ const plan=decisionPlan(technical,{fundamentalReview:review});
+ assert.equal(plan.decision,'NO_ACTION');
+ assert.equal(plan.condition,'FUNDAMENTAL_EVIDENCE_REQUIRED');
+ assert.equal(plan.fundamentalGate,'BLOCKED');
 });

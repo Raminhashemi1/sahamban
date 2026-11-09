@@ -36,7 +36,7 @@
  const fundamental=fundamentalReviews.get(window.SahambanFundamentalEvidenceV150?.normalizeSymbol(r.symbol));
  if(fundamental){
   const fline=document.createElement('p');
-  fline.textContent='دروازه بنیادی: '+(fundamental.status==='FUNDAMENTAL_REVIEW_READY'?'حداقل شروط شواهد بنیادی عبور کرده است؛ این نتیجه ارزندگی یا توصیه خرید نیست.':'مسدود؛ '+(fundamental.reasons||[]).join('، '));
+  fline.textContent='دروازه بنیادی: '+(fundamental.entryEligible===true?'شواهد ورود قابل بررسی هستند؛ این نتیجه ارزندگی یا توصیه خرید نیست.':'ورود مسدود است؛ '+(fundamental.entryBlockReasons||fundamental.reasons||['اصالت مستقل داده کدال احراز نشده']).join('، '));
   detail.append(fline);
   if(fundamental.financialRatios){
    const ratios=fundamental.financialRatios.ratios||{},valuation=fundamental.financialRatios.valuation||{};
@@ -142,8 +142,8 @@
    const review=window.SahambanFundamentalGateV150.evaluateFundamentalGate(data,expected,options);
    fundamentalReviews.set(norm,review);
    fundamentalStatus.textContent=review.status==='FUNDAMENTAL_REVIEW_READY'?
-    'بررسی حداقلی بنیادی آماده بازبینی است. EPS: '+fmt(review.epsRialPerShare)+' ریال/سهم | DPS: '+(review.dpsRialPerShare==null?'ارائه نشده':fmt(review.dpsRialPerShare)+' ریال/سهم')+
-    ' | وضعیت نسبت‌ها: '+review.ratioStatus+'. عبور از این مرحله به‌تنهایی ارزندگی یا مجوز معامله نیست.':
+    'محاسبات بنیادی صرفاً آماده بررسی هستند. EPS: '+fmt(review.epsRialPerShare)+' ریال/سهم | DPS: '+(review.dpsRialPerShare==null?'ارائه نشده':fmt(review.dpsRialPerShare)+' ریال/سهم')+
+    ' | وضعیت نسبت‌ها: '+review.ratioStatus+' | مجوز بررسی ورود: مسدود؛ اصالت مستقل داده کدال احراز نشده است.':
     'دروازه بنیادی مسدود است: '+(review.reasons||[]).join('، ');
    const parts=[];
    if(review.financialRatios){

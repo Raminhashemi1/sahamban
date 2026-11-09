@@ -48,9 +48,9 @@ test('Broker import is local-only with separate storage and offline Excel parser
 });
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
- assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v150-11'));
+ assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v150-12'));
  assert.ok(sw.includes('fundamental-evidence.js?v=150.5'));
- assert.ok(sw.includes('decision-support-ui-v129.js?v=129.16'));
+ assert.ok(sw.includes('decision-support-ui-v129.js?v=129.17'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
   assert.ok(sw.includes('portfolio-pilot-v51.html'));
   assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
