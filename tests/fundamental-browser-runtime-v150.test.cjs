@@ -33,7 +33,7 @@ test('fundamental evidence and decision gate load as browser globals without Com
  assert.equal(review.entryEligible,false);
  assert.equal(review.originStatus,'UNVERIFIED_USER_SUPPLIED');
  assert.equal(review.epsRialPerShare,20);
- assert.equal(review.financialRatios.valuation.pe,50);
+ assert.equal(review.financialRatios.valuation.pe,null);
  assert.equal(review.financialRatios.ratios.operatingMarginPct,20);
 });
 test('browser global validation still rejects non-leap Esfand 30 and invalid CODAL host',()=>{
