@@ -4,6 +4,8 @@
 
 These instructions apply to every new ChatGPT conversation, coding-agent session, context-window reset, or continuation after a chat/page reaches its capacity. Do not assume that prior chat history or model memory is available.
 
+**Pre-merge recovery:** Until documentation PR #163 is actually merged, these files are NOT on `main`. If missing from `main`, locate PR #163, verify its current state and head SHA, and read the files from its verified head branch as *proposed* guidance. Never report them as active on `main` or as automatically loaded by every ChatGPT conversation. Once #163 merges, read `main`. If neither source is accessible, do not change project files.
+
 **Before answering a new implementation request with code changes, running project-changing commands, opening a PR, or continuing a task:**
 
 1. Read `SAHAMBAN_MASTER_PROGRESS.md` from the current default branch.
