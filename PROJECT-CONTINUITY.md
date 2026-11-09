@@ -45,11 +45,11 @@ This ledger remains the detailed continuity source and must be kept consistent w
 
 The user is executing a multi-day roadmap (a five-day plan was mentioned). Chat switching must not change the agreed roadmap or cause scope drift. The user expects work to continue as if the same project session were open.
 
-The exact full five-day roadmap is **not yet captured in this ledger**. Do not invent days 3–5. Recover it from authoritative project records or ask the user to supply/confirm it once; then record it here and treat it as controlled scope.
+The five-day high-level roadmap **has now been recovered from the user's original roadmap screenshot** and recorded in [MASTER-PLAN.md](MASTER-PLAN.md). Day 1: review existing integrations, data validity and unfinished tasks. Day 2: finish missing analysis-engine/ranking/decision-assistant connections. Day 3: real-market-data tests, buy/sell calculations and important bug fixes. Day 4: UI, mobile, security and subscription. Day 5: final tests and pilot-user-ready build. Do not equate the PR164 historical price-basis subtask with the entire Day 2 scope, and do not infer any day's implementation status solely from this roadmap.
 
 ## 3. Day 2 — agreed scope (from the user's progress screenshots)
 
-Day 2 concerns historical TSETMC price-basis uncertainty and fail-closed behavior. The screenshot identified these remaining work items:
+The *master plan's* Day 2 objective is completion of missing integrations across the analysis engine, ranking and decision assistant. The historical TSETMC price-basis and fail-closed work is an important **subtask** of that objective. A separate progress screenshot identified these subtask items:
 
 1. Complete WebKit and mobile acceptance tests.
 2. Verify the final connection/integration from v129 to v133.
@@ -176,3 +176,9 @@ Append a new dated entry below at the end of every work session:
 - Indexed their links in README and this ledger. The complete original five-day roadmap remains missing; no days 1/3/4/5 were invented.
 - GitHub CI and current PR head must be rechecked on each new chat; this documentation operation does not claim green CI, financial source authentication, merge, or deployment.
 - Next action remains diagnosis of Smoke CI failure before moving to another day-two technical task.
+
+
+#### 2026-11-09 — canonical five-day roadmap recovered
+- User supplied the original five-day plan as a screenshot, subsequently transcribed in `MASTER-PLAN.md` at `ab58e6817148645051a52cc601c0b251301a4ee8`.
+- Preserved five-day order. PR164 is identified as a Day 2 subtask rather than a redefinition of the entire day.
+- No automatic promotion of day completion, merge or deployment. Exact-head CI and the Smoke failure remain active gates.
