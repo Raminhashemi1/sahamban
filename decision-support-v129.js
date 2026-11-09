@@ -27,7 +27,7 @@
   else if(score<40){action='فعلاً عدم ورود',code='AVOID',reason='امتیاز شروط روند و مومنتوم پایین است؛ برای ورود عجله نکنید.';}
   const stop=priorLow,riskPerShare=last-stop,target=last+2*riskPerShare;
   const reasons=[['روند صعودی (قیمت > SMA20 > SMA50)',trend],['RSI در بازه ۵۰ تا ۶۸',healthyRsi],['MACD مثبت و رو به تقویت',positiveMacd],['بازده ۲۰ جلسه مثبت',positiveMomentum],['شکست سقف ۲۰ جلسه قبل',breakout]];
-  return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,action,code,reason,stop:stop<last?stop:null,target:stop<last?target:null,riskPerShare:stop<last?riskPerShare:null,reasons};
+  return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,action,code,reason,stop:stop<last?stop:null,target:stop<last?target:null,riskPerShare:stop<last?riskPerShare:null,historyPriceBasisEvidence:q.historyPriceBasisEvidence??'NOT_ESTABLISHED',reasons};
  }
  function sizePosition({capital,riskPercent,entry,stop}){
   for(const [k,v] of Object.entries({capital,riskPercent,entry,stop}))
@@ -54,7 +54,8 @@
    throw new TypeError('گزارش تحلیلی معتبر برای برنامه مشروط لازم است.');
   const common={symbol:r.symbol,asOf:r.marketDate,automaticTrade:false,
    dataStatus:'قیمت پایانی تاریخ ذکرشده؛ لزوماً قیمت لحظه‌ای یا قابل معامله نیست.',
-   evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.'};
+   evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.',historyPriceBasisEvidence:r.historyPriceBasisEvidence??'NOT_ESTABLISHED'};
+   if(common.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED')return {...common,decision:'NO_ACTION',when:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ برنامه ورود یا خروج صادر نمی‌شود.',invalidation:'پس از ارائه شواهد مستقل و قابل ممیزی درباره مبنای تاریخچه، تحلیل باید از ابتدا اجرا شود.',condition:'DATA_BASIS_UNVERIFIED',historicalPriceBasis:'UNKNOWN_NOT_ATTESTED'};
   if(r.code==='ENTRY_CANDIDATE'){
    const sameSymbol=normalizeSymbol(fundamentalReview?.symbol)===normalizeSymbol(r.symbol);
    const fundamentalReady=fundamentalReview?.status==='FUNDAMENTAL_REVIEW_READY'&&
