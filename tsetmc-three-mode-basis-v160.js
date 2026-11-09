@@ -22,7 +22,7 @@
   const out=new Map();
   for(const row of rows){
    if(!row||typeof row!=='object'||Array.isArray(row))return null;
-   const date=key(row.date),close=Number(row.close);
+   const date=key(row.date),close=row.close;
    if(!date||!Number.isFinite(close)||close<=0||out.has(date))return null;
    out.set(date,close);
   }
