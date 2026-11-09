@@ -8,6 +8,17 @@ const MAX_BYTES=15*1024*1024;
 function fail(reason){return {status:'REMOTE_CORROBORATION_INSUFFICIENT',reason,
  originVerified:false,figuresVerified:false,entryEligible:false,tradingSignalsEnabled:false};}
 function verifiedUrl(filing){
+ // The local intake prefers originalUrl when both URL fields are supplied.
+ // Refuse contradictory identities instead of silently choosing one source.
+ if(filing&&typeof filing==='object'&&
+    typeof filing.originalUrl==='string'&&typeof filing.reportUrl==='string'){
+  let original,report;
+  try{
+   original=new URL(filing.originalUrl);
+   report=new URL(filing.reportUrl);
+  }catch{return null;}
+  if(original.href!==report.href)return null;
+ }
  const safe=intake.safeFiling(filing);
  if(!safe)return null;
  let u;
