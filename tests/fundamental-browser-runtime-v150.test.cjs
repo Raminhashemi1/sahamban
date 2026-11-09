@@ -46,12 +46,12 @@ test('browser global validation still rejects non-leap Esfand 30 and invalid COD
 test('fundamental intake is wired into the PWA and decision detail without persistent storage',()=>{
  const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
  const ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
- for(const id of ['fundamentalReviewPanelV150','fundamentalEvidenceFileV150','fundamentalOriginalAttestationV150','fundamentalReviewRunV150','fundamentalReviewStatusV150','fundamentalReviewDetailV150'])
+ for(const id of ['fundamentalReviewPanelV150','fundamentalEvidenceFileV150','fundamentalValuationSharesV150','fundamentalOriginalAttestationV150','fundamentalReviewRunV150','fundamentalReviewStatusV150','fundamentalReviewDetailV150'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(html.indexOf('fundamental-evidence.js?v=150.5')<html.indexOf('fundamental-decision-gate-v150.js?v=150.3'));
- assert.ok(html.indexOf('fundamental-decision-gate-v150.js?v=150.3')<html.indexOf('decision-support-ui-v129.js?v=129.16'));
+ assert.ok(html.indexOf('fundamental-decision-gate-v150.js?v=150.3')<html.indexOf('decision-support-ui-v129.js?v=129.18'));
  assert.ok(sw.includes('fundamental-evidence.js?v=150.5'));
- assert.ok(sw.includes('decision-support-ui-v129.js?v=129.16'));
+ assert.ok(sw.includes('decision-support-ui-v129.js?v=129.18'));
  assert.ok(sw.includes('capital-adjustments.js?v=150.2'));
  assert.ok(ui.includes('period_start:doc.periodStart'));
  assert.ok(ui.includes("actionInput.value='';"));
@@ -84,4 +84,14 @@ test('browser gate applies a verified corporate-action sequence to EPS and P/E',
  assert.equal(r.capitalAdjustmentCount,1);
  assert.equal(r.epsRialPerShare,2000*1000000/150000000);
  assert.equal(r.capitalAdjustmentBasis.status,'CAPITAL_ADJUSTED_WA_SHARES_READY_FOR_REVIEW');
+});
+
+test('dated valuation share input is forwarded, invalidates prior review and clears with new market data',()=>{
+ const fs=require('node:fs');
+ const html=fs.readFileSync('index.html','utf8'),ui=fs.readFileSync('decision-support-ui-v129.js','utf8');
+ assert.ok(html.includes('id="fundamentalValuationSharesV150"'));
+ assert.ok(ui.includes('options.valuationShareBasis=basis'));
+ assert.ok(ui.includes(" $('fundamentalValuationSharesV150')?.addEventListener('input'"));
+ assert.ok(ui.includes("if(shareInput)shareInput.value=''"));
+ assert.ok(ui.includes("if(valuationInput)valuationInput.value=''"));
 });
