@@ -264,3 +264,21 @@ test('v152 rejects mismatched response URL and attempts best-effort stream clean
  assert.equal(cancels,1);
  assert.equal(r.tradingSignalsEnabled,false);
 });
+
+test('v152 fails closed when filing metadata or local file inspection throws',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const valid={symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'};
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const hostile={get symbol(){throw Error('hostile metadata getter')}};
+ const invalid=await compareRemoteCodalFile(file,hostile,{fetcher:async()=>{throw Error('must not fetch')}});
+ assert.equal(invalid.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ assert.equal(invalid.reason,'INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');
+ const hostileFile={get size(){throw Error('hostile file getter')}};
+ const failed=await compareRemoteCodalFile(hostileFile,valid,{fetcher:async()=>{throw Error('must not fetch')}});
+ assert.equal(failed.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ assert.equal(failed.reason,'LOCAL_FILE_INSPECTION_FAILED');
+ assert.equal(failed.entryEligible,false);
+});
