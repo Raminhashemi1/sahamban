@@ -78,16 +78,26 @@ test('monetary fields cannot override the filing currency unit',()=>{
  assert.ok(checkFinancialEvidence(a,'ونوین').errors.includes('INVALID_FIELD_UNIT'));
 });
 
-test('CODAL report URL serial must match the declared tracing number',()=>{
- const mismatch=sample();mismatch.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=99999';
- const r=checkFinancialEvidence(mismatch,'ونوین');
- assert.equal(r.status,'INSUFFICIENT_EVIDENCE');
- assert.ok(r.errors.includes('REPORT_TRACING_MISMATCH'));
- assert.equal(r.fields.length,0);
- const missing=sample();missing.report_url='https://www.codal.ir/Reports/Decision.aspx?OtherId=12345';
- assert.ok(checkFinancialEvidence(missing,'ونوین').errors.includes('REPORT_TRACING_MISMATCH'));
- const match=sample();match.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=۱۲۳۴۵';
- assert.equal(checkFinancialEvidence(match,'ونوین').status,'READY_FOR_REVIEW');
+test('CODAL opaque letter serial must be independent from numeric tracing number',()=>{
+ const token='qr1ypqX8jr8rIaRvVJxoNA==';
+ const report='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3D%3D';
+ const distinct=sample();distinct.report_url=report;distinct.letter_serial=token;
+ assert.equal(checkFinancialEvidence(distinct,'ونوین').status,'READY_FOR_REVIEW');
+ assert.equal(distinct.tracing_no,'۱۲۳۴۵');
+ const mismatched={...distinct,letter_serial:'anotherValidToken123'};
+ const bad=checkFinancialEvidence(mismatched,'ونوین');
+ assert.equal(bad.status,'INSUFFICIENT_EVIDENCE');
+ assert.ok(bad.errors.includes('REPORT_LETTER_SERIAL_MISMATCH'));
+ assert.equal(bad.fields.length,0);
+ const invalid={...distinct,letter_serial:'x'};
+ assert.ok(checkFinancialEvidence(invalid,'ونوین').errors.includes('INVALID_LETTER_SERIAL'));
+ const missing={...distinct,report_url:'https://www.codal.ir/Reports/Decision.aspx?OtherId=12345'};
+ assert.ok(checkFinancialEvidence(missing,'ونوین').errors.includes('REPORT_LETTER_SERIAL_MISSING'));
+ // Legacy records remain arithmetic-review only; missing declaration must
+ // never be interpreted as independent CODAL origin or trading eligibility.
+ const legacy=sample();
+ assert.equal(checkFinancialEvidence(legacy,'ونوین').status,'READY_FOR_REVIEW');
+ assert.equal(legacy.letter_serial,undefined);
 });
 
 test('EPS requires parent-attributable income and weighted-average shares with explicit units',()=>{
