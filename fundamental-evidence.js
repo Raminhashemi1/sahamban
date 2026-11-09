@@ -55,9 +55,11 @@ function checkFinancialEvidence(data,expectedSymbol){
   // User-entered values are consistency checks, not independent proof of origin.
   const reportSerial=new URL(url).searchParams.get('LetterSerial');
   const declared=data.letter_serial;
-  if(typeof declared!=='string'||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(declared))
-   errors.push('MISSING_OR_INVALID_LETTER_SERIAL');
-  else if(!reportSerial||reportSerial!==declared)
+  if(!reportSerial)errors.push('REPORT_LETTER_SERIAL_MISSING');
+  else if(declared!==undefined&&
+   (typeof declared!=='string'||!/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(declared)))
+   errors.push('INVALID_LETTER_SERIAL');
+  else if(declared!==undefined&&reportSerial!==declared)
    errors.push('REPORT_LETTER_SERIAL_MISMATCH');
  }
  const pub=day(data.publication_date),end=day(data.period_end);
