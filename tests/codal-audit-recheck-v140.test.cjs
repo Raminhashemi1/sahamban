@@ -106,7 +106,7 @@ test('recheck canonicalization preserves optional AGM dividend evidence metadata
 
 function officialResponse(bytes,options={}){
  const response=new Response(bytes,options);
- Object.defineProperty(response,'url',{value:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'});
+ Object.defineProperty(response,'url',{value:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',configurable:true});
  return response;
 }
 test('v152 independently compares official-hosted response bytes but never elevates provenance to trading authorization',async()=>{
