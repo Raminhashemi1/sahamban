@@ -42,8 +42,18 @@ test('decision UI distinguishes historical diagnostic from proven buy/sell skill
  assert.match(ui,/خرید خودکار انجام نمی‌شود/);
 });
 
+test('decision plan fails closed when historical price basis is missing or unverified',()=>{
+ const input={symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ for(const evidence of [undefined,'NOT_ESTABLISHED','UNKNOWN_NOT_ATTESTED']){
+  const report={...input,historyPriceBasisEvidence:evidence};
+  const p=api.decisionPlan(report,{fundamentalReview:fundamentalReview()});
+  assert.equal(p.decision,'NO_ACTION');
+  assert.equal(p.condition,'DATA_BASIS_UNVERIFIED');
+  assert.equal(p.historicalPriceBasis,'UNKNOWN_NOT_ATTESTED');
+ }
+});
 test('entry candidate is a date-stamped conditional review, never an automatic order',()=>{
- const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
  assert.equal(p.decision,'REVIEW_ENTRY');
  assert.equal(p.asOf,'20261104');
  assert.equal(p.automaticTrade,false);
@@ -52,12 +62,12 @@ test('entry candidate is a date-stamped conditional review, never an automatic o
  assert.match(p.evidence,/اعتبار بنیادی/);
 });
 test('entry review fails closed without valid risk level',()=>{
- const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:null,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',marketDate:'20261104',last:1200,stop:null,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
  assert.equal(p.decision,'NO_ACTION');
 });
 
 test('technical entry candidate is blocked without audited same-symbol positive EPS evidence',()=>{
- const input={symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ const input={symbol:'TEST',code:'ENTRY_CANDIDATE',historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
  const missing=api.decisionPlan(input);
  assert.equal(missing.decision,'NO_ACTION');
  assert.equal(missing.condition,'FUNDAMENTAL_EVIDENCE_REQUIRED');
@@ -76,7 +86,7 @@ test('technical entry candidate is blocked without audited same-symbol positive 
  }
 });
 test('passing fundamental screen is disclosed but never upgrades technical candidate to a buy order',()=>{
- const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
+ const p=api.decisionPlan({symbol:'TEST',code:'ENTRY_CANDIDATE',historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000},{fundamentalReview:fundamentalReview()});
  assert.equal(p.decision,'REVIEW_ENTRY');
  assert.equal(p.fundamentalGate,'PASSED_MINIMUM_SCREEN');
  assert.equal(p.fundamentalContext.epsRialPerShare,1250);
@@ -84,7 +94,7 @@ test('passing fundamental screen is disclosed but never upgrades technical candi
 });
 
 test('risk exit and weak trend do not fabricate individualized sell instructions',()=>{
- const inputs={symbol:'TEST',marketDate:'20261104',last:900,priorHigh:1100,priorLow:1000};
+ const inputs={symbol:'TEST',historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',marketDate:'20261104',last:900,priorHigh:1100,priorLow:1000};
  for(const [code,expected] of [['RISK_EXIT','REVIEW_EXIT_URGENT'],['EXIT_REVIEW','REVIEW_REDUCE'],['WAIT','NO_ACTION'],['AVOID','NO_ACTION']]){
   const p=api.decisionPlan({...inputs,code});
   assert.equal(p.decision,expected);
@@ -172,7 +182,7 @@ test('holdout UI communicates Wilson uncertainty as descriptive, not forecast co
 });
 
 test('fundamental entry gate normalizes Arabic and Persian issuer letter variants',()=>{
- const input={symbol:'نوين',code:'ENTRY_CANDIDATE',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ const input={symbol:'نوين',code:'ENTRY_CANDIDATE',historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',marketDate:'20261104',last:1200,stop:1000,priorHigh:1100,priorLow:1000};
  const p=api.decisionPlan(input,{fundamentalReview:fundamentalReview({symbol:'نوین'})});
  assert.equal(p.decision,'REVIEW_ENTRY');
 });
