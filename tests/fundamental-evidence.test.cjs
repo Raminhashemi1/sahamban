@@ -223,7 +223,7 @@ test('financial ratios disclose margins, returns, leverage and cash conversion f
  assert.equal(r.ratios.liabilitiesToAssetsPct,60);
  assert.equal(r.ratios.liabilitiesToEquity,1.5);
  assert.ok(Math.abs(r.ratios.operatingCashFlowToNetIncome-(1000/1900))<1e-12);
- assert.equal(r.valuation.pe,50);
+ assert.equal(r.valuation.pe,null);
  assert.equal(r.valuation.pb,null);
  assert.equal(r.valuation.ps,null);
  assert.ok(r.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
@@ -264,13 +264,36 @@ test('P/B and P/S require point-in-time share evidence without altering EPS or P
  });
  const options={marketPriceEvidence:{status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'۱۴۰۵/۰۸/۱۱',source:'VERIFIED_DAILY_MARKET_HISTORY'},asOfDate:'۱۴۰۵/۰۸/۱۲'};
  const absent=calculateFinancialRatios(a,'ونوین',options);
- assert.equal(absent.valuation.pe,50);assert.equal(absent.valuation.pb,null);assert.equal(absent.valuation.ps,null);
+ assert.equal(absent.valuation.pe,null);assert.equal(absent.valuation.pb,null);assert.equal(absent.valuation.ps,null);
  const basis={symbol:'ونوین',sharesOutstanding:200000000,unit:'SHARES',asOfDate:'۱۴۰۵/۰۸/۱۱',sourceRow:'تعداد سهام تاریخ قیمت',sourcePage:9};
  const valid=calculateFinancialRatios(a,'ونوین',{...options,valuationShareBasis:basis});
- assert.equal(valid.valuation.pe,50);assert.equal(valid.valuation.pb,50);assert.equal(valid.valuation.ps,25);
+ assert.equal(valid.valuation.pe,null);assert.equal(valid.valuation.pb,50);assert.equal(valid.valuation.ps,null);
  assert.equal(valid.valuation.valuationSharesAsOfDate,'۱۴۰۵/۰۸/۱۱');
  for(const invalid of [{...basis,symbol:'فولاد'},{...basis,asOfDate:'۱۴۰۵/۰۸/۱۰'},{...basis,sourceRow:''},{...basis,sharesOutstanding:1.5}]){
   const bad=calculateFinancialRatios(a,'ونوین',{...options,valuationShareBasis:invalid});
-  assert.equal(bad.valuation.pb,null);assert.equal(bad.valuation.ps,null);assert.equal(bad.valuation.pe,50);
+  assert.equal(bad.valuation.pb,null);assert.equal(bad.valuation.ps,null);assert.equal(bad.valuation.pe,null);
  }
+});
+
+test('P/E and P/S only use complete 12-month financial flows; P/B remains a dated balance-sheet multiple',()=>{
+ const {calculateFinancialRatios}=require('../fundamental-evidence.js');
+ const a=sample();a.audit_status='AUDITED';a.statement_basis='STANDALONE';
+ Object.assign(a.fields,{
+  revenue:{amount:8000,source_row:'فروش',source_page:4},
+  equity:{amount:4000,source_row:'حقوق مالکانه',source_page:7},
+  net_income_attributable_to_parent:{amount:2000,source_row:'سود منتسب',source_page:5},
+  weighted_average_shares:{amount:100000000,unit:'SHARES',source_row:'میانگین موزون',source_page:3}
+ });
+ const options={marketPriceEvidence:{status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'۱۴۰۵/۰۸/۱۱',source:'VERIFIED_DAILY_MARKET_HISTORY'},asOfDate:'۱۴۰۵/۰۸/۱۲',
+  valuationShareBasis:{symbol:'ونوین',sharesOutstanding:200000000,unit:'SHARES',asOfDate:'۱۴۰۵/۰۸/۱۱',sourceRow:'تعداد سهام',sourcePage:9}};
+ const interim=calculateFinancialRatios({...a,period_start:'۱۴۰۵/۰۱/۰۱'},'ونوین',options);
+ assert.equal(interim.valuation.pe,null);assert.equal(interim.valuation.ps,null);
+ assert.equal(interim.valuation.pb,50);
+ assert.ok(interim.flags.includes('PE_PS_REQUIRE_COMPLETE_TWELVE_MONTH_EARNINGS_AND_REVENUE'));
+ const annual=calculateFinancialRatios({...a,period_start:'۱۴۰۴/۰۷/۰۱'},'ونوین',options);
+ assert.equal(annual.valuation.pe,50);assert.equal(annual.valuation.ps,25);assert.equal(annual.valuation.pb,50);
+ assert.ok([365,366].includes(annual.valuation.financialFlowCoverageDays));
+ const undocumented=calculateFinancialRatios(a,'ونوین',options);
+ assert.equal(undocumented.valuation.pe,null);assert.equal(undocumented.valuation.ps,null);
+ assert.equal(undocumented.valuation.pb,50);
 });
