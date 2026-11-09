@@ -32,7 +32,7 @@ test('v153 binds DownloadFile hs to the search metadata PDF token',async()=>{
  const f={...filing(),reportUrl:'https://www.codal.ir/DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1005&let=6'};
  assert.equal((await checkCodalSearchAssociation(f,{fetcher:fetcherFor({Letters:[letter()]})})).status,'CODAL_SEARCH_METADATA_MATCH_REVIEW_ONLY');
  const bad={...letter(),PdfUrl:'DownloadFile.aspx?hs=differentValidToken123&ft=1005&let=6'};
- assert.equal((await checkCodalSearchAssociation(f,{fetcher:fetcherFor({Letters:[bad]})})).reason,'SEARCH_PDF_TOKEN_MISMATCH');
+ assert.equal((await checkCodalSearchAssociation(f,{fetcher:fetcherFor({Letters:[bad]})})).reason,'SEARCH_PDF_URL_MISMATCH');
 });
 test('v153 fails closed on mismatched symbol, tracking number, token, path, date or ambiguous search results',async()=>{
  for(const [bad,reason] of [
@@ -91,5 +91,35 @@ test('v153 requires a provably unique search result count, not merely one visibl
   const r=await checkCodalSearchAssociation(filing(),{fetcher});
   assert.equal(r.reason,'SEARCH_RESULT_COUNT_OR_PAGE_UNVERIFIED');
   assert.equal(r.entryEligible,false);
+ }
+});
+
+test('v153 requires the complete CODAL report URL, not just a matching LetterSerial',async()=>{
+ const cases=[
+  {...letter(),Url:'/Reports/Other.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0&ft=-1'},
+  {...letter(),Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=4&let=6&ct=0&ft=-1'},
+  {...letter(),Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0'},
+  {...letter(),Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&rt=3&let=6&ct=0&ft=-1'},
+  {...letter(),Url:'/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0&ft=-1&extra=1'}
+ ];
+ for(const bad of cases){
+  const result=await checkCodalSearchAssociation(filing(),{fetcher:fetcherFor({Letters:[bad]})});
+  assert.equal(result.status,'CODAL_METADATA_INSUFFICIENT');
+  assert.equal(result.reason,'SEARCH_REPORT_URL_MISMATCH');
+  assert.equal(result.entryEligible,false);
+ }
+ const reordered={...letter(),Url:'/Reports/Decision.aspx?ft=-1&ct=0&let=6&rt=3&LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3D%3D'};
+ assert.equal((await checkCodalSearchAssociation(filing(),{fetcher:fetcherFor({Letters:[reordered]})})).status,
+  'CODAL_SEARCH_METADATA_MATCH_REVIEW_ONLY');
+});
+test('v153 rejects PDF query mismatch even if the hs token is identical',async()=>{
+ const f={...filing(),reportUrl:'https://www.codal.ir/DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1005&let=6'};
+ for(const badPdf of [
+  'DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1000&let=6',
+  'DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1005&let=7',
+  'DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1005&let=6&more=1'
+ ]){
+  const result=await checkCodalSearchAssociation(f,{fetcher:fetcherFor({Letters:[{...letter(),PdfUrl:badPdf}]})});
+  assert.equal(result.reason,'SEARCH_PDF_URL_MISMATCH');
  }
 });
