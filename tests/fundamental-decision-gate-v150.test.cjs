@@ -89,3 +89,15 @@ test('self-reported CODAL verification and local attestation cannot authorize en
   assert.deepEqual(r.entryBlockReasons,['CODAL_SOURCE_NOT_INDEPENDENTLY_VERIFIED']);
  }
 });
+
+test('real fundamental gate cannot authorize technical entry on a self-certified CODAL file',()=>{
+ const {decisionPlan}=require('../decision-support-v129.js');
+ const financial={...sample(),origin_verified:true,source:'VERIFIED_OFFICIAL_CODAL'};
+ const review=evaluateFundamentalGate(financial,'ونوین');
+ const technical={symbol:'ونوین',code:'ENTRY_CANDIDATE',marketDate:'20261106',
+  last:1200,stop:1000,priorHigh:1100,priorLow:1000};
+ const plan=decisionPlan(technical,{fundamentalReview:review});
+ assert.equal(plan.decision,'NO_ACTION');
+ assert.equal(plan.condition,'FUNDAMENTAL_EVIDENCE_REQUIRED');
+ assert.equal(plan.fundamentalGate,'BLOCKED');
+});
