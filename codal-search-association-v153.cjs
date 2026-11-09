@@ -11,6 +11,8 @@ function tokenFromUrl(value,key){
   const u=new URL(value,'https://www.codal.ir/');
   if(u.protocol!=='https:'||!['codal.ir','www.codal.ir'].includes(u.hostname.toLowerCase())||
    u.username||u.password||u.port||u.hash)return null;
+  if(key==='LetterSerial'&&!/^\/Reports\/[A-Za-z0-9._/-]+\.aspx$/i.test(u.pathname))return null;
+  if(key==='hs'&&!/^(?:\/DownloadFile\.aspx|\/Reports\/DownloadFile\.aspx)$/i.test(u.pathname))return null;
   if(u.searchParams.getAll(key).length!==1)return null;
   const token=u.searchParams.get(key);
   return token&&/^[A-Za-z0-9+/_-]{8,128}={0,2}$/.test(token)?token:null;
