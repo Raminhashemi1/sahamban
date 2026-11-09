@@ -54,11 +54,8 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
  try{identity=verifiedUrl(filing);}catch{return fail('INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');}
  if(!identity)return fail('INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');
  if(typeof fetcher!=='function')return fail('NETWORK_FETCH_UNAVAILABLE');
- try{local=await intake.inspect(file,filing,{subtle});}
- catch{return fail('LOCAL_FILE_INSPECTION_FAILED');}
- if(!local||local.status!=='LOCAL_FILE_FINGERPRINT_ONLY')return fail('LOCAL_FILE_'+(local?.reason||'UNREADABLE'));
- // One deadline covers both the initial request and all streamed bytes. A custom
- // fetcher/reader may ignore AbortSignal; racing avoids an indefinite pending review.
+ // The deadline starts before local inspection: a hostile or stalled File
+ // implementation must not bypass the review's bounded-latency contract.
  const deadline=Number.isInteger(timeoutMs)&&timeoutMs>=1&&timeoutMs<=12000?timeoutMs:12000;
  let signal;
  try{
@@ -72,6 +69,9 @@ async function compareRemoteCodalFile(file,filing,{fetcher=globalThis.fetch,subt
   else signal.addEventListener('abort',abort,{once:true});
  });
  const withinDeadline=p=>Promise.race([p,expired]);
+ try{local=await withinDeadline(intake.inspect(file,filing,{subtle}));}
+ catch{return fail(signal.aborted?'LOCAL_FILE_INSPECTION_DEADLINE_EXCEEDED':'LOCAL_FILE_INSPECTION_FAILED');}
+ if(!local||local.status!=='LOCAL_FILE_FINGERPRINT_ONLY')return fail('LOCAL_FILE_'+(local?.reason||'UNREADABLE'));
  let response;
  try{
   // The caller cannot opt into automatic redirects; any 3xx is rejected.
