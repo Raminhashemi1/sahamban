@@ -72,8 +72,9 @@ test('minimum fundamental gate exposes descriptive quality ratios and fresh mark
  assert.equal(r.financialRatios.ratios.operatingMarginPct,20);
  assert.equal(r.financialRatios.ratios.roePct,50);
  assert.equal(r.financialRatios.valuation.pe,50);
- assert.equal(r.financialRatios.valuation.pb,25);
- assert.equal(r.financialRatios.valuation.ps,12.5);
+ assert.equal(r.financialRatios.valuation.pb,null);
+ assert.equal(r.financialRatios.valuation.ps,null);
+ assert.ok(r.financialRatios.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
 });
 
 test('self-reported CODAL verification and local attestation cannot authorize entry review',()=>{
@@ -100,4 +101,30 @@ test('real fundamental gate cannot authorize technical entry on a self-certified
  assert.equal(plan.decision,'NO_ACTION');
  assert.equal(plan.condition,'FUNDAMENTAL_EVIDENCE_REQUIRED');
  assert.equal(plan.fundamentalGate,'BLOCKED');
+});
+
+test('fundamental gate forwards explicitly documented point-in-time share basis for P/B and P/S',()=>{
+ const a=sample();
+ Object.assign(a.fields,{
+  revenue:{amount:8000,source_row:'درآمد عملیاتی',source_page:3},
+  equity:{amount:4000,source_row:'حقوق مالکانه',source_page:7},
+  equity_attributable_to_parent:{amount:4000,source_row:'حقوق مالکانه قابل انتساب',source_page:7},
+  shares_outstanding:{amount:100000000,unit:'SHARES',source_row:'سهام پایان دوره',source_page:2}
+ });
+ const options={
+  marketPriceEvidence:{status:'VERIFIED_MARKET_CLOSE',symbol:'ونوین',closeRialPerShare:1000,marketDate:'20261105',source:'VERIFIED_HISTORICAL_QUOTE_EVENT'},
+  asOfDate:'20261106',
+  valuationShareBasis:{symbol:'ونوین',sharesOutstanding:200000000,unit:'SHARES',asOfDate:'20261105',sourceRow:'تعداد سهام در تاریخ قیمت',sourcePage:8}
+ };
+ const valid=evaluateFundamentalGate(a,'ونوین',options);
+ assert.equal(valid.status,'FUNDAMENTAL_REVIEW_READY');
+ assert.equal(valid.financialRatios.valuation.pe,50);
+ assert.equal(valid.financialRatios.valuation.pb,50);
+ assert.equal(valid.financialRatios.valuation.ps,25);
+ assert.equal(valid.financialRatios.valuation.valuationSharesAsOfDate,'20261105');
+ const invalid=evaluateFundamentalGate(a,'ونوین',{...options,valuationShareBasis:{...options.valuationShareBasis,asOfDate:'20261104'}});
+ assert.equal(invalid.financialRatios.valuation.pe,50);
+ assert.equal(invalid.financialRatios.valuation.pb,null);
+ assert.equal(invalid.financialRatios.valuation.ps,null);
+ assert.ok(invalid.financialRatios.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
 });
