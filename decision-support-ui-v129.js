@@ -4,6 +4,10 @@
  const status=$('decisionStatusV129'),summary=$('decisionSummaryV129'),table=$('decisionTableV129'),detail=$('decisionDetailV129'),select=$('decisionSymbolV129');
  let quotes=[],reports=[],fundamentalReviews=new Map();const exportButton=$('decisionExportV129');
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
+ function guardUnattestedHistoryBasis(report,quote){
+  if(quote?.historyPriceBasisEvidence==='INDEPENDENTLY_ATTESTED')return report;
+  return {...report,code:'DATA_BASIS_UNVERIFIED',action:'عدم صدور سیگنال؛ مبنای تعدیل قیمت تاریخی تأیید نشده',reason:'مبنای تعدیل تاریخچه قیمت از منبع بازار مستقلاً احراز نشده است. امتیاز تکنیکال صرفاً تشخیصی است و نامزد ورود، خروج یا حد ضرر صادر نمی‌شود.',stop:null,target:null,riskPerShare:null,dataBasisStatus:'UNKNOWN_NOT_ATTESTED'};
+ }
  const dateTehran=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return p.year+p.month+p.day;};
  const pretty=d=>String(d||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1/$2/$3').replace(/[0-9]/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)]);
  const badge=r=>r.code==='ENTRY_CANDIDATE'?'decision-entry':r.code==='RISK_EXIT'||r.code==='EXIT_REVIEW'?'decision-exit':r.code==='AVOID'?'decision-avoid':'decision-wait';
@@ -14,6 +18,7 @@
  let holdout;
  try{
   if(!window.SahambanHoldoutV134?.evaluate)throw Error('ماژول ارزیابی خارج از نمونه در دسترس نیست.');
+  if(quote?.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED')throw Error('مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ ارزیابی بازده متوقف شد.');
   holdout=window.SahambanHoldoutV134.evaluate(quote);
   const n=holdout?.holdout?.count??0;
   if(!holdout.holdout.adequateSample){
@@ -64,7 +69,7 @@
  }catch(e){conditional.textContent='برنامه اجرایی تأیید نشده: '+e.message;}
  detail.append(conditional);
  if(r.stop!==null){const plan=document.createElement('p');plan.textContent='سطح ساختاری زیر نظر: '+fmt(r.stop)+' ریال (کمترین قیمت پایانی ۲۰ جلسه قبل) | هدف آموزشی با نسبت ۲ به ۱: '+fmt(r.target)+' ریال. این سطوح تضمین اجرا یا قیمت قابل معامله نیستند.';detail.append(plan);}else{const plan=document.createElement('p');plan.textContent='سطح حد ضرر ساختاری قابل اتکا از این داده استخراج نشد؛ اندازه موقعیت محاسبه نمی‌شود.';detail.append(plan);}}
- function run(){if(!quotes.length){status.textContent='هنوز تاریخچه تأییدشده‌ای دریافت نشده است. به بخش «تحلیل تکنیکال تاریخی» بروید و «دریافت تاریخچه تأییدشده همه نمادها» را اجرا کنید؛ سپس به این ماژول برگردید.';return;}reports=[];if(exportButton)exportButton.disabled=true;const errors=[];for(const q of quotes){try{reports.push(window.SahambanDecisionV129.analyze(q,{today:dateTehran(),maxAgeDays:7}));}catch(e){errors.push(q.symbol+': '+e.message);}}reports.sort((a,b)=>b.score-a.score);select.replaceChildren();for(const r of reports){const o=document.createElement('option');o.value=r.symbol;o.textContent=r.symbol+' — '+r.action;select.append(o);}renderRows();if(exportButton)exportButton.disabled=reports.length===0;if(reports.length){select.value=reports[0].symbol;showDetail();}summary.textContent='نمادهای دارای تاریخچه کافی و تازه: '+fmt(reports.length)+' از '+fmt(quotes.length)+'. نمادهای کنارگذاشته‌شده: '+fmt(errors.length)+'. '+(errors.length?'علت‌ها: '+errors.join(' | '):'همه نمادهای بررسی‌شده داده معتبر داشتند.');status.textContent='تحلیل انجام شد؛ فقط داده تاریخی تأییدشده همین نشست استفاده شد. هیچ سفارشی ارسال و هیچ دارایی ذخیره یا تغییر داده نشد.';}
+ function run(){if(!quotes.length){status.textContent='هنوز تاریخچه تأییدشده‌ای دریافت نشده است. به بخش «تحلیل تکنیکال تاریخی» بروید و «دریافت تاریخچه تأییدشده همه نمادها» را اجرا کنید؛ سپس به این ماژول برگردید.';return;}reports=[];if(exportButton)exportButton.disabled=true;const errors=[];for(const q of quotes){try{const report=window.SahambanDecisionV129.analyze(q,{today:dateTehran(),maxAgeDays:7});reports.push(guardUnattestedHistoryBasis(report,q));}catch(e){errors.push(q.symbol+': '+e.message);}}reports.sort((a,b)=>b.score-a.score);select.replaceChildren();for(const r of reports){const o=document.createElement('option');o.value=r.symbol;o.textContent=r.symbol+' — '+r.action;select.append(o);}renderRows();if(exportButton)exportButton.disabled=reports.length===0;if(reports.length){select.value=reports[0].symbol;showDetail();}summary.textContent='نمادهای دارای تاریخچه کافی و تازه: '+fmt(reports.length)+' از '+fmt(quotes.length)+'. نمادهای کنارگذاشته‌شده: '+fmt(errors.length)+'. '+(errors.length?'علت‌ها: '+errors.join(' | '):'همه نمادهای بررسی‌شده داده معتبر داشتند.');status.textContent='تحلیل انجام شد؛ فقط داده تاریخی تأییدشده همین نشست استفاده شد. هیچ سفارشی ارسال و هیچ دارایی ذخیره یا تغییر داده نشد.';}
  if(exportButton)exportButton.addEventListener('click',()=>{
   if(!reports.length){status.textContent='برای دریافت گزارش، ابتدا تحلیل نمادها را اجرا کنید.';return;}
   try{
