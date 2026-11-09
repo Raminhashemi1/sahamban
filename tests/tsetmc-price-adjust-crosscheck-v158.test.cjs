@@ -59,3 +59,19 @@ test('source payload and action inputs remain untouched',()=>{
  check(x);
  assert.equal(JSON.stringify(x),before);
 });
+
+test('Persian Intl calendar must provide both valid month and day components',()=>{
+ const original=Intl.DateTimeFormat;
+ try{
+  Intl.DateTimeFormat=function(){return {
+   resolvedOptions:()=>({calendar:'persian'}),
+   formatToParts:()=>[{type:'year',value:'1405'},{type:'month',value:'XX'},{type:'day',value:'01'}]
+  };};
+  assert.equal(check(input()).reason,'PERSIAN_CALENDAR_CONVERSION_UNAVAILABLE');
+  Intl.DateTimeFormat=function(){return {
+   resolvedOptions:()=>({calendar:'persian'}),
+   formatToParts:()=>[{type:'year',value:'1405'},{type:'month',value:'01'},{type:'day',value:'XX'}]
+  };};
+  assert.equal(check(input()).reason,'PERSIAN_CALENDAR_CONVERSION_UNAVAILABLE');
+ }finally{Intl.DateTimeFormat=original;}
+});
