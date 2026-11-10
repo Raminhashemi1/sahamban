@@ -455,3 +455,14 @@
 - PR #161 remains 12/12 successful at its unchanged head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`.
 - The fixture correction does not produce any real provider response. Still missing: instrument-bound raw TSETMC mode-0 capture, adjustment event data and mode-1/2 outputs with provenance/hashes; and a redacted itemized broker settlement for the actual 3 IRR difference. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
 - No tests were manually rerun, no production collector code changed, and no merge/deploy/order/trade/payment/holdings mutation/signal activation occurred.
+
+
+## 2026-11-10 — Autonomous continuation snapshot
+- User requested minimum-intervention handling. Follow-up was run immediately; no further user action is needed for public repo/CI monitoring.
+- Exact current PR #164 head `c6b0ac90252f567f6e743fb3a1cacc87e0e7bb4a`, OPEN/DRAFT, base `48853697ae7df9e20b75dffdb1d957d9563ca9a2`: 12/12 checks QUEUED at last poll. No exact-head result yet.
+- PR #162 head `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`, OPEN: 8 SUCCESS, 3 IN_PROGRESS, 1 QUEUED, zero completed failures. This is after the endpoint-specific test fixture correction; corrected smoke is still queued, so do not declare it green.
+- PR #161 head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`, OPEN: 12/12 SUCCESS.
+- Public fee page for broker confirms ceiling components 0.304%, 0.0256%, 0.0096%, 0.008%, 0.024%, total 0.3712%; it explicitly describes the schedule as ceilings. This still cannot prove the actual broker debit or explain the 3 IRR variance. Source: https://idbr.ir/fees .
+- Public TSETMC documentation identifies symbol search endpoint `/api/Instrument/GetInstrumentSearch/{Query}` and daily history endpoint `/api/ClosingPrice/GetClosingPriceDailyList/{InsCode}/0`. Public API fetch was inaccessible from this runtime, so no real response bytes/hash or adjustment evidence was obtained. The PR162 collector is bounded and read-only, but its output explicitly remains unauthenticated/manual-review only.
+- Remaining evidence is narrowly defined: (1) user-network capture of raw daily history + adjustment list and three-mode output/provenance for the instrument; (2) redacted itemized settlement showing actual fee lines for the 3 IRR variance. Account identifiers, credentials and personal data must not be shared.
+- No code/test execution, merge, deploy, trade, order, payment, holdings mutation or signal activation. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
