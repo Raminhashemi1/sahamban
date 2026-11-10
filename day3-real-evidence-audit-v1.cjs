@@ -11,6 +11,12 @@ function auditDay3Evidence({manifest,dailyBytes,adjustmentsBytes,receipt,expecte
    tradingSignalsEnabled:false,day3FinalAccepted:false});
  if(typeof expectedDailyDate!=='string'||!/^20\d{6}$/.test(expectedDailyDate))
   throw new TypeError('expectedDailyDate must be a YYYYMMDD string');
+ const year=Number(expectedDailyDate.slice(0,4));
+ const month=Number(expectedDailyDate.slice(4,6));
+ const day=Number(expectedDailyDate.slice(6,8));
+ const parsedDate=new Date(Date.UTC(year,month-1,day,12));
+ if(parsedDate.getUTCFullYear()!==year||parsedDate.getUTCMonth()+1!==month||
+  parsedDate.getUTCDate()!==day)throw new RangeError('expectedDailyDate must be a real calendar date');
  const daily=JSON.parse(dailyBytes.toString('utf8')).closingPriceDaily;
  const adjustments=JSON.parse(adjustmentsBytes.toString('utf8')).priceAdjust;
  const sameDay=daily.filter(row=>String(row.dEven)===expectedDailyDate);
