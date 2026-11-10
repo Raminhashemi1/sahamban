@@ -118,3 +118,11 @@
 - Existing fee calculator and tests were not rewritten. No real brokerage receipt was provided or reviewed. **Day 3 cannot be certified COMPLETE**: independent real prices/modes and fee reconciliation require authentic external evidence. Recorded execution details in `DAY3-REAL-DATA-EXECUTION.md`.
 - No code functionality, order, signal, holdings, deployment, merge or plan scope changed.
 - **Single next task:** obtain read-only raw TSETMC artifacts using existing PR #162 collector from a reachable trusted device; then verify independent three modes and a de-identified broker fee receipt. Keep fail-closed.
+
+## 2026-11-10 — exact-head CI closed, live provenance still blocked
+- Verified current PR #164 OPEN/DRAFT/unmerged; starting branch head `80b2039596c9c2b5166842f2456b77f8efba092f`. Re-read all six continuity files and current Day 3 evidence log; no prior implemented code was duplicated.
+- GitHub Actions on exact `80b2039596c9c2b5166842f2456b77f8efba092f`: **11/11 workflow runs completed SUCCESS**, 0 failures/pending; Smoke https://github.com/Raminhashemi1/sahamban/actions/runs/42771220222 ; WebKit https://github.com/Raminhashemi1/sahamban/actions/runs/42771220085 ; broker safe amounts https://github.com/Raminhashemi1/sahamban/actions/runs/42771220215 . This supersedes the previous running-status snapshot for this SHA only.
+- Downloaded and opened exact Smoke artifact `13741204786` from run `42771220222`: `live-market-v111.json`, checked `2026-11-10T06:51:18.043Z`, `UNVERIFIED_NETWORK`, `UND_ERR_CONNECT_TIMEOUT`, URL base `https://cdn.tsetmc.com/api`, public symbol `فولاد`. No raw market-history series or independent attestation.
+- Direct public URL lookup was inaccessible from the browsing tool too; it did not yield a verifiable provider response and is not evidence of TSETMC outage.
+- Day 3's historical-basis and broker-receipt verification remain **BLOCKED_EXTERNAL_EVIDENCE** despite green CI; no permission to promote basis status, enable signals or mark full completion. No code changes, orders, deployments, merges or holdings mutations.
+- **Single next task:** obtain the already-defined PR #162 collector raw JSON + SHA-256 manifest from a trusted device/network with confirmed instrument code; verify before any three-mode or fee reconciliation.
