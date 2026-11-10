@@ -69,3 +69,10 @@ test('does not mutate saved input metadata',()=>{
  const f=fixture(),before=JSON.stringify(f.manifest);verify(f);
  assert.equal(JSON.stringify(f.manifest),before);
 });
+
+test('manifest timestamp is bound to saved filenames and malformed timestamp types fail closed',()=>{
+ const f=fixture();f.manifest.collectedAt='2026-11-10T07:12:31.123Z';
+ assert.equal(verify(f).reason,'INVALID_DAILY_SOURCE_METADATA');
+ const g=fixture();g.manifest.collectedAt=Symbol('not a date');
+ assert.equal(verify(g).reason,'INVALID_CAPTURE_MANIFEST');
+});
