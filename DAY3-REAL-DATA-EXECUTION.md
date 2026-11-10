@@ -36,3 +36,15 @@ After reliable real inputs and a safely redacted brokerage transaction receipt a
 - **Currently blocked:** no authenticated real-market provider bytes due to DNS/network failure here and previous GitHub runner timeout; no real mode-0/1/2 attestation, no broker receipt reconciliation, no release readiness.
 - **Next single action:** on a trusted network with public TSETMC connectivity, run the pre-existing PR #162 read-only collector for an independently checked insCode and preserve raw JSON plus manifest for independent review. If the device cannot connect, record only the environment-specific error; do not interpret it as an empty market dataset.
 - In all cases: no signals, trade, merge, deployment, financial data mutation or user-holdings access. PR #164 remains Draft.
+
+## 2026-11-10 — Actual live-readiness test and completion assessment
+
+**Base SHA:** `a324e62c37b1057d3023b2f2f41fbf69df4b71c6`. PR #164 is **OPEN / DRAFT / not merged**. CI on this SHA had nine successes and two running at the last check (Smoke `42770635860`, 100-holding `42770635916`); **do not claim 11/11 yet**. WebKit run `42770636075` succeeded. Smoke artifact `13741517462` contained `live-market-v111.json`: `checked_at=2026-11-10T06:46:28.663Z`, `status=UNVERIFIED_NETWORK`, `network_error_code=UND_ERR_CONNECT_TIMEOUT`, `source=https://cdn.tsetmc.com/api`, `symbol=فولاد`. The artifact exists while the overall workflow might still be running.
+
+**Independent local executed diagnostic:** at `2026-11-10T06:48:23Z`, `socket.getaddrinfo('cdn.tsetmc.com',443)` failed with `gaierror(-3, 'Temporary failure in name resolution')`; at `06:48:28Z` the same call failed for `www.tsetmc.com`. There was no successful HTTP response or raw provider dataset. This is not proof of global TSETMC outage.
+
+**Documentation checked, still third party:** `GetClosingPriceDailyList/{insCode}/{Top}` uses `Top` as row count (0=all); `tse-client.getPrices` has a different library-level `adjustPrices=0|1|2` contract. Sources: https://github.com/amirziveh/tsetmc-skill/blob/master/references/api-endpoints.md ; https://github.com/solitraderbusiness/tsetmc-mcp/blob/main/docs/endpoints.md ; https://github.com/m-ahmadi/tse-client/blob/master/README.md . None constitute provider-signed proof of source or adjustment semantics.
+
+**Conclusion:** fee estimator and regression tests already implemented; authenticated raw data, three independently verified adjustment modes and fee-receipt reconciliation are **NOT VERIFIED**. Day 3 cannot be marked completed by the agreed acceptance gates. Do not rebuild or merge PR #161/#162, enable financial signals, or rewrite prices.
+
+**Single next dependency:** run existing PR #162 collector on a trusted reachable network with independently checked public `insCode`; provide raw response files + manifest for review. Actual independent three-mode provider evidence and a de-identified brokerage receipt are subsequently required.
