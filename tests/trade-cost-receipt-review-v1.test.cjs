@@ -10,3 +10,12 @@ test('inconsistent gross or settlement always outranks rate comparison',()=>{ass
 test('rejects identity/account data and unsupported instruments',()=>{assert.throws(()=>review({...base,accountNumber:'secret'}),/unexpected field/);assert.throws(()=>review({...base,market:'ETF'}),/market/);assert.throws(()=>review({...base,instrumentType:'ETF'}),/ordinary shares/);});
 test('rejects malformed, negative, fractional and unsafe numerical inputs',()=>{for(const record of [null,[],{...base,quantity:0},{...base,feesRial:-1},{...base,feesRial:1.1},{...base,grossRial:Number.MAX_SAFE_INTEGER+1},{...base,settlementRial:'100371200'}])assert.throws(()=>review(record));});
 test('returns no personal identifiers or unchanged opaque receipt input',()=>{const input={...base};const before=JSON.stringify(input),r=review(input);assert.equal(JSON.stringify(input),before);assert.equal('accountNumber' in r,false);assert.ok(Object.isFrozen(r));});
+
+test('rejects receipt accessors, symbols and inherited custom objects',()=>{
+ const accessor={...base};Object.defineProperty(accessor,'feesRial',{enumerable:true,get(){throw Error('getter must not run');}});
+ assert.throws(()=>review(accessor),/accessor/);
+ const symbol={...base,[Symbol('secret')]:'hidden'};
+ assert.throws(()=>review(symbol),/unexpected/);
+ const inherited=Object.assign(Object.create({account:'not allowed'}),base);
+ assert.throws(()=>review(inherited),/plain numeric/);
+});
