@@ -226,3 +226,10 @@ Append a new dated entry below at the end of every work session:
 - No available real brokerage settlement receipt for rounding/discount validation. Existing read-only `trade-cost-v1.js` stays an estimate, not confirmed execution accounting.
 - Day 3 remains IN_PROGRESS (external-evidence blocked), rather than falsely complete. Detailed log in `DAY3-REAL-DATA-EXECUTION.md`. No merge/deploy/order/trade/holdings edits or signal activation.
 - Next single task: capture raw TSETMC responses plus digest on a reachable trusted device through already-existing PR #162, then independent 0/1/2 review and de-identified broker receipt comparison.
+
+
+#### 2026-11-10 — exact-head CI completion and same-head live artifact
+- Baseline PR164 head `80b2039596c9c2b5166842f2456b77f8efba092f`, OPEN/DRAFT/unmerged. 11/11 GitHub Actions workflow runs SUCCESS for **that exact SHA**, including Smoke run https://github.com/Raminhashemi1/sahamban/actions/runs/42771220222 and WebKit https://github.com/Raminhashemi1/sahamban/actions/runs/42771220085 . New documentation-only commits do **not** inherit these results.
+- Directly opened artifact `13741204786` (`live-market-v111.json`) from same Smoke run: checked 2026-11-10T06:51:18.043Z, `UNVERIFIED_NETWORK / UND_ERR_CONNECT_TIMEOUT` for public فولاد TSETMC CDN request. Browsing the public URL also yielded inaccessible, not a valid provider payload.
+- No previously unseen real-provider response or broker receipt established; independent source authenticity/adjustment modes and fee rounding remain unverified. Kept current Day 3 IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. Existing #161/#162 helpers and trade-cost engine were not duplicated.
+- No code change, merge, deploy, trade or financial signal activation. Next task only: authentic read-only PR #162 capture on a reachable trusted network, retain exact raw bytes and SHA-256 manifest.
