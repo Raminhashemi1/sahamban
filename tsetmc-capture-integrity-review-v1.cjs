@@ -45,7 +45,11 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
    return fail('BYTE_INTEGRITY_MISMATCH_'+kind.toUpperCase());
   const raw=bytes.toString('utf8');
   if(!Buffer.from(raw,'utf8').equals(bytes))return fail('INVALID_UTF8_'+kind.toUpperCase());
-  let data;try{data=JSON.parse(raw);}catch{return fail('INVALID_JSON_'+kind.toUpperCase());}
+  // Preserve 8-25 digit JSON numeric insCode lexemes before JSON.parse rounds
+  // values above Number.MAX_SAFE_INTEGER. All other numeric fields remain
+  // unchanged. No inferred provider/authentication status is attached.
+  const preservedRaw=raw.replace(/("insCode"\s*:\s*)([0-9]+)(?=\s*[,}])/g,'$1"$2"');
+  let data;try{data=JSON.parse(preservedRaw);}catch{return fail('INVALID_JSON_'+kind.toUpperCase());}
   const rows=data?.[field];if(!Array.isArray(rows)||rows.length>(kind==='daily'&&bounded?500:10000)||rows.length!==meta.rowCount)
    return fail('INVALID_ROWS_'+kind.toUpperCase());
   // The real provider uses JSON NUMBER insCode values larger than 2^53.
