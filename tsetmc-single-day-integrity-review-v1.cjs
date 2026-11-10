@@ -42,7 +42,7 @@ function reviewSingleDay({manifest,rawBytes}={}){
   if(matches.length>1)return fail('DUPLICATE_'+key.toUpperCase()+'_FIELDS');
  }
  // Parse exact decimal instrument IDs as strings to prevent 17-digit rounding.
- const safeRaw=raw.replace(/("insCode"\\s*:\\s*)([0-9]+)(?=\\s*[,}])/g,'$1"$2"');
+ const safeRaw=raw.replace(/("insCode"\s*:\s*)([0-9]+)(?=\s*[,}])/g,'$1"$2"');
  let data;try{data=JSON.parse(safeRaw);}catch{return fail('INVALID_JSON');}
  const row=data?.closingPriceDaily;
  if(!row||typeof row!=='object'||Array.isArray(row)||
