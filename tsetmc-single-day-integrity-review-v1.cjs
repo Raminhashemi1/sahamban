@@ -43,7 +43,10 @@ function reviewSingleDay({manifest,rawBytes}={}){
   String(row.dEven)!==d||typeof row.pClosing!=='number'||
   !Number.isFinite(row.pClosing)||row.pClosing<=0)
   return fail('INVALID_PRICE_OR_DATE');
- if(Object.hasOwn(row,'insCode')&&String(row.insCode)!==manifest.insCode)
+ // Identity is mandatory: an absent instrument ID cannot bind this daily row
+ // to the requested instrument, even when the manifest URL and hash agree.
+ if(!Object.hasOwn(row,'insCode')||typeof row.insCode!=='string'||
+  !/^\d{8,25}$/.test(row.insCode)||row.insCode!==manifest.insCode)
   return fail('INSTRUMENT_MISMATCH');
  return Object.freeze({status:'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW',reason:null,
   insCode:manifest.insCode,dEven:d,closingPriceRial:row.pClosing,
