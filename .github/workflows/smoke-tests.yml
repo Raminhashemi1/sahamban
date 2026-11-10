@@ -81,6 +81,7 @@ jobs:
       - run: npm install --no-save playwright@1.56.1 axe-core@4.10.3
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser.cjs
+      - run: node tests/trade-cost-v1-browser.cjs
       - run: node tests/field-alert-talkback-v126.cjs
       - run: node tests/learning-v128.cjs
       - run: node tests/external-screener-browser-v130.cjs
