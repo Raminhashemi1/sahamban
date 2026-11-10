@@ -233,3 +233,11 @@ Append a new dated entry below at the end of every work session:
 - Directly opened artifact `13741204786` (`live-market-v111.json`) from same Smoke run: checked 2026-11-10T06:51:18.043Z, `UNVERIFIED_NETWORK / UND_ERR_CONNECT_TIMEOUT` for public فولاد TSETMC CDN request. Browsing the public URL also yielded inaccessible, not a valid provider payload.
 - No previously unseen real-provider response or broker receipt established; independent source authenticity/adjustment modes and fee rounding remain unverified. Kept current Day 3 IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. Existing #161/#162 helpers and trade-cost engine were not duplicated.
 - No code change, merge, deploy, trade or financial signal activation. Next task only: authentic read-only PR #162 capture on a reachable trusted network, retain exact raw bytes and SHA-256 manifest.
+
+
+#### 2026-11-10 — targeted Day 3 collector/fee risk assessment
+- Base head `d3ba4a41379359ed25f21e593d692e43fc2dbf25`, PR164 open/draft/unmerged. Exact-base CI last seen 10 successes, quote-basis still in progress at https://github.com/Raminhashemi1/sahamban/actions/runs/42771834142; Smoke/WebKit succeeded.
+- PR162 collector still unmerged and already present. Its 1 MiB per-response cap may be exceeded by فولاد's long daily series (third-party July 2026 sample ~1.56 MB). Do not bypass cap/truncate history or claim real capture. Detailed source/limitations documented in `DAY3-REAL-DATA-EXECUTION.md`.
+- Conflicting non-primary fee publications on TSE versus IFB purchase totals were identified. Existing `trade-cost-v1.js` kept unchanged, upper-bound estimate; official circular and actual receipt needed before asserting market-specific accuracy.
+- No live authenticated provider data or real brokerage receipt obtained. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. No merge/deploy/financial signals/trade/holding changes.
+- Next single task: existing PR162 collector on a trusted reachable network with independently verified insCode and bounded response; retain raw bytes and SHA-256 manifest.
