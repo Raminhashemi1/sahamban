@@ -95,3 +95,26 @@ test('rejects a streamed body exceeding the size cap',async()=>{
  const r=await collect(code,{fetcher});
  assert.equal(r.reason,'DAILY_TOO_LARGE');
 });
+
+
+test('rejects duplicate JSON object keys before preserving raw capture',async()=>{
+ const cases=[
+  ['{"closingPriceDaily":[],"closingPriceDaily":[]}','DAILY_DUPLICATE_JSON_KEYS'],
+  ['{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200,"pClosing":1100}]}','DAILY_DUPLICATE_JSON_KEYS'],
+  ['{"priceAdjust":[{"dEven":20260321,"pClosing":800,"pClosing":700}]}','ADJUSTMENTS_DUPLICATE_JSON_KEYS']
+ ];
+ for(const [body,reason] of cases){
+  const fetcher=withUrl(async url=>new Response(body,{headers:{'content-type':'application/json'}}));
+  const r=await collect(code,{fetcher});
+  assert.equal(r.status,'COLLECTION_INSUFFICIENT');
+  assert.equal(r.reason,reason);
+ }
+});
+
+test('duplicate scanner allows repeated schema keys across rows and escaped quotes',async()=>{
+ const body='{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200,"note":"escaped quote: \\"ok\\""},{"dEven":20260322,"pClosing":1210}]}';
+ const fetcher=withUrl(async url=>new Response(body,{headers:{'content-type':'application/json'}}));
+ const r=await collect(code,{fetcher});
+ assert.equal(r.status,'COLLECTION_INSUFFICIENT');
+ assert.equal(r.reason,'ADJUSTMENTS_DUPLICATE_JSON_KEYS');
+});
