@@ -10,7 +10,7 @@ function reviewRedactedReceipt(receipt){
  const prototype=Object.getPrototypeOf(receipt);
  if(prototype!==Object.prototype&&prototype!==null)throw new TypeError('receipt must be a plain numeric record');
  if(Reflect.ownKeys(receipt).some(key=>typeof key!=='string'||!KEYS.has(key)||!Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptor(receipt,key),'value')))
-  throw new TypeError('unexpected or accessor field: only own de-identified data fields are permitted');
+  throw new TypeError('unexpected field or accessor: only own de-identified data fields are permitted');
  for(const key of Object.keys(receipt))if(!KEYS.has(key))throw new TypeError('unexpected field: only de-identified numeric fields are permitted');
  const {side,quantity,priceRial,market,instrumentType='SHARE_OR_RIGHT',grossRial,feesRial,settlementRial}=receipt;
  if(market!=='TSE'&&market!=='IFB')throw new TypeError('market must be TSE or IFB');
