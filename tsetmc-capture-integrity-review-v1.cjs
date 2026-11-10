@@ -48,6 +48,15 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
   let data;try{data=JSON.parse(raw);}catch{return fail('INVALID_JSON_'+kind.toUpperCase());}
   const rows=data?.[field];if(!Array.isArray(rows)||rows.length>(kind==='daily'&&bounded?500:10000)||rows.length!==meta.rowCount)
    return fail('INVALID_ROWS_'+kind.toUpperCase());
+  // The real provider uses JSON NUMBER insCode values larger than 2^53.
+  // JSON.parse rounds those numbers. Compare their original decimal lexemes,
+  // not rounded JS numbers; otherwise adjacent IDs could be treated as equal.
+  const rawIds=[...raw.matchAll(/"insCode"\s*:\s*(?:"([0-9]+)"|([0-9]+))/g)]
+   .map(match=>match[1]||match[2]);
+  const rowIds=rows.filter(row=>row&&typeof row==='object'&&
+   Object.prototype.hasOwnProperty.call(row,'insCode')).length;
+  if(rawIds.length!==rowIds||rawIds.some(id=>id!==manifest.insCode))
+   return fail('RAW_INSTRUMENT_ID_MISMATCH_'+kind.toUpperCase());
   const seen=new Set();
   for(const row of rows){
    if(!row||typeof row!=='object'||Array.isArray(row)||!validDate(row.dEven))
