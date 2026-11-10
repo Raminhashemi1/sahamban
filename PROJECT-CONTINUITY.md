@@ -216,3 +216,13 @@ Append a new dated entry below at the end of every work session:
 - Added `DAY3-REAL-DATA-EXECUTION.md` to state documented read-only evidence capture steps, unresolved provenance and safety gates. No actual authenticated response obtained. Previous local DNS failure reported without retained command output must not be upgraded to a newly run test claim.
 - No code change, merge, deploy, trade, signal enablement or holdings mutation. Only documentation updated.
 - Next single task: first check for previously retained authentic provider artifacts; if none, use existing PR #162 collector on a trusted reachable network and review immutable raw data, without implying 0/1/2 financial attestation.
+
+
+#### 2026-11-10 — Day 3 evidence-limited completion attempt
+- Resumed from `a324e62c37b1057d3023b2f2f41fbf69df4b71c6` (PR #164 open/draft/unmerged). Re-read canonical memory, master plan, prior Day 3 code progress, and PR #163 progress register to prevent duplicated implementation.
+- CI on the starting SHA: 9/11 succeeded; Smoke run 42770635860 and 100-holding 42770635916 still in progress at last poll; WebKit run 42770636075 success. No claim of complete exact-head CI for new documentation commits.
+- Exact Smoke artifact 13741517462 shows `UNVERIFIED_NETWORK / UND_ERR_CONNECT_TIMEOUT` at 2026-11-10T06:46:28.663Z for فولاد on GitHub runner. Independent local DNS queries at 06:48:23Z (cdn.tsetmc.com) and 06:48:28Z (www.tsetmc.com) failed with `gaierror(-3)`. These environment failures do not prove provider downtime and yield no authenticated provider bytes.
+- Verified in external third-party technical documentation: CDN daily-list Top is record count, distinct from tse-client library getPrices adjustPrices 0/1/2. Still no provider-authenticated three series. Existing PR #162 collector and PR #161 adapter not rewritten/merged.
+- No available real brokerage settlement receipt for rounding/discount validation. Existing read-only `trade-cost-v1.js` stays an estimate, not confirmed execution accounting.
+- Day 3 remains IN_PROGRESS (external-evidence blocked), rather than falsely complete. Detailed log in `DAY3-REAL-DATA-EXECUTION.md`. No merge/deploy/order/trade/holdings edits or signal activation.
+- Next single task: capture raw TSETMC responses plus digest on a reachable trusted device through already-existing PR #162, then independent 0/1/2 review and de-identified broker receipt comparison.
