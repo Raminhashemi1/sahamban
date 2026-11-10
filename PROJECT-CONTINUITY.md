@@ -207,3 +207,12 @@ Append a new dated entry below at the end of every work session:
 - Smoke artifact ID 13741265949, `live-market-v111.json`, checked 2026-11-10T06:35:25.340Z: `UNVERIFIED_NETWORK` / `UND_ERR_CONNECT_TIMEOUT` to `https://cdn.tsetmc.com/api` for فولاد. No real provider attestation and no proof of network behavior on the user's device.
 - No code edit, merge, deploy, order or user holdings mutation. Documentation checkpoint commits must be checked separately for their own CI.
 - **Next single task:** obtain actual read-only provider sample/provenance from reachable network; until then no mode 0/1/2 attestation or trading signal.
+
+
+#### 2026-11-10 — no-duplicate Day 3 continuation
+- Starting SHA `55a313f3184dfcd1c5f7e8432631206aa9a7b2c0`, PR #164 open/draft. All six canonical memory files read, current Day 3 scope retained. User supplied screenshots from previous work and instructed that completed tasks must not be repeated.
+- GitHub Actions exact start-head `55a313f3184dfcd1c5f7e8432631206aa9a7b2c0`: 11/11 SUCCESS, including Smoke https://github.com/Raminhashemi1/sahamban/actions/runs/42770118086 and WebKit https://github.com/Raminhashemi1/sahamban/actions/runs/42770118142 . Documentation commits after this SHA need separate CI checking.
+- Reviewed existing independent PR #162 bounded raw-response collector with SHA-256 manifest and PR #161 library-level three-mode adapter; neither merged, copied nor rewritten. Existing Day 3 fee calculator not repeated.
+- Added `DAY3-REAL-DATA-EXECUTION.md` to state documented read-only evidence capture steps, unresolved provenance and safety gates. No actual authenticated response obtained. Previous local DNS failure reported without retained command output must not be upgraded to a newly run test claim.
+- No code change, merge, deploy, trade, signal enablement or holdings mutation. Only documentation updated.
+- Next single task: first check for previously retained authentic provider artifacts; if none, use existing PR #162 collector on a trusted reachable network and review immutable raw data, without implying 0/1/2 financial attestation.
