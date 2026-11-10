@@ -74,3 +74,19 @@ test('impossible Gregorian expected market date is rejected rather than silently
  const leap=fixture();leap.expectedDailyDate='20240229';
  assert.equal(auditDay3Evidence(leap).expectedDatePublished,false);
 });
+
+ 
+test('missing trade count is not counted as an actual zero-trade day',()=>{
+ const f=fixture();
+ const daily=JSON.parse(f.dailyBytes.toString('utf8'));
+ delete daily.closingPriceDaily[0].zTotTran;
+ daily.closingPriceDaily[1].zTotTran=null;
+ const bytes=Buffer.from(JSON.stringify(daily));f.dailyBytes=bytes;
+ f.manifest.files.daily.sizeBytes=bytes.length;
+ f.manifest.files.daily.sha256=createHash('sha256').update(bytes).digest('hex');
+ const result=auditDay3Evidence(f);
+ assert.equal(result.status,'REAL_DATA_REVIEW_PARTIAL');
+ assert.equal(result.noTradeRows,1);
+ assert.equal(result.unknownTradeCountRows,2);
+ assert.equal(result.day3FinalAccepted,false);
+});
