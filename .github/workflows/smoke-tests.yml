@@ -56,6 +56,7 @@ jobs:
       - run: node --test tests/trade-cost-v1.test.cjs
       - run: node --test tests/trade-cost-receipt-review-v1.test.cjs
       - run: node --test tests/tsetmc-capture-integrity-review-v1.test.cjs
+      - run: node --test tests/tsetmc-single-day-integrity-review-v1.test.cjs
       - run: node --test tests/day3-real-evidence-audit-v1.test.cjs
       - run: node --test tests/day3-original-capture-cli.test.cjs
       - run: node tests/live-market-connectivity.cjs
