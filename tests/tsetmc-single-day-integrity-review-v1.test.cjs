@@ -53,3 +53,16 @@ test('missing and malformed responses fail closed',()=>{
  const g=fixture();g.manifest.dEven='20260230';
  assert.equal(review(g).reason,'INVALID_EXPECTED_DATE');
 });
+
+
+test('mobile capture offers two distinct user-triggered downloads, not an automatic batch',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'../tsetmc-single-day-evidence-capture.html'),'utf8');
+ assert.match(html,/id="saveData"/);
+ assert.match(html,/id="saveManifest"/);
+ assert.match(html,/saveData\.onclick=/);
+ assert.match(html,/saveManifest\.onclick=/);
+ assert.doesNotMatch(html,/saveButton\.onclick=/);
+ assert.match(html,/GetClosingPriceDaily\/');
+ assert.match(html,/sourceAuthenticated:false/);
+});
