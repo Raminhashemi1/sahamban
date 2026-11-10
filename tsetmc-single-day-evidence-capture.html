@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>سهام‌بان — قیمت روز فولاد</title><style>body{font-family:system-ui,Tahoma,sans-serif;background:#f6f8fc;color:#172638;max-width:680px;margin:1rem auto;padding:1rem}main{padding:1.5rem;background:white;border:1px solid #cdd5e2;border-radius:1rem;line-height:2}button{font:inherit;background:#175ab2;color:white;padding:.75rem;border:0;border-radius:.5rem}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eef3fa;padding:1rem;border-radius:.5rem}</style></head><body><main>
+<h2>دریافت قیمت پایانی فولاد — ۱۰ نوامبر ۲۰۲۶</h2>
+<p>این صفحه فقط پاسخ خام همان روز را از CDN بورس می‌گیرد؛ نه تاریخچه قبلی و نه اطلاعات حساب شما را.</p>
+<button id="fetch">بررسی قیمت همین روز</button> <button id="save" hidden>ذخیره دو فایل شواهد</button>
+<pre id="status" aria-live="polite">برای آغاز روی دکمه بزنید.</pre>
+<p><small>این بسته صرفاً برای بررسی است و منشأ مستقل، مبنای تعدیل قیمت یا صدور سیگنال را تأیید نمی‌کند.</small></p></main>
+<script>
+'use strict';
+(()=>{const CODE='46348559193224090',DATE='20261110',HOST='https://cdn.tsetmc.com';
+const ENDPOINT=HOST+'/api/ClosingPrice/GetClosingPriceDaily/'+CODE+'/'+DATE;
+const get=document.getElementById('fetch'),saveButton=document.getElementById('save'),out=document.getElementById('status');
+const enc=new TextEncoder();let state=null;
+function bytesToHex(a){return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');}
+function download(name,bytes){const blob=new Blob([bytes],{type:'application/json'}),u=window.URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>window.URL.revokeObjectURL(u),1500);}
+async function boundedFetch(signal){const r=await fetch(ENDPOINT,{cache:'no-store',credentials:'omit',redirect:'error',signal});
+if(!r.ok)throw Error('HTTP '+r.status);
+const contentType=(r.headers.get('content-type')||'').toLowerCase();
+if(!/^application\/json(?:\s*;|$)/.test(contentType))throw Error('پاسخ JSON نیست');
+if(!r.body)throw Error('بدنه پاسخ قابل خواندن نیست');
+const reader=r.body.getReader(),parts=[];let length=0;
+try{for(;;){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>131072)throw Error('حجم پاسخ از سقف مجاز گذشت');parts.push(value);}}finally{reader.releaseLock();}
+const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
+return {bytes,contentType};}
+get.onclick=async()=>{get.disabled=true;saveButton.hidden=true;state=null;out.textContent='در حال دریافت پاسخ رسمی...';
+const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+try{if(!window.isSecureContext||!crypto.subtle)throw Error('صفحه باید از HTTPS باز شود');
+const {bytes,contentType}=await boundedFetch(controller.signal);
+const obj=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+const row=obj?.closingPriceDaily;
+if(!row||typeof row!=='object'||Array.isArray(row)||String(row.dEven)!==DATE||
+typeof row.pClosing!=='number'||!Number.isFinite(row.pClosing)||row.pClosing<=0)
+throw Error('داده معتبر برای این روز دریافت نشد');
+const collectedAt=new Date().toISOString(),stamp=collectedAt.replace(/[:.]/g,'-');
+const prefix='tsetmc-single-'+CODE+'-'+DATE+'-'+stamp;
+const sha256=bytesToHex(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)));
+const manifest={status:'SINGLE_DAY_CAPTURE_FOR_REVIEW',insCode:CODE,dEven:DATE,collectedAt,
+host:HOST,sourceUrl:ENDPOINT,file:{filename:prefix+'.json',sizeBytes:bytes.length,sha256,contentType},
+sourceAuthenticated:false,priceBasisVerified:false,threeModesVerified:false,
+entryEligible:false,tradingSignalsEnabled:false};
+state={dataName:prefix+'.json',manifestName:prefix+'-manifest.json',bytes,manifest};
+out.textContent='ثبت شد: قیمت پایانی '+row.pClosing+' ریال؛ این فقط پاسخ برای بررسی دستی است، نه تأیید مستقل منبع.';
+saveButton.hidden=false;
+}catch(e){out.textContent='پاسخ معتبر دریافت نشد: '+(e.name==='AbortError'?'مهلت دریافت تمام شد':String(e.message||e));}
+finally{clearTimeout(timer);get.disabled=false;}};
+saveButton.onclick=()=>{if(!state)return;download(state.dataName,state.bytes);
+download(state.manifestName,enc.encode(JSON.stringify(state.manifest,null,2)+'\n'));};
+})();
+</script></body></html>
