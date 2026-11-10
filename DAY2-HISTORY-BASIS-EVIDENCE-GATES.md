@@ -12,6 +12,12 @@ Until independent evidence has been verified and bound to the exact instrument, 
 - Portfolio holdings and raw histories are unchanged.
 - No capital-adjustment ledger is applied to an unverified raw/adjusted source.
 
+## Day 3 endpoint semantics warning (2026-11-10)
+
+Third-party API endpoint references identify the trailing parameter of `/ClosingPrice/GetClosingPriceDailyList/{insCode}/{Top}` as a **maximum row count**, with `Top=0` meaning all history. **It is not an adjustment-mode selector**. Never request `.../0`, `.../1`, and `.../2` and label the three responses as raw / capital+dividend / capital-only. Such a mapping would fabricate basis evidence. Sources for independent verification of this parameter interpretation: https://github.com/amirziveh/tsetmc-skill/blob/master/references/api-endpoints.md and https://github.com/solitraderbusiness/tsetmc-mcp/blob/main/docs/endpoints.md. These are third-party references; an official provider specification has NOT been independently authenticated here.
+
+The existence of `GetPriceAdjustList/{insCode}` may provide adjustment **events**, but must not be treated as authoritative proof of three distinct complete adjusted price series or independently validated basis. Distinct sourced price histories and source-controlled evidence are still required. No change to the fail-closed state is authorized.
+
 ## Independent source-evidence acceptance checklist
 
 For **each** source series and instrument, a reviewer must obtain and retain:
