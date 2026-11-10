@@ -33,9 +33,9 @@
 | مستند معیارهای تأیید سه‌حالته | DOCUMENTED | [DAY2-HISTORY-BASIS-EVIDENCE-GATES.md](DAY2-HISTORY-BASIS-EVIDENCE-GATES.md) |
 | آزمون کامل روی آخرین Commit فنی | TESTED | SHA `5dbccc48`، تمام ۱۱ workflow موفق؛ Smoke: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555862 ؛ WebKit: https://github.com/Raminhashemi1/sahamban/actions/runs/42684555936 |
 | اتصال ایمن v129→v133 | TESTED_ON_SYNTHETIC_FIXTURES | تست‌های core، ranking، sample، audit و UI در Smoke/Browser موفق؛ تأیید مالی واقعی همچنان باز است |
-| دریافت مستقل داده واقعی سه حالت TSETMC | NOT_VERIFIED | آخرین دو endpoint runner timeout؛ نیازمند probe تازه از شبکه/دستگاه قابل دسترس و artifact واقعی |
+| دریافت مستقل داده واقعی سه حالت TSETMC | NOT_VERIFIED | هر دو مسیر CDN/WebGW در runner ناموفق. پارامتر انتهایی `GetClosingPriceDailyList/{insCode}/0` طبق راهنمای فنی غیررسمی، تعداد رکورد است نه نوع تعدیل؛ سند مستقل هنوز لازم است |
 | مرز اعتماد شواهد تاریخچه | NOT_IMPLEMENTED | مقدار رشته‌ای `INDEPENDENTLY_ATTESTED` کافی نیست |
-| محاسبه‌گر کارمزد/حجم | IMPLEMENTED_TEST_PENDING | `trade-cost-v1.js`; 7/7 تست محلی؛ CI/browser آخرین SHA در انتظار |
+| محاسبه‌گر کارمزد/حجم | IMPLEMENTED_CI_REVIEW | `trade-cost-v1.js`, اتصال صفحه و تست Chromium؛ Smoke در SHA `34b627f6` موفق؛ تأیید نهایی CI آخرین SHA و تطبیق رسید کارگزاری هنوز لازم است |
 | ادغام/انتشار/سفارش | NOT_DONE | بدون اجازه مجاز نیست |
 
 ## نوبت بعد
