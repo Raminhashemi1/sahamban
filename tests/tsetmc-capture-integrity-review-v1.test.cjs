@@ -138,3 +138,37 @@ test('matching string daily and JSON number adjustment IDs are reviewable, witho
  assert.equal(r.sourceAuthenticated,false);
  assert.equal(r.tradingSignalsEnabled,false);
 });
+
+
+test('original 17-digit numeric JSON insCode lexeme is compared without JS precision loss',()=>{
+ const f=fixture(),id='46348559193224090';
+ f.manifest.insCode=id;
+ for(const kind of ['daily','adjustments']){
+  const field=kind==='daily'?'closingPriceDaily':'priceAdjust';
+  const obj=JSON.parse(f[kind+'Bytes'].toString('utf8'));
+  for(const row of obj[field])row.insCode=Number(id);
+  // JSON.stringify rounds a 17-digit numeric ID; only the original literal is reliable.
+  const raw=JSON.stringify(obj);
+  const bytes=Buffer.from(raw);
+  f[kind+'Bytes']=bytes;
+  f.manifest.files[kind].filename=f.manifest.files[kind].filename.replace(insCode,id);
+  f.manifest.files[kind].url=f.manifest.files[kind].url.replace(insCode,id);
+  f.manifest.files[kind].sizeBytes=bytes.length;
+  f.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
+ }
+ assert.equal(verify(f).status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ const g=fixture();g.manifest.insCode=id;
+ for(const kind of ['daily','adjustments']){
+  const field=kind==='daily'?'closingPriceDaily':'priceAdjust';
+  const obj=JSON.parse(g[kind+'Bytes'].toString('utf8'));
+  for(const row of obj[field])row.insCode=Number(id);
+  const raw=JSON.stringify(obj).replaceAll('"insCode":'+id,'"insCode":46348559193224091');
+  const bytes=Buffer.from(raw);
+  g[kind+'Bytes']=bytes;g.manifest.files[kind].filename=g.manifest.files[kind].filename.replace(insCode,id);
+  g.manifest.files[kind].url=g.manifest.files[kind].url.replace(insCode,id);
+  g.manifest.files[kind].sizeBytes=bytes.length;
+  g.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
+ }
+ assert.equal(Number('46348559193224091'),Number(id));
+ assert.equal(verify(g).reason,'RAW_INSTRUMENT_ID_MISMATCH_DAILY');
+});
