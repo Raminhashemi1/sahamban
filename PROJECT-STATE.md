@@ -356,3 +356,13 @@
 - Current PR #164 head: `00064610a00b170d91ccca79246a9d86fb9f4019`. Its latest eight applicable workflow runs were queued at the last poll; the exact-head smoke workflow (which runs the new regression file) is queued. Do not carry forward the previous 11/11 result as CI for this new SHA; wait for the current exact head to complete.
 - Investigated the 3 IRR fee difference against published 1405 rate schedule: the estimated 0.3712% buy ceiling on gross 41,553,376 IRR is 154,246.13 IRR (rounded total 154,246); current component-rounded estimate is also 154,246; observed ledger debit 154,243, leaving 3 IRR unexplained. Public rate schedules substantiate the ceiling, not the actual broker's per-line discount/rounding. No evidence supports changing the calculator to force-match 154,243. Keep discrepancy explicitly UNATTESTED until actual itemized broker fee components exist; no tariff fudge factor or silent adjustment added.
 - Remaining Day 3 blockers are substantive external evidence: fresh official same-day row if available, provenance-backed adjustment modes, demonstrable archive completeness, and authoritative itemized broker receipt. TSETMC runner timeout is a network limitation, not market data. Do not start Day 4, merge, deploy or enable price-based signals.
+
+
+## 2026-11-10 — ممیزی ادامه نشست و وضعیت روز سوم
+- مخزن و شاخه فعال: `Raminhashemi1/sahamban` / `feat/day2-history-basis-gates-20261109`؛ PR #164 در SHA `6c893960ed3fe8d0360490ca25f14c5bf9076266` باز، Draft و ادغام‌نشده است.
+- اسناد حافظه و نقطه تحویل از GitHub بازخوانی شدند؛ روز سوم همچنان هدف فعال برنامه مصوب است و برنامه تغییر نکرد.
+- ممیزی ایستای ابزار جدید `day3-real-evidence-audit-v1.cjs` و CLI بررسی فایل خام انجام شد؛ کد موجود است اما در این نشست نه تغییر داده شد و نه تست اجرا شد.
+- CI همین SHA: ۶/۱۲ موفق، ۶/۱۲ در حال اجرا، صفر شکست تکمیل‌شده؛ وضعیت نهایی نامشخص و سبز نیست. موارد در حال اجرا شامل Smoke، Browser، WebKit، broker boundaries، mocked-market browser و synthetic 20 holdings هستند.
+- داده اصیل تازه، سه سری مستقل ۰/۱/۲، اثبات پوشش کل تاریخچه و رسید جزءبه‌جزء جدید دریافت نشد. پذیرش روز سوم همچنان `IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE` است. وضعیت قیمت تاریخی `UNKNOWN_NOT_ATTESTED` و سیگنال‌های قیمت‌محور غیرفعال باقی می‌مانند.
+- هیچ ادغام، انتشار، سفارش، معامله، پرداخت یا تغییری در سبد/تاریخچه انجام نشد.
+- **قدم بعدی واحد:** بررسی نتیجه CI برای SHA `6c893960ed3fe8d0360490ca25f14c5bf9076266`؛ سپس فقط پیگیری شواهد بیرونی جدید با ابزارهای موجود.
