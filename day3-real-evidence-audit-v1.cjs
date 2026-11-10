@@ -20,7 +20,9 @@ function auditDay3Evidence({manifest,dailyBytes,adjustmentsBytes,receipt,expecte
  const daily=JSON.parse(dailyBytes.toString('utf8')).closingPriceDaily;
  const adjustments=JSON.parse(adjustmentsBytes.toString('utf8')).priceAdjust;
  const sameDay=daily.filter(row=>String(row.dEven)===expectedDailyDate);
- const noTradeRows=daily.filter(row=>Number(row.zTotTran)===0).length;
+ const noTradeRows=daily.filter(row=>typeof row.zTotTran==='number'&&row.zTotTran===0).length;
+ const unknownTradeCountRows=daily.filter(row=>typeof row.zTotTran!=='number'||
+  !Number.isFinite(row.zTotTran)||row.zTotTran<0).length;
  const dateSet=new Set(daily.map(row=>String(row.dEven)));
  const adjustmentDatesInHistory=adjustments.filter(row=>dateSet.has(String(row.dEven)))
   .map(row=>String(row.dEven)).sort();
@@ -35,7 +37,7 @@ function auditDay3Evidence({manifest,dailyBytes,adjustmentsBytes,receipt,expecte
   capturedAdjustmentRows:capture.rowCounts.adjustments,
   latestDailyDate:capture.latestDailyDate,
   expectedDailyDate,expectedDatePublished:sameDay.length===1,
-  noTradeRows,adjustmentDatesInHistory:Object.freeze(adjustmentDatesInHistory),
+  noTradeRows,unknownTradeCountRows,adjustmentDatesInHistory:Object.freeze(adjustmentDatesInHistory),
   ledgerArithmeticReconciled,
   receiptReviewStatus:buyReceipt?.status||'NOT_SUPPLIED',
   observedFeeRial:buyReceipt?.observedFeesRial??null,
