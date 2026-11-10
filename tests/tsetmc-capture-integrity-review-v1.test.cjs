@@ -120,7 +120,7 @@ test('real-format per-row instrument identity mismatch is rejected even with rec
   const bytes=Buffer.from(JSON.stringify(obj));
   f[kind+'Bytes']=bytes;f.manifest.files[kind].sizeBytes=bytes.length;
   f.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
-  assert.equal(verify(f).reason,'ROW_INSTRUMENT_MISMATCH_'+kind.toUpperCase());
+  assert.equal(verify(f).reason,'RAW_INSTRUMENT_ID_MISMATCH_'+kind.toUpperCase());
  }
 });
 test('matching string daily and JSON number adjustment IDs are reviewable, without authentication',()=>{
