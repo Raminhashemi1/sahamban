@@ -188,3 +188,11 @@ Hourly condition-watch follow-up has been enabled for exact-head PR #164 CI, sup
 
 ## 2026-11-10 — Test failure diagnosed and corrected
 The failed PR162 smoke log shows a fixture routing bug: the duplicate-key adjustment response was supplied to the daily endpoint, so the collector correctly returned `DAILY_DUPLICATE_JSON_KEYS`. Corrected the endpoint-specific fixture on PR162's own branch (commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`); no production logic changed. New CI is queued, not yet green. PR161 remains 12/12 successful. PR164 docs-only checks are queued. No new authenticated TSETMC capture or itemized actual broker fee receipt; Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+
+
+## 2026-11-10 — Corrected PR #162 CI started; current exact-head status
+- PR #162 corrected test-fixture commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4` is on its proper owning branch `feat/tsetmc-bounded-live-evidence-20261109`. At latest poll, 11 checks were visible for this exact SHA: 4 SUCCESS, 2 IN_PROGRESS, 5 QUEUED; the smoke check was queued, so the corrected assertion has not yet been confirmed green.
+- PR #164 latest documentation-only head `b3135e111d3ca08c8d8bfe4adf81d5d136899a6a`, OPEN/DRAFT; all 12 exact-head checks are QUEUED. Do not treat prior-head results as applying to this SHA.
+- PR #161 remains 12/12 successful at its unchanged head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`.
+- The fixture correction does not produce any real provider response. Still missing: instrument-bound raw TSETMC mode-0 capture, adjustment event data and mode-1/2 outputs with provenance/hashes; and a redacted itemized broker settlement for the actual 3 IRR difference. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+- No tests were manually rerun, no production collector code changed, and no merge/deploy/order/trade/payment/holdings mutation/signal activation occurred.
