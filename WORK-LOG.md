@@ -465,3 +465,12 @@
 - PR #162 changed-file inventory contains only the bounded collector, its tests and smoke workflow; no new captured raw evidence artifact is included. PR #161 adds the three-mode adapter test; it does not itself provide authenticated three-mode provider bytes.
 - Private evidence remains outstanding: user-network raw mode-0 capture + adjustment events + mode-1/2 outputs and metadata/hashes; redacted itemized settlement statement for the actual broker debit. Public fee ceiling alone cannot resolve the 3 IRR variance.
 - No prior tests rerun, no code changes, no merge/deploy/trade/order/payment/holdings change. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+
+
+## 2026-11-10 — Diagnosed and corrected PR #162 smoke-test defect
+- Retrieved the full failed GitHub Actions job log for PR #162 smoke (job 129823211448). The only failing assertion was the duplicate-key test's adjustment-response case: the test fixture returned the same daily payload for both endpoints, so the collector correctly failed first with `DAILY_DUPLICATE_JSON_KEYS` instead of the expected `ADJUSTMENTS_DUPLICATE_JSON_KEYS`. All other 9 tests in that file and all 21 companion capital-action tests passed.
+- Corrected the fixture on the owning PR #162 branch `feat/tsetmc-bounded-live-evidence-20261109` so it selects the daily or adjustment JSON body based on the requested endpoint. Commit: `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`. This changes only the test fixture, not the collector's duplicate-key detection or production logic. New CI was queued for the corrected exact head; results not yet available.
+- PR #161 remains 12/12 success at head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`.
+- PR #164 has new docs-only head `32e4484598c3da23f2e6a9559dead1d15c4f1984`, OPEN/DRAFT, with 12 exact-head checks queued at latest poll. No green result yet.
+- Still no authenticated TSETMC raw capture + adjustment-event/mode outputs or redacted itemized actual fee receipt. 3 IRR variance unresolved. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+- No merge, deployment, order, trade, payment, holdings mutation or signal activation.
