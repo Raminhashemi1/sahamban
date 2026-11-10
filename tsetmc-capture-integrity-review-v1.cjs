@@ -86,7 +86,10 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
  return Object.freeze({status:'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW',reason:null,
   insCode:manifest.insCode,checkedCaptureTime:manifest.collectedAt,
   rowCounts:Object.freeze(counts),latestDailyDate,
-  captureScope:bounded?'BOUNDED_DAILY_TOP_500':'UNBOUNDED_DAILY_TOP_0',fullHistoryCaptured:!bounded,
+  captureScope:bounded?'BOUNDED_DAILY_TOP_500':'UNBOUNDED_DAILY_TOP_0',
+  // top=0 requests an unbounded response; neither endpoint scope nor
+  // matching row counts prove the server returned its entire historical archive.
+  fullHistoryCaptured:false,
   byteIntegrityVerified:true,sourceAuthenticated:false,
   historyPriceBasisVerified:false,capitalActionsVerified:false,
   entryEligible:false,tradingSignalsEnabled:false,
