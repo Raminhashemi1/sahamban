@@ -20,6 +20,31 @@ const isDate=d=>{
  const y=+s.slice(0,4),m=+s.slice(4,6),day=+s.slice(6),dt=new Date(Date.UTC(y,m-1,day,12));
  return dt.getUTCFullYear()===y&&dt.getUTCMonth()+1===m&&dt.getUTCDate()===day;
 };
+function hasDuplicateJsonObjectKeys(raw){
+ const stack=[];
+ for(let i=0;i<raw.length;i++){
+  const ch=raw[i];
+  if(ch==='"'){
+   const start=i;let escaped=false;
+   for(i++;i<raw.length;i++){
+    if(escaped){escaped=false;continue;}
+    if(raw[i]==='\\'){escaped=true;continue;}
+    if(raw[i]==='"')break;
+   }
+   if(i>=raw.length)return false;
+   let j=i+1;while(j<raw.length&&/\s/.test(raw[j]))j++;
+   if(raw[j]===':'&&stack.length&&stack[stack.length-1].type==='object'){
+    let key;try{key=JSON.parse(raw.slice(start,i+1));}catch{return false;}
+    const object=stack[stack.length-1];
+    if(object.keys.has(key))return true;
+    object.keys.add(key);
+   }
+  }else if(ch==='{')stack.push({type:'object',keys:new Set()});
+  else if(ch==='[')stack.push({type:'array'});
+  else if(ch==='}'||ch===']')stack.pop();
+ }
+ return false;
+}
 function validate(kind,data){
  const key=kind==='daily'?'closingPriceDaily':'priceAdjust';
  const rows=data?.[key];
@@ -78,6 +103,7 @@ async function captureTsetmcEvidence(insCode,{fetcher=globalThis.fetch,timeoutMs
    if(!total)return fail(kind.toUpperCase()+'_EMPTY_BODY');
    const bytes=Buffer.concat(chunks,total),raw=bytes.toString('utf8');
    if(Buffer.from(raw,'utf8').compare(bytes)!==0)return fail(kind.toUpperCase()+'_INVALID_UTF8');
+   if(hasDuplicateJsonObjectKeys(raw))return fail(kind.toUpperCase()+'_DUPLICATE_JSON_KEYS');
    let parsed;
    try{parsed=JSON.parse(raw);}catch{return fail(kind.toUpperCase()+'_MALFORMED_JSON');}
    const problem=validate(kind,parsed);
