@@ -112,9 +112,14 @@ test('rejects duplicate JSON object keys before preserving raw capture',async()=
 });
 
 test('duplicate scanner allows repeated schema keys across rows and escaped quotes',async()=>{
- const body='{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200,"note":"escaped quote: \\"ok\\""},{"dEven":20260322,"pClosing":1210}]}';
- const fetcher=withUrl(async url=>new Response(body,{headers:{'content-type':'application/json'}}));
+ let n=0;
+ const fetcher=withUrl(async url=>{
+  n++;
+  const body=n===1
+   ?'{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200,"note":"escaped quote: \\"ok\\""},{"dEven":20260322,"pClosing":1210}]}'
+   :'{"priceAdjust":[{"dEven":20260321,"pClosing":800}]}';
+  return new Response(body,{headers:{'content-type':'application/json'}});
+ });
  const r=await collect(code,{fetcher});
- assert.equal(r.status,'COLLECTION_INSUFFICIENT');
- assert.equal(r.reason,'ADJUSTMENTS_DUPLICATE_JSON_KEYS');
+ assert.equal(r.status,'CAPTURED_FOR_MANUAL_REVIEW');
 });
