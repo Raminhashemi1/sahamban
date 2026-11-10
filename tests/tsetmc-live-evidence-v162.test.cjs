@@ -99,15 +99,12 @@ test('rejects a streamed body exceeding the size cap',async()=>{
 
 test('rejects duplicate JSON object keys before preserving raw capture',async()=>{
  const cases=[
-  ['{"closingPriceDaily":[],"closingPriceDaily":[]}', '{"priceAdjust":[]}', 'DAILY_DUPLICATE_JSON_KEYS'],
-  ['{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200,"pClosing":1100}]}', '{"priceAdjust":[]}', 'DAILY_DUPLICATE_JSON_KEYS'],
-  ['{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200}]}', '{"priceAdjust":[{"dEven":20260321,"pClosing":800,"pClosing":700}]}', 'ADJUSTMENTS_DUPLICATE_JSON_KEYS']
+  ['{"closingPriceDaily":[],"closingPriceDaily":[]}','DAILY_DUPLICATE_JSON_KEYS'],
+  ['{"closingPriceDaily":[{"dEven":20260321,"pClosing":1200,"pClosing":1100}]}','DAILY_DUPLICATE_JSON_KEYS'],
+  ['{"priceAdjust":[{"dEven":20260321,"pClosing":800,"pClosing":700}]}','ADJUSTMENTS_DUPLICATE_JSON_KEYS']
  ];
- for(const [dailyBody,adjustmentsBody,reason] of cases){
-  const fetcher=withUrl(async url=>new Response(
-   url.includes('GetClosingPriceDailyList')?dailyBody:adjustmentsBody,
-   {headers:{'content-type':'application/json'}}
-  ));
+ for(const [body,reason] of cases){
+  const fetcher=withUrl(async url=>new Response(body,{headers:{'content-type':'application/json'}}));
   const r=await collect(code,{fetcher});
   assert.equal(r.status,'COLLECTION_INSUFFICIENT');
   assert.equal(r.reason,reason);
