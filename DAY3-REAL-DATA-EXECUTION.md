@@ -176,3 +176,11 @@ The user-provided screenshot confirms the narrow Day 3 continuation: investigate
 ## 2026-11-10 — Follow-up protocol
 
 Hourly condition-watch follow-up has been enabled for exact-head PR #164 CI, supporting PRs #161/#162, public TSETMC evidence routes and actual itemized broker-fee evidence. At latest check PR #164 head was `15704d87514a20c3208078983ed5b430d7565d2f`, OPEN/DRAFT; 2 of 11 visible exact-head runs succeeded and 9 remained queued. Public TSE Client documentation provides a browser-based raw/mode comparison path, but no fresh capture has been obtained. The broker public fee page confirms a 0.3712% ceiling only, not the actual per-component debit. Day 3 remains blocked pending raw market evidence and a redacted itemized settlement statement.
+
+
+## 2026-11-10 — Immediate follow-up check
+- PR164 exact head `d6c69d820f5e58a325474774f2d8ff3e8bad87e0`: 3 successful, 4 running, 5 queued of 12 checks. Do not accept CI yet.
+- PR161 exact head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`: all 12 checks successful; this verifies adapter tests, not real provider evidence.
+- PR162 exact head `c0d15857fc3a353da17f3845202b664aedb62d11`: 11 successful, smoke failed in the test command for v162 live evidence and CLI. Diagnose logs before code changes. The PR contains collector code/tests only, not captured market evidence.
+- Still required: TSETMC-reachable browser export containing raw mode 0, adjustment event data, mode 1 and mode 2 outputs, symbol identity, capture timestamp, library version and SHA-256 manifest; plus redacted itemized settlement receipt showing actual component debits and rounding.
+- Status remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. No test reruns, code changes, merge, deployment, order, trade or holdings mutation in this follow-up.
