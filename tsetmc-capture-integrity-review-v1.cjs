@@ -22,12 +22,15 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
  if(manifest.sourceAuthenticated!==false||manifest.priceBasisVerified!==false||
   manifest.capitalActionsVerified!==false||manifest.entryEligible!==false||
   manifest.tradingSignalsEnabled!==false)return fail('FORGED_AUTHORIZATION_FLAGS');
+ const bounded=manifest.captureScope==='BOUNDED_DAILY_TOP_500'&&manifest.dailyTop===500;
+ if((manifest.captureScope!==undefined||manifest.dailyTop!==undefined)&&!bounded)
+  return fail('INVALID_CAPTURE_SCOPE');
  const counts={};let latestDailyDate=null;
  for(const [kind,bytes] of [['daily',dailyBytes],['adjustments',adjustmentsBytes]]){
   const meta=manifest.files?.[kind],field=kind==='daily'?'closingPriceDaily':'priceAdjust';
   if(!meta||typeof meta!=='object'||Array.isArray(meta))return fail('MISSING_'+kind.toUpperCase()+'_METADATA');
   const expected=HOST+(kind==='daily'
-   ?'/api/ClosingPrice/GetClosingPriceDailyList/'+manifest.insCode+'/0'
+   ?'/api/ClosingPrice/GetClosingPriceDailyList/'+manifest.insCode+(bounded?'/500':'/0')
    :'/api/ClosingPrice/GetPriceAdjustList/'+manifest.insCode);
   const expectedFilename='tsetmc-'+manifest.insCode+'-'+manifest.collectedAt.replace(/[:.]/g,'-')+'-'+kind+'.json';
   if(typeof meta.contentType!=='string'||!/^application\/json(?:\s*;|$)/.test(meta.contentType)||meta.contentType!==meta.contentType.toLowerCase())
@@ -43,7 +46,7 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
   const raw=bytes.toString('utf8');
   if(!Buffer.from(raw,'utf8').equals(bytes))return fail('INVALID_UTF8_'+kind.toUpperCase());
   let data;try{data=JSON.parse(raw);}catch{return fail('INVALID_JSON_'+kind.toUpperCase());}
-  const rows=data?.[field];if(!Array.isArray(rows)||rows.length>10000||rows.length!==meta.rowCount)
+  const rows=data?.[field];if(!Array.isArray(rows)||rows.length>(kind==='daily'&&bounded?500:10000)||rows.length!==meta.rowCount)
    return fail('INVALID_ROWS_'+kind.toUpperCase());
   const seen=new Set();
   for(const row of rows){
@@ -63,6 +66,7 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
  return Object.freeze({status:'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW',reason:null,
   insCode:manifest.insCode,checkedCaptureTime:manifest.collectedAt,
   rowCounts:Object.freeze(counts),latestDailyDate,
+  captureScope:bounded?'BOUNDED_DAILY_TOP_500':'UNBOUNDED_DAILY_TOP_0',fullHistoryCaptured:!bounded,
   byteIntegrityVerified:true,sourceAuthenticated:false,
   historyPriceBasisVerified:false,capitalActionsVerified:false,
   entryEligible:false,tradingSignalsEnabled:false,
