@@ -66,3 +66,25 @@ test('mobile capture offers two distinct user-triggered downloads, not an automa
  assert.ok(html.includes('GetClosingPriceDaily/'));
  assert.match(html,/sourceAuthenticated:false/);
 });
+
+test('a missing or malformed response instrument ID is never accepted',()=>{
+ for(const raw of [
+  '{"closingPriceDaily":{"dEven":20261110,"pClosing":4810}}',
+  '{"closingPriceDaily":{"dEven":20261110,"insCode":null,"pClosing":4810}}',
+  '{"closingPriceDaily":{"dEven":20261110,"insCode":true,"pClosing":4810}}',
+  '{"closingPriceDaily":{"dEven":20261110,"insCode":"4634855919322409X","pClosing":4810}}'
+ ]){
+  const f=fixture();f.rawBytes=Buffer.from(raw);
+  f.manifest.file.sizeBytes=f.rawBytes.length;
+  f.manifest.file.sha256=createHash('sha256').update(f.rawBytes).digest('hex');
+  assert.equal(review(f).reason,'INSTRUMENT_MISMATCH');
+ }
+});
+test('the exact 17-digit identity is accepted as numeric token or exact decimal string',()=>{
+ const f=fixture();
+ const g=fixture();g.rawBytes=Buffer.from(g.rawBytes.toString().replace('"insCode":'+insCode,'"insCode":"'+insCode+'"'));
+ g.manifest.file.sizeBytes=g.rawBytes.length;
+ g.manifest.file.sha256=createHash('sha256').update(g.rawBytes).digest('hex');
+ assert.equal(review(f).status,'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW');
+ assert.equal(review(g).status,'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW');
+});
