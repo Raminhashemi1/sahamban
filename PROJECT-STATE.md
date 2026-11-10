@@ -398,3 +398,10 @@
 - PR161 head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`: 12/12 success.
 - PR162 head `c0d15857fc3a353da17f3845202b664aedb62d11`: 11 success, 1 smoke failure. Failure step invokes the v162 live evidence and CLI tests; diagnosis pending.
 - Neither supporting PR supplies the missing authenticated market capture or actual itemized fee receipt. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+
+
+## 2026-11-10 — PR #162 smoke failure diagnosed; fixture correction queued
+- Full failed job log confirms a test-fixture routing defect, not collector production logic: adjustment duplicate-key fixture was returned for the daily endpoint, so correct fail-fast result was `DAILY_DUPLICATE_JSON_KEYS`. Other 9 collector tests and 21 companion capital-action tests passed.
+- Fixed endpoint-specific fixtures on PR162 owning branch; commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`. New CI queued; not yet verified.
+- PR161 12/12 success. PR164 docs-only head `32e4484598c3da23f2e6a9559dead1d15c4f1984` 12/12 queued at last poll.
+- External market capture and itemized fee receipt still missing; Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
