@@ -87,3 +87,26 @@ test('requires string instrument ID and TSETMC JSON content type metadata',()=>{
  const y=fixture();y.manifest.files.adjustments.contentType='text/plain';
  assert.equal(verify(y).reason,'INVALID_ADJUSTMENTS_CONTENT_TYPE');
 });
+
+
+test('browser Top=500 capture verifies bytes with explicitly limited historical scope',()=>{
+ const f=fixture();
+ f.manifest.captureScope='BOUNDED_DAILY_TOP_500';f.manifest.dailyTop=500;
+ f.manifest.files.daily.url=f.manifest.files.daily.url.replace(/\/0$/,'/500');
+ const r=verify(f);
+ assert.equal(r.status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ assert.equal(r.captureScope,'BOUNDED_DAILY_TOP_500');
+ assert.equal(r.fullHistoryCaptured,false);
+ assert.equal(r.sourceAuthenticated,false);
+ assert.equal(r.historyPriceBasisVerified,false);
+});
+test('browser scope cannot be falsely marked full history or alter endpoint contract',()=>{
+ const f=fixture();f.manifest.captureScope='BOUNDED_DAILY_TOP_500';f.manifest.dailyTop=500;
+ assert.equal(verify(f).reason,'INVALID_DAILY_SOURCE_METADATA');
+ const g=fixture();g.manifest.files.daily.url=g.manifest.files.daily.url.replace(/\/0$/,'/500');
+ assert.equal(verify(g).reason,'INVALID_DAILY_SOURCE_METADATA');
+ const h=fixture();h.manifest.captureScope='BOUNDED_DAILY_TOP_500';h.manifest.dailyTop=1000;
+ assert.equal(verify(h).reason,'INVALID_CAPTURE_SCOPE');
+ const j=fixture();j.manifest.captureScope='UNBOUNDED';j.manifest.dailyTop=0;
+ assert.equal(verify(j).reason,'INVALID_CAPTURE_SCOPE');
+});
