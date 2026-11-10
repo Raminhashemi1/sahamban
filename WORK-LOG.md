@@ -457,3 +457,11 @@
 - Rechecked the broker's own public fee page: it describes the 0.3712% buy rate as a ceiling under the stated schedule. This confirms the public ceiling only; it does not disclose this execution's actual component debits or broker-specific rounding/discount. Source: https://idbr.ir/fees .
 - External user-provided evidence still required: (a) exported raw TSETMC mode-0 data plus adjustment events and mode-1/2 results, instrument identity, capture time and hashes, from a TSETMC-reachable browser; (b) a de-identified itemized settlement statement for the actual buy showing each fee component and deducted amount. Do not provide account/client identifiers, national ID, trade IDs or credentials.
 - Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. No tests were re-run; no code, holdings, prices, orders, signals, merge or deployment changed.
+
+
+## 2026-11-10 — Immediate follow-up run
+- Ran the saved hourly follow-up immediately on user request. Latest PR #164 head is `d6c69d820f5e58a325474774f2d8ff3e8bad87e0`, OPEN/DRAFT, base main `48853697ae7df9e20b75dffdb1d957d9563ca9a2`. Its 12 exact-head checks: 3 SUCCESS, 4 IN_PROGRESS, 5 QUEUED, no completed failures. CI is not yet green.
+- Supporting PR #161 head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`: 12/12 SUCCESS. PR #162 head `c0d15857fc3a353da17f3845202b664aedb62d11`: 11/12 SUCCESS, smoke FAILED. The failed step runs `tests/tsetmc-live-evidence-v162.test.cjs` and `tests/tsetmc-evidence-cli-v162.test.cjs`; root cause not established from the check summary and must be diagnosed from logs before modifying code.
+- PR #162 changed-file inventory contains only the bounded collector, its tests and smoke workflow; no new captured raw evidence artifact is included. PR #161 adds the three-mode adapter test; it does not itself provide authenticated three-mode provider bytes.
+- Private evidence remains outstanding: user-network raw mode-0 capture + adjustment events + mode-1/2 outputs and metadata/hashes; redacted itemized settlement statement for the actual broker debit. Public fee ceiling alone cannot resolve the 3 IRR variance.
+- No prior tests rerun, no code changes, no merge/deploy/trade/order/payment/holdings change. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
