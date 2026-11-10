@@ -110,3 +110,31 @@ test('browser scope cannot be falsely marked full history or alter endpoint cont
  const j=fixture();j.manifest.captureScope='UNBOUNDED';j.manifest.dailyTop=0;
  assert.equal(verify(j).reason,'INVALID_CAPTURE_SCOPE');
 });
+
+
+test('real-format per-row instrument identity mismatch is rejected even with recomputed SHA',()=>{
+ for(const kind of ['daily','adjustments']){
+  const f=fixture(),field=kind==='daily'?'closingPriceDaily':'priceAdjust';
+  const obj=JSON.parse(f[kind+'Bytes'].toString('utf8'));
+  obj[field][0].insCode='99999999999999999';
+  const bytes=Buffer.from(JSON.stringify(obj));
+  f[kind+'Bytes']=bytes;f.manifest.files[kind].sizeBytes=bytes.length;
+  f.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
+  assert.equal(verify(f).reason,'ROW_INSTRUMENT_MISMATCH_'+kind.toUpperCase());
+ }
+});
+test('matching string daily and JSON number adjustment IDs are reviewable, without authentication',()=>{
+ const f=fixture();
+ const daily=JSON.parse(f.dailyBytes),adjust=JSON.parse(f.adjustmentsBytes);
+ daily.closingPriceDaily.forEach(row=>{row.insCode=insCode;});
+ adjust.priceAdjust.forEach(row=>{row.insCode=Number(insCode);});
+ for(const [kind,obj] of [['daily',daily],['adjustments',adjust]]){
+  const bytes=Buffer.from(JSON.stringify(obj));f[kind+'Bytes']=bytes;
+  f.manifest.files[kind].sizeBytes=bytes.length;
+  f.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
+ }
+ const r=verify(f);
+ assert.equal(r.status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ assert.equal(r.sourceAuthenticated,false);
+ assert.equal(r.tradingSignalsEnabled,false);
+});
