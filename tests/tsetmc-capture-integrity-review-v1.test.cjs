@@ -76,3 +76,14 @@ test('manifest timestamp is bound to saved filenames and malformed timestamp typ
  const g=fixture();g.manifest.collectedAt=Symbol('not a date');
  assert.equal(verify(g).reason,'INVALID_CAPTURE_MANIFEST');
 });
+
+test('requires string instrument ID and TSETMC JSON content type metadata',()=>{
+ const f=fixture();f.manifest.insCode=123456789012345;
+ assert.equal(verify(f).reason,'INVALID_CAPTURE_MANIFEST');
+ for(const bad of ['text/html','application/javascript',null,'APPLICATION/JSON']){
+  const x=fixture();x.manifest.files.daily.contentType=bad;
+  assert.equal(verify(x).reason,'INVALID_DAILY_CONTENT_TYPE');
+ }
+ const y=fixture();y.manifest.files.adjustments.contentType='text/plain';
+ assert.equal(verify(y).reason,'INVALID_ADJUSTMENTS_CONTENT_TYPE');
+});
