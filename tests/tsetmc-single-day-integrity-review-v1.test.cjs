@@ -7,7 +7,7 @@ function fixture(){
  const rawBytes=Buffer.from('{"closingPriceDaily":{"dEven":20261110,"insCode":46348559193224090,"pClosing":4810}}');
  const manifest={status:'SINGLE_DAY_CAPTURE_FOR_REVIEW',insCode,dEven:d,collectedAt:time,
   host:'https://cdn.tsetmc.com',
-  sourceUrl:'https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDaily/'+insCode+'/'+d,
+ assert.ok(html.includes('GetClosingPriceDaily/'));
   file:{filename:'tsetmc-single-'+insCode+'-'+d+'-'+time.replace(/[:.]/g,'-')+'.json',
    sizeBytes:rawBytes.length,sha256:createHash('sha256').update(rawBytes).digest('hex'),
    contentType:'application/json; charset=utf-8'},
