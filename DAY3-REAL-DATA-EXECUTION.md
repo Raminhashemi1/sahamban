@@ -184,3 +184,7 @@ Hourly condition-watch follow-up has been enabled for exact-head PR #164 CI, sup
 - PR162 exact head `c0d15857fc3a353da17f3845202b664aedb62d11`: 11 successful, smoke failed in the test command for v162 live evidence and CLI. Diagnose logs before code changes. The PR contains collector code/tests only, not captured market evidence.
 - Still required: TSETMC-reachable browser export containing raw mode 0, adjustment event data, mode 1 and mode 2 outputs, symbol identity, capture timestamp, library version and SHA-256 manifest; plus redacted itemized settlement receipt showing actual component debits and rounding.
 - Status remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. No test reruns, code changes, merge, deployment, order, trade or holdings mutation in this follow-up.
+
+
+## 2026-11-10 — Test failure diagnosed and corrected
+The failed PR162 smoke log shows a fixture routing bug: the duplicate-key adjustment response was supplied to the daily endpoint, so the collector correctly returned `DAILY_DUPLICATE_JSON_KEYS`. Corrected the endpoint-specific fixture on PR162's own branch (commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`); no production logic changed. New CI is queued, not yet green. PR161 remains 12/12 successful. PR164 docs-only checks are queued. No new authenticated TSETMC capture or itemized actual broker fee receipt; Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
