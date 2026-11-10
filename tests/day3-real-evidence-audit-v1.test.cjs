@@ -67,3 +67,10 @@ test('original capture objects remain unchanged',()=>{
  assert.equal(JSON.stringify(f.manifest),saved);
  assert.equal(f.dailyBytes.toString(),bytes);
 });
+
+test('impossible Gregorian expected market date is rejected rather than silently accepted',()=>{
+ const f=fixture();f.expectedDailyDate='20260230';
+ assert.throws(()=>auditDay3Evidence(f),/real calendar date/);
+ const leap=fixture();leap.expectedDailyDate='20240229';
+ assert.equal(auditDay3Evidence(leap).expectedDatePublished,false);
+});
