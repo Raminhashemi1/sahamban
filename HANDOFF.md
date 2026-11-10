@@ -56,3 +56,11 @@
 - موارد نامطمئن:
 - موارد نیازمند تأیید کاربر:
 - فقط یک کار بعدی:
+
+## بررسی زنده نشست 2026-11-10 (پس از شروع روز سوم)
+
+- PR #164 همچنان OPEN / DRAFT / NOT MERGED است. SHA پیش از ثبت این یادداشت‌ها: `278d8df64a1dfcb6cb416acf8b18167f91a67556`.
+- CI همان SHA در آخرین استعلام: **۱۰ از ۱۱ workflow موفق**؛ Smoke موفق: https://github.com/Raminhashemi1/sahamban/actions/runs/42769444261 ؛ quote-basis موفق: https://github.com/Raminhashemi1/sahamban/actions/runs/42769444315 ؛ WebKit هنوز `in_progress`: https://github.com/Raminhashemi1/sahamban/actions/runs/42769444354 . هیچ ادعای ۱۱/۱۱ برای این SHA ثبت نشده است.
+- artifact واقعی همان Smoke با شناسه `13741265949` و نام `live-market-v111.json` خوانده شد: زمان `2026-11-10T06:35:25.340Z`، نماد `فولاد`، میزبان `https://cdn.tsetmc.com/api`، `UNVERIFIED_NETWORK` و `UND_ERR_CONNECT_TIMEOUT`. نتیجه فقط به runner مربوط است؛ داده تعدیل‌شده یا شاهد تأیید منبع به‌دست نیامد.
+- این ثبت صرفاً مستنداتی است؛ SHA جدید مستندات به نتیجه CI فوق ارث نمی‌برد. تطبیق کارمزد با رسید واقعی نیز هنوز انجام نشده است.
+- **تنها قدم بعدی:** دریافت نمونه واقعی فقط-خواندنی با زمان، پاسخ، digest و مستندات منشأ/معنای endpoint از شبکه‌ای که دسترسی دارد؛ تا تأیید مستقل، تاریخچه `UNKNOWN_NOT_ATTESTED` و سیگنال‌ها مسدود بمانند.
