@@ -16,8 +16,8 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||
   manifest.status!=='CAPTURED_FOR_MANUAL_REVIEW'||!/^\d{8,25}$/.test(String(manifest.insCode??''))||
   /^0+$/.test(manifest.insCode)||manifest.host!==HOST||
-  !Number.isFinite(Date.parse(manifest.collectedAt))||
-  typeof manifest.collectedAt!=='string'||new Date(manifest.collectedAt).toISOString()!==manifest.collectedAt)
+  typeof manifest.collectedAt!=='string'||!Number.isFinite(Date.parse(manifest.collectedAt))||
+  new Date(manifest.collectedAt).toISOString()!==manifest.collectedAt)
   return fail('INVALID_CAPTURE_MANIFEST');
  if(manifest.sourceAuthenticated!==false||manifest.priceBasisVerified!==false||
   manifest.capitalActionsVerified!==false||manifest.entryEligible!==false||
@@ -29,7 +29,8 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
   const expected=HOST+(kind==='daily'
    ?'/api/ClosingPrice/GetClosingPriceDailyList/'+manifest.insCode+'/0'
    :'/api/ClosingPrice/GetPriceAdjustList/'+manifest.insCode);
-  if(meta.url!==expected||typeof meta.filename!=='string'||
+  const expectedFilename='tsetmc-'+manifest.insCode+'-'+manifest.collectedAt.replace(/[:.]/g,'-')+'-'+kind+'.json';
+  if(meta.url!==expected||typeof meta.filename!=='string'||meta.filename!==expectedFilename||
    !/^tsetmc-\d{8,25}-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z-(?:daily|adjustments)\.json$/.test(meta.filename)||
    !meta.filename.startsWith('tsetmc-'+manifest.insCode+'-')||
    !meta.filename.endsWith('-'+kind+'.json'))return fail('INVALID_'+kind.toUpperCase()+'_SOURCE_METADATA');
