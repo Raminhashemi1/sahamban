@@ -172,3 +172,25 @@ test('original 17-digit numeric JSON insCode lexeme is compared without JS preci
  assert.equal(Number('46348559193224091'),Number(id));
  assert.equal(verify(g).reason,'RAW_INSTRUMENT_ID_MISMATCH_DAILY');
 });
+
+
+test('exact unrepresentable 17-digit provider ID is accepted only from original JSON lexeme',()=>{
+ const f=fixture(),exact='46348559193224091';
+ f.manifest.insCode=exact;
+ for(const kind of ['daily','adjustments']){
+  const field=kind==='daily'?'closingPriceDaily':'priceAdjust';
+  const obj=JSON.parse(f[kind+'Bytes'].toString('utf8'));
+  obj[field].forEach(row=>{row.insCode=Number(exact);});
+  const raw=JSON.stringify(obj).replaceAll('"insCode":46348559193224090','"insCode":'+exact);
+  const bytes=Buffer.from(raw);
+  f[kind+'Bytes']=bytes;f.manifest.files[kind].filename=f.manifest.files[kind].filename.replace(insCode,exact);
+  f.manifest.files[kind].url=f.manifest.files[kind].url.replace(insCode,exact);
+  f.manifest.files[kind].sizeBytes=bytes.length;
+  f.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
+ }
+ assert.equal(Number(exact),Number('46348559193224090'));
+ const r=verify(f);
+ assert.equal(r.status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ assert.equal(r.insCode,exact);
+ assert.equal(r.sourceAuthenticated,false);
+});
