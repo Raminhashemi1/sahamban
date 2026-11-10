@@ -52,6 +52,13 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
   for(const row of rows){
    if(!row||typeof row!=='object'||Array.isArray(row)||!validDate(row.dEven))
     return fail('INVALID_DATE_'+kind.toUpperCase());
+   // For provider rows that carry an instrument ID, bind it to the exact
+   // requested code. Adjustment endpoint responses can encode the ID as a
+   // JSON number (precision-limited in JS); do not claim identity attestation.
+   if(Object.prototype.hasOwnProperty.call(row,'insCode')&&
+    (row.insCode===null||!/^\d{8,25}$/.test(String(row.insCode))||
+     String(row.insCode)!==manifest.insCode))
+    return fail('ROW_INSTRUMENT_MISMATCH_'+kind.toUpperCase());
    if(kind==='daily'){
     if(typeof row.pClosing!=='number'||!Number.isFinite(row.pClosing)||row.pClosing<=0)
      return fail('INVALID_DAILY_PRICE');
