@@ -351,3 +351,7 @@ Append a new dated entry below at the end of every work session:
 
 ## 2026-11-10 — Immediate follow-up reconciliation
 Latest exact PR heads and CI were rechecked. PR164 `d6c69d820f5e58a325474774f2d8ff3e8bad87e0`: 3/12 success, 4/12 running, 5/12 queued. PR161 `7d71adbc9cd7836d3679eca2400d286ce0f328ce`: 12/12 success. PR162 `c0d15857fc3a353da17f3845202b664aedb62d11`: 11/12 success and smoke failure in the v162 live-evidence/CLI test step; exact failure cause not yet established. PR162 changed files are collector + tests + workflow, not a new provider capture artifact. Missing user-supplied mode-0 raw payload/events/mode-1/2 outputs and redacted itemized fee statement remain the two external blockers. No code changes or operational financial actions. Day 3 remains blocked.
+
+
+## 2026-11-10 — PR162 failure root cause and patch
+Fetched the complete failed smoke-job log. The collector correctly returned the daily duplicate-key error because the test fixture supplied the adjustment duplicate-key body to the daily endpoint. Corrected the test fixture on the PR162 owning branch only (commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`); production collector logic unchanged. CI for corrected PR162 head is queued. PR161 remains 12/12 success. PR164 docs-only head has 12 checks queued. No actual TSETMC capture or itemized fee statement is present; Day 3 remains blocked on external evidence.
