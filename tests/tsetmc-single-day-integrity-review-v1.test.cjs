@@ -88,7 +88,7 @@ test('the exact 17-digit identity is accepted as numeric token or exact decimal 
  assert.equal(review(f).status,'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW');
  assert.equal(review(g).status,'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW');
 });
-\n
+
 test('duplicate JSON identity, date, price, and envelope keys are rejected as ambiguous',()=>{
  const cases=[
   ['"insCode":46348559193224090,"insCode":46348559193224090','DUPLICATE_INSCODE_FIELDS'],
