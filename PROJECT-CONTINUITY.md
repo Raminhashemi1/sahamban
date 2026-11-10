@@ -199,3 +199,11 @@ Append a new dated entry below at the end of every work session:
 - Local pure tests: 7/7 passed. Exact PR CI for latest SHA still pending; do not mark CI passed until observed.
 - Fee rates used: buy 0.3712%, sell 0.88% including 0.5% sale tax; component ceilings based on a brokerage page citing edition 49, not a directly fetched regulator circular. Treat as upper-bound estimate pending official circular and actual broker-receipt reconciliation. No ETF rate, slippage or liquidity model.
 - Remaining day-three blockers: obtain fresh live TSETMC samples from reachable network, authenticate three distinct 0/1/2 adjustment series and their provenance, reconcile fees/rounding with official schedule and broker receipts. No trading signals or orders enabled.
+
+
+#### 2026-11-10 — fresh handoff readback and exact-SHA connectivity artifact
+- Starting head `278d8df64a1dfcb6cb416acf8b18167f91a67556`; PR #164 open/draft, not merged. Six canonical memory files read. The latest Day 3 handoff supersedes old section 9 historical Smoke-diagnosis instructions.
+- Exact `278d8df64a1dfcb6cb416acf8b18167f91a67556` workflow-run check: 10/11 success with WebKit proxy still running at last check; Smoke run https://github.com/Raminhashemi1/sahamban/actions/runs/42769444261 success; quote-basis https://github.com/Raminhashemi1/sahamban/actions/runs/42769444315 success; WebKit https://github.com/Raminhashemi1/sahamban/actions/runs/42769444354 in_progress.
+- Smoke artifact ID 13741265949, `live-market-v111.json`, checked 2026-11-10T06:35:25.340Z: `UNVERIFIED_NETWORK` / `UND_ERR_CONNECT_TIMEOUT` to `https://cdn.tsetmc.com/api` for فولاد. No real provider attestation and no proof of network behavior on the user's device.
+- No code edit, merge, deploy, order or user holdings mutation. Documentation checkpoint commits must be checked separately for their own CI.
+- **Next single task:** obtain actual read-only provider sample/provenance from reachable network; until then no mode 0/1/2 attestation or trading signal.
