@@ -18,9 +18,9 @@ small{opacity:.8}code{direction:ltr;unicode-bidi:isolate}
 </head>
 <body><main>
 <h1>دریافت شواهد خام TSETMC</h1>
-<p>فقط دو درخواست عمومی، فقط خواندنی؛ درخواست تاریخچه محدود به ۵۰۰ ردیف اخیر است و معادل کل سابقه تاریخی نیست. بدون حساب کارگزاری یا اطلاعات سبد. هیچ داده‌ای به سهام‌بان یا GitHub بارگذاری نمی‌شود؛ فایل‌ها فقط با کلیک شما روی همین دستگاه ذخیره می‌شوند.</p>
-<label for="code">شناسه عمومی نماد فولاد:</label>
-<input id="code" inputmode="numeric" pattern="[0-9]{8,25}" value="46348559193224090" aria-label="شناسه نماد">
+<p>مخصوص وساخت با شناسه 25514780181345713. فقط دو درخواست عمومی، فقط خواندنی؛ درخواست تاریخچه محدود به ۵۰۰ ردیف اخیر است و معادل کل سابقه تاریخی نیست. بدون حساب کارگزاری یا اطلاعات سبد. هیچ داده‌ای به سهام‌بان یا GitHub بارگذاری نمی‌شود؛ فایل‌ها فقط با کلیک شما روی همین دستگاه ذخیره می‌شوند.</p>
+<label for="code">شناسه عمومی نماد وساخت (تأییدشده در آرشیوهای مستقل):</label>
+<input id="code" inputmode="numeric" pattern="[0-9]{8,25}" value="25514780181345713" aria-label="شناسه نماد">
 <p><button id="capture" type="button">دریافت داده بورس</button></p>
 <p id="status" role="status" aria-live="polite">نسخه اصلاح‌شده: فقط ۵۰۰ رکورد اخیر تاریخچه از API درخواست می‌شود (نه کل تاریخچه). سقف هر پاسخ همچنان ۱ مگابایت است. زمان دریافت حداکثر ۱۲ ثانیه.</p>
 <section id="results" hidden>
@@ -105,6 +105,7 @@ small{opacity:.8}code{direction:ltr;unicode-bidi:isolate}
  $('capture').addEventListener('click',async()=>{
   current=null;$('results').hidden=true;
   const code=$('code').value.trim(),button=$('capture');
+  if(code!=='25514780181345713'){$('status').textContent='برای جلوگیری از اشتباه قبلی، این نسخه فقط داده وساخت را دریافت می‌کند.';return;}
   if(!/^\d{8,25}$/.test(code)||/^0+$/.test(code)){
    $('status').textContent='شناسه باید شامل ۸ تا ۲۵ رقم غیرصفر باشد.';return;
   }
