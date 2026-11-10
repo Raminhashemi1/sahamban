@@ -69,3 +69,15 @@
 - Mandatory carryover aligned to the original Day 3 master-plan goal (testing real exchange data): independently capture TSETMC mode 0/1/2 with exact provenance and validate action events; implement trusted source-evidence boundary. These are NOT complete; the system must remain fail-closed. Preserve original limitations until separately verified.
 - Documentation-only commits after the tested code SHA do not inherit exact-head success automatically. The next chat must check live head/CI again.
 - **Next single task:** in a new conversation, read HANDOFF + MASTER-PLAN and live PR/CI, then begin evidence-based real TSETMC three-mode capture/validation; do not infer authenticity from a mere adjustment flag.
+
+
+## 2026-11-10 — Day 3 started: live-market evidence review and fee-aware calculations
+
+- Confirmed original Day 3 objective from MASTER-PLAN.md: real exchange data tests, buy/sell calculations, important bug fixes.
+- Inspected PR #164 current branch history and live-market diagnostics. The latest available live monitor artifact (run 42670042240, 2026-11-09 18:00Z) reports `UNVERIFIED_NETWORK`, `UND_ERR_CONNECT_TIMEOUT` to `https://cdn.tsetmc.com/api`. The PR smoke artifact from run 42685215334 (2026-11-09 19:38Z) reports the same timeout. The after-close artifact run 42624494977 reports both CDN and WebGW `UND_VERIFIED_NETWORK` due `UND_ERR_CONNECT_TIMEOUT`. This is runner network failure, not proof of TSETMC outage or user-device failure.
+- Added `trade-cost-v1.js`: read-only ceiling estimate for ordinary shares/rights; per-component fees/caps, purchase settlement, sale net proceeds, round-trip P/L and risk-sized quantity respecting purchase budget and after-fee stop-loss risk. No order placement, account access or portfolio mutation.
+- Added `tests/trade-cost-v1.test.cjs` with 7 local Node tests covering 100m IRR totals (buy 0.3712%, sell 0.88% incl 0.5% sale tax), component caps, round-trip P/L, loss case, unsafe inputs and risk/budget sizing. Local run: 7/7 PASS.
+- Integrated calculator into `index.html` / `app.js`, updated calculator explanation and service-worker cache; added Chromium test `tests/trade-cost-v1-browser.cjs` and included both tests in smoke workflow. CI on latest SHA must confirm before claiming integrated test pass.
+- Fee schedule basis: brokerage webpage https://idbr.ir/fees, referencing edition 49 (1405/04/27), last updated 1405/06/10. Not a direct regulator source; values are upper-bound estimates, with rounding/discount treatment still requiring validation against official circular and actual broker receipt. ETF rates not included; slippage/liquidity not modeled.
+- **Still open:** fresh real TSETMC fetch; independent provenance and true distinct adjustment modes 0/1/2; broker-specific fee reconciliation; actual execution/market impact tests. No trading signal enabled; no order, merge, deploy or holdings change.
+- Next action: check exact-head CI and its live-market artifact; if runner still times out, distinguish user-device access using a read-only diagnostic, then gather verifiable 0/1/2 datasets and match buy/sell calculations against broker statements.
