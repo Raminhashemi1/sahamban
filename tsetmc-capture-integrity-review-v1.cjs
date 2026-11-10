@@ -6,6 +6,31 @@ const MAX_BYTES=1024*1024,HOST='https://cdn.tsetmc.com';
 const fail=reason=>Object.freeze({status:'CAPTURE_NOT_VERIFIED',reason,
  byteIntegrityVerified:false,sourceAuthenticated:false,historyPriceBasisVerified:false,
  capitalActionsVerified:false,entryEligible:false,tradingSignalsEnabled:false});
+function hasDuplicateJsonObjectKeys(raw){
+ const stack=[];
+ for(let i=0;i<raw.length;i++){
+  const ch=raw[i];
+  if(ch==='"'){
+   const start=i;let escaped=false;
+   for(i++;i<raw.length;i++){
+    if(escaped){escaped=false;continue;}
+    if(raw[i]==='\\\\'){escaped=true;continue;}
+    if(raw[i]==='"')break;
+   }
+   if(i>=raw.length)return false; // JSON.parse below reports malformed JSON.
+   let j=i+1;while(j<raw.length&&/\\s/.test(raw[j]))j++;
+   if(raw[j]===':'&&stack.length&&stack[stack.length-1].type==='object'){
+    let key;try{key=JSON.parse(raw.slice(start,i+1));}catch{return false;}
+    const object=stack[stack.length-1];
+    if(object.keys.has(key))return true;
+    object.keys.add(key);
+   }
+  }else if(ch==='{')stack.push({type:'object',keys:new Set()});
+  else if(ch==='[')stack.push({type:'array'});
+  else if(ch==='}'||ch===']')stack.pop();
+ }
+ return false;
+}
 const validDate=d=>{
  const s=String(d??'');
  if(!/^(19|20|21)\d{6}$/.test(s))return false;
@@ -45,6 +70,10 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
    return fail('BYTE_INTEGRITY_MISMATCH_'+kind.toUpperCase());
   const raw=bytes.toString('utf8');
   if(!Buffer.from(raw,'utf8').equals(bytes))return fail('INVALID_UTF8_'+kind.toUpperCase());
+  // JSON.parse keeps the last duplicate key in an object. Reject ambiguous
+  // raw records before parsing, while allowing the same field names in
+  // separate daily/adjustment row objects.
+  if(hasDuplicateJsonObjectKeys(raw))return fail('DUPLICATE_JSON_KEYS_'+kind.toUpperCase());
   // Preserve 8-25 digit JSON numeric insCode lexemes before JSON.parse rounds
   // values above Number.MAX_SAFE_INTEGER. All other numeric fields remain
   // unchanged. No inferred provider/authentication status is attached.
