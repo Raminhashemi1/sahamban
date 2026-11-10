@@ -18,7 +18,7 @@ function hasDuplicateJsonObjectKeys(raw){
     if(raw[i]==='"')break;
    }
    if(i>=raw.length)return false; // JSON.parse below reports malformed JSON.
-   let j=i+1;while(j<raw.length&&/\\s/.test(raw[j]))j++;
+   let j=i+1;while(j<raw.length&&/\s/.test(raw[j]))j++;
    if(raw[j]===':'&&stack.length&&stack[stack.length-1].type==='object'){
     let key;try{key=JSON.parse(raw.slice(start,i+1));}catch{return false;}
     const object=stack[stack.length-1];
