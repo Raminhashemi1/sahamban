@@ -88,4 +88,24 @@ test('the exact 17-digit identity is accepted as numeric token or exact decimal 
  assert.equal(review(f).status,'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW');
  assert.equal(review(g).status,'SINGLE_DAY_BYTES_MATCH_FOR_REVIEW');
 });
-\n\ntest('duplicate JSON identity, date, price, and envelope keys are rejected as ambiguous',()=>{\n const cases=[\n  ['"insCode":46348559193224090,"insCode":46348559193224090','DUPLICATE_INSCODE_FIELDS'],\n  ['"dEven":20261110,"dEven":20261110','DUPLICATE_DEVEN_FIELDS'],\n  ['"pClosing":4810,"pClosing":4810','DUPLICATE_PCLOSING_FIELDS'],\n  ['"closingPriceDaily":{},"closingPriceDaily":{}','DUPLICATE_CLOSINGPRICEDAILY_FIELDS']\n ];\n for(const [fragment,reason] of cases){\n  const f=fixture();\n  if(fragment.startsWith('"closingPriceDaily"'))\n   f.rawBytes=Buffer.from('{"closingPriceDaily":{},"closingPriceDaily":{}}');\n  else {\n   const raw=f.rawBytes.toString().replace('"insCode":46348559193224090,"pClosing":4810',fragment);\n   f.rawBytes=Buffer.from(raw);\n  }\n  f.manifest.file.sizeBytes=f.rawBytes.length;\n  f.manifest.file.sha256=createHash('sha256').update(f.rawBytes).digest('hex');\n  assert.equal(review(f).reason,reason);\n }\n});\n
+\n
+test('duplicate JSON identity, date, price, and envelope keys are rejected as ambiguous',()=>{
+ const cases=[
+  ['"insCode":46348559193224090,"insCode":46348559193224090','DUPLICATE_INSCODE_FIELDS'],
+  ['"dEven":20261110,"dEven":20261110','DUPLICATE_DEVEN_FIELDS'],
+  ['"pClosing":4810,"pClosing":4810','DUPLICATE_PCLOSING_FIELDS'],
+  ['"closingPriceDaily":{},"closingPriceDaily":{}','DUPLICATE_CLOSINGPRICEDAILY_FIELDS']
+ ];
+ for(const [fragment,reason] of cases){
+  const f=fixture();
+  if(fragment.startsWith('"closingPriceDaily"'))
+   f.rawBytes=Buffer.from('{"closingPriceDaily":{},"closingPriceDaily":{}}');
+  else {
+   const raw=f.rawBytes.toString().replace('"insCode":46348559193224090,"pClosing":4810',fragment);
+   f.rawBytes=Buffer.from(raw);
+  }
+  f.manifest.file.sizeBytes=f.rawBytes.length;
+  f.manifest.file.sha256=createHash('sha256').update(f.rawBytes).digest('hex');
+  assert.equal(review(f).reason,reason);
+ }
+});
