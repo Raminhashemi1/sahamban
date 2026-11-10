@@ -1,0 +1,59 @@
+name: Day 3 genuine TSE Client three-mode execution
+on:
+  push:
+    paths:
+      - '.github/workflows/day3-tse-client-three-modes.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install published TSE Client
+        run: npm install --global tse-client
+      - name: Execute actual library modes 0, 1, 2 for Vesakht
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p day3-output
+          tse "وساخت" -t -j 0 -x csv -o day3-output -n mode0
+          tse "وساخت" -t -j 1 -x csv -o day3-output -n mode1
+          tse "وساخت" -t -j 2 -x csv -o day3-output -n mode2
+          tse "وساخت" -t -w -q
+          find day3-output -maxdepth 2 -type f -printf '%p %s bytes\n'
+          python3 - <<'PY'
+          import csv,glob,os,json,hashlib
+          files=glob.glob('day3-output/**/*',recursive=True)
+          files=[p for p in files if os.path.isfile(p)]
+          csvs=[p for p in files if p.lower().endswith('.csv')]
+          if len(csvs)<3: raise SystemExit('Expected three genuine mode CSV files; found '+repr(csvs))
+          report={'instrument':'وساخت','symbol':'وساخت','source':'published npm tse-client CLI',
+                  'modes':{},'allModesPresent':True,'day3FinalAccepted':False,
+                  'historyBasisAuthenticated':False,'tradingSignalsEnabled':False}
+          for p in sorted(csvs):
+            b=open(p,'rb').read()
+            with open(p,encoding='utf-8-sig',newline='') as f:
+              rows=list(csv.DictReader(f))
+            report['modes'][os.path.basename(p)]={'sha256':hashlib.sha256(b).hexdigest(),
+              'bytes':len(b),'rows':len(rows),'columns':list(rows[0]) if rows else []}
+            if not rows: raise SystemExit('Empty mode output: '+p)
+          names=' '.join(report['modes']).lower()
+          if not all('mode'+str(i) in names for i in (0,1,2)):
+            raise SystemExit('Output filenames do not prove all mode 0/1/2 captures: '+names)
+          open('day3-output/three-mode-manifest.json','w').write(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - name: Upload actual three-mode outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-vesakht-genuine-tse-client-modes
+          path: day3-output/
+          retention-days: 30
+          if-no-files-found: warn
