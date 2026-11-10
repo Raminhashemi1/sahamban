@@ -366,3 +366,10 @@
 - داده اصیل تازه، سه سری مستقل ۰/۱/۲، اثبات پوشش کل تاریخچه و رسید جزءبه‌جزء جدید دریافت نشد. پذیرش روز سوم همچنان `IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE` است. وضعیت قیمت تاریخی `UNKNOWN_NOT_ATTESTED` و سیگنال‌های قیمت‌محور غیرفعال باقی می‌مانند.
 - هیچ ادغام، انتشار، سفارش، معامله، پرداخت یا تغییری در سبد/تاریخچه انجام نشد.
 - **قدم بعدی واحد:** بررسی نتیجه CI برای SHA `6c893960ed3fe8d0360490ca25f14c5bf9076266`؛ سپس فقط پیگیری شواهد بیرونی جدید با ابزارهای موجود.
+
+
+## 2026-11-10 — Screenshot context added
+- User screenshot confirms the only remaining focus is TSETMC historical/adjustment evidence and the unexplained 3 IRR fee difference; do not repeat completed tests or duplicate existing verifier fixes.
+- The screenshot shows a 0.3712% buy ceiling and the broker UI label «ایده‌آل کوشا». This label is not proof of an authenticated itemized receipt; the 3 IRR difference remains unexplained pending component-level evidence.
+- No new raw provider payload, three-mode source provenance, full-history proof or itemized fee statement was supplied. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE; no scope/release-gate change.
+- No code/tests, merge, deploy, trade/order/payment or holdings mutation resulted from the screenshot.
