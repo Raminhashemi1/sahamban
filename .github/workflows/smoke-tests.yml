@@ -55,6 +55,7 @@ jobs:
       - run: node --test tests/market-date-tehran-v127.test.cjs
       - run: node --test tests/trade-cost-v1.test.cjs
       - run: node --test tests/trade-cost-receipt-review-v1.test.cjs
+      - run: node --test tests/tsetmc-capture-integrity-review-v1.test.cjs
       - run: node tests/live-market-connectivity.cjs
       - name: Preserve explicit live-market status (including network skip)
         if: always()
