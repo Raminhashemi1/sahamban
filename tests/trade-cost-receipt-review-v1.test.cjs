@@ -19,3 +19,19 @@ test('rejects receipt accessors, symbols and inherited custom objects',()=>{
  const inherited=Object.assign(Object.create({account:'not allowed'}),base);
  assert.throws(()=>review(inherited),/plain numeric/);
 });
+
+
+test('real de-identified وساخت buy ledger debit: three-rial difference from ceiling estimate remains unattested',()=>{
+ const r=review({market:'TSE',side:'BUY',quantity:21136,priceRial:1966,
+  grossRial:41553376,feesRial:154243,settlementRial:41707619});
+ assert.equal(r.status,'BELOW_ESTIMATED_CEILING_UNATTESTED');
+ assert.equal(r.grossMatches,true);assert.equal(r.settlementMatches,true);
+ assert.equal(r.observedFeesRial,154243);
+ assert.equal(r.estimatedFeesRial,154246);
+ assert.equal(r.feeDifferenceRial,-3);
+ assert.equal(r.estimatedSettlementRial,41707622);
+ assert.equal(r.observedSettlementRial,41707619);
+ assert.equal(r.brokerReceiptAuthenticated,false);
+ assert.equal(r.tradeEligible,false);
+ assert.equal(r.tradingSignalsEnabled,false);
+});
