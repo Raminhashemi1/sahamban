@@ -14,7 +14,7 @@ function hasDuplicateJsonObjectKeys(raw){
    const start=i;let escaped=false;
    for(i++;i<raw.length;i++){
     if(escaped){escaped=false;continue;}
-    if(raw[i]==='\\\\'){escaped=true;continue;}
+    if(raw[i]==='\\'){escaped=true;continue;}
     if(raw[i]==='"')break;
    }
    if(i>=raw.length)return false; // JSON.parse below reports malformed JSON.
