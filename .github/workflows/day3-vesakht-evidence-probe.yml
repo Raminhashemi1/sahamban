@@ -1,0 +1,74 @@
+name: Day 3 Vesakht independent TSETMC retrieval probe
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/day3-vesakht-evidence-probe.yml'
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch and verify independent raw public TSETMC responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import hashlib,json,os,time,urllib.request,urllib.error,datetime
+          from pathlib import Path
+          out=Path('out')
+          ins='25514780181345713'
+          host='https://cdn.tsetmc.com'
+          endpoints={'daily':(f'/api/ClosingPrice/GetClosingPriceDailyList/{ins}/0','closingPriceDaily'),
+                     'adjustments':(f'/api/ClosingPrice/GetPriceAdjustList/{ins}','priceAdjust')}
+          report={'instrument':'وساخت','insCode':ins,'captureUTC':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                  'origin':host,'scope':'UNBOUNDED_TOP_0_REQUEST_ONLY_NOT_FULL_HISTORY_PROOF',
+                  'sourceAuthenticated':False,'threeModesVerified':False,
+                  'tradingSignalsEnabled':False,'day3FinalAccepted':False,'results':{}}
+          failures=[]
+          for kind,(path,field) in endpoints.items():
+            url=host+path
+            meta={'url':url,'status':'FAILED','mode':'raw_provider_response_not_adjustPrices'}
+            for trial in range(3):
+              try:
+                req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'Sahamban-Day3-ReadOnlyEvidenceProbe/1.0'})
+                with urllib.request.urlopen(req,timeout=40) as response:
+                  raw=response.read(8*1024*1024+1)
+                  meta['httpStatus']=response.status
+                  meta['contentType']=response.headers.get('Content-Type','')
+                  meta['responseURL']=response.geturl()
+                if len(raw)>8*1024*1024: raise ValueError('oversize response')
+                if meta['responseURL']!=url: raise ValueError('unexpected redirect')
+                parsed=json.loads(raw)
+                rows=parsed.get(field)
+                if not isinstance(rows,list) or not rows: raise ValueError('missing response field '+field)
+                dates=[str(r.get('dEven')) for r in rows if isinstance(r,dict)]
+                if len(dates)!=len(rows) or any(not d.isdigit() or len(d)!=8 for d in dates): raise ValueError('invalid date schema')
+                if kind=='daily':
+                  if len(set(dates))!=len(dates): raise ValueError('duplicate session dates')
+                  if any(not isinstance(r.get('pClosing'),(int,float)) or r['pClosing']<=0 for r in rows): raise ValueError('invalid daily closing price')
+                (out/(kind+'.json')).write_bytes(raw)
+                meta.update(status='CAPTURED_RAW_FOR_MANUAL_REVIEW',sizeBytes=len(raw),
+                            sha256=hashlib.sha256(raw).hexdigest(),rowCount=len(rows),
+                            earliestDate=min(dates),latestDate=max(dates))
+                break
+              except Exception as exc:
+                meta['lastError']=type(exc).__name__+': '+str(exc)[:300]
+                if trial<2: time.sleep(3)
+            report['results'][kind]=meta
+            if meta['status']!='CAPTURED_RAW_FOR_MANUAL_REVIEW':failures.append(kind)
+          (out/'manifest.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          if failures: raise SystemExit('TSETMC probe unreachable/invalid: '+', '.join(failures))
+          PY
+      - name: Upload audit-only capture and manifest even if blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-vesakht-raw-probe
+          path: out/
+          retention-days: 30
+          if-no-files-found: warn
