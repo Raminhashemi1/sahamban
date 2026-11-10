@@ -190,3 +190,12 @@ Append a new dated entry below at the end of every work session:
 - User requested ending Day 2 work and continuing the remaining development tomorrow. The **software integration and regression test stage** is closed out. The *independent real-data verification and release authorization* gates remain open and have NOT been waived. No PR merge, deployment, trading or holdings modification occurred.
 - Aligned to original master plan: Day 3 = real market data testing, buy/sell calculation checks and major bug fixes. First task tomorrow is independent capture and provenance validation for TSETMC adjustment modes 0/1/2 and the daily close basis, without unlocking financial signals.
 - The earlier section 9 Smoke diagnosis instructions are historical and are superseded by the latest HANDOFF.md. The final technical code commit green status must not be attributed to later documentation SHAs without new verification.
+
+
+#### 2026-11-10 — Day 3 opened; market connectivity and transaction math
+- Day 3 master-plan objective is active: real exchange data tests, buy/sell calculations, major bug fixes.
+- Latest historic TSETMC live-monitor artifact run `42670042240` (2026-11-09 18:00Z) and PR smoke live probe artifact run `42685215334` (2026-11-09 19:38Z) both show `UNVERIFIED_NETWORK / UND_ERR_CONNECT_TIMEOUT` to CDN. After-close run `42624494977` shows both CDN and web gateway timeouts. This does not prove TSETMC is down or the user's device cannot connect.
+- Added `trade-cost-v1.js`, a read-only fee-ceiling estimator for ordinary shares/rights with component caps, buy settlement, sale proceeds, round-trip P/L and fee-aware risk/budget sizing. Integrated into the main calculator and service-worker cache. Added 7 pure Node tests and a Chromium UI test to smoke workflow.
+- Local pure tests: 7/7 passed. Exact PR CI for latest SHA still pending; do not mark CI passed until observed.
+- Fee rates used: buy 0.3712%, sell 0.88% including 0.5% sale tax; component ceilings based on a brokerage page citing edition 49, not a directly fetched regulator circular. Treat as upper-bound estimate pending official circular and actual broker-receipt reconciliation. No ETF rate, slippage or liquidity model.
+- Remaining day-three blockers: obtain fresh live TSETMC samples from reachable network, authenticate three distinct 0/1/2 adjustment series and their provenance, reconcile fees/rounding with official schedule and broker receipts. No trading signals or orders enabled.
