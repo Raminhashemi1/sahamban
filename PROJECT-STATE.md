@@ -405,3 +405,11 @@
 - Fixed endpoint-specific fixtures on PR162 owning branch; commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4`. New CI queued; not yet verified.
 - PR161 12/12 success. PR164 docs-only head `32e4484598c3da23f2e6a9559dead1d15c4f1984` 12/12 queued at last poll.
 - External market capture and itemized fee receipt still missing; Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+
+
+## 2026-11-10 — Corrected PR #162 CI started; current exact-head status
+- PR #162 corrected test-fixture commit `3cc42ee88ff3c2434dfa04b43e010df4475bdda4` is on its proper owning branch `feat/tsetmc-bounded-live-evidence-20261109`. At latest poll, 11 checks were visible for this exact SHA: 4 SUCCESS, 2 IN_PROGRESS, 5 QUEUED; the smoke check was queued, so the corrected assertion has not yet been confirmed green.
+- PR #164 latest documentation-only head `b3135e111d3ca08c8d8bfe4adf81d5d136899a6a`, OPEN/DRAFT; all 12 exact-head checks are QUEUED. Do not treat prior-head results as applying to this SHA.
+- PR #161 remains 12/12 successful at its unchanged head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`.
+- The fixture correction does not produce any real provider response. Still missing: instrument-bound raw TSETMC mode-0 capture, adjustment event data and mode-1/2 outputs with provenance/hashes; and a redacted itemized broker settlement for the actual 3 IRR difference. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
+- No tests were manually rerun, no production collector code changed, and no merge/deploy/order/trade/payment/holdings mutation/signal activation occurred.
