@@ -204,3 +204,29 @@ test('unbounded top=0 endpoint never proves complete historical coverage',()=>{
  assert.equal(r.sourceAuthenticated,false);
  assert.equal(r.entryEligible,false);
 });
+
+
+test('rejects duplicate JSON keys within a raw object even when manifest hash is recomputed',()=>{
+ const cases=[
+  ['{"closingPriceDaily":[],"closingPriceDaily":[]}','DUPLICATE_JSON_KEYS_DAILY'],
+  ['{"closingPriceDaily":[{"dEven":20261109,"dEven":20261109,"pClosing":4000}]}','DUPLICATE_JSON_KEYS_DAILY'],
+  ['{"priceAdjust":[{"dEven":20261109,"pClosing":4000,"pClosing":4000}]}','DUPLICATE_JSON_KEYS_ADJUSTMENTS'],
+  ['{"priceAdjust":[{"dEven":20261109,"pClosing":4000}],"meta":{"x":1,"x":2}}','DUPLICATE_JSON_KEYS_ADJUSTMENTS']
+ ];
+ for(const [raw,reason] of cases){
+  const f=fixture(),kind=reason.endsWith('DAILY')?'daily':'adjustments',bytes=Buffer.from(raw);
+  f[kind+'Bytes']=bytes;f.manifest.files[kind].sizeBytes=bytes.length;
+  f.manifest.files[kind].sha256=createHash('sha256').update(bytes).digest('hex');
+  f.manifest.files[kind].rowCount=kind==='daily'?0:1;
+  assert.equal(verify(f).reason,reason);
+ }
+});
+
+test('same JSON field names in separate row objects remain valid and escaped strings are scanned safely',()=>{
+ const f=fixture();
+ const daily=Buffer.from('{"closingPriceDaily":[{"dEven":20261109,"pClosing":4000,"note":"escaped quote: \\"ok\\""},{"dEven":20261110,"pClosing":4810}]}');
+ f.dailyBytes=daily;f.manifest.files.daily.sizeBytes=daily.length;
+ f.manifest.files.daily.sha256=createHash('sha256').update(daily).digest('hex');
+ f.manifest.files.daily.rowCount=2;
+ assert.equal(verify(f).status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+});
