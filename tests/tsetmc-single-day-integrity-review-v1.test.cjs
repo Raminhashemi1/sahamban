@@ -7,7 +7,7 @@ function fixture(){
  const rawBytes=Buffer.from('{"closingPriceDaily":{"dEven":20261110,"insCode":46348559193224090,"pClosing":4810}}');
  const manifest={status:'SINGLE_DAY_CAPTURE_FOR_REVIEW',insCode,dEven:d,collectedAt:time,
   host:'https://cdn.tsetmc.com',
- assert.ok(html.includes('GetClosingPriceDaily/'));
+  sourceUrl:'https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDaily/'+insCode+'/'+d,
   file:{filename:'tsetmc-single-'+insCode+'-'+d+'-'+time.replace(/[:.]/g,'-')+'.json',
    sizeBytes:rawBytes.length,sha256:createHash('sha256').update(rawBytes).digest('hex'),
    contentType:'application/json; charset=utf-8'},
@@ -63,6 +63,6 @@ test('mobile capture offers two distinct user-triggered downloads, not an automa
  assert.match(html,/saveData\.onclick=/);
  assert.match(html,/saveManifest\.onclick=/);
  assert.doesNotMatch(html,/saveButton\.onclick=/);
- assert.match(html,/GetClosingPriceDaily\/');
+ assert.ok(html.includes('GetClosingPriceDaily/'));
  assert.match(html,/sourceAuthenticated:false/);
 });
