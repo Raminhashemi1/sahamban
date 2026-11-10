@@ -11,7 +11,7 @@ const {chromium}=require('playwright');
  await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
  try{
   browser=await chromium.launch({headless:true});const page=await browser.newPage({locale:'fa-IR'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://127.0.0.1:'+server.address().port+'/index.html',{waitUntil:'load'});
+  await page.goto('http://127.0.0.1:'+server.address().port+'/index.html#positionSizeSectionV87',{waitUntil:'load'});
   await page.locator('#calculate').click();
   const output=await page.locator('#calcResult').innerText();
   assert.match(output,/کارمزد خرید/);assert.match(output,/وجه لازم/);assert.match(output,/زیان تا حد ضرر پس از هزینه فروش/);assert.match(output,/سود تا هدف پس از هزینه فروش/);
