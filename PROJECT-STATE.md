@@ -391,3 +391,10 @@
 - Public TSE Client docs confirm modes 0 raw, 1 capital increase + dividends, 2 capital increase; browser test provides a raw+events manual comparison path. Public broker page confirms 0.3712% is a ceiling, not proof of the actual itemized debit.
 - User evidence required: raw mode-0 + event data + mode-1/2 outputs with hashes and capture metadata; redacted itemized settlement showing actual fee component debits.
 - Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE. No code/tests repeated, no merge/deploy/trade/orders/holdings changes.
+
+
+## 2026-11-10 — Current exact-head CI snapshot
+- PR164 OPEN/DRAFT, head `d6c69d820f5e58a325474774f2d8ff3e8bad87e0`: 12 checks = 3 success, 4 in progress, 5 queued, 0 completed failures.
+- PR161 head `7d71adbc9cd7836d3679eca2400d286ce0f328ce`: 12/12 success.
+- PR162 head `c0d15857fc3a353da17f3845202b664aedb62d11`: 11 success, 1 smoke failure. Failure step invokes the v162 live evidence and CLI tests; diagnosis pending.
+- Neither supporting PR supplies the missing authenticated market capture or actual itemized fee receipt. Day 3 remains IN_PROGRESS / BLOCKED_EXTERNAL_EVIDENCE.
