@@ -194,3 +194,13 @@ test('exact unrepresentable 17-digit provider ID is accepted only from original 
  assert.equal(r.insCode,exact);
  assert.equal(r.sourceAuthenticated,false);
 });
+
+test('unbounded top=0 endpoint never proves complete historical coverage',()=>{
+ const f=fixture();
+ const r=verify(f);
+ assert.equal(r.status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ assert.equal(r.captureScope,'UNBOUNDED_DAILY_TOP_0');
+ assert.equal(r.fullHistoryCaptured,false);
+ assert.equal(r.sourceAuthenticated,false);
+ assert.equal(r.entryEligible,false);
+});
