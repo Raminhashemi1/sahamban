@@ -4,6 +4,7 @@ on:
     paths:
       - 'day3_vesakht_capture_reconcile.py'
       - 'test_day3_vesakht_capture_reconcile.py'
+      - 'evidence/day3/**'
       - '.github/workflows/day3-numerical-reconciliation.yml'
   workflow_dispatch:
 permissions:
@@ -19,3 +20,15 @@ jobs:
           python-version: '3.12'
       - name: Verify 5 fail-closed numerical regression cases
         run: python3 -m unittest -v test_day3_vesakht_capture_reconcile.py
+      - name: Verify exact user-captured Vesakht bytes and reconstruct 500 historical sessions
+        run: |
+          python3 day3_vesakht_capture_reconcile.py \
+            --daily evidence/day3/vasakht-20261110-daily-500.json \
+            --adjustments evidence/day3/vasakht-20261110-adjustments-15.json \
+            --output "$RUNNER_TEMP/vasakht-500-review-only.json"
+      - name: Save derived audit output, never a trading approval
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-vesakht-reviewed-bounded-numerical-series
+          path: ${{ runner.temp }}/vasakht-500-review-only.json
+          retention-days: 30
