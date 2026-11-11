@@ -2,7 +2,7 @@
 /* Review-only integrity verifier for the EXISTING PR #162 raw capture manifest.
  * This checks saved bytes vs manifest, not the provenance of their HTTPS source. */
 const {createHash}=require('node:crypto');
-const MAX_BYTES=1024*1024,HOST='https://cdn.tsetmc.com';
+const LEGACY_MAX_BYTES=1024*1024, FULL_HISTORY_MAX_BYTES=8*1024*1024,HOST='https://cdn.tsetmc.com';
 const fail=reason=>Object.freeze({status:'CAPTURE_NOT_VERIFIED',reason,
  byteIntegrityVerified:false,sourceAuthenticated:false,historyPriceBasisVerified:false,
  capitalActionsVerified:false,entryEligible:false,tradingSignalsEnabled:false});
@@ -48,8 +48,12 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
   manifest.capitalActionsVerified!==false||manifest.entryEligible!==false||
   manifest.tradingSignalsEnabled!==false)return fail('FORGED_AUTHORIZATION_FLAGS');
  const bounded=manifest.captureScope==='BOUNDED_DAILY_TOP_500'&&manifest.dailyTop===500;
- if((manifest.captureScope!==undefined||manifest.dailyTop!==undefined)&&!bounded)
-  return fail('INVALID_CAPTURE_SCOPE');
+ const allAvailable=manifest.captureScope==='RAW_TOP_0_ALL_AVAILABLE_REQUEST_NOT_INDEPENDENTLY_FULL_HISTORY'&&
+  manifest.dailyTop===0&&manifest.requestedAllAvailableHistory===true&&
+  manifest.fullHistoryVerified===false;
+ if((manifest.captureScope!==undefined||manifest.dailyTop!==undefined||
+    manifest.requestedAllAvailableHistory!==undefined||manifest.fullHistoryVerified!==undefined)&&
+    !bounded&&!allAvailable)return fail('INVALID_CAPTURE_SCOPE');
  const counts={};let latestDailyDate=null;
  for(const [kind,bytes] of [['daily',dailyBytes],['adjustments',adjustmentsBytes]]){
   const meta=manifest.files?.[kind],field=kind==='daily'?'closingPriceDaily':'priceAdjust';
@@ -64,7 +68,8 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
    !/^tsetmc-\d{8,25}-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z-(?:daily|adjustments)\.json$/.test(meta.filename)||
    !meta.filename.startsWith('tsetmc-'+manifest.insCode+'-')||
    !meta.filename.endsWith('-'+kind+'.json'))return fail('INVALID_'+kind.toUpperCase()+'_SOURCE_METADATA');
-  if(!Buffer.isBuffer(bytes)||bytes.length===0||bytes.length>MAX_BYTES||
+  const maxBytes=allAvailable&&kind==='daily'?FULL_HISTORY_MAX_BYTES:LEGACY_MAX_BYTES;
+  if(!Buffer.isBuffer(bytes)||bytes.length===0||bytes.length>maxBytes||
    meta.sizeBytes!==bytes.length||typeof meta.sha256!=='string'||!/^[a-f0-9]{64}$/.test(meta.sha256)||
    createHash('sha256').update(bytes).digest('hex')!==meta.sha256)
    return fail('BYTE_INTEGRITY_MISMATCH_'+kind.toUpperCase());
@@ -79,7 +84,8 @@ function verifyTsetmcCapture({manifest,dailyBytes,adjustmentsBytes}={}){
   // unchanged. No inferred provider/authentication status is attached.
   const preservedRaw=raw.replace(/("insCode"\s*:\s*)([0-9]+)(?=\s*[,}])/g,'$1"$2"');
   let data;try{data=JSON.parse(preservedRaw);}catch{return fail('INVALID_JSON_'+kind.toUpperCase());}
-  const rows=data?.[field];if(!Array.isArray(rows)||rows.length>(kind==='daily'&&bounded?500:10000)||rows.length!==meta.rowCount)
+  const maxRows=kind==='daily'?(bounded?500:allAvailable?20000:10000):10000;
+  const rows=data?.[field];if(!Array.isArray(rows)||rows.length>maxRows||rows.length!==meta.rowCount)
    return fail('INVALID_ROWS_'+kind.toUpperCase());
   // The real provider uses JSON NUMBER insCode values larger than 2^53.
   // JSON.parse rounds those numbers. Compare their original decimal lexemes,
