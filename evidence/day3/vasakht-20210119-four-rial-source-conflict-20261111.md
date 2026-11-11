@@ -12,7 +12,7 @@ Date: 2026-11-11. Instrument: `25514780181345713` (وساخت). This is a precis
 
 The Tehran Stock Exchange's published tick-size notice, effective 1400/02/12 (2021-05-02), says the minimum order-price increment for shares priced at 5,000 IRR and above remains **10 IRR**; only prices below 5,000 IRR move from 10 IRR to 1 IRR. Therefore, on 1400/10/30 (2021-01-19), a 60,754-IRR value was not an executable quote tick. The nearest valid 10-IRR quote is 60,750 IRR.
 
-This is independently corroborated by the actual adjacent daily history: all 24 nearby active-session closing prices are on the 10-IRR grid; the event-day and adjacent zero-trade rows carry the same 60,750-IRR close.
+This is independently corroborated by the actual adjacent daily history: all 57 nearby active-session closing prices are on the 10-IRR grid; the event-day and adjacent zero-trade rows carry the same 60,750-IRR close.
 
 The adjustment ratio also reconciles after applying the same quote-grid precision:
 
@@ -27,7 +27,7 @@ So the four-rial difference is not evidence that the daily close should be overw
 - Classify this event as `TICK_GRID_RECONCILED_10_IRR`, not an unexplained 4-IRR price conflict.
 - Preserve original `60750`, `60754` and `59910` values exactly; do not rewrite raw source data.
 - Use 10-IRR tick normalization only for this dated, price-band-specific reconciliation. Do not introduce a generic ±4/±5 IRR tolerance for other dates or instruments.
-- The 24-session local grid check is corroboration, not a substitute for the published market tick rule.
+- The 57-session local grid check is corroboration, not a substitute for the published market tick rule.
 - This resolves the **numeric comparison at executable quote precision**. It does not authenticate the event's corporate-action type, full historical adjustment basis, or independent provider origin.
 
 ## Evidence references
