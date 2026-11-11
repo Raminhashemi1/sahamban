@@ -1,0 +1,60 @@
+{
+  "schema": "sahamban.day3.user_supplied_codal_pdf_review.v1",
+  "instrument": {
+    "symbol": "وساخت",
+    "issuer": "سرمایه گذاری ساختمان ایران",
+    "insCode": "25514780181345713"
+  },
+  "document": {
+    "trackingNo": "1478213",
+    "meetingType": "ANNUAL_ORDINARY_GENERAL_MEETING",
+    "fiscalYearEndJalali": "1404/06/31",
+    "meetingDateJalali": "1404/10/30",
+    "sourceDocumentClaim": "CODAL",
+    "sourceUrlClaim": "https://www.codal.ir/DownloadFile.aspx?hs=ABPH8LdAUBh4bbE5xTOOObOOO9tA%3d%3d&ft=1005&let=20",
+    "sourceUrlIndependentlyFetched": false,
+    "correctionStatusFromPdf": "NOT_EXPLICITLY_STATED_IN_PDF"
+  },
+  "attachment": {
+    "filenameAtReview": "seo-codal-report (2).pdf",
+    "sha256": "d96d1fbedd58d46efc35fc4cc837b3d9f8ea0133730961f202dff75ab08d5295",
+    "sizeBytes": 53950,
+    "pages": 3,
+    "pdfVersion": "1.4",
+    "creator": "wkhtmltopdf 0.12.4",
+    "createdAtUtcFromPdfMetadata": "2026-01-26T08:45:01Z",
+    "digitallySigned": false,
+    "rawPdfCommittedToPublicRepository": false
+  },
+  "extractedFromPage2": {
+    "dpsRial": 80,
+    "epsRial": 128,
+    "registeredCapitalMillionRial": 30842726,
+    "declaredCashDividendMillionRial": 2467418,
+    "retainedBeforeDividendMillionRial": 2710720,
+    "retainedAfterDividendMillionRial": 243302,
+    "priorYearApprovedDividendMillionRial": 925282,
+    "priorYearApprovedDividendMatchesFY1403Document": true
+  },
+  "arithmetic": {
+    "nominalShareAssumptionRial": 1000,
+    "shareCount": "30842726000",
+    "calculatedCashDividendRial": "2467418080000",
+    "roundedCashDividendMillionRial": 2467418,
+    "retainedAfterDividendCheckMillionRial": 243302,
+    "epsPayoutRatio": 0.625,
+    "internalConsistency": true
+  },
+  "boundaries": {
+    "hashOfUploadedBytesVerified": true,
+    "issuerOriginalAuthenticated": false,
+    "independentSourceDownloadVerified": false,
+    "correspondingCodalVersionVerified": false,
+    "marketHistoryAuthenticated": false,
+    "priceAdjustmentBasisAuthenticated": false,
+    "day3FinalAccepted": false,
+    "entryEligible": false,
+    "tradingSignalsEnabled": false
+  },
+  "note": "Two uploaded PDF records cross-check: this FY1404 statement lists prior FY1403 dividend of 925282 million Rial, matching 30 Rial document 1304830. Neither independent capture nor PDF digital signature is available. Do not infer that the term corrected applies: the uploaded PDF explicitly says annual ordinary general meeting."
+}
