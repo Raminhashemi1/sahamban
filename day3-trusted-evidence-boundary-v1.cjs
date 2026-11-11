@@ -19,11 +19,33 @@ function attestPriceBasis({evidence,review,expectedInsCode,expectedDate,expected
  if(typeof expectedInsCode!=='string'||!/^[0-9]{8,25}$/.test(expectedInsCode)||
   typeof expectedDate!=='string'||!/^20[0-9]{6}$/.test(expectedDate)||!hex(expectedDailySha256))
   return deny('INVALID_CONTEXT');
+ const validDay=value=>{
+  if(typeof value!=='string'||!/^20[0-9]{6}$/.test(value))return false;
+  const year=Number(value.slice(0,4)),month=Number(value.slice(4,6)),day=Number(value.slice(6,8));
+  const checked=new Date(Date.UTC(year,month-1,day,12));
+  return checked.getUTCFullYear()===year&&checked.getUTCMonth()+1===month&&checked.getUTCDate()===day;
+ };
+ if(!validDay(expectedDate))return deny('INVALID_CONTEXT');
  if(!evidence||evidence.insCode!==expectedInsCode||evidence.dailySha256!==expectedDailySha256||
-  !Array.isArray(evidence.modes)||evidence.modes.length!==3||
-  !['0','1','2'].every(mode=>evidence.modes.some(m=>String(m?.mode)===mode&&hex(m?.sha256)&&
-   Number.isSafeInteger(m?.rowCount)&&m.rowCount>0&&m.firstDate<=expectedDate&&m.lastDate>=expectedDate)))
+  !Array.isArray(evidence.modes)||evidence.modes.length!==3)
   return deny('MISSING_OR_INVALID_THREE_MODE_EVIDENCE');
+ const modes=new Map();
+ for(const item of evidence.modes){
+  const mode=String(item?.mode);
+  if(!['0','1','2'].includes(mode)||modes.has(mode)||!hex(item?.sha256)||
+   !Number.isSafeInteger(item?.rowCount)||item.rowCount<=0||
+   !validDay(item.firstDate)||!validDay(item.lastDate)||
+   item.firstDate>expectedDate||item.lastDate<expectedDate||
+   item.firstDate>item.lastDate)
+   return deny('MISSING_OR_INVALID_THREE_MODE_EVIDENCE');
+  modes.set(mode,item);
+ }
+ const series=[modes.get('0'),modes.get('1'),modes.get('2')];
+ if(new Set(series.map(x=>x.sha256)).size!==3||
+  new Set(series.map(x=>x.rowCount)).size!==1||
+  new Set(series.map(x=>x.firstDate)).size!==1||
+  new Set(series.map(x=>x.lastDate)).size!==1)
+  return deny('UNALIGNED_OR_RELABELED_PRICE_MODES');
  if(!review||typeof review.reviewerKeyId!=='string'||
   !Object.hasOwn(TRUSTED_REVIEWER_KEYS,review.reviewerKeyId))return deny('NO_TRUSTED_REVIEWER');
  if(review.insCode!==expectedInsCode||review.dailySha256!==expectedDailySha256||
