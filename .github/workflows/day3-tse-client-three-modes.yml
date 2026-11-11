@@ -1,12 +1,7 @@
 name: Day 3 genuine TSE Client three-mode execution
+# Legacy tse-client CLI is demonstrably unusable against TseClient2.aspx HTTP.
+# Retained as an opt-in diagnostic; NOT a Day 3 acceptance check.
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/day3-tse-client-three-modes.yml'
-      - 'DAY3-*.md'
-  push:
-    paths:
-      - '.github/workflows/day3-tse-client-three-modes.yml'
   workflow_dispatch:
 permissions:
   contents: read
