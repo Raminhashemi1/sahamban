@@ -618,3 +618,18 @@
 - User authorized dropping nonessential dependencies to unblock completion. `DECISIONS.md` DEC-008 and the single Day 3 row in `MASTER-PLAN.md` now identify `DAY3_BOUNDED_ENGINEERING_COMPLETE`: the existing correct-instrument `وساخت` 500-session/15-event reproducible numerical pilot and fail-closed regression work are accepted as **bounded engineering completion**. This is not a new source capture or proof of complete history. Previous exact-head CI on PR #164 at `8b9365d847f1908b3fbfc4c9de237791954b75e7` was 13/13 green; later heads require separate checking.
 - Explicitly waived only as prerequisites for **bounded pilot engineering signoff**: full original history, issuer-original CODAL PDFs, three genuine legacy tse-client modes, independent reviewer/signer and repeated unreachable-network retries. These are not waived for production financial use. DEC-006 3-IRR fee issue remains nonblocking only for the bounded pilot.
 - `DAY3_FINANCIAL_SOURCE_ATTESTATION_PENDING` remains true; `day3FinalAccepted=false`, `historyBasisAuthenticated=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. No merge, deployment, order or holdings changes. PR164 still draft. Do not conflate scoped engineering completion with live-trading acceptance or relabel the previous فولاد data as وساخت.
+
+
+## 2026-11-11 — وضعیت زنده نهایی نشست: بستن دامنه مهندسی روز سوم
+
+این بخش بر تمام وضعیت‌های قدیمی‌تر همین فایل اولویت دارد؛ وضعیت از GitHub زنده در همین نشست خوانده شده است.
+
+- PR #164: OPEN، **غیر Draft**، ادغام‌نشده؛ head دقیق: `b0461bac928b27d0a2926aa9d53c5e2cc373eae5`. هیچ merge یا deploy انجام نشده است.
+- GitHub Actions برای همین head: **12/12 completed/success**، صفر شکست و صفر در انتظار. شامل Smoke، Browser، WebKit، محاسبات هزینه معامله و workflow «Day 3 bounded numerical reconciliation safety».
+- اجرای Day 3 bounded safety در run `43074048107` موفق شد: هر 10 مورد عددی fail-closed، آزمون منع tolerance/گردکردن بی‌پشتوانه اختلاف 4 ریالی، و بازسازی واقعی 500 جلسه ثبت‌شده وساخت. Smoke run `43074048194` نیز موفق شد و تست مرورگر trade-cost را اجرا کرد.
+- نتیجه Day 3 طبق DEC-008: **`DAY3_BOUNDED_ENGINEERING_COMPLETE`**؛ کار مهندسی محدود پایلوت بسته است و محاسبات/آزمون‌های موفق دوباره‌کاری نمی‌شوند.
+- اختلاف 4 ریالی وساخت در 2021-01-19 همچنان یک تعارض بین دو endpoint است: daily `pClosing=60750` در برابر adjustment `pClosingNotAdjusted=60754`. علت/مرجع دقیق آن هنوز اثبات نشده؛ کد آن را اصلاح یا گرد نمی‌کند. این موضوع با اختلاف 3 ریالی کارمزد که طبق DEC-006 فقط برای محاسبات پایلوت غیرمسدودکننده شده، دو مسئله متفاوت است.
+- محدودیت مالی عمداً پابرجاست: `day3FinalAccepted=false`, `historyBasisAuthenticated=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. بنابراین پایان مهندسی پایلوت به معنی تأیید مالی، توصیه خریدوفروش یا آمادگی معامله نیست.
+- هیچ اقدام دیگری برای بستن دامنه مهندسی روز سوم باقی نمانده است. موارد منبع/اصالت مالی باید به‌عنوان گیت مستقل انتشار باقی بمانند؛ فقط با دریافت شاهد اولیه جدید باز شوند. PR #164 بدون اجازه صریح کاربر merge نمی‌شود.
+
+شواهد زنده: PR https://github.com/Raminhashemi1/sahamban/pull/164 ؛ Day 3 run https://github.com/Raminhashemi1/sahamban/actions/runs/43074048107 ؛ Smoke https://github.com/Raminhashemi1/sahamban/actions/runs/43074048194 .
