@@ -19,7 +19,7 @@ class NumericalTests(unittest.TestCase):
         end=datetime.date(2026,11,10)
         all_dates=[(start+datetime.timedelta(days=i)).strftime('%Y%m%d')
                    for i in range((end-start).days+1)]
-        selected=set(all_dates[-498:]) | {'20250202', '20260120'}
+        selected=set(all_dates[-499:]) | {'20250202', '20260120'}
         dates=sorted(selected,reverse=True)
         while len(dates)>500:
             dates.remove(next(x for x in reversed(dates) if x not in ('20250202','20260120')))
