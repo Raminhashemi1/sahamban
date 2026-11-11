@@ -15,7 +15,11 @@ function crosscheckPublicDps({instrument=INS,capitalMillionRial,dpsRial,
  dividendTotalMillionRial,issuerOriginalSha256=null,dividendSourceUrl}={}){
  if(instrument!==INS||!Number.isSafeInteger(capitalMillionRial)||capitalMillionRial<=0||
   !Number.isSafeInteger(dpsRial)||dpsRial<=0||
-  !Number.isSafeInteger(dividendTotalMillionRial)||dividendTotalMillionRial<=0)
+  !Number.isSafeInteger(dividendTotalMillionRial)||dividendTotalMillionRial<=0||
+  !Number.isSafeInteger(earningsPerShareRial)||earningsPerShareRial<=0||
+  !Number.isSafeInteger(payoutPermille)||payoutPermille<0||payoutPermille>1000||
+  !Number.isSafeInteger(retainedProfitBeforeMillionRial)||retainedProfitBeforeMillionRial<0||
+  !Number.isSafeInteger(retainedProfitAfterMillionRial)||retainedProfitAfterMillionRial<0)
   return fail('INVALID_INSTRUMENT_OR_AMOUNTS');
  if(typeof dividendSourceUrl!=='string'||!/^https:\/\/(?:t\.me|telegram\.me)\//.test(dividendSourceUrl))
   return fail('UNRECOGNIZED_REPUBLICATION_SOURCE');
@@ -26,6 +30,10 @@ function crosscheckPublicDps({instrument=INS,capitalMillionRial,dpsRial,
  // Printed million-Rial decisions are rounded to their nearest million Rial.
  const rounded=(calculatedRial+DENOMINATOR/2n)/DENOMINATOR;
  if(rounded!==declared)return fail('DIVIDEND_TOTAL_MISMATCH');
+ if(dps*1000n!==BigInt(earningsPerShareRial)*BigInt(payoutPermille))
+  return fail('PAYOUT_RATIO_MISMATCH');
+ if(BigInt(retainedProfitBeforeMillionRial)-declared!==BigInt(retainedProfitAfterMillionRial))
+  return fail('RETAINED_PROFIT_RECONCILIATION_MISMATCH');
  // The primary-byte digest may be supplied later, but never treated as
  // attestation just because a caller supplied a syntactically valid hex.
  if(issuerOriginalSha256!==null&&!/^[a-f0-9]{64}$/.test(issuerOriginalSha256))
@@ -33,7 +41,8 @@ function crosscheckPublicDps({instrument=INS,capitalMillionRial,dpsRial,
  return Object.freeze({status:'SECONDARY_ARITHMETIC_CORROBORATED_ONLY',instrument,
   nominalShareRial:Number(NOMINAL_SHARE_RIAL),shareCount:shares.toString(),
   declaredDividendMillionRial:dividendTotalMillionRial,
-  recomputedDividendMillionRial:Number(rounded),
+  recomputedDividendMillionRial:Number(rounded),payoutPermille,
+  retainedProfitReconciled:true,
   exactDividendRial:calculatedRial.toString(),
   republicationDigest:createHash('sha256').update(dividendSourceUrl).digest('hex'),
   sourceAuthenticated:false,issuerOriginalVerified:false,capitalActionsVerified:false,
