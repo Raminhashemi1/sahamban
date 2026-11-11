@@ -1,5 +1,8 @@
 name: Day 3 Vesakht independent TSETMC retrieval probe
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/day3-vesakht-evidence-probe.yml'
   workflow_dispatch:
   push:
     paths:
