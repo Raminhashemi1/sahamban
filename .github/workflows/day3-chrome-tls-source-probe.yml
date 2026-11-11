@@ -1,0 +1,32 @@
+name: Day 3 original-source Chrome TLS capture experiment
+# Isolated opt-in test, with one PR-triggered experiment on changing this workflow.
+# Not a release gate. Non-successful remote source access remains documented.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/day3-chrome-tls-source-probe.yml'
+      - 'scripts/day3_chrome_source_probe.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  originals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser-TLS HTTP transport
+        run: python3 -m pip install --disable-pip-version-check 'curl_cffi==0.14.0'
+      - name: Probe ONLY fixed public original endpoints
+        run: python3 scripts/day3_chrome_source_probe.py out/day3-browser-tls
+      - name: Preserve raw candidate bytes and manifest even on source failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-browser-tls-source-candidates
+          path: out/day3-browser-tls/
+          retention-days: 30
+          if-no-files-found: warn
