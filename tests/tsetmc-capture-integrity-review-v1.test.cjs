@@ -230,3 +230,39 @@ test('same JSON field names in separate row objects remain valid and escaped str
  f.manifest.files.daily.rowCount=2;
  assert.equal(verify(f).status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
 });
+
+
+test('Top=0 full-available-history capture over 1MiB validates bytes but never authenticates coverage',()=>{
+ const f=fixture();
+ const rows=Array.from({length:8000},(_,i)=>{
+  const day=new Date(Date.UTC(2001,0,1+i));
+  const dEven=Number(day.toISOString().slice(0,10).replace(/-/g,''));
+  return {insCode,dEven,pClosing:1000+i,notice:'historical provider payload '.repeat(6)};
+ });
+ const bytes=Buffer.from(JSON.stringify({closingPriceDaily:rows}));
+ assert.ok(bytes.length>1024*1024);
+ assert.ok(bytes.length<8*1024*1024);
+ f.dailyBytes=bytes;
+ f.manifest.files.daily.sizeBytes=bytes.length;
+ f.manifest.files.daily.rowCount=rows.length;
+ f.manifest.files.daily.sha256=createHash('sha256').update(bytes).digest('hex');
+ f.manifest.captureScope='RAW_TOP_0_ALL_AVAILABLE_REQUEST_NOT_INDEPENDENTLY_FULL_HISTORY';
+ f.manifest.dailyTop=0;
+ f.manifest.requestedAllAvailableHistory=true;
+ f.manifest.fullHistoryVerified=false;
+ const result=verify(f);
+ assert.equal(result.status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ assert.equal(result.rowCounts.daily,8000);
+ assert.equal(result.captureScope,'UNBOUNDED_DAILY_TOP_0');
+ assert.equal(result.fullHistoryCaptured,false);
+ assert.equal(result.sourceAuthenticated,false);
+ assert.equal(result.tradingSignalsEnabled,false);
+ const legacy=fixture();
+ legacy.dailyBytes=bytes;
+ legacy.manifest.files.daily.sizeBytes=bytes.length;
+ legacy.manifest.files.daily.rowCount=rows.length;
+ legacy.manifest.files.daily.sha256=f.manifest.files.daily.sha256;
+ assert.equal(verify(legacy).status,'CAPTURE_NOT_VERIFIED');
+ f.manifest.fullHistoryVerified=true;
+ assert.equal(verify(f).reason,'INVALID_CAPTURE_SCOPE');
+});
