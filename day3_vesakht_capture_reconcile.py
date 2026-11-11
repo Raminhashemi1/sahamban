@@ -6,6 +6,7 @@ attestation. Fail closed on unclassified corporate actions and altered source.
 import argparse
 import hashlib
 import json
+from datetime import date
 from decimal import Decimal, ROUND_HALF_EVEN, getcontext
 from pathlib import Path
 
@@ -31,9 +32,24 @@ def ingest(path, field):
     return rows
 
 def D(x):
-    if x is None or isinstance(x, bool):
+    if x is None or isinstance(x, bool) or not isinstance(x, (int, float, Decimal)):
         raise ValueError('Invalid price')
-    return Decimal(str(x))
+    value = Decimal(str(x))
+    if not value.is_finite():
+        raise ValueError('Non-finite price')
+    return value
+
+def valid_date(value):
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError('Invalid source date')
+    label = str(value)
+    if len(label) != 8:
+        raise ValueError('Invalid source date')
+    try:
+        date(int(label[:4]), int(label[4:6]), int(label[6:]))
+    except ValueError as exc:
+        raise ValueError('Invalid source date') from exc
+    return label
 
 def quantize(field, amount):
     q = Decimal('.01') if field in TWO_DEC else Decimal('1')
@@ -44,22 +60,31 @@ def reconcile(daily_path, adjustment_path):
     events = ingest(adjustment_path, 'priceAdjust')
     if (len(days), len(events)) != (500, 15):
         raise ValueError('Unexpected source-row counts')
-    dates = [str(d['dEven']) for d in days]
+    dates = [valid_date(d['dEven']) for d in days]
     if dates != sorted(set(dates), reverse=True):
         raise ValueError('Duplicate or unsorted daily sessions')
     for row in days:
         if str(row['insCode']) != INSTRUMENT or D(row['pClosing']) <= 0:
             raise ValueError('Mismatched instrument or daily close')
+        for name in FIELDS:
+            if D(row[name]) < 0:
+                raise ValueError('Negative daily price field')
     relevant = []
+    seen_event_dates = set()
     for event in events:
         if str(event['insCode']) != INSTRUMENT:
             raise ValueError('Mismatched adjustment instrument')
-        day = str(event['dEven'])
+        day = valid_date(event['dEven'])
+        if day in seen_event_dates:
+            raise ValueError('Duplicate adjustment event date')
+        seen_event_dates.add(day)
+        before, after = D(event['pClosingNotAdjusted']), D(event['pClosing'])
+        if before <= 0 or after <= 0:
+            raise ValueError('Invalid adjustment price')
         if dates[-1] <= day <= dates[0]:
             if day not in dates:
                 raise ValueError('Event day missing in source history')
-            before, after = D(event['pClosingNotAdjusted']), D(event['pClosing'])
-            if before <= 0 or after <= 0 or D(days[dates.index(day)]['pClosing']) != before:
+            if D(days[dates.index(day)]['pClosing']) != before:
                 raise ValueError('Event and daily source disagreement')
             if day not in DIVIDENDS or before - after != DIVIDENDS[day]:
                 raise ValueError('Corporate action unclassified or dividend discrepancy')
