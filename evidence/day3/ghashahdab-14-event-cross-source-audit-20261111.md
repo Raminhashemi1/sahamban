@@ -36,3 +36,43 @@
 ## Decision and safety
 
 `historyBasisAuthenticated=false`, `day3FinalAccepted=false`, `threeModesVerified=false`, `tradingSignalsEnabled=false`, `entryEligible=false`. **Do not pass financial release gates** or silently substitute `34076` for `32614`. This is an additional independent cross-symbol anomaly, **not** proof of a generic software calculation bug. No merge/deployment performed.
+
+
+## Follow-up forensic review — cross-field checks, 2026-11-11
+
+The user-supplied original daily JSON was re-read directly, and its SHA-256 reconfirmed as `df33beb68c7481cde286a85f115e1853e123179c64fa48f485ecef96c7b31eb8`.
+
+### Day-to-day consistency around 2020-05-26
+
+| Daily date | Daily closing (`pClosing`) | Previous reference (`priceYesterday`) | Last trade (`pDrCotVal`) | Trade count |
+|---|---:|---:|---:|---:|
+| 2020-05-20 | 32454 | 32826 | 34467 | 17102 |
+| 2020-05-23 | **34076** | 32454 | 34076 | 1211 |
+| 2020-05-26 | **34770** | **34076** | 33990 | **16243** |
+| 2020-05-27 | 35890 | 34770 | 36508 | 6368 |
+
+The adjustment endpoint's row for 2020-05-26 has `pClosingNotAdjusted=32614`, `pClosing=34076`. Thus `pClosing` **equals both** the immediately preceding recorded closing price and the event day's `priceYesterday`. The `32614` value appears **nowhere** in the 2,367-row daily capture as an exact numeric field value. This is not an exact daily price match, and it cannot be justified as routine tick-size rounding.
+
+### Why the anomalous factor matters
+
+- TSETMC event-derived ratio: `34076 / 32614 = 1.044827374747...`, a **+4.482737%** factor and the **only ratio greater than 1 among 14 events**.
+- If applied retrospectively to the preceding close, it gives `34076 * (34076/32614) = 35603.5376` IRR. Compared with `34770` on 2020-05-26, this would represent a **-2.341% adjusted day-to-day change**.
+- By contrast, the daily history's unadjusted closing-price change is `34770 / 34076 - 1 = +2.0366%`.
+- These are different series by definition: the apparent adjusted discontinuity **does not alone prove a calculation error**, but blindly treating the event ratio as an authenticated corporate-action factor would introduce a consequential 4.48% rescaling for earlier prices.
+
+### Comparison with ordinary same-day adjustment patterns
+
+- On 2019-07-27, the event's `post=3441` coincides with the daily `priceYesterday=3441` **rather than** previous `pClosing=3641`; on 2017-07-09, `post=1813` similarly coincides with daily `priceYesterday=1813` instead of previous `pClosing=2035`. These events had nonzero trades; **an event date with trades is therefore not, by itself, an error indicator**.
+- For 2020-05-26 the event's post-price also matches `priceYesterday`, **but** the daily `priceYesterday` is unchanged from the prior closing price and the event's `pre=32614` does not match that prior close. This *combination* distinguishes the anomaly.
+- A historical cross-field check finds only **18/2366** adjacent daily pairs with `priceYesterday !=` prior-day daily `pClosing`, illustrating that altered quote reference is possible and should be audited rather than inferred from date alone.
+
+### External secondary-source check
+
+A secondary market-data display independently **publishes** the same May 26 / 6 Khordad event as a **1.0448** price-adjustment ratio and distinguishes it from the listed 1399 capital increase dated **26 Mordad 1399**:
+https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%B4%D8%AA-%D9%88-%D8%B5%D9%86%D8%B9%D8%AA-%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%D9%86%D8%A7%D8%A8-%D8%AE%D8%B1%D8%A7%D8%B3%D8%A7%D9%86/capital-increases
+
+Because that display could re-use TSETMC data, **agreement is evidence that this is not merely screenshot transcription**, **not independent proof** that the ratio is financially legitimate. A distinct CODAL disclosure or official explanation is still needed to classify the cause and authenticate the basis.
+
+### Release impact
+
+Keep the raw daily prices and the reported event ratio unchanged. **Quarantine event 2020-05-26** as `UNATTESTED_UPWARD_FACTOR_AND_PREPRICE_CONFLICT`. A model requiring a fully verified adjusted historical series spanning this event must **fail closed**; avoid removing this factor, reversing fields, or declaring a corporate action without primary-source evidence. All global financial/trading release flags remain false.
