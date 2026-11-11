@@ -57,3 +57,30 @@ test('CLI fails closed on missing files and prints no path',()=>{
  assert.match(run.stderr,/EVIDENCE_REVIEW_FAILED/);
  assert.doesNotMatch(run.stderr,/private\/secret-manifest/);
 });
+
+
+test('CLI accepts 1MiB+ full-available-history artifact but keeps acceptance false',t=>{
+ const f=localFixture();t.after(()=>fs.rmSync(f.dir,{recursive:true,force:true}));
+ const manifestPath=path.join(f.dir,'manifest.json'),dailyPath=path.join(f.dir,'daily.json');
+ const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+ const rows=Array.from({length:8000},(_,i)=>{
+  const day=new Date(Date.UTC(2001,0,1+i));
+  return {insCode,dEven:Number(day.toISOString().slice(0,10).replace(/-/g,'')),
+   pClosing:1000+i,zTotTran:1,padding:'x'.repeat(160)};
+ });
+ const daily=Buffer.from(JSON.stringify({closingPriceDaily:rows}));
+ assert.ok(daily.length>1024*1024&&daily.length<8*1024*1024);
+ manifest.captureScope='RAW_TOP_0_ALL_AVAILABLE_REQUEST_NOT_INDEPENDENTLY_FULL_HISTORY';
+ manifest.dailyTop=0;manifest.requestedAllAvailableHistory=true;manifest.fullHistoryVerified=false;
+ manifest.files.daily.url=manifest.files.daily.url.replace(/\/500$/,'/0');
+ manifest.files.daily.sizeBytes=daily.length;manifest.files.daily.rowCount=rows.length;
+ manifest.files.daily.sha256=createHash('sha256').update(daily).digest('hex');
+ fs.writeFileSync(dailyPath,daily);fs.writeFileSync(manifestPath,JSON.stringify(manifest));
+ const result=call(f.args);
+ assert.equal(result.status,0,result.stderr);
+ const report=JSON.parse(result.stdout);
+ assert.equal(report.capturedDailyRows,8000);
+ assert.equal(report.fullHistoryCaptured,false);
+ assert.equal(report.day3FinalAccepted,false);
+ assert.equal(report.sourceAuthenticated,false);
+});
