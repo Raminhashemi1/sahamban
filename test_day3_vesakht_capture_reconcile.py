@@ -90,8 +90,8 @@ class NumericalTests(unittest.TestCase):
 
     def test_non_finite_price_fails_after_rehash(self):
         self._rewrite_and_rehash(self.daily, 'closingPriceDaily',
-            lambda rows: rows[0].update(priceFirst='NaN'))
-        with self.assertRaisesRegex(ValueError, 'Invalid price|Non-finite price'):
+            lambda rows: rows[0].update(priceFirst=float('nan')))
+        with self.assertRaisesRegex(ValueError, 'Non-finite price'):
             m.reconcile(self.daily, self.actions)
 
     def test_negative_secondary_price_fails_after_rehash(self):
