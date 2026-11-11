@@ -1,5 +1,9 @@
 name: Day 3 genuine TSE Client three-mode execution
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/day3-tse-client-three-modes.yml'
+      - 'DAY3-*.md'
   push:
     paths:
       - '.github/workflows/day3-tse-client-three-modes.yml'
@@ -22,9 +26,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p day3-output/mode0 day3-output/mode1 day3-output/mode2
-          # The CLI defaults to raw prices for mode 0. -j 1 includes dividends;
-          # -j 2 includes capital increases only. -b sets the earliest date.
-          tse "وساخت" -b 20030123 -j 0 -x csv -o day3-output/mode0 -n mode0
+          # Raw/default mode 0 has no -j flag. Mode 1 = capital + dividends.
+          # Mode 2 = capital increases only. Start at earliest documented date.
+          tse "وساخت" -b 20030123 -x csv -o day3-output/mode0 -n mode0
           tse "وساخت" -b 20030123 -j 1 -x csv -o day3-output/mode1 -n mode1
           tse "وساخت" -b 20030123 -j 2 -x csv -o day3-output/mode2 -n mode2
           find day3-output -type f -printf '%p %s bytes\n'
@@ -47,7 +51,7 @@ jobs:
           counts=[v['rowsIncludingHeader'] for v in report['modes'].values()]
           if len(set(counts))!=1: raise SystemExit('Mode row-count mismatch: '+repr(counts))
           report['allModesPresent']=True
-          report['comparison']='Outputs captured; row-by-row numerical comparison is a separate acceptance step.'
+          report['comparison']='Three genuine library outputs captured; numeric row-by-row comparison required before acceptance.'
           open('day3-output/three-mode-manifest.json','w').write(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
           print(json.dumps(report,ensure_ascii=False,indent=2))
           PY
