@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
 jobs:
   webkit-mobile:
+    # Official Playwright image includes the pinned browser and required Linux libraries.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
