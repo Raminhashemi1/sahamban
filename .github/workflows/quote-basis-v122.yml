@@ -17,7 +17,9 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save playwright@1.56.1
-      - run: npx playwright install --with-deps chromium
+      # Avoid intermittent Ubuntu apt mirror DNS failures before browser tests start.
+      # Keep browser installation and the actual tests enabled.
+      - run: npx playwright install chromium
       - run: node --check tests/quote-basis-v122.cjs
       - run: node tests/quote-basis-v122.cjs
       - name: Preserve synthetic market basis evidence
