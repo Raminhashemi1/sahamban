@@ -1,12 +1,9 @@
-name: Day 3 Vesakht independent TSETMC retrieval probe
+# Opt-in network diagnostic ONLY. Never auto-run on every PR commit: the
+# GitHub-hosted network may be unable to reach TSETMC, and this probe does not
+# establish independent provider authenticity, three-mode basis or acceptance.
+name: Day 3 Vesakht opt-in TSETMC connectivity probe
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/day3-vesakht-evidence-probe.yml'
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/day3-vesakht-evidence-probe.yml'
 permissions:
   contents: read
 jobs:
@@ -14,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Fetch and verify independent raw public TSETMC responses
+      - name: Attempt read-only public TSETMC raw-response capture (not attestation)
         shell: bash
         run: |
           set -euo pipefail
