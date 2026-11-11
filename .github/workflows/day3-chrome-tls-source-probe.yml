@@ -1,16 +1,19 @@
-name: Day 3 original-source Chrome TLS capture experiment
-# Isolated opt-in test, with one PR-triggered experiment on changing this workflow.
-# Not a release gate. Non-successful remote source access remains documented.
+name: Day 3 original-source capture — manual only
+# Public read-only data, no credentials, no trader operations.
+# DO NOT enable a self-hosted runner for unreviewed pull-request code.
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/day3-chrome-tls-source-probe.yml'
-      - 'scripts/day3_chrome_source_probe.py'
   workflow_dispatch:
+    inputs:
+      trusted_iran_runner:
+        description: 'Use a separately configured trusted Iran-network runner (label: iran-evidence)'
+        type: boolean
+        default: false
+        required: true
 permissions:
   contents: read
 jobs:
-  originals:
+  github_hosted_diagnostic:
+    if: ${{ !inputs.trusted_iran_runner }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -20,13 +23,33 @@ jobs:
           python-version: '3.12'
       - name: Install browser-TLS HTTP transport
         run: python3 -m pip install --disable-pip-version-check 'curl_cffi==0.14.0'
-      - name: Probe ONLY fixed public original endpoints
+      - name: Probe fixed public original endpoints (read only)
         run: python3 scripts/day3_chrome_source_probe.py out/day3-browser-tls
-      - name: Preserve raw candidate bytes and manifest even on source failures
+      - name: Preserve raw candidates and failure manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: day3-browser-tls-source-candidates
+          name: day3-browser-tls-hosted-report
+          path: out/day3-browser-tls/
+          retention-days: 30
+          if-no-files-found: warn
+  trusted_iran_capture:
+    if: ${{ inputs.trusted_iran_runner }}
+    # The owner must explicitly install / isolate this runner on an IP that
+    # can access original Iran market servers. Never run on untrusted forks.
+    runs-on: [self-hosted, linux, x64, iran-evidence]
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check pre-installed Python and curl_cffi
+        run: python3 -c 'import curl_cffi; print("Chrome TLS transport available")'
+      - name: Capture fixed original sources without publishing trust claims
+        run: python3 scripts/day3_chrome_source_probe.py out/day3-browser-tls
+      - name: Upload audit-only source files and manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-trusted-network-source-candidates
           path: out/day3-browser-tls/
           retention-days: 30
           if-no-files-found: warn
