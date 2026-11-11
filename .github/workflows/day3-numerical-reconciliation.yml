@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify 5 fail-closed numerical regression cases
+      - name: Verify 10 fail-closed numerical regression cases
         run: python3 -m unittest -v test_day3_vesakht_capture_reconcile.py
       - name: Verify exact user-captured Vesakht bytes and reconstruct 500 historical sessions
         run: |
