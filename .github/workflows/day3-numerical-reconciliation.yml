@@ -23,7 +23,7 @@ jobs:
       - name: Verify 10 fail-closed numerical regression cases
         run: python3 -m unittest -v test_day3_vesakht_capture_reconcile.py
       - name: Verify no unsupported 4-rial rounding waiver in full-history audit
-        run: python3 -m unittest -v tests/test_day3_event_rounding_audit.py
+        run: python3 -m unittest discover -s tests -p 'test_day3_event_rounding_audit.py' -v
       - name: Verify exact user-captured Vesakht bytes and reconstruct 500 historical sessions
         run: |
           python3 day3_vesakht_capture_reconcile.py \
