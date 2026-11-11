@@ -12,7 +12,9 @@ const fail=reason=>Object.freeze({status:'NOT_PRIMARY_AUTHENTICATED',reason,
  historyBasisAuthenticated:false,entryEligible:false,tradingSignalsEnabled:false,
  day3FinalAccepted:false});
 function crosscheckPublicDps({instrument=INS,capitalMillionRial,dpsRial,
- dividendTotalMillionRial,issuerOriginalSha256=null,dividendSourceUrl}={}){
+ dividendTotalMillionRial,earningsPerShareRial,payoutPermille,
+ retainedProfitBeforeMillionRial,retainedProfitAfterMillionRial,
+ issuerOriginalSha256=null,dividendSourceUrl}={}){
  if(instrument!==INS||!Number.isSafeInteger(capitalMillionRial)||capitalMillionRial<=0||
   !Number.isSafeInteger(dpsRial)||dpsRial<=0||
   !Number.isSafeInteger(dividendTotalMillionRial)||dividendTotalMillionRial<=0||
