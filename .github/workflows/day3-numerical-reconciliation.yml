@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'day3_vesakht_capture_reconcile.py'
+      - 'scripts/day3_event_rounding_audit.py'
+      - 'tests/test_day3_event_rounding_audit.py'
       - 'test_day3_vesakht_capture_reconcile.py'
       - 'evidence/day3/**'
       - '.github/workflows/day3-numerical-reconciliation.yml'
@@ -20,6 +22,8 @@ jobs:
           python-version: '3.12'
       - name: Verify 10 fail-closed numerical regression cases
         run: python3 -m unittest -v test_day3_vesakht_capture_reconcile.py
+      - name: Verify no unsupported 4-rial rounding waiver in full-history audit
+        run: python3 -m unittest -v tests/test_day3_event_rounding_audit.py
       - name: Verify exact user-captured Vesakht bytes and reconstruct 500 historical sessions
         run: |
           python3 day3_vesakht_capture_reconcile.py \
