@@ -41,7 +41,7 @@ function attestPriceBasis({evidence,review,expectedInsCode,expectedDate,expected
    Buffer.from(review.signature,'base64'));}catch{return deny('SIGNATURE_VERIFICATION_ERROR');}
  if(!ok)return deny('INVALID_SIGNATURE');
  return Object.freeze({status:'INDEPENDENTLY_ATTESTED',historyBasisAuthenticated:true,
-  threeModesVerified:true,entryEligible:true,tradingSignalsEnabled:false,
+  threeModesVerified:true,entryEligible:false,tradingSignalsEnabled:false,
   day3FinalAccepted:false,note:'Only price basis was reviewed; separate trade gates remain closed.'});
 }
 module.exports=Object.freeze({attestPriceBasis});
