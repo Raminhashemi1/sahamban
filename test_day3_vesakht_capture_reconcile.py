@@ -69,5 +69,42 @@ class NumericalTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'unclassified or dividend'):
             m.reconcile(self.daily,self.actions)
 
+
+    def _rewrite_and_rehash(self, path, field, mutate):
+        obj=json.loads(path.read_text())
+        mutate(obj[field])
+        path.write_text(json.dumps(obj))
+        m.EXPECTED_SHA[field]=hashlib.sha256(path.read_bytes()).hexdigest()
+
+    def test_invalid_calendar_date_fails_after_rehash(self):
+        self._rewrite_and_rehash(self.daily, 'closingPriceDaily',
+            lambda rows: rows[0].update(dEven=20260230))
+        with self.assertRaisesRegex(ValueError, 'Invalid source date'):
+            m.reconcile(self.daily, self.actions)
+
+    def test_duplicate_event_date_fails_after_rehash(self):
+        self._rewrite_and_rehash(self.actions, 'priceAdjust',
+            lambda rows: rows[2].update(dEven=rows[3]['dEven']))
+        with self.assertRaisesRegex(ValueError, 'Duplicate adjustment event date'):
+            m.reconcile(self.daily, self.actions)
+
+    def test_non_finite_price_fails_after_rehash(self):
+        self._rewrite_and_rehash(self.daily, 'closingPriceDaily',
+            lambda rows: rows[0].update(priceFirst='NaN'))
+        with self.assertRaisesRegex(ValueError, 'Invalid price|Non-finite price'):
+            m.reconcile(self.daily, self.actions)
+
+    def test_negative_secondary_price_fails_after_rehash(self):
+        self._rewrite_and_rehash(self.daily, 'closingPriceDaily',
+            lambda rows: rows[0].update(priceMin=-1))
+        with self.assertRaisesRegex(ValueError, 'Negative daily price field'):
+            m.reconcile(self.daily, self.actions)
+
+    def test_invalid_out_of_range_adjustment_price_fails(self):
+        self._rewrite_and_rehash(self.actions, 'priceAdjust',
+            lambda rows: rows[-1].update(pClosingNotAdjusted=0))
+        with self.assertRaisesRegex(ValueError, 'Invalid adjustment price'):
+            m.reconcile(self.daily, self.actions)
+
 if __name__=='__main__':
     unittest.main()
