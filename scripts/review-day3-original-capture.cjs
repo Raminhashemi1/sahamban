@@ -6,7 +6,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const {auditDay3Evidence}=require('../day3-real-evidence-audit-v1.cjs');
-const MAX_SIZE=1024*1024;
+const MAX_SIZE=1024*1024, FULL_HISTORY_DAILY_MAX_SIZE=8*1024*1024;
 function readBounded(file,max=MAX_SIZE){
  const stat=fs.statSync(file,{throwIfNoEntry:false});
  if(!stat||!stat.isFile()||stat.size===0||stat.size>max)
@@ -19,7 +19,8 @@ function run(argv){
  const [manifestPath,dailyPath,adjustmentsPath,expectedDailyDate,receiptPath]=argv;
  // No source file, account ID or absolute path is ever printed.
  const manifest=JSON.parse(readBounded(manifestPath,32768).toString('utf8'));
- const dailyBytes=readBounded(dailyPath);
+ const fullHistoryRequest=manifest?.captureScope==='RAW_TOP_0_ALL_AVAILABLE_REQUEST_NOT_INDEPENDENTLY_FULL_HISTORY'&&manifest?.dailyTop===0;
+ const dailyBytes=readBounded(dailyPath,fullHistoryRequest?FULL_HISTORY_DAILY_MAX_SIZE:MAX_SIZE);
  const adjustmentsBytes=readBounded(adjustmentsPath);
  const receipt=receiptPath===undefined?undefined:JSON.parse(readBounded(receiptPath,8192).toString('utf8'));
  const output=auditDay3Evidence({manifest,dailyBytes,adjustmentsBytes,receipt,expectedDailyDate});
