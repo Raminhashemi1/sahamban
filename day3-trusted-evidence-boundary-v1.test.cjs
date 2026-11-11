@@ -8,7 +8,7 @@ const review={reviewerKeyId:'user-controlled',insCode,dailySha256:daily,
  fromDate:'20241015',throughDate:date,verifiedAt:'2026-11-09T00:00:00.000Z',
  expiresAt:'2099-01-01T00:00:00.000Z',signature:'ZmFrZQ=='};
 const input={evidence,review,expectedInsCode:insCode,expectedDate:date,expectedDailySha256:daily};
-function closed(v){assert.equal(v.historyBasisAuthenticated,false);assert.equal(v.threeModesVerified,false);
+function closed(v){assert.equal(v.entryEligible,false);assert.equal(v.historyBasisAuthenticated,false);assert.equal(v.threeModesVerified,false);
  assert.equal(v.tradingSignalsEnabled,false);assert.equal(v.day3FinalAccepted,false);}
 test('self-issued reviewer not trusted',()=>{const v=attestPriceBasis(input);closed(v);assert.equal(v.reason,'NO_TRUSTED_REVIEWER');});
 for(const [name,override] of [
@@ -23,3 +23,10 @@ test('relabelled duplicate modes',()=>closed(attestPriceBasis({...input,evidence
 test('missing modes',()=>closed(attestPriceBasis({...input,evidence:{...evidence,modes:[]}})));
 test('self-declared attestation flag',()=>closed(attestPriceBasis({...input,evidence:{...evidence,INDEPENDENTLY_ATTESTED:true},review:{...review,historyBasisAuthenticated:true}})));
 test('browser public key cannot enroll reviewer',()=>closed(attestPriceBasis({...input,review:{...review,publicKey:'bogus'}})));
+
+test('price-basis attestation never by itself grants portfolio entry eligibility',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('./day3-trusted-evidence-boundary-v1.cjs'),'utf8');
+ assert.doesNotMatch(source,/entryEligible\s*:\s*true/);
+ assert.match(source,/status:'INDEPENDENTLY_ATTESTED'[\s\S]*?entryEligible:false/);
+});
