@@ -17,6 +17,7 @@ const NOW=Date.now();
 const ID='pilot|local-runtime-check';
 const stamp=new Date(NOW).toISOString();
 const enableOrders=process.env.LOCAL_TEST_ENABLE_ORDERS==='1';
+const enablePrepaid=process.env.LOCAL_TEST_ENABLE_PREPAID==='1';
 const timeout=75000;
 const nap=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
@@ -37,10 +38,12 @@ async function json(path,{token,method='GET',origin=ORIGIN,body}={}){
 async function main(){
  cli('--command',"INSERT OR IGNORE INTO sahamban_users(id,auth_subject,created_at,status) VALUES ('local-runtime-u1','"+ID+"','"+stamp+"','ACTIVE')");
  cli('--command',"INSERT OR REPLACE INTO subscription_entitlements(user_id,paid_until,suspended,auto_renew_cancelled,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,0,'"+stamp+"')");
+ cli('--file','server/d1-prepaid-migration.sql');
  const tok=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  // Command-line var is a PUBLIC TEST VALUE, NOT an actual key or credential.
  const app=spawn('npx',['--no-install','wrangler','dev','--local','--config',CONFIG,'--ip','127.0.0.1','--port',String(PORT),'--var','AUTH_HMAC_SECRET:'+SECRET,
-  ...(enableOrders?['--var','PILOT_ORDERS_ENABLED:true','--var','PILOT_ANNUAL_PRICE_RIAL:2500000']:[])],{
+  ...(enableOrders?['--var','PILOT_ORDERS_ENABLED:true','--var','PILOT_ANNUAL_PRICE_RIAL:2500000']:[]),
+  ...(enablePrepaid?['--var','PREPAID_ORDERS_ENABLED:true']:[])],{
   cwd:process.cwd(),env:{...process.env,WRANGLER_SEND_METRICS:'false',NO_COLOR:'1'},
   stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'
  });
@@ -90,6 +93,30 @@ async function main(){
    assert.equal(fakeBody.status,400);
    const after=await json('/api/v1/me/orders',{token:tok});
    assert.equal(after.data.orderId,first.data.orderId);
+  }
+  if(enablePrepaid){
+   const create=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_6M'})});
+   assert.equal(create.status,201);
+   assert.equal(create.data.order.planId,'SAHAMBAN_PRO_6M');
+   assert.equal(create.data.order.amountRial,8550000);
+   assert.equal(create.data.checkoutEnabled,false);
+   assert.equal(create.data.proEnabled,false);
+   assert.match(create.data.order.id,/^ord_[a-f0-9]{32}$/);
+   const pending=await json('/api/v1/me/prepaid-orders',{token:tok});
+   assert.equal(pending.status,200);
+   assert.equal(pending.data.pending,true);
+   assert.equal(pending.data.order.id,create.data.order.id);
+   const duplicate=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_3M'})});
+   assert.equal(duplicate.status,503);
+   const tampered=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_3M',amountRial:1})});
+   assert.equal(tampered.status,400);
+   const access=await json('/api/v1/me/entitlement',{token:tok});
+   assert.equal(access.status,200);
+   assert.equal(access.data.proEnabled,true);
+   assert.equal(access.data.paidUntil,'2099-12-01T00:00:00.000Z');
   }
   const checkout=await json('/api/v1/checkout',{method:'POST'});
   assert.equal(checkout.status,404);
