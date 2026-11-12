@@ -11,6 +11,14 @@
 - build: Android SDK 35، Gradle 8.11.1، AGP 8.9.2، Java 17؛ ساخت `assembleDebug` و تست origin/path هر دو موفق.
 - این APK دارای امضای **debug** و شناسه آزمایشی `ir.sahamban.pilot` است؛ **برای انتشار مارکت، پرداخت، یا داده واقعی کاربران مناسب نیست**.
 
+## خروجی جدید قابل نصب برای آزمون ساختگی v0.3.0 (۱۳ نوامبر ۲۰۲۶)
+
+- GitHub Actions: [اجرای موفق ساخت Android debug شماره 43304736011](https://github.com/Raminhashemi1/sahamban/actions/runs/43304736011) روی commit \`38f0c3fe8df768cd8228286873b92e8b8e17c03c\`؛ \`:app:assembleDebug\` و Java policy test موفق.
+- artifact: [شماره 13983985808](https://github.com/Raminhashemi1/sahamban/actions/runs/43304736011/artifacts/13983985808)؛ نام \`sahamban-android-pilot-debug-UNSIGNED-FOR-STORE\`، اعتبار محدود تا ۱۹ نوامبر ۲۰۲۶ بر اساس خروجی GitHub.
+- SHA-256 خود فایل \`app-debug.apk\` در خروجی CI: \`8b85aeed12f6dcc835b43726a41838e15d27b402948dbb872723b476827753d0\`. این digest متعلق به APK است، نه فایل ZIP artifact.
+- **استفاده:** فایل را از اجرای GitHub دریافت و در گوشی آزمایشی نصب کنید؛ در فهرست برنامه‌ها، آیکن دوم «سهام‌بان - آزمون پشتیبان ساختگی» را باز کنید. در دو مسیر «پشتیبان محلی» و «سبد ریسک»، ذخیره/لغو/بازخوانی فایل JSON را امتحان و PASS/FAIL را ثبت کنید. این صفحه از اینترنت و اطلاعات شخصی استفاده نمی‌کند.
+- نتیجه ساخت موفق **به معنی PASS آزمون روی گوشی نیست**. هیچ نتیجه فیزیکی تأییدشده‌ای در زمان نگارش این بند ثبت نشده؛ \`PHYSICAL_DEVICE_UNVERIFIED\`، \`PWA_REAL_BACKUP_UNVERIFIED\` و \`MARKET_RELEASE_BLOCKED\` حفظ شوند.
+
 ## روش بررسی بدون اطلاعات خصوصی
 
 ۱. فایل artifact را از صفحه اجرای GitHub دریافت، ZIP را باز و APK آزمایشی را روی یک دستگاه اندروید واقعی نصب کنید. پیش از نصب فقط به این منبع رسمی اعتماد کنید؛ فایل APK از پیام‌رسان یا منبع ناشناس دریافت نکنید. نیازی به حذف نسخه PWA موجود نیست.
