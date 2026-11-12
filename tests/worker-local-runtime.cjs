@@ -38,6 +38,7 @@ async function json(path,{token,method='GET',origin=ORIGIN,body,headers:extraHea
 async function main(){
  cli('--command',"INSERT OR IGNORE INTO sahamban_users(id,auth_subject,created_at,status) VALUES ('local-runtime-u1','"+ID+"','"+stamp+"','ACTIVE')");
  cli('--command',"INSERT OR REPLACE INTO subscription_entitlements(user_id,paid_until,suspended,auto_renew_cancelled,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,0,'"+stamp+"')");
+ cli('--command',"INSERT OR REPLACE INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at) VALUES ('local-runtime-u1','2100-01-01T00:00:00.000Z','"+stamp+"')");
  cli('--file','server/d1-prepaid-migration.sql');
  const tok=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  // Command-line var is a PUBLIC TEST VALUE, NOT an actual key or credential.
@@ -116,7 +117,7 @@ async function main(){
    const access=await json('/api/v1/me/entitlement',{token:tok});
    assert.equal(access.status,200);
    assert.equal(access.data.proEnabled,true);
-   assert.equal(access.data.paidUntil,'2099-12-01T00:00:00.000Z');
+   assert.equal(access.data.paidUntil,'2100-01-01T00:00:00.000Z');
   }
   const checkout=await json('/api/v1/checkout',{method:'POST'});
   assert.equal(checkout.status,404);
