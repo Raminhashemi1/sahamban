@@ -295,3 +295,13 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - فرایند دقیق پذیرش TWA در پنل مایکت از منابع عمومی به‌طور قطعی تأیید نشد؛ با فرض قطعی وارد ساخت بسته یا انتشار نشویم.
 - گزارش ممیزی [DAY-5-MARKET-RELEASE-READINESS-2026-11-12.md](./DAY-5-MARKET-RELEASE-READINESS-2026-11-12.md) با موانع فنی TWA تکمیل شد. هیچ APK، AAB، امضای برنامه یا بارگذاری مارکت انجام نشد؛ توسعه ویژگی جدید هم انجام نشده است.
 - گام وابسته به مالک: انتخاب روش کنترل ریشه origin (دامنه اختصاصی یا User Pages) و تأیید دسترسی ناشر مایکت/بازار و وجود یا نبود بسته/کلید امضای قبلی. کلید یا رمز در چت/مخزن عمومی وارد نشود. وضعیت روز پنجم همچنان `DAY_5_RELEASE_BLOCKED_PENDING_ANDROID_ARTIFACT_AND_OWNER_EVIDENCE` است.
+
+
+## زیرساخت روز پنجم — مخزن ریشه GitHub Pages ایجاد شد (۱۲ نوامبر ۲۰۲۶)
+
+- مالک مخزن عمومی `Raminhashemi1/Raminhashemi1.github.io` را با موفقیت ایجاد کرد؛ شاخه پیش‌فرض `main` است و مخزن تازه و خالی بود. دامنه اختصاصی در اختیار نیست.
+- این مخزن، در صورت فعال‌سازی GitHub Pages، ریشه origin به نشانی `https://raminhashemi1.github.io/` را فراهم می‌کند؛ برای میزبانی `/.well-known/assetlinks.json` لازم است.
+- تلاش اتصال GitHub برای ایجاد `.nojekyll` و README در مخزن تازه با HTTP 403 `Resource not accessible by integration` رد شد. بنابراین هیچ فایلی در مخزن جدید ایجاد نشده و Pages نیز از طریق ابزار فعال نشده است.
+- گام دستی مالک: در مخزن تازه از Add file > Create new file فایل `.nojekyll` (محتوای خالی) را در ریشه بسازد و commit کند؛ سپس Settings > Pages > Build and deployment > Deploy from a branch > `main` > `/(root)` > Save را تنظیم کند.
+- پس از فعال شدن Pages، شناسه بسته اندروید `applicationId` و SHA-256 گواهی امضای **نسخه انتشار** هنوز لازم‌اند؛ تا دریافت آن‌ها فایل assetlinks معتبر قابل تولید نیست.
+- هیچ APK/AAB، کلید خصوصی، فایل assetlinks، یا انتشار مارکتی ساخته/ارسال نشده است. وضعیت روز پنجم همچنان مسدود به پیش‌نیاز بسته اندروید و دسترسی مالک است.
