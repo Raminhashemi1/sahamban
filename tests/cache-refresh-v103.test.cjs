@@ -19,8 +19,11 @@ test('current cache generation installs before retiring older Sahamban caches',a
  const fire=async name=>{let pending;events[name]({waitUntil:promise=>{pending=promise}});assert.ok(pending);await pending;};
  await fire('install');
  assert.equal(skipped,1);
- assert.ok(stores.has('sahamban-static-v150-13'));
+ assert.ok(stores.has('sahamban-static-v150-14'));
  assert.ok(prefetched.includes('./index.html'));
+ assert.ok(prefetched.includes('./native-backup-export-v1.js?v=1.0'));
+ assert.ok(prefetched.includes('./app.js?v=127.1'));
+ assert.ok(prefetched.includes('./local-backup-v148.js?v=148.2'));
  assert.ok(prefetched.includes('./update-notice-v103.js?v=103.0'));
  assert.ok(prefetched.includes('./update-notice-v103.css?v=103.0'));
  await fire('activate');
