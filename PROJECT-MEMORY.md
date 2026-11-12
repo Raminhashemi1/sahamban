@@ -576,3 +576,11 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - اجرای قبلی CI برای access gate شکست خورد چون تست migration وجود جدول legacy را با وجود ردیف اشتباه سنجیده بود. تست اصلاح شد تا وجود جدول را از sqlite_master بررسی کند. هم‌زمان constraint migration اصلاح شد تا هر شناسه پلن فقط با قیمت متناظر خودش پذیرفته شود، نه صرفاً هر قیمت موجود در فهرست.
 - اصلاحات در commit `d3561777` ثبت شد. CI جدید در صف است: https://github.com/Raminhashemi1/sahamban/actions/runs/43248824897 . تا نتیجه نهایی اجرا، PASS اعلام نشود.
 - همچنان ماژول سفارش به Worker وصل نشده؛ چون هویت فعلی فقط توکن آزمایشی کنترل‌شده است و ورود واقعی کاربر، adapter پرداخت معتبر، settlement/refund اتمیک و D1 خصوصی مستقرشده هنوز وجود ندارد. فروش و پرداخت خاموش باقی می‌مانند.
+
+
+## ادامه اجرا — مسیر تسویه تأییدشده سمت سرور (۱۲ نوامبر ۲۰۲۶)
+
+- ماژول `server/prepaid-settlement.cjs` اضافه شد. فقط خروجی verification سمت سرور را می‌پذیرد؛ مبلغ و ارز IRR، شناسه پلن، سفارش PENDING، شناسه‌های provider/event/payment و زمان را تطبیق می‌دهد؛ سپس ledger رخداد پرداخت، SETTLED شدن سفارش و upsert اعتبار را در یک D1 batch انجام می‌دهد. قیدهای یکتای event/payment و شرط PENDING جلوی replay/double grant را می‌گیرند. تاریخ انقضا بر اساس ماه تقویمی و افزودن به اعتبار باقی‌مانده محاسبه می‌شود.
+- آزمون `tests/prepaid-settlement.test.cjs` اضافه و به Smoke CI وصل شد. اجرای Smoke برای commit `d1f5f3b9` در زمان ثبت هنوز queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43249742943 . آزمون PWA asset inventory روی همان commit موفق شده، اما جایگزین Smoke نیست.
+- اجرای Smoke قبلی روی commit `16b3708f` موفق گزارش شده: https://github.com/Raminhashemi1/sahamban/actions/runs/43249598322 ؛ اما تست settlement بعد از آن اضافه/اصلاح شد و در آن اجرا نبود.
+- **محدودیت جدی:** settlement primitive هنوز به gateway واقعی یا Worker route متصل نیست؛ فیلد `verified:true` فقط برای شیء داخلیِ تولیدشده توسط adapter معتبر قابل استفاده است و هیچ endpoint عمومی نباید آن را از body مرورگر بپذیرد. امضای درگاه/استعلام server-to-server، refund/chargeback reversal، اتصال auth واقعی، تست SQL واقعی روی D1، migration و deploy هنوز لازم‌اند. پرداخت و فروش خاموش باقی می‌مانند.
