@@ -584,3 +584,13 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - آزمون `tests/prepaid-settlement.test.cjs` اضافه و به Smoke CI وصل شد. اجرای Smoke برای commit `d1f5f3b9` در زمان ثبت هنوز queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43249742943 . آزمون PWA asset inventory روی همان commit موفق شده، اما جایگزین Smoke نیست.
 - اجرای Smoke قبلی روی commit `16b3708f` موفق گزارش شده: https://github.com/Raminhashemi1/sahamban/actions/runs/43249598322 ؛ اما تست settlement بعد از آن اضافه/اصلاح شد و در آن اجرا نبود.
 - **محدودیت جدی:** settlement primitive هنوز به gateway واقعی یا Worker route متصل نیست؛ فیلد `verified:true` فقط برای شیء داخلیِ تولیدشده توسط adapter معتبر قابل استفاده است و هیچ endpoint عمومی نباید آن را از body مرورگر بپذیرد. امضای درگاه/استعلام server-to-server، refund/chargeback reversal، اتصال auth واقعی، تست SQL واقعی روی D1، migration و deploy هنوز لازم‌اند. پرداخت و فروش خاموش باقی می‌مانند.
+
+
+## ادامه اجرا — اتصال کنترل‌شده سفارش چهارپلن به Worker (۱۲ نوامبر ۲۰۲۶)
+
+- مسیرهای `GET/POST /api/v1/me/prepaid-orders` به `server/worker-api.mjs` اضافه شدند؛ فقط با توکن HMAC آزمایشی کوتاه‌عمر موجود، فقط planId از کلاینت، قیمت و شناسه سفارش از سرور، خواندن سفارش صرفاً برای subject خود کاربر، و بدون checkout URL یا اعطای Pro.
+- مسیر با `PREPAID_ORDERS_ENABLED` خاموش می‌ماند؛ `server/wrangler.local.toml` صریحاً آن را false تنظیم می‌کند. ماژول ESM bridge برای سازگاری Worker اضافه شد.
+- تست‌های Worker برای خاموش‌بودن پیش‌فرض، احراز هویت، رد فیلد/قیمت دست‌کاری‌شده و نوع محتوا اضافه شدند. یک شکست تست به‌علت regex timestamp اشتباه بود؛ اصلاح شد.
+- اجرای Cloudflare Worker build verification برای commit `9aad3186` با موفقیت کامل شد: https://github.com/Raminhashemi1/sahamban/actions/runs/43250756128 . این اجرا شامل تست‌های امنیتی، bundle dry-run، اعمال schema سالانه موجود روی D1 محلی و تست‌های runtime/چرخه سفارش آزمایشی بوده است.
+- Smoke CI برای همان commit هنگام ثبت هنوز in progress است: https://github.com/Raminhashemi1/sahamban/actions/runs/43250756345 .
+- این فقط Worker آزمایشی است: D1 چهارپلن هنوز در D1 خصوصی واقعی اعمال نشده؛ هویت HMAC آزمایشی، درگاه/تأیید provider، refund/chargeback و frontend خرید هنوز آماده عرضه عمومی نیستند. پرچم خاموش باقی می‌ماند؛ هیچ deploy یا فروش واقعی انجام نشده است.
