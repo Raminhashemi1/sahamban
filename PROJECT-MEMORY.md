@@ -724,3 +724,13 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - commitهای این تکمیل: `04ebbfdf` (هم‌ترازی سقف ورودی)، `9ef1a68d` و `0292a029` (cache-bust)، `ea37cfa5` (آزمون اندازه)، `19915529` (timeout)، `be5c23e5` (آزمون timeout/bridge ناقص).
 - CI برای commit نهایی `be5c23e5` هنوز باید بررسی شود؛ اجرای قبلی موفق Android/Smoke متعلق به SHA قدیمی‌تر `f34d5984` بود و نباید به کدهای تازه تعمیم داده شود.
 - وضعیت میدانی بدون تغییر: آزمون گوشی فیزیکی و اتصال نسخه واقعی PWA همچنان `UNVERIFIED`؛ شاخه `main` و GitHub Pages منتشرشده تغییر نکرده‌اند؛ PR #166 باز و draft، Issue #167 باز، انتشار و پرداخت مسدود.
+
+## تحویل پایان نشست — ۱۳ نوامبر ۲۰۲۶
+
+- آخرین کد وب: سقف import سبد ریسک با export روی ۲۵۶ KiB یکسان شد؛ `index.html` و `sw.js` به `app.js?v=127.2` تغییر کردند. timeout Native پنج‌دقیقه‌ای و پاک‌سازی listener نیز افزوده شد.
+- یک خطای assertion از تغییر cache-bust در دو تست قدیمی پیدا و اصلاح شد: `tests/technical-indicators-v50.test.cjs` و `tests/cache-refresh-v103.test.cjs` اکنون `127.2` را انتظار دارند.
+- **CI قطعی برای کد:** Smoke job در [run 43307722017](https://github.com/Raminhashemi1/sahamban/actions/runs/43307722017) برای commit کد `3c3323f9f8457568a0a61e712e211dda37a25d13` با `success` پایان یافت؛ آزمون Technical Indicators در [run 43307721964](https://github.com/Raminhashemi1/sahamban/actions/runs/43307721964) نیز موفق است. Browser job همان Smoke run در آخرین مشاهده هنوز `in_progress` بود؛ بعداً نتیجه نهایی را بررسی کنید.
+- Android debug build/audit در [run 43307476823](https://github.com/Raminhashemi1/sahamban/actions/runs/43307476823) با `success` پایان یافت؛ این build از سورس Java یکسان با نسخه 0.3.1 استفاده می‌کند. Artifact قبلی 0.3.1 کوتاه‌مدت است و برای مارکت نیست.
+- آخرین اسناد تکمیل: `ANDROID-TEST-ACCEPTANCE-2026-11-12.md`, `android-pilot/README.md`, این فایل. PR #166 همچنان Draft و Issue #167 باز است.
+- **فردا از این نقطه شروع شود:** ابتدا وضعیت Browser و همه checkهای PR #166 روی HEAD تازه `feta` را بخوانید؛ شکست احتمالی را فقط با log و آزمون بازتولید کنید. سپس گوشی Android واقعی با fixture ساختگی را بخواهید/بررسی کنید: save local + risk, cancel, actual file, exact readback, restore, offline, RTL, TalkBack. بدون نتیجه کاربر، فیزیکی را UNVERIFIED نگه دارید. پس از آن برنامه آزمون end-to-end PWA را طراحی کنید، اما هیچ deploy عمومی بدون بازبینی و اجازه روشن انجام ندهید.
+- **ممنوع:** merge به `main`, انتشار Pages/مارکت، امضای production، پرداخت، ورود داده واقعی یا حذف/بازنویسی PWA موجود. وضعیت انتشار همچنان BLOCKED است.
