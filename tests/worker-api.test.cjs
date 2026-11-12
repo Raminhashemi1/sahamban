@@ -30,6 +30,7 @@ test('verified pilot JWT reads only account-bound entitlement via prepared D1 qu
  assert.equal((await reply.json()).proEnabled,true);
  assert.deepEqual(storage.calls[1],['bound',subject]);
  assert.match(storage.calls[0][1],/WHERE u.auth_subject=\?/);
+ assert.match(storage.calls[0][1],/LEFT JOIN prepaid_subscription_entitlements pe/);
 });
 test('missing/forged/expired/wrong issuer/wrong algorithm/long tokens all fail closed',async()=>{
  const worker=(await api()).default;
