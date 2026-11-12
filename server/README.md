@@ -219,3 +219,10 @@ The route is guarded by `PREPAID_ORDERS_ENABLED === 'true'`; the local Wrangler 
 ## Prepaid entitlement visibility in the existing access gate
 
 The Worker entitlement lookup now compares the legacy annual entitlement with `prepaid_subscription_entitlements` and returns the later valid paid-until date. This keeps the existing Pro access endpoint compatible with the four prepaid durations without replacing the older annual pilot schema. The prepaid table is additive and must be applied before deploying this Worker version. Refund/chargeback suspension is not implemented yet; do not treat this read path as a refund processor.
+
+
+## Read-only prepaid account overview (still private-pilot, not deployed)
+
+`prepaid-account-overview.cjs` and its Worker adapter expose the user's own prepaid entitlement status, UTC paid-until, nonnegative remaining seconds, explicit `autoRenew:false`, and up to twenty most recent order-history records. History is selected by the user ID obtained only through a verified authentication subject. It does not include card/bank data and never initiates or confirms a purchase. DB failures, invalid identity or malformed history fail closed.
+
+`GET /api/v1/me/prepaid-overview` is gated by `PREPAID_ORDERS_ENABLED==='true'` and authenticates with the existing **private-pilot** HMAC token. The default flag is false. Production deployment requires real login, a privately migrated D1 database, refunds and trustworthy gateway verification; the pilot token must not be repurposed as production identity.
