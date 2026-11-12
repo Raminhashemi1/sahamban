@@ -321,3 +321,11 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - اسکرین‌شات تنظیمات نمایش می‌دهد پیام `GitHub Pages source saved.` و وضعیت `Your site is live at https://raminhashemi1.github.io/`؛ دکمه Save غیرفعال است چون تنظیمات فعلی قبلاً ذخیره شده‌اند، نه به‌دلیل خطا.
 - HTTPS اجباری و فعال است. نشانی انتشار اعلام‌شده: `https://raminhashemi1.github.io/`.
 - گام بعدی: باز کردن نشانی سایت و سپس آماده‌سازی مسیر `/.well-known/assetlinks.json` فقط پس از دریافت `applicationId` و SHA-256 گواهی امضای نسخه انتشار. هنوز assetlinks یا بسته انتشار ساخته نشده و انتشار در مایکت/بازار انجام نشده است.
+
+
+## بررسی نشانی ریشه GitHub Pages — پاسخ 404 (۱۲ نوامبر ۲۰۲۶)
+
+- مالک نشانی `https://raminhashemi1.github.io/` را باز کرده و صفحه استاندارد GitHub Pages با پیام `404 File not found` دریافت کرده است.
+- متن خطا صریحاً می‌گوید برای URL ریشه باید فایل `index.html` وجود داشته باشد. مخزن در حال حاضر فقط `.nojekyll` دارد و فایل صفحه اصلی ندارد؛ بنابراین این 404 به معنی خاموش بودن Pages نیست و با وضعیت `Your site is live` در تنظیمات سازگار است.
+- برای هدف اصلی میزبانی Digital Asset Links، پاسخ 404 ریشه به‌تنهایی مانع نیست؛ endpoint موردنیاز `https://raminhashemi1.github.io/.well-known/assetlinks.json` است. باید بعداً مسیر و فایل دقیقاً با داده‌های معتبر اپلیکیشن ساخته شود.
+- هنوز `applicationId` نهایی و SHA-256 گواهی امضای release دریافت نشده؛ فایل assetlinks نباید با داده حدسی ساخته شود. ساخت index.html فقط برای داشتن صفحه ریشه قابل‌مشاهده اختیاری است و شرط میزبانی فایل assetlinks نیست.
