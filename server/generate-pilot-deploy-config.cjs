@@ -15,6 +15,7 @@ function renderConfig(id){
   '[vars]',
   'PWA_ORIGIN = "https://raminhashemi1.github.io"',
   'PILOT_ORDERS_ENABLED = "false"',
+  'PREPAID_ORDERS_ENABLED = "false"',
   '',
   '[[d1_databases]]',
   'binding = "SAHAMBAN_DB"',
