@@ -32,8 +32,8 @@ test('rejects mixed symbols and duplicate or missing dates',()=>{
  assert.throws(()=>auditCsv(csv([...rows,rows[1]])),/DUPLICATE_DATE/);
 });
 
-test('real export column headers with Persian ZWNJ are accepted, but duplicate normalized headers are rejected',()=>{
- const actualHeaders=h.map(name=>name.replace('تعدیل‌شده','تعدیل\u200cشده'));
+test('Persian header ZWNJ variations are accepted but normalized duplicates are rejected',()=>{
+ const actualHeaders=h.map(name=>name.replace('تعدیل‌شده','تعدیلشده'));
  const genuineStyle=Buffer.from('\uFEFF'+[actualHeaders,...rows].map(r=>r.join(',')).join('\r\n'));
  const result=auditCsv(genuineStyle);
  assert.equal(result.status,'CSV_INTERNAL_CONSISTENCY_PASS');
