@@ -14,6 +14,7 @@ import androidx.webkit.WebViewFeature;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -112,7 +113,8 @@ public final class BackupExportBridge {
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("application/json");
             intent.putExtra(Intent.EXTRA_TITLE, name);
-            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             try {
                 activity.startActivityForResult(intent, CREATE_FILE);
             } catch (ActivityNotFoundException | SecurityException error) {
@@ -140,7 +142,7 @@ public final class BackupExportBridge {
             reply(work.reply, work.requestId, "failed");
             return true;
         }
-        try (OutputStream output = activity.getContentResolver().openOutputStream(destination, "w")) {
+        try (OutputStream output = activity.getContentResolver().openOutputStream(destination, "wt")) {
             if (output == null) throw new java.io.IOException("Output stream unavailable");
             output.write(work.bytes);
             output.flush();
@@ -149,7 +151,20 @@ public final class BackupExportBridge {
             reply(work.reply, work.requestId, "failed");
             return true;
         }
-        // A successful stream close is still not a device-level restore acceptance.
+        // A successful write is not enough: some SAF providers may keep old
+        // trailing bytes, silently truncate or fail on close. Read the exact
+        // selected document back before acknowledging this backup.
+        try (InputStream input = activity.getContentResolver().openInputStream(destination)) {
+            if (!BackupFileVerifier.matches(input, work.bytes)) {
+                reply(work.reply, work.requestId, "failed");
+                return true;
+            }
+        } catch (Exception error) {
+            // Missing read permissions, provider errors or mismatched bytes all fail closed.
+            reply(work.reply, work.requestId, "failed");
+            return true;
+        }
+        // Still not a guarantee of long-term storage or an actual user restore.
         reply(work.reply, work.requestId, "saved");
         return true;
     }
