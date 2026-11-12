@@ -62,4 +62,4 @@
 - adapter سه‌حالته v161 و محدودیت‌های آن بررسی شد.
 - چهار آزمون برای قرارداد درخواست، مرتب‌سازی تاریخ، تطبیق سه مبنای قیمت، داده نامعتبر و fail-closed بودن اضافه شد.
 - workflow اصلی Smoke برای اجرای این آزمون‌ها به‌روزرسانی شد.
-- آزمون اختصاصی v161 در اجرای Smoke شماره 43155999590 و syntax check adapter موفق شدند. کل jobهای Smoke و Browser هنگام آخرین مشاهده هنوز در حال اجرا بودند؛ نتیجه نهایی workflow هنوز باید بررسی شود: https://github.com/Raminhashemi1/sahamban/actions/runs/43155999590.
+- آزمون اختصاصی v161 و syntax check adapter موفق شدند؛ job `smoke` در اجرای شماره 43155999590 با نتیجه `success` پایان یافت. job `browser` هنگام آخرین مشاهده هنوز در حال اجرا بود؛ نتیجه نهایی آن هنوز باید بررسی شود: https://github.com/Raminhashemi1/sahamban/actions/runs/43155999590.
