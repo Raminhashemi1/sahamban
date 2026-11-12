@@ -18,7 +18,7 @@ function parseCsv(value){
  if(quoted)throw Error('UNCLOSED_CSV_QUOTE');
  if(row.length||part){row.push(part.replace(/\r$/,''));records.push(row);}
  if(records.length<2)throw Error('EMPTY_CSV');
- const headers=records.shift();
+ const headers=records.shift().map(h=>h.replace(/[\u200c\u200e\u200f]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').trim());
  if(new Set(headers).size!==headers.length)throw Error('DUPLICATE_COLUMNS');
  for(const h of REQUIRED)if(!headers.includes(h))throw Error('MISSING_COLUMN: '+h);
  return records.map(values=>{
