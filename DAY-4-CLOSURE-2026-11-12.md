@@ -36,3 +36,15 @@
 - این اختتام به معنی تأیید کامل منبع زنده یا حل اختلاف تعدیل نیست.
 
 **تصمیم:** `DAY_4_CLOSED_WITH_EXTERNAL_DEPENDENCY`.
+
+
+## تأیید نهایی اختتام پس از اجرای CI روی HEAD اولیه اسناد
+
+در بررسی نهایی در تاریخ ۲۰۲۶-۱۱-۱۲، commit `6fba3439f4de32d07ec8470d8a861c65ff868d0f` (آخرین HEAD پیش از افزودن این تأییدیه) به‌صورت مستقل کنترل شد:
+
+- [Smoke run 43186267826](https://github.com/Raminhashemi1/sahamban/actions/runs/43186267826): `completed / success`؛ دو job `smoke` و `browser` هر دو `success`.
+- گام‌های `node --test tests/audit-gheshdab-price-csv.test.cjs`، `node --check tools/audit-gheshdab-price-csv.cjs`، `tests/market-history-v113.test.cjs`، `tests/market-validation.cjs`، `tests/market-freshness-v111.test.cjs`، `tests/market-date-tehran-v127.test.cjs` و `tests/live-market-connectivity.cjs` همگی `success`.
+- [Pages deploy 43186267731](https://github.com/Raminhashemi1/sahamban/actions/runs/43186267731): `completed / success` روی همان commit.
+- Issue #165 در زمان بررسی `open` بود؛ پیگیری تعدیل رسمی از دامنه روز چهارم جدا می‌ماند.
+
+**نتیجه:** همه معیارهای اختتامِ *ثبت‌شده برای دامنه روز چهارم* تأیید شد و `DAY_4_CLOSED_WITH_EXTERNAL_DEPENDENCY` اکنون **قطعی در محدوده این برنامه** است. هشدار: موفقیت اجرای اسکریپت اتصال زنده به‌تنهایی اصالت یا تازگی قیمت را ثابت نمی‌کند. این commit مستندسازی جدید تولید می‌کند و CI مستقل خودش با موفقیت قبلی یکسان فرض نشود.
