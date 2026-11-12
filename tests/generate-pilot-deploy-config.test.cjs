@@ -24,5 +24,7 @@ test('manual release never triggers from push, requires approval and locked vari
   'secrets.CLOUDFLARE_API_TOKEN','vars.CLOUDFLARE_ACCOUNT_ID',
   'vars.SAHAMBAN_D1_DATABASE_ID','wrangler d1 execute','--remote',
   'd1-prepaid-migration.sql','/user/tokens/verify',
+  "steps.schema.outputs.mode == 'first_install'",'Remote D1 has incomplete schema',
+  'Confirm live Worker rejects unauthenticated access and checkout',
   'wrangler deploy --config server/wrangler.deploy.toml'])assert.ok(s.includes(required),required);
 });
