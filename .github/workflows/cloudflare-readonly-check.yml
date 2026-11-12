@@ -40,7 +40,14 @@ jobs:
             const verify=await check('/user/tokens/verify','API token verification');
             if(verify?.result?.status!=='active')throw Error('API token is not active');
             await check('/accounts/'+account+'/d1/database/'+db,'D1 database access');
-            await check('/accounts/'+account+'/workers/scripts/sahamban-pro-pilot','Worker access');
+            // Script download endpoint returns JavaScript source, NOT a JSON envelope.
+            // Validate the HTTP status without outputting or parsing deployed code.
+            const script=await fetch(base+'/accounts/'+account+'/workers/scripts/sahamban-pro-pilot',{
+              headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)
+            });
+            if(!script.ok)throw Error('Worker access: HTTP '+script.status);
+            await script.body?.cancel();
+            console.log('PASS Worker access (read-only, HTTP '+script.status+')');
             console.log('PASS: existing Cloudflare connection is readable; no deploy, migration or payment');
           })().catch(err=>{console.error('FAIL: '+String(err.message).slice(0,300));process.exitCode=1;});
           NODE
