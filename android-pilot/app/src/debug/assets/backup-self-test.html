@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+<title>آزمون آفلاین پشتیبان سهام‌بان</title>
+<style>
+body{margin:0;padding:20px;font:17px/1.7 sans-serif;background:#f6f8fb;color:#172d40}
+main{max-width:640px;margin:auto}
+section{background:white;border:1px solid #ccd8e0;border-radius:12px;margin:12px 0;padding:16px}
+button,input{font:inherit}
+button{background:#145f88;color:#fff;border:0;padding:12px;margin:6px 0;border-radius:8px}
+button:disabled{opacity:.5}
+.note{color:#8a2d0c}
+#status{white-space:pre-wrap}
+.pass{color:#09672e;font-weight:bold}
+</style>
+</head>
+<body>
+<main>
+<h1>آزمون محلی خروجی و بازیابی فایل</h1>
+<p class="note">این صفحه فقط برای APK آزمایشی است. بدون اینترنت کار می‌کند، اطلاعات واقعی سهام‌بان را نمی‌خواند و هیچ اطلاعاتی به سرور ارسال نمی‌کند. فقط از فایل ساختگی ایجادشده در این آزمون استفاده کنید.</p>
+<section>
+<h2>۱. ذخیره فایل نمونه</h2>
+<p>نوع فایل نمونه را انتخاب کنید، روی ذخیره بزنید و در انتخابگر اندروید محل فایل را تعیین کنید.</p>
+<button id="local" type="button">ذخیره پشتیبان محلی ساختگی</button>
+<button id="risk" type="button">ذخیره پشتیبان سبد ریسک ساختگی</button>
+</section>
+<section>
+<h2>۲. خواندن و تطبیق فایل</h2>
+<p>فایلی را که همین صفحه ساخت انتخاب کنید. موفقیت فقط پس از خواندن مجدد و تطبیق کامل محتوای ساختگی اعلام می‌شود.</p>
+<label for="restore">انتخاب فایل JSON ذخیره‌شده</label>
+<input id="restore" type="file" accept=".json,application/json">
+</section>
+<section role="status" aria-live="polite">
+<h2>وضعیت آزمون</h2>
+<p id="status">هنوز ذخیره‌ای درخواست نشده است.</p>
+</section>
+</main>
+<script>
+'use strict';
+(function(){
+ const $=id=>document.getElementById(id), status=$('status');
+ const bridge=window.SahambanBackupExport;
+ const samples={
+  local:{
+   name:'sahamban-local-backup-v1.json',
+   payload:{format:'sahamban-local-backup',schema:1,createdAt:'2026-01-01T00:00:00.000Z',
+    items:{'sahamban-v1':JSON.stringify({symbol:'فولاد',aStop:'1100',aTarget:'1550'})}}
+  },
+  risk:{
+   name:'sahamban-portfolio-backup.json',
+   payload:{format:'sahamban-portfolio',version:2,
+    data:'فولاد,10,1200,1350,1100,1550',capital:'20000',
+    riskCap:'5',stress:'10',concentration:'30',
+    exportedAt:'2026-01-01T00:00:00.000Z'}
+  }
+ };
+ let selected=null,seq=0,pendingId=null;
+ const show=(message,ok=false)=>{
+  status.textContent=message;
+  status.className=ok?'pass':'';
+ };
+ function enable(value){$('local').disabled=!value;$('risk').disabled=!value;}
+ function save(type){
+  if(!bridge||typeof bridge.postMessage!=='function'){
+   show('این WebView قابلیت پیام امن را ندارد؛ هیچ فایل تأییدشده‌ای ایجاد نشد.');
+   return;
+  }
+  if(pendingId!==null)return;
+  selected=type;
+  const sample=samples[type],requestId='local-test-'+(++seq);
+  pendingId=requestId;
+  enable(false);
+  show('درخواست ذخیره ارسال شد. محل فایل را خودتان در انتخابگر اندروید تعیین کنید.');
+  try{
+   bridge.postMessage(JSON.stringify({
+    protocol:'sahamban-backup-export-v1',
+    requestId,name:sample.name,content:JSON.stringify(sample.payload)
+   }));
+  }catch{
+   pendingId=null;
+   enable(true);
+   show('ارسال درخواست امن ناموفق بود؛ هیچ ذخیره موفقی تأیید نمی‌شود.');
+  }
+ }
+ if(bridge&&typeof bridge.addEventListener==='function'){
+  bridge.addEventListener('message',event=>{
+   let data;
+   try{data=JSON.parse(event.data);}catch{return;}
+   if(!data||data.protocol!=='sahamban-backup-result-v1'||data.requestId!==pendingId)return;
+   pendingId=null;
+   enable(true);
+   if(data.status==='saved')show('اندروید پایان ذخیره را گزارش کرد. برای PASS باید در مرحله ۲ همین فایل را باز و با نمونه ساختگی تطبیق دهید.');
+   else if(data.status==='cancelled')show('ذخیره لغو شد. PASS ثبت نشده است.');
+   else show('ذخیره ناموفق یا رد شد. PASS ثبت نشده است.');
+  });
+ }
+ $('local').addEventListener('click',()=>save('local'));
+ $('risk').addEventListener('click',()=>save('risk'));
+ function fileText(file){
+  if(typeof file.text==='function')return file.text();
+  return new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve(reader.result);
+   reader.onerror=()=>reject(Error('خواندن فایل ناموفق بود'));
+   reader.readAsText(file);
+  });
+ }
+ $('restore').addEventListener('change',async()=>{
+  const file=$('restore').files&&$('restore').files[0];
+  if(!file){show('فایلی برای بازیابی انتخاب نشد.');return;}
+  if(!selected){show('ابتدا فایل ساختگی را در همین صفحه ذخیره کنید.');return;}
+  if(file.size>262144){show('فایل بزرگ‌تر از حد مجاز است.');return;}
+  try{
+   const actual=JSON.parse(await fileText(file));
+   const expected=samples[selected].payload;
+   if(JSON.stringify(actual)!==JSON.stringify(expected)){
+    show('FAIL: فایل با داده ساختگی مورد انتظار برابر نیست. از داده واقعی استفاده نکنید.');
+    return;
+   }
+   show('PASS: فایل JSON ذخیره‌شده با داده ساختگی مطابقت دارد و از انتخابگر اندروید دوباره خوانده شد. این نتیجه فقط مربوط به صفحه آزمون است، نه پشتیبان‌های واقعی PWA.',true);
+  }catch{
+   show('FAIL: فایل خوانده نشد یا JSON معتبر نیست. از داده واقعی استفاده نکنید.');
+  }
+ });
+})();
+</script>
+</body>
+</html>
