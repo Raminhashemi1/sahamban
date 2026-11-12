@@ -68,18 +68,21 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
   'new BackupExportBridge(this, webView)', 'exporter.onActivityResult(',
   'Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(activity.includes(constraint),constraint);
- assert.match(build,/versionName '0\\.3\\.0-pilot'/);
+ assert.match(build,/versionName '0\.3\.0-pilot'/);
  assert.match(html,/Content-Security-Policy/);
  assert.match(html,/connect-src 'none'/);
  assert.match(html,/default-src 'none'/);
  assert.match(html,/sahamban-backup-export-v1/);
  assert.match(html,/sahamban-backup-result-v1/);
- assert.match(html,/sahamban-local-backup-v1\\.json/);
- assert.match(html,/sahamban-portfolio-backup\\.json/);
+ assert.match(html,/sahamban-local-backup-v1\.json/);
+ assert.match(html,/sahamban-portfolio-backup\.json/);
  assert.match(html,/fileText\(file\)/);
- assert.match(html,/JSON\\.stringify\(actual\)!==JSON\\.stringify\(expected\)/);
+ assert.match(html,/raw!==savedContent/);
+ assert.match(html,/syntheticTestNonce/);
+ assert.match(html,/crypto\.getRandomValues/);
+ assert.match(html,/if\(savedContent===null\)/);
  assert.match(html,/PASS:/);
  assert.match(html,/فولاد,10,1200,1350,1100,1550/);
- assert.doesNotMatch(html,/\\blocalStorage\\b|\\bsessionStorage\\b|\\bfetch\\s*\\(|\\bXMLHttpRequest\\b/);
- assert.doesNotMatch(activity,/setBlockNetworkLoads\\(false\\)|setAllowFileAccess\\(true\\)/);
+ assert.doesNotMatch(html,/\blocalStorage\b|\bsessionStorage\b|\bfetch\s*\(|\bXMLHttpRequest\b/);
+ assert.doesNotMatch(activity,/setBlockNetworkLoads\(false\)|setAllowFileAccess\(true\)/);
 });
