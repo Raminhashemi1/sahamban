@@ -305,3 +305,11 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - گام دستی مالک: در مخزن تازه از Add file > Create new file فایل `.nojekyll` (محتوای خالی) را در ریشه بسازد و commit کند؛ سپس Settings > Pages > Build and deployment > Deploy from a branch > `main` > `/(root)` > Save را تنظیم کند.
 - پس از فعال شدن Pages، شناسه بسته اندروید `applicationId` و SHA-256 گواهی امضای **نسخه انتشار** هنوز لازم‌اند؛ تا دریافت آن‌ها فایل assetlinks معتبر قابل تولید نیست.
 - هیچ APK/AAB، کلید خصوصی، فایل assetlinks، یا انتشار مارکتی ساخته/ارسال نشده است. وضعیت روز پنجم همچنان مسدود به پیش‌نیاز بسته اندروید و دسترسی مالک است.
+
+
+## روز پنجم — ثبت فایل .nojekyll در مخزن GitHub Pages (۱۲ نوامبر ۲۰۲۶)
+
+- مالک مخزن `Raminhashemi1/Raminhashemi1.github.io` فایل خالی `.nojekyll` را در ریشه شاخه `main` با موفقیت ایجاد و commit کرد؛ تصویر ارسالی صفحه مخزن، وجود فایل و commit را تأیید می‌کند.
+- این فایل برای جلوگیری از پردازش Jekyll و حفظ مسیرهای نقطه‌دار مانند `/.well-known/` در انتشار GitHub Pages است.
+- مرحله بعدی: باز کردن `https://github.com/Raminhashemi1/Raminhashemi1.github.io/settings/pages` و تنظیم Source روی Deploy from a branch، Branch روی `main` و Folder روی `/(root)` و سپس Save.
+- GitHub Pages هنوز از روی تصویر فعال‌شده/منتشرشده تأیید نشده است؛ پس از ذخیره باید وضعیت و URL انتشار بررسی شود.
