@@ -355,7 +355,7 @@ $('portfolioBackup').addEventListener('click',()=>{
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download='sahamban-portfolio-backup.json';
   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  $('portfolioBackupStatus').textContent='فایل پشتیبان از سبد فعلی آماده دانلود شد. آن را در جای امن نگه دارید.';
+  $('portfolioBackupStatus').textContent='درخواست دانلود پشتیبان سبد ارسال شد، اما ذخیره‌شدن فایل تأیید نشده است. وجود فایل sahamban-portfolio-backup.json را در دستگاه بررسی کنید و پیش از حذف داده‌ها، بازیابی آزمایشی انجام دهید.';
  }catch(e){$('portfolioBackupStatus').textContent='پشتیبان‌گیری انجام نشد: '+e.message;}
 });
 $('portfolioBackupFile').addEventListener('change',async()=>{
