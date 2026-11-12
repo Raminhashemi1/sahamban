@@ -6,7 +6,7 @@ test('pilot deploy config is exact, non-secret and paid orders remain disabled',
  const str=renderConfig(id);
  for(const s of ['name = "sahamban-pro-pilot"','binding = "SAHAMBAN_DB"',
   'database_name = "sahamban-pilot"','database_id = "'+id+'"',
-  'workers_dev = true','PILOT_ORDERS_ENABLED = "false"',
+  'workers_dev = true','preview_urls = false','PILOT_ORDERS_ENABLED = "false"',
   'PREPAID_ORDERS_ENABLED = "false"',
   'PWA_ORIGIN = "https://raminhashemi1.github.io"'])assert.ok(str.includes(s),s);
  assert.doesNotMatch(str,/AUTH_HMAC_SECRET|API_TOKEN|PILOT_ANNUAL_PRICE_RIAL/);
