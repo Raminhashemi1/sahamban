@@ -33,10 +33,10 @@ test('valid settlement uses one D1 batch for event, order and entitlement',async
  assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2027-02-12T10:00:00.000Z'});
  const batch=db.calls.find(x=>x.batch).batch;
  assert.equal(batch.length,3);
- assert.match(db.calls[1].sql,/state='PENDING'/);
- assert.match(db.calls[1].sql,/state='PENDING'/);
- assert.match(db.calls[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);
- assert.match(db.calls[2].sql,/base_date/);
+ assert.match(batch[0].sql,/state='PENDING'/);
+ assert.match(batch[1].sql,/state='PENDING'/);
+ assert.match(batch[2].sql,/ON CONFLICT\\(user_id\\) DO UPDATE/);
+ assert.match(batch[2].sql,/base_date/);
 });
 test('settlement fails closed on malformed data, DB errors and partial results',async()=>{
  for(const bad of [{...payment,currency:'USD'},{...payment,amountRial:1},{...payment,orderId:'bad'}]){
