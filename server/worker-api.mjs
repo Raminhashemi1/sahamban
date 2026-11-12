@@ -105,7 +105,7 @@ export default {
     if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
      return send({error:'JSON_REQUIRED'},415,cors);
     const length=request.headers.get('Content-Length');
-    if(length!==null&&(!/^\\d+$/.test(length)||Number(length)>1024))return send({error:'BODY_TOO_LARGE'},413,cors);
+    if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>1024))return send({error:'BODY_TOO_LARGE'},413,cors);
     let body;
     try{body=await request.json();}catch(_){return send({error:'INVALID_JSON'},400,cors);}
     if(!body||typeof body!=='object'||Array.isArray(body)||
