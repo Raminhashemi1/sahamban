@@ -214,3 +214,8 @@ The module is unit-tested in `tests/prepaid-orders-api.test.cjs`. It is delibera
 `worker-api.mjs` now has `GET/POST /api/v1/me/prepaid-orders`, using the existing short-lived private-pilot HMAC identity only. POST accepts exactly one JSON field (`planId`); amount, currency and random order ID are server-derived. GET returns only the pending order for the authenticated subject. Unknown fields, client-supplied prices, unsupported content types and unauthenticated calls fail closed. The route returns no checkout URL and never grants Pro access.
 
 The route is guarded by `PREPAID_ORDERS_ENABLED === 'true'`; the local Wrangler config explicitly sets it to `false`. **Do not enable this flag for public/commercial use**: the current identity is still a private-pilot HMAC token, the prepaid migration has not been applied to a real private D1 database, and no provider checkout/verification/refund adapter is connected. Worker route tests are added to `tests/worker-api.test.cjs`; the Cloudflare dry-run/build and full local D1 integration workflow must pass before considering even a private pilot.
+
+
+## Prepaid entitlement visibility in the existing access gate
+
+The Worker entitlement lookup now compares the legacy annual entitlement with `prepaid_subscription_entitlements` and returns the later valid paid-until date. This keeps the existing Pro access endpoint compatible with the four prepaid durations without replacing the older annual pilot schema. The prepaid table is additive and must be applied before deploying this Worker version. Refund/chargeback suspension is not implemented yet; do not treat this read path as a refund processor.
