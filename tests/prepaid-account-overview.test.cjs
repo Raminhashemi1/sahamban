@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {prepaidAccountOverview,LOOKUP,HISTORY}=require('../server/prepaid-account-overview.cjs');
 const now='2026-11-12T10:00:00.000Z',subject='oidc|user:123';
-const account={user_id:'u1',account_status:'ACTIVE',paid_until:'2027-02-12T10:00:00.000Z'};
+const account={user_id:'u1',account_status:'ACTIVE',payment_suspended:0,paid_until:'2027-02-12T10:00:00.000Z'};
 const item={id:'ord_abc',plan_id:'SAHAMBAN_PRO_3M',amount_rial:4500000,currency:'IRR',
  state:'SETTLED',created_at:now,settled_at:'2026-11-12T10:05:00.000Z'};
 function dbFor({user=account,orders=[item],error=false}={}){
@@ -29,7 +29,7 @@ test('expiry boundary, absent purchase and blocked account',async()=>{
  assert.equal(expired.reason,'EXPIRED');assert.equal(expired.remainingSeconds,0);
  const free=await prepaidAccountOverview(dbFor({user:{...account,paid_until:null},orders:[]}),{authenticatedSubject:subject,now});
  assert.equal(free.reason,'NO_SUBSCRIPTION');assert.deepEqual(free.orders,[]);
- for(const user of [null,{...account,account_status:'SUSPENDED'}]){
+ for(const user of [null,{...account,account_status:'SUSPENDED'},{...account,payment_suspended:1}]){
   const out=await prepaidAccountOverview(dbFor({user}),{authenticatedSubject:subject,now});
   assert.equal(out.status,403);assert.equal(out.proEnabled,false);
  }
@@ -41,6 +41,7 @@ test('untrusted identity, invalid dates and database outage fail closed',async()
  assert.equal((await prepaidAccountOverview(db,{authenticatedSubject:subject,now:'invalid'})).status,503);
  assert.equal((await prepaidAccountOverview(dbFor({user:{...account,paid_until:'2026-02-30T00:00:00Z'}}),{authenticatedSubject:subject,now})).status,503);
  assert.equal((await prepaidAccountOverview(dbFor({error:true}),{authenticatedSubject:subject,now})).status,503);
+ assert.equal((await prepaidAccountOverview(dbFor({user:{...account,payment_suspended:'0'}}),{authenticatedSubject:subject,now})).status,503);
  assert.equal((await prepaidAccountOverview(null,{authenticatedSubject:subject,now})).status,503);
 });
 test('malformed order history fails without leaking partial history',async()=>{
