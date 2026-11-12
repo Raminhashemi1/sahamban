@@ -50,3 +50,36 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(wf,/upload-artifact/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
 });
+
+test('debug-only offline self-test uses synthetic JSON, exact trusted origin and SAF roundtrip',()=>{
+ const activity=read('android-pilot/app/src/debug/java/ir/sahamban/pilot/BackupSelfTestActivity.java');
+ const debugManifest=read('android-pilot/app/src/debug/AndroidManifest.xml');
+ const mainManifest=read('android-pilot/app/src/main/AndroidManifest.xml');
+ const html=read('android-pilot/app/src/debug/assets/backup-self-test.html');
+ const build=read('android-pilot/app/build.gradle');
+ assert.match(debugManifest,/BackupSelfTestActivity/);
+ assert.match(debugManifest,/android.intent.action.MAIN/);
+ assert.doesNotMatch(mainManifest,/BackupSelfTestActivity/);
+ for(const constraint of [
+  'loadDataWithBaseURL(FIXTURE_URL', 'https://raminhashemi1.github.io/sahamban/',
+  'setBlockNetworkLoads(true)', 'setDomStorageEnabled(false)',
+  'setAllowFileAccess(false)', 'setAllowContentAccess(false)',
+  'setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW)',
+  'new BackupExportBridge(this, webView)', 'exporter.onActivityResult(',
+  'Intent.ACTION_OPEN_DOCUMENT'])
+  assert.ok(activity.includes(constraint),constraint);
+ assert.match(build,/versionName '0\\.3\\.0-pilot'/);
+ assert.match(html,/Content-Security-Policy/);
+ assert.match(html,/connect-src 'none'/);
+ assert.match(html,/default-src 'none'/);
+ assert.match(html,/sahamban-backup-export-v1/);
+ assert.match(html,/sahamban-backup-result-v1/);
+ assert.match(html,/sahamban-local-backup-v1\\.json/);
+ assert.match(html,/sahamban-portfolio-backup\\.json/);
+ assert.match(html,/fileText\(file\)/);
+ assert.match(html,/JSON\\.stringify\(actual\)!==JSON\\.stringify\(expected\)/);
+ assert.match(html,/PASS:/);
+ assert.match(html,/فولاد,10,1200,1350,1100,1550/);
+ assert.doesNotMatch(html,/\\blocalStorage\\b|\\bsessionStorage\\b|\\bfetch\\s*\\(|\\bXMLHttpRequest\\b/);
+ assert.doesNotMatch(activity,/setBlockNetworkLoads\\(false\\)|setAllowFileAccess\\(true\\)/);
+});
