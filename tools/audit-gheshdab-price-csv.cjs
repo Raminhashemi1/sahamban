@@ -3,14 +3,14 @@
 const fs=require('node:fs'),crypto=require('node:crypto');
 const REQUIRED=['نماد','تاریخ شمسی','قیمت پایانی (ریال)','قیمت پایانی روز قبل (ریال)','قیمت پایانی تعدیل‌شده (ریال)','ضریب تعدیل','تعداد معاملات'];
 function parseCsv(value){
- const t=value.replace(/^\uFEFF/,'');const records=[];let row=[],part='',quoted=false;
+ const t=value.replace(/^\uFEFF/,'');const records=[];let row=[],part='',quoted=false,closedQuote=false;
  for(let i=0;i<t.length;i++){
   const c=t[i];
   if(quoted){
    if(c==='"'&&t[i+1]==='"'){part+='"';i++;}
-   else if(c==='"')quoted=false;
+   else if(c==='"'){quoted=false;closedQuote=true;}
    else part+=c;
-  }else if(c==='"'){if(part)throw Error('INVALID_CSV_QUOTE');quoted=true;}
+  }else if(closedQuote){if(c===','||c==='\n'){row.push(part.replace(/\r$/,''));if(c==='\n'){records.push(row);row=[];}part='';closedQuote=false;}else if(c==='\r'&&t[i+1]==='\n'){continue;}else throw Error('INVALID_CSV_QUOTE_TRAILING_TEXT');}else if(c==='"'){if(part)throw Error('INVALID_CSV_QUOTE');quoted=true;}
   else if(c===','){row.push(part);part='';}
   else if(c==='\n'){row.push(part.replace(/\r$/,''));records.push(row);row=[];part='';}
   else part+=c;
@@ -32,6 +32,7 @@ const positive=v=>{
  if(typeof v!=='string'||!/^\d+(?:\.\d+)?$/.test(v)||!Number.isFinite(Number(v))||Number(v)<=0)throw Error('INVALID_POSITIVE_NUMBER');
  return Number(v);
 };
+const positiveInteger=v=>{const n=positive(v);if(!Number.isSafeInteger(n))throw Error('INVALID_POSITIVE_INTEGER');return n;};
 function auditCsv(bytes,{symbol='غشهداب',date='1399-03-06'}={}){
  const rows=parseCsv(bytes.toString('utf8')),map=new Map();
  for(const r of rows){
@@ -55,7 +56,7 @@ function auditCsv(bytes,{symbol='غشهداب',date='1399-03-06'}={}){
   source:'USER_SUPPLIED_CSV',sha256:crypto.createHash('sha256').update(bytes).digest('hex'),
   rowCount:rows.length,symbol,date,previousDate:days[i-1],nextDate:days[i+1],
   closeIRR:close,previousCloseIRR:yesterday,adjustedCloseIRR:adjusted,cumulativeAdjustmentFactor:factor,
-  rawReturnPct:(close/yesterday-1)*100,tradeCount:positive(target['تعداد معاملات']),
+  rawReturnPct:(close/yesterday-1)*100,tradeCount:positiveInteger(target['تعداد معاملات']),
   checks:{matchingPreviousClose,sameFactorAcrossAdjacentTradingDays:sameFactor,consistentAdjustedCloseRounding:consistentAdjustedPrice},
   providerAuthenticated:false,corporateActionProven:false,capitalAdjustmentAllowed:false,historyMutated:false,tradingSignalsEnabled:false,
   note:'Internal CSV consistency only; event-specific adjustment factors and TSETMC provenance are not verified.'
