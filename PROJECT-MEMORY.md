@@ -559,3 +559,11 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - تابع اعطای اعتبار تنها در صورت callback تأیید سمت سرور ارائه‌دهنده، تطبیق حساب/پلن/مبلغ/واحد، کنترل زمان و جلوگیری از تکرار شناسه پرداخت در وضعیت آزمایشی اجازه پیشروی می‌دهد. **این تابع به‌تنهایی پرداخت/شبکه/DB ندارد و ضدتکرار production نیازمند قید یکتایی و تراکنش اتمیک پایگاه داده است**؛ حتی وجود تابع verifyAtProvider در تست‌ها فقط mock است.
 - آزمون‌ها در `tests/prepaid-plans.test.cjs` ثبت شده و به `.github/workflows/smoke-tests.yml` متصل شدند. آخرین اجرای Smoke برای commit `0c324e72638ef6bbcd43ed1994266363c77d15d1` در زمان ثبت این یادداشت **queued** بود: https://github.com/Raminhashemi1/sahamban/actions/runs/43246085836 . تا مشاهده نتیجه، PASS ادعا نشود.
 - **محدوده مهم:** فایل‌های annual-only قدیمی، schema D1، Worker، پرداخت و رابط کاربر عمداً دست‌نخورده‌اند؛ هسته جدید هنوز در backend تجاری ادغام/مستقر نشده است. فروش، صدور اشتراک واقعی و محدودسازی امکانات هنوز فعال نیست؛ دروازه C و پایان روز پنجم بازند.
+
+
+## ادامه کار — لایه طرح پایگاه داده چهار اشتراک (۱۲ نوامبر ۲۰۲۶)
+
+- اجرای CI قبلی برای هسته چهار پلن با commit `0c324e72` تکمیل و موفق شد: https://github.com/Raminhashemi1/sahamban/actions/runs/43246085836 .
+- migration افزایشی `server/d1-prepaid-migration.sql` اضافه شد: جدول سفارش‌های چهار پلن، entitlement مدت‌دار، ledger رخدادهای پرداخت، قیود تطبیق پلن/قیمت، شناسه‌های یکتای ارائه‌دهنده و حداکثر یک سفارش pending برای هر حساب. جداول سالانه قدیمی عمداً تغییر نکردند.
+- آزمون SQLite مستقل `tests/d1-prepaid-migration.test.py` اضافه و به CI وصل شد. اجرای CI برای commit `657bc6e9` در زمان ثبت هنوز queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43247870307 . تا پایان اجرا نتیجه اعلام نشود.
+- migration هنوز روی D1 واقعی اعمال نشده؛ repository/Worker تجاری، ورود امن کاربران، endpoint ساخت سفارش، adapter درگاه، اعتبارسنجی server-to-server، refund و ادغام entitlement با برنامه هنوز پیاده‌سازی/استقرار نشده‌اند. فروش خاموش می‌ماند.
