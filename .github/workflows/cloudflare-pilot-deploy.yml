@@ -123,3 +123,24 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --retry 3 --max-time 15 https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/health | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const v=JSON.parse(s);if(v.status!=="prototype"||v.paymentsEnabled!==false||v.checkoutEnabled!==false)process.exit(1);console.log("Verified: no payments or checkout")})'
+
+      - name: Confirm live Worker rejects unauthenticated access and checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          (async()=>{
+            const root='https://sahamban-pro-pilot.rhashemi284.workers.dev';
+            for(const [path,method,status] of [
+              ['/api/v1/me/entitlement','GET',401],
+              ['/api/v1/me/prepaid-orders','GET',401],
+              ['/api/v1/me/prepaid-overview','GET',401],
+              ['/api/v1/checkout','POST',404]
+            ]){
+              const response=await fetch(root+path,{method,signal:AbortSignal.timeout(10000)});
+              if(response.status!==status)
+                throw Error(path+': expected '+status+', received '+response.status);
+              console.log('PASS '+path+' rejects unauthenticated/checkout requests');
+            }
+          })().catch(err=>{console.error('FAIL '+String(err.message));process.exitCode=1;});
+          NODE
