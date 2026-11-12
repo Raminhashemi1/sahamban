@@ -39,3 +39,21 @@
 ## منابع راهبری
 - پیشخان رسمی [مایکت](https://developer.myket.ir/) و [کافه‌بازار](https://developers.cafebazaar.ir/) برای بررسی حساب و شرایط روز.
 - در مخزن هیچ اقدام انتشار یا دستکاری اطلاعات سبد/قیمت/NAV انجام نشده است.
+
+
+## بررسی مسیر بسته‌بندی PWA بدون توسعه قابلیت — ادامه روز پنجم
+
+### نتیجه فنی
+- اطلاعیه رسمی توسعه‌دهندگان **کافه‌بازار** امکان عرضه WebView/PWA در قالب رعایت پروتکل **Trusted Web Activity (TWA)** را مطرح کرده است: https://t.me/s/CafeBazaarDevelopers?before=261 و متن اطلاعیه https://newsblog.cafebazaar.ir/twapossible-aqtrbxi0db5v .
+- راهنمای فنی Android/Chrome و استاندارد Digital Asset Links الزام می‌کنند فایلی با نام `assetlinks.json` در **ریشه دامنه** یعنی `https://HOST/.well-known/assetlinks.json` با نام بسته و اثر انگشت SHA-256 گواهی **واقعی امضای APK** و پاسخ HTTP 200 با Content-Type مناسب قابل دسترسی باشد: https://developer.chrome.com/docs/android/trusted-web-activity/android-for-web-devs و https://developers.google.com/digital-asset-links/v1/create-statement .
+- سایت فعلی سهام‌بان **Project Pages** در نشانی `https://raminhashemi1.github.io/sahamban/` است؛ قرار دادن `assetlinks.json` زیر `/sahamban/.well-known/` برای تأیید TWA در سطح `raminhashemi1.github.io` کافی نیست. تنظیمات `/.well-known/` باید روی ریشه همان دامنه انجام شود، مثلاً در سایت اصلی کاربر `raminhashemi1.github.io` یا در **دامنه اختصاصی قابل‌کنترل**. مستندات GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site .
+- مخزن عمومی مستقلی با مسیر `Raminhashemi1/Raminhashemi1.github.io` در زمان بررسی با GitHub API `404 Not Found` برگرداند؛ این به‌تنهایی اثبات نبود هر گونه میزبانی خصوصی/بیرونی نیست، اما **امکان کنترل ریشه دامنه از مخزن فعلی احراز نشده است**.
+- تلاش برای واکشی مستقیم `https://raminhashemi1.github.io/.well-known/assetlinks.json` در ابزار وب نتیجه قابل اتکا نداد؛ به همین دلیل وضعیت انتشار فایل **UNVERIFIED** باقی می‌ماند، نه «تأییداً 404».
+- آدرس پیشخان رسمی ناشر **مایکت** `https://developer.myket.ir/` و **بازار** `https://developers.cafebazaar.ir/` قابل شناسایی بودند؛ قوانین دقیق پذیرش مایکت برای TWA و فرآیند عملی بارگذاری از این بررسی عمومی **تأیید نشدند**. مالک باید شرایط جاری هر پنل را قبل از انتشار بررسی کند.
+
+### تصمیم اجرایی محدود به عرضه
+1. **روش اولویت‌دار برای بسته‌بندی: TWA/Bubblewrap تنها پس از امکان قرار دادن Digital Asset Links در ریشه دامنه و تثبیت نام بسته**. این ساخت بسته برای انتشار همان PWA است، نه توسعه قابلیت جدید.
+2. چون هنوز اثر انگشت گواهی نهایی و شناسه قطعی بسته تعیین نشده، نباید `assetlinks.json` با گواهی ساختگی، کلید امضای آزمایشی تولیدی یا ادعای وضعیت verified در مخزن قرار داد.
+3. چون هنوز الزام مایکت برای بسته TWA از مستندات رسمی به‌طور قطعی بازبینی نشده، پشتیبانی کافه‌بازار را خودکار به مایکت تعمیم ندهید.
+4. هر دو پنل انتشار، امضای بسته، آزمون روی گوشی واقعی، و بازبینی ملاحظات خدمات مالی به شواهد و تأیید مالک نیاز دارند.
+5. در این مرحله **هیچ بسته APK/AAB، کلید خصوصی، اطلاعات حساب یا درخواست انتشار ساخته یا ارسال نشده است**؛ `DAY_5_RELEASE_BLOCKED_PENDING_ANDROID_ARTIFACT_AND_OWNER_EVIDENCE` معتبر است.
