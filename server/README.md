@@ -226,3 +226,8 @@ The Worker entitlement lookup now compares the legacy annual entitlement with `p
 `prepaid-account-overview.cjs` and its Worker adapter expose the user's own prepaid entitlement status, UTC paid-until, nonnegative remaining seconds, explicit `autoRenew:false`, and up to twenty most recent order-history records. History is selected by the user ID obtained only through a verified authentication subject. It does not include card/bank data and never initiates or confirms a purchase. DB failures, invalid identity or malformed history fail closed.
 
 `GET /api/v1/me/prepaid-overview` is gated by `PREPAID_ORDERS_ENABLED==='true'` and authenticates with the existing **private-pilot** HMAC token. The default flag is false. Production deployment requires real login, a privately migrated D1 database, refunds and trustworthy gateway verification; the pilot token must not be repurposed as production identity.
+
+
+## Prepaid overview payment-review safety (2026-11-12)
+
+The read-only prepaid overview now checks the legacy account-level payment suspension flag as well as ACTIVE account status before returning a Pro-enabled response. A suspended or malformed payment-review state fails closed, rather than advertising a usable subscription. This does **not** implement refunds or chargebacks; there is no production gateway or live subscription route. The full suite and Worker dry-run should pass on the relevant commit before release.
