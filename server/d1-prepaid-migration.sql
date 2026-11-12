@@ -9,7 +9,12 @@ CREATE TABLE IF NOT EXISTS prepaid_subscription_orders (
   plan_id TEXT NOT NULL CHECK(plan_id IN (
     'SAHAMBAN_PRO_3M','SAHAMBAN_PRO_6M','SAHAMBAN_PRO_9M','SAHAMBAN_PRO_12M'
   )),
-  amount_rial INTEGER NOT NULL CHECK(amount_rial IN (4500000,8550000,12150000,15300000)),
+  amount_rial INTEGER NOT NULL CHECK(
+    (plan_id='SAHAMBAN_PRO_3M' AND amount_rial=4500000) OR
+    (plan_id='SAHAMBAN_PRO_6M' AND amount_rial=8550000) OR
+    (plan_id='SAHAMBAN_PRO_9M' AND amount_rial=12150000) OR
+    (plan_id='SAHAMBAN_PRO_12M' AND amount_rial=15300000)
+  ),
   currency TEXT NOT NULL CHECK(currency='IRR'),
   state TEXT NOT NULL CHECK(state IN ('PENDING','SETTLED','CANCELLED','EXPIRED','REVIEW_REQUIRED')),
   created_at TEXT NOT NULL,
