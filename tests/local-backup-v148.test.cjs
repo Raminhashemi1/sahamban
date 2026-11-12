@@ -170,3 +170,13 @@ test('rejects oversized direct backup objects before mutating storage',()=>{
  assert.throws(()=>api.restoreSnapshot(destination,snapshot),/از حد مجاز بزرگ‌تر است/);
  assert.equal(destination.getItem('sahamban-v1'),'UNCHANGED');
 });
+
+test('backup download messaging requires user to verify disk persistence and restore',()=>{
+ const fs=require('node:fs');
+ for(const source of ['local-backup-v148.js','app.js']){
+  const src=fs.readFileSync(source,'utf8');
+  assert.ok(src.includes('ذخیره‌شدن فایل تأیید نشده است'),source);
+  assert.ok(src.includes('بازیابی آزمایشی انجام دهید'),source);
+  assert.doesNotMatch(src,/پشتیبان محلی آماده دانلود شد|فایل پشتیبان از سبد فعلی آماده دانلود شد/);
+ }
+});
