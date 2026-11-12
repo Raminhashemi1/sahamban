@@ -18,8 +18,12 @@ https://raminhashemi1.github.io/sahamban/
   the matching PWA code now requests a JSON export through an exact-origin, main-frame
   `WebViewCompat.addWebMessageListener` bridge. Android uses `ACTION_CREATE_DOCUMENT` so the
   user chooses the destination; filenames and size are allowlisted (256 KiB maximum),
-  no storage permission or generic `addJavascriptInterface` is granted. This is **not**
-  an on-device PASS: saved JSON must be located and restored with a synthetic portfolio.
+  no storage permission or generic `addJavascriptInterface` is granted. The native
+  bridge requests write-and-truncate (`wt`), closes the output, then opens the
+  chosen SAF document for readback and compares every byte (including EOF).
+  A provider that returns truncated, stale, unreadable or changed contents now
+  fails closed instead of reporting a confirmed save. This is **not** an on-device
+  PASS: saved JSON must still be located and restored with a synthetic portfolio.
   Unsupported WebViews fail closed instead of claiming a blob download succeeded.
   **Important:** this debug APK loads the published `main` GitHub Pages PWA, not the `feta`
   branch. The companion `native-backup-export-v1.js` and updated HTML/worker must first be
@@ -61,7 +65,7 @@ javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/
 java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
 ```
 
-## Debug-only offline backup self-test (v0.3.0-pilot)
+## Debug-only offline backup self-test (v0.3.1-pilot)
 
 The **debug APK now has a second launcher** named «سهام‌بان - آزمون پشتیبان ساختگی».
 This test activity is **not present in release builds**. The main app launcher
