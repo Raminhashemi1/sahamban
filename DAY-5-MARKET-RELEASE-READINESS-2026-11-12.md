@@ -76,3 +76,12 @@
 - گردش‌کار `.github/workflows/android-pilot-debug.yml` برای ساخت APK **فقط debug** در CI، اجرای تست pure Java سیاست URL و بارگذاری خروجی تستی به عنوان artifact اضافه شد. **هیچ کلید امضای بازار، شناسه بسته نهایی، اطلاعات ناشر یا گواهی جعلی تولید/ثبت نشده است**.
 - آزمون قرارداد امنیتی `tests/android-pilot-wrapper.test.cjs` به Smoke متصل شد. دستورالعمل آزمون/محدودیت‌ها در `android-pilot/README.md` نوشته شده است.
 - وضعیت روز پنجم تا حصول نتیجه موفق build APK و سپس آزمون **فیزیکی** نصب/بازکردن/آفلاین/پشتیبان/بازیابی/صفحه‌خوان، انتخاب بسته‌نام و امضای حقیقی، و مدارک مایکت و بازار **باز** است. این پوسته راهکار جایگزین قطعی TWA یا انتشار مارکت نیست؛ قبولی واقعی این مدل بسته‌بندی در دو مارکت باید بررسی شود. خروجی debug را با سبد واقعی استفاده نکنید.
+
+
+## شاهد تولید APK تستی و گام پذیرش Android
+
+- گردش‌کار `Sahamban Android pilot debug APK` در [run 43295718459](https://github.com/Raminhashemi1/sahamban/actions/runs/43295718459) با نتیجه `completed/success` پایان یافت. Java URL-policy test و Gradle `:app:assembleDebug` موفق شدند و artifact هفت‌روزه `13979347532` آپلود شد. هش SHA-256 APK: `112d0ebba6ab7c91ffa11fe96701e4b29596712c6ffc45964d65d6562ddccfad`.
+- اجرای اول ساخت APK به خاطر ابزار نصب SDK `android-actions/setup-android@v3` و تلاش برای نصب package منسوخ `tools` شکست خورد؛ در commit `e7ff27a7` ساخت مستقیماً از SDK میزبان GitHub انجام شد و نتیجه موفق شد.
+- Smoke و Browser CI روی همان commit در [run 43295718823](https://github.com/Raminhashemi1/sahamban/actions/runs/43295718823) موفق شدند؛ آزمون امنیتی wrapper هم به Smoke متصل است.
+- چک‌لیست آزمون واقعی در `ANDROID-TEST-ACCEPTANCE-2026-11-12.md` ثبت شد.
+- این **debug APK آزمایشی** است، امضای مارکت/شناسه بسته نهایی ندارد و آزمون نصب واقعی/فایل پشتیبان در WebView انجام نشده است. روز پنجم همچنان `DAY_5_RELEASE_BLOCKED_PENDING_ANDROID_ARTIFACT_AND_OWNER_EVIDENCE` است، چون artifact قابل ارائه به مارکت و مدارک پذیرش/انتشار هنوز موجود نیستند.
