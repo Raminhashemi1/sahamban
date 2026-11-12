@@ -25,6 +25,7 @@ jobs:
       - run: node --test tests/prepaid-plans.test.cjs
       - run: node --test tests/prepaid-access-gate.test.cjs
       - run: node --test tests/prepaid-orders-api.test.cjs
+      - run: node --test tests/prepaid-settlement.test.cjs
       - run: node --test tests/pro-access-gate.test.cjs
       - run: node --test tests/worker-api.test.cjs
       - run: node --test tests/pilot-orders-api.test.cjs
