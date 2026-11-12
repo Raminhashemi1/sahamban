@@ -567,3 +567,12 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - migration افزایشی `server/d1-prepaid-migration.sql` اضافه شد: جدول سفارش‌های چهار پلن، entitlement مدت‌دار، ledger رخدادهای پرداخت، قیود تطبیق پلن/قیمت، شناسه‌های یکتای ارائه‌دهنده و حداکثر یک سفارش pending برای هر حساب. جداول سالانه قدیمی عمداً تغییر نکردند.
 - آزمون SQLite مستقل `tests/d1-prepaid-migration.test.py` اضافه و به CI وصل شد. اجرای CI برای commit `657bc6e9` در زمان ثبت هنوز queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43247870307 . تا پایان اجرا نتیجه اعلام نشود.
 - migration هنوز روی D1 واقعی اعمال نشده؛ repository/Worker تجاری، ورود امن کاربران، endpoint ساخت سفارش، adapter درگاه، اعتبارسنجی server-to-server، refund و ادغام entitlement با برنامه هنوز پیاده‌سازی/استقرار نشده‌اند. فروش خاموش می‌ماند.
+
+
+## ادامه اجرا — سفارش امن چهارپلن و اصلاح CI (۱۲ نوامبر ۲۰۲۶)
+
+- ماژول `server/prepaid-orders-api.cjs` اضافه شد: ایجاد سفارش PENDING فقط برای subject احراز‌شده مستقل و حساب ACTIVE، با شناسه سفارش تصادفی سمت سرور و قیمت ثابت از کاتالوگ؛ دریافت سفارش معلق متعلق به همان subject؛ هیچ URL پرداخت یا دسترسی Pro صادر نمی‌کند و همیشه `checkoutEnabled=false` است.
+- آزمون `tests/prepaid-orders-api.test.cjs` نوشته و به Smoke CI متصل شد.
+- اجرای قبلی CI برای access gate شکست خورد چون تست migration وجود جدول legacy را با وجود ردیف اشتباه سنجیده بود. تست اصلاح شد تا وجود جدول را از sqlite_master بررسی کند. هم‌زمان constraint migration اصلاح شد تا هر شناسه پلن فقط با قیمت متناظر خودش پذیرفته شود، نه صرفاً هر قیمت موجود در فهرست.
+- اصلاحات در commit `d3561777` ثبت شد. CI جدید در صف است: https://github.com/Raminhashemi1/sahamban/actions/runs/43248824897 . تا نتیجه نهایی اجرا، PASS اعلام نشود.
+- همچنان ماژول سفارش به Worker وصل نشده؛ چون هویت فعلی فقط توکن آزمایشی کنترل‌شده است و ورود واقعی کاربر، adapter پرداخت معتبر، settlement/refund اتمیک و D1 خصوصی مستقرشده هنوز وجود ندارد. فروش و پرداخت خاموش باقی می‌مانند.
