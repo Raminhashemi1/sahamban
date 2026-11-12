@@ -3,9 +3,11 @@
 // Caller must supply a verified authentication subject (not a browser userId).
 // No checkout, billing credentials, bank data, or purchase activation occurs here.
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
-const LOOKUP=`SELECT u.id AS user_id, u.status AS account_status, e.paid_until
+const LOOKUP=`SELECT u.id AS user_id, u.status AS account_status, e.paid_until,
+ COALESCE(le.suspended,0) AS payment_suspended
 FROM sahamban_users u
 LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=u.id
+LEFT JOIN subscription_entitlements le ON le.user_id=u.id
 WHERE u.auth_subject=? LIMIT 1`;
 const HISTORY=`SELECT id,plan_id,amount_rial,currency,state,created_at,settled_at
 FROM prepaid_subscription_orders WHERE user_id=?
@@ -26,6 +28,9 @@ async function prepaidAccountOverview(db,{authenticatedSubject,now}={}){
   const account=await db.prepare(LOOKUP).bind(authenticatedSubject).first();
   if(!account||typeof account.user_id!=='string'||account.account_status!=='ACTIVE')
    return fail('ACCOUNT_NOT_ELIGIBLE',403);
+  if(account.payment_suspended!==0&&account.payment_suspended!==1)
+   return fail('INVALID_PAYMENT_REVIEW_STATE',503);
+  if(account.payment_suspended===1)return fail('PAYMENT_REVIEW_REQUIRED',403);
   const until=account.paid_until===null?null:utc(account.paid_until);
   if(account.paid_until!==null&&until===null)return fail('INVALID_ENTITLEMENT',503);
   const results=await db.prepare(HISTORY).bind(account.user_id).all();
