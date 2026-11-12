@@ -28,8 +28,8 @@ function cli(...args){
  if(result.error||result.status!==0)
   throw Error('Local D1 setup failed ('+(result.error?.code||result.status)+')');
 }
-async function json(path,{token,method='GET',origin=ORIGIN,body}={}){
- const headers={'Origin':origin};
+async function json(path,{token,method='GET',origin=ORIGIN,body,headers:extraHeaders={}}={}){
+ const headers={'Origin':origin,...extraHeaders};
  if(token)headers.Authorization='Bearer '+token;
  const response=await fetch(BASE+path,{method,headers,body,signal:AbortSignal.timeout(5000)});
  let data;try{data=await response.json();}catch{data=null;}
