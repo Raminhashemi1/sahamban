@@ -7,6 +7,7 @@ test('pilot deploy config is exact, non-secret and paid orders remain disabled',
  for(const s of ['name = "sahamban-pro-pilot"','binding = "SAHAMBAN_DB"',
   'database_name = "sahamban-pilot"','database_id = "'+id+'"',
   'workers_dev = true','PILOT_ORDERS_ENABLED = "false"',
+  'PREPAID_ORDERS_ENABLED = "false"',
   'PWA_ORIGIN = "https://raminhashemi1.github.io"'])assert.ok(str.includes(s),s);
  assert.doesNotMatch(str,/AUTH_HMAC_SECRET|API_TOKEN|PILOT_ANNUAL_PRICE_RIAL/);
 });
@@ -22,5 +23,6 @@ test('manual release never triggers from push, requires approval and locked vari
  for(const required of ['DEPLOY_PILOT_NO_PAYMENTS','environment: cloudflare-pilot',
   'secrets.CLOUDFLARE_API_TOKEN','vars.CLOUDFLARE_ACCOUNT_ID',
   'vars.SAHAMBAN_D1_DATABASE_ID','wrangler d1 execute','--remote',
+  'd1-prepaid-migration.sql','/user/tokens/verify',
   'wrangler deploy --config server/wrangler.deploy.toml'])assert.ok(s.includes(required),required);
 });
