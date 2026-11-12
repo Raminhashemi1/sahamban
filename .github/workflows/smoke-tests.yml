@@ -37,11 +37,13 @@ jobs:
       - run: node --test tests/decision-support-v129.test.cjs tests/external-screener-v130.test.cjs tests/market-sample-v131.test.cjs tests/signal-audit-v132.test.cjs tests/candidate-ranking-v133.test.cjs tests/temporal-holdout-v134.test.cjs
       - run: node --test tests/fundamental-evidence.test.cjs
       - run: node --test tests/capital-adjustments.test.cjs
+      - run: node --test tests/tse-client-three-mode-adapter-v161.test.cjs
       - run: node --test tests/fundamental-decision-gate-v150.test.cjs
       - run: node --test tests/fundamental-browser-runtime-v150.test.cjs
       - run: node --check fundamental-evidence.js
       - run: node --check fundamental-decision-gate-v150.js
       - run: node --check capital-adjustments.js
+      - run: node --check tse-client-three-mode-adapter-v161.js
       - run: node --check decision-support-ui-v129.js
       - run: node --test tests/codal-search-quality.test.cjs tests/codal-source-rows-v139.test.cjs tests/codal-original-intake-v138.test.cjs tests/codal-browser-quality.test.cjs
       - run: node --test tests/codal-audit-recheck-v140.test.cjs
@@ -94,7 +96,7 @@ jobs:
           path: test-artifacts/pwa-install-v119-chromium.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Preserve WCAG audit Chromium findings
+      - name: Preserve WCAG audit findings from Chromium
         if: always()
         uses: actions/upload-artifact@v6
         with:
