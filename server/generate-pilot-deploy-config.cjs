@@ -11,6 +11,7 @@ function renderConfig(id){
   'main = "worker-api.mjs"',
   'compatibility_date = "2026-11-05"',
   'workers_dev = true',
+  'preview_urls = false',
   '',
   '[vars]',
   'PWA_ORIGIN = "https://raminhashemi1.github.io"',
