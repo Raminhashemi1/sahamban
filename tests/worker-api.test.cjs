@@ -124,3 +124,28 @@ test('prepaid order route rejects unknown fields, client prices and unsupported 
   assert.equal(response.status,status);
  }
 });
+
+
+test('prepaid overview route is disabled by default, private and read only',async()=>{
+ const worker=(await api()).default,token=await signedToken();
+ const disabled=await worker.fetch(req(token,'/api/v1/me/prepaid-overview'),env());
+ assert.equal(disabled.status,404);
+ const blocked=await worker.fetch(req(null,'/api/v1/me/prepaid-overview'),{...env(),PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(blocked.status,401);
+ const method=await worker.fetch(req(token,'/api/v1/me/prepaid-overview',origin,'POST'),{...env(),PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(method.status,405);
+ const accountDB={prepare(sql){return {bind(value){return {
+  async first(){return {user_id:'u1',account_status:'ACTIVE',paid_until:'2099-01-12T10:00:00.000Z'};},
+  async all(){return {success:true,results:[{id:'order1',plan_id:'SAHAMBAN_PRO_3M',
+   amount_rial:4500000,currency:'IRR',state:'SETTLED',created_at:'2026-11-12T10:00:00.000Z',
+   settled_at:'2026-11-12T10:05:00.000Z'}]};}
+ };}};}};
+ const active=await worker.fetch(req(token,'/api/v1/me/prepaid-overview'),{...env(accountDB),PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(active.status,200);
+ const info=await active.json();
+ assert.equal(info.proEnabled,true);
+ assert.equal(info.checkoutEnabled,false);
+ assert.equal(info.autoRenew,false);
+ assert.equal(info.orders.length,1);
+ assert.equal(info.orders[0].amountRial,4500000);
+});
