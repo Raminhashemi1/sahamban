@@ -20,32 +20,22 @@ WHERE id=? AND state='PENDING' AND plan_id=? AND amount_rial=? AND currency='IRR
 AND EXISTS(SELECT 1 FROM prepaid_payment_events e
  WHERE e.provider_name=? AND e.provider_event_id=? AND e.provider_payment_id=?
  AND e.order_id=prepaid_subscription_orders.id AND e.event_type='PAYMENT_SETTLED')`;
-const ENTITLEMENT_SQL=`INSERT INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at)
-SELECT o.user_id,
+const ENTITLEMENT_UPSERT_SQL=`WITH base AS (
+ SELECT o.user_id,o.id,
+  CASE WHEN e.paid_until>? THEN e.paid_until ELSE ? END AS base_date
+ FROM prepaid_subscription_orders o
+ LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=o.user_id
+ WHERE o.id=? AND o.state='SETTLED' AND o.provider_name=? AND o.provider_payment_id=?
+)
+INSERT INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at)
+SELECT user_id,
  strftime('%Y-%m-%dT%H:%M:%fZ',
-  date(base.base_date,'start of month','+'||?||' months',
-   printf('+%d days',min(
-    CAST(strftime('%d',base.base_date) AS INTEGER)-1,
-    CAST(strftime('%d',date(base.base_date,'start of month','+'||?||' months','+1 month','-1 day')) AS INTEGER)-1
-   ))) || ' ' || strftime('%H:%M:%f',base.base_date)),
- ?
-FROM prepaid_subscription_orders o
-JOIN prepaid_payment_events e ON e.order_id=o.id AND e.provider_name=? AND e.provider_payment_id=? AND e.event_type='PAYMENT_SETTLED'
-JOIN prepaid_subscription_entitlements old ON old.user_id=o.user_id
-CROSS JOIN (SELECT CASE WHEN old.paid_until>? THEN old.paid_until ELSE ? END AS base_date) base
-WHERE o.id=? AND o.state='SETTLED' AND o.provider_name=? AND o.provider_payment_id=?
+  date(base_date,'start of month','+'||?||' months',
+   printf('+%d days',min(CAST(strftime('%d',base_date) AS INTEGER)-1,
+    CAST(strftime('%d',date(base_date,'start of month','+'||?||' months','+1 month','-1 day')) AS INTEGER)-1)))
+  || ' ' || strftime('%H:%M:%f',base_date)), ?
+FROM base
 ON CONFLICT(user_id) DO UPDATE SET paid_until=excluded.paid_until,updated_at=excluded.updated_at`;
-const ENTITLEMENT_FIRST_SQL=`INSERT INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at)
-SELECT o.user_id,
- strftime('%Y-%m-%dT%H:%M:%fZ',
-  date(?,'start of month','+'||?||' months',
-   printf('+%d days',min(CAST(strftime('%d',?) AS INTEGER)-1,
-    CAST(strftime('%d',date(?,'start of month','+'||?||' months','+1 month','-1 day')) AS INTEGER)-1)))
-  || ' ' || strftime('%H:%M:%f',?)), ?
-FROM prepaid_subscription_orders o
-JOIN prepaid_payment_events e ON e.order_id=o.id AND e.provider_name=? AND e.provider_payment_id=? AND e.event_type='PAYMENT_SETTLED'
-WHERE o.id=? AND o.state='SETTLED' AND o.provider_name=? AND o.provider_payment_id=?
-ON CONFLICT(user_id) DO NOTHING`;
 async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
  if(!verified||typeof verified!=='object'||verified.verified!==true)return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency}=verified;
@@ -70,7 +60,7 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
   const statements=[
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
    db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
-   db.prepare(ENTITLEMENT_FIRST_SQL).bind(base,selected.months,base,base,selected.months,base,now,providerName,providerPaymentId,orderId,providerName,providerPaymentId)
+   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(now,now,orderId,providerName,providerPaymentId,selected.months,selected.months,now)
   ];
   const results=await db.batch(statements);
   if(!Array.isArray(results)||results.length!==3||results.some(x=>x?.success!==true))return {ok:false,reason:'SETTLEMENT_FAILED'};
@@ -79,4 +69,4 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
   return {ok:true,reason:'SETTLED',orderId,planId,paidUntil:null};
  }catch(_){return {ok:false,reason:'SETTLEMENT_FAILED'};}
 }
-module.exports=Object.freeze({settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_FIRST_SQL});
+module.exports=Object.freeze({settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL});
