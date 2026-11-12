@@ -75,7 +75,7 @@ jobs:
           retention-days: 14
       - run: node --test tests/broker-import-security-v145.test.cjs
       - run: node --test tests/broker-import-race-v146.test.cjs
-      - run: node --test tests/local-backup-v148.test.cjs
+      - run: node --test tests/local-backup-v148.test.cjs tests/native-backup-export-v1.test.cjs
       - run: node --check portfolio-pilot-v61.js
       - run: node --test tests/pilot-v61-coverage.test.cjs tests/home-portfolio-v61-entry.test.cjs
   browser:
