@@ -1,4 +1,5 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
+import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
  * Read-only entitlement lookup and optional private-pilot pending-order
@@ -77,13 +78,41 @@ export default {
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isOrders=url.pathname==='/api/v1/me/orders';
-  if(!isEntitlement&&!isOrders)return send({error:'NOT_FOUND'},404,cors);
+  const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  if(isPrepaidOrders){
+   // Controlled pilot only. Disabled by default; commercial identity and D1
+   // migration are prerequisites before enabling. Never accepts client prices.
+   if(env?.PREPAID_ORDERS_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
+   if(request.method==='GET'){
+    const pending=await findPrepaidPendingOrder(env?.SAHAMBAN_DB,subject);
+    return send(pending,pending.status||200,cors);
+   }
+   if(request.method==='POST'){
+    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+     return send({error:'JSON_REQUIRED'},415,cors);
+    const length=request.headers.get('Content-Length');
+    if(length!==null&&(!/^\\d+$/.test(length)||Number(length)>1024))return send({error:'BODY_TOO_LARGE'},413,cors);
+    let body;
+    try{body=await request.json();}catch(_){return send({error:'INVALID_JSON'},400,cors);}
+    if(!body||typeof body!=='object'||Array.isArray(body)||
+      Object.keys(body).length!==1||typeof body.planId!=='string')
+     return send({error:'INVALID_REQUEST'},400,cors);
+    const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
+     authenticatedSubject:subject,planId:body.planId,now:new Date(nowMs).toISOString(),
+     makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
+      b=>b.toString(16).padStart(2,'0')).join(''))
+    });
+    return send(order,order.status||503,cors);
+   }
+  }
   if(isOrders){
    if(request.method==='POST'){
     // No body is necessary or accepted: identity and price are server-trusted.
