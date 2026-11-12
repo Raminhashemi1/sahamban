@@ -24,8 +24,10 @@ class PrepaidD1MigrationTests(unittest.TestCase):
             (order_id,"u1",plan,price,"IRR",state,"2026-11-12T10:00:00Z"))
 
     def test_migration_is_additive_and_leaves_legacy_annual_contract(self):
-        self.assertIsNotNone(self.db.execute("SELECT 1 FROM subscription_orders LIMIT 1").fetchone() if
-                             self.db.execute("SELECT count(*) FROM sqlite_master WHERE name='subscription_orders'").fetchone()[0] else None)
+        self.assertEqual(
+            self.db.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='subscription_orders'").fetchone()[0],
+            1
+        )
         self.insert_order()
         self.assertEqual(self.db.execute("SELECT plan_id FROM prepaid_subscription_orders").fetchone()[0],"SAHAMBAN_PRO_3M")
         with self.assertRaises(sqlite3.IntegrityError):
