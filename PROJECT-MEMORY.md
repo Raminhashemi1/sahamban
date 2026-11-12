@@ -603,3 +603,13 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - workflow ساخت Worker یک مرحله اجرای چرخه سفارش چهارپلن روی D1 محلی دریافت کرد. پرچم فعال‌سازی فقط در اجرای آزمایشی CI از طریق متغیر محیطی روشن می‌شود؛ تنظیم محلی و حالت پیش‌فرض همچنان خاموش‌اند.
 - اجرای Worker build برای commit `1bd592c7` در زمان ثبت queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43251429704 . اجرای بعدی روی commit `241c1fdc` نیز پس از ثبت مستندات آغاز می‌شود.
 - این تغییرات هنوز checkout، gateway verification یا refund/chargeback را فعال نمی‌کنند. migration فقط در D1 محلی CI اعمال می‌شود، نه دیتابیس خصوصی واقعی؛ deploy عمومی انجام نشده است.
+
+
+## ادامه روز پنجم — رفع خطاهای CI و نمایش وضعیت اشتراک (۱۲ نوامبر ۲۰۲۶)
+
+- شکست Smoke در اجرای https://github.com/Raminhashemi1/sahamban/actions/runs/43251547835 ناشی از عبارت regular expression نامعتبر در assertion تست settlement بود؛ assertion با بررسی متن SQL تصحیح شد.
+- شکست Worker/D1 در اجرای https://github.com/Raminhashemi1/sahamban/actions/runs/43252175812 ناشی از دریافت HTTP 413 برای سفارش معتبر بود: regex کنترل Content-Length اشتباهاً `\\d` را literal بررسی می‌کرد. به `[0-9]` اصلاح شد؛ ساخت Worker در اجرای https://github.com/Raminhashemi1/sahamban/actions/runs/43252436745 موفق شد.
+- ماژول read-only `server/prepaid-account-overview.cjs` برای دسترسی به تاریخ انقضا، ثانیه‌های مانده، تاریخچه حداکثر ۲۰ سفارش، و نمایش صریح عدم تمدید خودکار اضافه شد. کوئری‌ها با verified authenticated subject و پارامتر bindشده محدود شده‌اند. تست `tests/prepaid-account-overview.test.cjs` به Smoke CI متصل شد.
+- مسیر `GET /api/v1/me/prepaid-overview` با آداپتور ESM به Worker اضافه شد؛ با توکن کنترل‌شده آزمایشی و پرچم `PREPAID_ORDERS_ENABLED` که به‌صورت پیش‌فرض false است. آزمون‌های Worker برای خاموش‌بودن، احراز هویت و پاسخ امن اضافه شد.
+- CI جدید برای commit `e4c832cc` پس از ثبت مستندات شروع شده است: Worker https://github.com/Raminhashemi1/sahamban/actions/runs/43252682934 و Smoke https://github.com/Raminhashemi1/sahamban/actions/runs/43252682952 ؛ در زمان ثبت queued و **نتیجه نهایی هنوز تأیید نشده**.
+- این مرحله فقط کد/آزمون مسیر آزمایشی است؛ هنوز نه ورود کاربران عمومی، نه دسترسی تجاری، نه درگاه پرداخت واقعی، نه اعمال migration در پایگاه داده production، نه نمایش اشتراک در PWA زنده، نه عملیات refund فعال نشده‌اند. فروش همچنان غیرفعال است.
