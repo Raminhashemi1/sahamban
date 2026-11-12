@@ -18,7 +18,7 @@ public final class BackupExportPolicyTest {
         expect(!BackupExportPolicy.acceptsContents(BackupExportPolicy.LOCAL_NAME,"[]"));
         expect(!BackupExportPolicy.acceptsContents(BackupExportPolicy.LOCAL_NAME,"{"));
         expect(!BackupExportPolicy.acceptsContents(BackupExportPolicy.LOCAL_NAME,"x".repeat(BackupExportPolicy.MAX_JSON_BYTES+1)));
-        expect(!BackupExportPolicy.acceptsContents(BackupExportPolicy.LOCAL_NAME,"{\"f\":\"" + "ق".repeat(100000) + "\"}"));
+        expect(!BackupExportPolicy.acceptsContents(BackupExportPolicy.LOCAL_NAME,"{\"f\":\"" + "ق".repeat(140000) + "\"}"));
         System.out.println("PASS: strictly scoped backup export policy");
     }
 }
