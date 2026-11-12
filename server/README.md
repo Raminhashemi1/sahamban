@@ -207,3 +207,10 @@ The module is unit-tested in `tests/prepaid-orders-api.test.cjs`. It is delibera
 ## Provider-verified prepaid settlement primitive (not wired to a gateway)
 
 `prepaid-settlement.cjs` accepts only a server-produced verification result (never a browser callback), validates provider/event/payment/order IDs, plan, IRR amount and server timestamp, then batches event-ledger insertion, pending-order settlement and entitlement upsert in one D1 batch. The event and payment unique constraints plus pending-order guards prevent replay/double grant. The entitlement SQL computes calendar-month expiry and extends from the current paid-until date when still active. This is a settlement primitive, **not a provider adapter**: no gateway signature/query verification exists yet, and no Worker route calls it. A trusted provider adapter must construct the verified object only after server-to-server confirmation. Refund/chargeback revocation and full D1 integration tests remain outstanding.
+
+
+## Worker route for prepaid pending orders (feature flag OFF)
+
+`worker-api.mjs` now has `GET/POST /api/v1/me/prepaid-orders`, using the existing short-lived private-pilot HMAC identity only. POST accepts exactly one JSON field (`planId`); amount, currency and random order ID are server-derived. GET returns only the pending order for the authenticated subject. Unknown fields, client-supplied prices, unsupported content types and unauthenticated calls fail closed. The route returns no checkout URL and never grants Pro access.
+
+The route is guarded by `PREPAID_ORDERS_ENABLED === 'true'`; the local Wrangler config explicitly sets it to `false`. **Do not enable this flag for public/commercial use**: the current identity is still a private-pilot HMAC token, the prepaid migration has not been applied to a real private D1 database, and no provider checkout/verification/refund adapter is connected. Worker route tests are added to `tests/worker-api.test.cjs`; the Cloudflare dry-run/build and full local D1 integration workflow must pass before considering even a private pilot.
