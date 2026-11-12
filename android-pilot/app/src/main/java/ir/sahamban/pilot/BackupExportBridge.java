@@ -144,12 +144,13 @@ public final class BackupExportBridge {
             if (output == null) throw new java.io.IOException("Output stream unavailable");
             output.write(work.bytes);
             output.flush();
-            // Closing successfully still requires a real-device file and restore check.
-            reply(work.reply, work.requestId, "saved");
         } catch (Exception error) {
             // Do not log or reflect file bytes, filenames or sensitive file metadata.
             reply(work.reply, work.requestId, "failed");
+            return true;
         }
+        // A successful stream close is still not a device-level restore acceptance.
+        reply(work.reply, work.requestId, "saved");
         return true;
     }
 
