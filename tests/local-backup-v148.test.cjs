@@ -91,9 +91,10 @@ test('web HTML and service worker use the same locally cached backup module',()=
  const sw=fs.readFileSync('sw.js','utf8');
  assert.match(html,/id="sb148LocalBackup"/);
  for(const id of ['sb148Export','sb148File','sb148Restore','sb148Status'])assert.ok(html.includes('id="'+id+'"'));
- assert.match(html,/local-backup-v148\.js\?v=148\.1/);
- assert.match(sw,/local-backup-v148\.js\?v=148\.1/);
+ assert.match(html,/local-backup-v148\.js\?v=148\.2/);
+ assert.match(sw,/local-backup-v148\.js\?v=148\.2/);
  assert.match(html,/رمزگذاری نشده/);
+ assert.match(html,/native-backup-export-v1\.js\?v=1\.0/);
 });
 
 function uiHarness(initial={}){
@@ -171,12 +172,15 @@ test('rejects oversized direct backup objects before mutating storage',()=>{
  assert.equal(destination.getItem('sahamban-v1'),'UNCHANGED');
 });
 
-test('backup download messaging requires user to verify disk persistence and restore',()=>{
+test('backup exports delegate to an explicit native-or-browser helper without claiming disk writes',()=>{
  const fs=require('node:fs');
+ const helper=fs.readFileSync('native-backup-export-v1.js','utf8');
+ assert.match(helper,/ذخیره‌شدن فایل تأیید نشده است/);
+ assert.match(helper,/بازیابی آزمایشی انجام دهید/);
  for(const source of ['local-backup-v148.js','app.js']){
   const src=fs.readFileSync(source,'utf8');
-  assert.ok(src.includes('ذخیره‌شدن فایل تأیید نشده است'),source);
-  assert.ok(src.includes('بازیابی آزمایشی انجام دهید'),source);
+  assert.match(src,/client\.save\(/);
+  assert.match(src,/client\.message\(/);
   assert.doesNotMatch(src,/پشتیبان محلی آماده دانلود شد|فایل پشتیبان از سبد فعلی آماده دانلود شد/);
  }
 });
