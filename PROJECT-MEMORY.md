@@ -313,3 +313,11 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - این فایل برای جلوگیری از پردازش Jekyll و حفظ مسیرهای نقطه‌دار مانند `/.well-known/` در انتشار GitHub Pages است.
 - مرحله بعدی: باز کردن `https://github.com/Raminhashemi1/Raminhashemi1.github.io/settings/pages` و تنظیم Source روی Deploy from a branch، Branch روی `main` و Folder روی `/(root)` و سپس Save.
 - GitHub Pages هنوز از روی تصویر فعال‌شده/منتشرشده تأیید نشده است؛ پس از ذخیره باید وضعیت و URL انتشار بررسی شود.
+
+
+## روز پنجم — GitHub Pages فعال شد (۱۲ نوامبر ۲۰۲۶)
+
+- مالک در تنظیمات Pages مخزن `Raminhashemi1/Raminhashemi1.github.io` گزینه `Deploy from a branch`، شاخه `main` و پوشه `/(root)` را ذخیره کرده است.
+- اسکرین‌شات تنظیمات نمایش می‌دهد پیام `GitHub Pages source saved.` و وضعیت `Your site is live at https://raminhashemi1.github.io/`؛ دکمه Save غیرفعال است چون تنظیمات فعلی قبلاً ذخیره شده‌اند، نه به‌دلیل خطا.
+- HTTPS اجباری و فعال است. نشانی انتشار اعلام‌شده: `https://raminhashemi1.github.io/`.
+- گام بعدی: باز کردن نشانی سایت و سپس آماده‌سازی مسیر `/.well-known/assetlinks.json` فقط پس از دریافت `applicationId` و SHA-256 گواهی امضای نسخه انتشار. هنوز assetlinks یا بسته انتشار ساخته نشده و انتشار در مایکت/بازار انجام نشده است.
