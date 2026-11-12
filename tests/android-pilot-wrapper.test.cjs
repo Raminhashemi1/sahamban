@@ -34,6 +34,14 @@ test('native backup export is origin-scoped, user-selected and has no broad JS f
  assert.ok(policy.includes('TrustedNavigation.isInternal(pageUrl)'));
  assert.ok(policy.includes('https://raminhashemi1.github.io'));
  assert.ok(!bridge.includes('addJavascriptInterface'));
+ assert.match(bridge,/openOutputStream\(destination, "wt"\)/);
+ assert.match(bridge,/openInputStream\(destination\)/);
+ assert.match(bridge,/BackupFileVerifier\.matches\(input, work\.bytes\)/);
+ assert.match(bridge,/FLAG_GRANT_READ_URI_PERMISSION/);
+ assert.match(bridge,/FLAG_GRANT_WRITE_URI_PERMISSION/);
+ const verifier=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BackupFileVerifier.java');
+ assert.match(verifier,/stream\.read\(\) == -1/);
+ assert.match(read('.github/workflows/android-pilot-debug.yml'),/BackupFileVerifierTest/);
  assert.ok(activity.includes('backupExport.install()'));
  assert.ok(activity.includes('backupExport.onActivityResult('));
  assert.match(deps,/androidx\.webkit:webkit:1\.14\.0/);
@@ -68,7 +76,7 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
   'new BackupExportBridge(this, webView)', 'exporter.onActivityResult(',
   'Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(activity.includes(constraint),constraint);
- assert.match(build,/versionName '0\.3\.0-pilot'/);
+ assert.match(build,/versionName '0\.3\.1-pilot'/);
  assert.match(html,/Content-Security-Policy/);
  assert.match(html,/connect-src 'none'/);
  assert.match(html,/default-src 'none'/);
