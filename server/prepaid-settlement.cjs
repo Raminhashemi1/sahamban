@@ -56,7 +56,6 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
   if(lookup.state!=='PENDING')return {ok:false,reason:'ORDER_NOT_PENDING'};
   if(lookup.plan_id!==planId||lookup.amount_rial!==amountRial||lookup.currency!=='IRR')
    return {ok:false,reason:'ORDER_MISMATCH'};
-  const base=lookup.paid_until&&validUTC(lookup.paid_until)&&lookup.paid_until>now?lookup.paid_until:now;
   const statements=[
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
    db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
