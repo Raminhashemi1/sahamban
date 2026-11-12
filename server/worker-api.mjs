@@ -1,5 +1,6 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
+import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
  * Read-only entitlement lookup and optional private-pilot pending-order
@@ -85,14 +86,23 @@ export default {
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isOrders=url.pathname==='/api/v1/me/orders';
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
-  if(!isEntitlement&&!isOrders&&!isPrepaidOrders)return send({error:'NOT_FOUND'},404,cors);
+  const isPrepaidOverview=url.pathname==='/api/v1/me/prepaid-overview';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  if(isPrepaidOverview){
+   if(env?.PREPAID_ORDERS_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
+   const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
+    authenticatedSubject:subject,now:new Date(nowMs).toISOString()
+   });
+   return send(result,result.status||503,cors);
+  }
   if(isPrepaidOrders){
    // Controlled pilot only. Disabled by default; commercial identity and D1
    // migration are prerequisites before enabling. Never accepts client prices.
