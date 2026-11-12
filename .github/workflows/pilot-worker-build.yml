@@ -7,6 +7,7 @@ on:
       - 'tests/pilot-orders-api.test.cjs'
       - 'tests/worker-api.test.cjs'
       - 'tests/worker-local-runtime.cjs'
+      - 'server/d1-prepaid-migration.sql'
       - 'tests/mint-pilot-token.test.cjs'
       - '.github/workflows/pilot-worker-build.yml'
   pull_request:
@@ -40,5 +41,7 @@ jobs:
         run: node tests/worker-local-runtime.cjs
       - name: Exercise synthetic-price pending order lifecycle in local Worker+D1 only
         run: LOCAL_TEST_ENABLE_ORDERS=1 node tests/worker-local-runtime.cjs
+      - name: Exercise four-plan prepaid order lifecycle in local Worker+D1 only
+        run: LOCAL_TEST_ENABLE_PREPAID=1 node tests/worker-local-runtime.cjs
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
