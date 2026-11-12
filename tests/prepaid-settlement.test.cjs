@@ -14,7 +14,7 @@ function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amo
    calls.push({sql,values:null});
    return {bind(...values){
     calls.at(-1).values=values;
-    return {async first(){return row;}};
+    return {sql,async first(){return row;}};
    }};
   },
   async batch(stmts){
