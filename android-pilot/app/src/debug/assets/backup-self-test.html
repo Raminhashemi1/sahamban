@@ -41,7 +41,7 @@ button:disabled{opacity:.5}
 <script>
 'use strict';
 (function(){
- const $=id=>document.getElementById(id), status=$('status');
+ const $=id=>document.getElementById(id),status=$('status');
  const bridge=window.SahambanBackupExport;
  const samples={
   local:{
@@ -53,34 +53,41 @@ button:disabled{opacity:.5}
    name:'sahamban-portfolio-backup.json',
    payload:{format:'sahamban-portfolio',version:2,
     data:'فولاد,10,1200,1350,1100,1550',capital:'20000',
-    riskCap:'5',stress:'10',concentration:'30',
-    exportedAt:'2026-01-01T00:00:00.000Z'}
+    riskCap:'5',stress:'10',concentration:'30',exportedAt:'2026-01-01T00:00:00.000Z'}
   }
  };
- let selected=null,seq=0,pendingId=null;
+ let pendingId=null,pendingContent=null,savedContent=null,seq=0;
  const show=(message,ok=false)=>{
   status.textContent=message;
   status.className=ok?'pass':'';
  };
- function enable(value){$('local').disabled=!value;$('risk').disabled=!value;}
+ const enable=value=>{$('local').disabled=!value;$('risk').disabled=!value;};
  function save(type){
-  if(!bridge||typeof bridge.postMessage!=='function'){
+  if(pendingId!==null)return;
+  savedContent=null;
+  if(!bridge||typeof bridge.postMessage!=='function'
+      ||typeof bridge.addEventListener!=='function'){
    show('این WebView قابلیت پیام امن را ندارد؛ هیچ فایل تأییدشده‌ای ایجاد نشد.');
    return;
   }
-  if(pendingId!==null)return;
-  selected=type;
-  const sample=samples[type],requestId='local-test-'+(++seq);
+  if(!window.crypto||typeof crypto.getRandomValues!=='function'){
+   show('شناسه تصادفی امن در دسترس نیست؛ آزمون متوقف شد.');
+   return;
+  }
+  // Nonce prevents an old file containing identical demo rows from giving a false PASS.
+  const nonce=Array.from(crypto.getRandomValues(new Uint32Array(4))).join('-');
+  const sample=samples[type],requestId='synthetic-'+(++seq);
+  pendingContent=JSON.stringify({...sample.payload,syntheticTestNonce:nonce});
   pendingId=requestId;
   enable(false);
-  show('درخواست ذخیره ارسال شد. محل فایل را خودتان در انتخابگر اندروید تعیین کنید.');
+  show('درخواست ذخیره ارسال شد. محل فایل را در انتخابگر اندروید تعیین کنید.');
   try{
    bridge.postMessage(JSON.stringify({
-    protocol:'sahamban-backup-export-v1',
-    requestId,name:sample.name,content:JSON.stringify(sample.payload)
+    protocol:'sahamban-backup-export-v1',requestId,name:sample.name,content:pendingContent
    }));
   }catch{
    pendingId=null;
+   pendingContent=null;
    enable(true);
    show('ارسال درخواست امن ناموفق بود؛ هیچ ذخیره موفقی تأیید نمی‌شود.');
   }
@@ -89,12 +96,19 @@ button:disabled{opacity:.5}
   bridge.addEventListener('message',event=>{
    let data;
    try{data=JSON.parse(event.data);}catch{return;}
-   if(!data||data.protocol!=='sahamban-backup-result-v1'||data.requestId!==pendingId)return;
+   if(!data||data.protocol!=='sahamban-backup-result-v1'
+       ||data.requestId!==pendingId)return;
    pendingId=null;
    enable(true);
-   if(data.status==='saved')show('اندروید پایان ذخیره را گزارش کرد. برای PASS باید در مرحله ۲ همین فایل را باز و با نمونه ساختگی تطبیق دهید.');
-   else if(data.status==='cancelled')show('ذخیره لغو شد. PASS ثبت نشده است.');
-   else show('ذخیره ناموفق یا رد شد. PASS ثبت نشده است.');
+   if(data.status==='saved'){
+    savedContent=pendingContent;
+    show('اندروید پایان ذخیره را گزارش کرد. برای PASS باید فایل همین تلاش را از مرحله ۲ دوباره باز کنید.');
+   }else if(data.status==='cancelled'){
+    show('ذخیره لغو شد. PASS ثبت نشده است.');
+   }else{
+    show('ذخیره ناموفق یا رد شد. PASS ثبت نشده است.');
+   }
+   pendingContent=null;
   });
  }
  $('local').addEventListener('click',()=>save('local'));
@@ -110,17 +124,20 @@ button:disabled{opacity:.5}
  }
  $('restore').addEventListener('change',async()=>{
   const file=$('restore').files&&$('restore').files[0];
-  if(!file){show('فایلی برای بازیابی انتخاب نشد.');return;}
-  if(!selected){show('ابتدا فایل ساختگی را در همین صفحه ذخیره کنید.');return;}
-  if(file.size>262144){show('فایل بزرگ‌تر از حد مجاز است.');return;}
+  if(!file){show('فایلی انتخاب نشد.');return;}
+  if(savedContent===null){
+   show('ابتدا ذخیره موفق یک نمونه ساختگی را در همین صفحه انجام دهید.');
+   return;
+  }
+  if(file.size>262144){show('FAIL: فایل بزرگ‌تر از حد مجاز است.');return;}
   try{
-   const actual=JSON.parse(await fileText(file));
-   const expected=samples[selected].payload;
-   if(JSON.stringify(actual)!==JSON.stringify(expected)){
-    show('FAIL: فایل با داده ساختگی مورد انتظار برابر نیست. از داده واقعی استفاده نکنید.');
+   const raw=await fileText(file);
+   JSON.parse(raw);
+   if(raw!==savedContent){
+    show('FAIL: فایل دقیقاً با داده ساختگی این تلاش برابر نیست. از داده واقعی استفاده نکنید.');
     return;
    }
-   show('PASS: فایل JSON ذخیره‌شده با داده ساختگی مطابقت دارد و از انتخابگر اندروید دوباره خوانده شد. این نتیجه فقط مربوط به صفحه آزمون است، نه پشتیبان‌های واقعی PWA.',true);
+   show('PASS: فایل JSON همین تلاش از انتخابگر اندروید دوباره خوانده شد و متن آن دقیقاً تطبیق داشت. این فقط آزمون ساختگی است، نه پذیرش پشتیبان واقعی PWA.',true);
   }catch{
    show('FAIL: فایل خوانده نشد یا JSON معتبر نیست. از داده واقعی استفاده نکنید.');
   }
