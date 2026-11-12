@@ -70,3 +70,36 @@ test('portfolio restore shares the export byte limit, including UTF-8 Persian co
  assert.ok(byteLength>30000,'regression fixture must exceed the old 30 KB cap');
  assert.ok(byteLength<=client.MAX_BYTES,'fixture must remain within the shared 256 KiB cap');
 });
+
+test('native save times out visibly and unregisters its listener when Android never replies',async()=>{
+ const callbacks=new Set();let timeoutCallback=null,cleared=false;
+ const bridge={
+  addEventListener(type,fn){callbacks.add(fn);},
+  removeEventListener(type,fn){callbacks.delete(fn);},
+  postMessage(){}
+ };
+ const win={
+  SahambanBackupExport:bridge,
+  navigator:{userAgent:'SahambanPilotWebView/1'},
+  setTimeout(fn,ms){assert.equal(ms,300000);timeoutCallback=fn;return 7;},
+  clearTimeout(id){assert.equal(id,7);cleared=true;}
+ };
+ const pending=client.save(win,'sahamban-portfolio-backup.json','{}');
+ assert.equal(callbacks.size,1);
+ timeoutCallback();
+ assert.deepEqual(await pending,{status:'timeout'});
+ assert.equal(callbacks.size,0);
+ assert.equal(cleared,true);
+ assert.match(client.message({status:'timeout'},'sample.json'),/ذخیره‌شدن فایل تأیید نشده است/);
+});
+
+test('a partial native bridge without listener cleanup fails closed',async()=>{
+ let called=false;
+ const win={
+  SahambanBackupExport:{postMessage(){called=true;},addEventListener(){}},
+  navigator:{userAgent:'SahambanPilotWebView/1'}
+ };
+ const result=await client.save(win,'sahamban-portfolio-backup.json','{}');
+ assert.equal(result.status,'unsupported');
+ assert.equal(called,false);
+});
