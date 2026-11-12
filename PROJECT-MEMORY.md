@@ -254,3 +254,12 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - گزارش روز چهارم با شواهد CI به‌روزرسانی شد.
 - [Issue #165](https://github.com/Raminhashemi1/sahamban/issues/165) برای اختلاف سه حالت تعدیل TSETMC و ضرایب `1.048287` و `1.0448` عمداً باز مانده است.
 - هیچ قیمت عملیاتی، تاریخچه، NAV، امتیاز یا سیگنال معاملاتی تغییر نکرده است. این اختتام به معنی حل اختلاف تعدیل یا تأیید کامل منبع زنده نیست.
+
+
+## تأیید نهایی اختتام روز چهارم (بعد از CI اولیه) — ۱۲ نوامبر ۲۰۲۶
+
+- اجرای GitHub Actions `43186267826` روی commit `6fba3439f4de32d07ec8470d8a861c65ff868d0f` با `completed/success` تأیید شد؛ هر دو job `smoke` و `browser` موفق بودند. گام‌های CSV audit، syntax، market-history، market-validation، freshness، Tehran market date و live-market-connectivity موفق بودند.
+- اجرای GitHub Pages به شناسه `43186267731` روی همان commit با `completed/success` تأیید شد.
+- پرونده [#165](https://github.com/Raminhashemi1/sahamban/issues/165) همچنان `open` است. اصالت داده زنده یا صحت ضریب TSETMC صرفاً با موفقیت CI اثبات نمی‌شود.
+- [DAY-4-CLOSURE-2026-11-12.md](./DAY-4-CLOSURE-2026-11-12.md) با این شواهد به‌روزرسانی شد.
+- تصمیم: **روز چهارم طبق محدوده ثبت‌شده در GitHub، بدون توسعه اضافی، بسته و تأیید نهایی شده است**: `DAY_4_CLOSED_WITH_EXTERNAL_DEPENDENCY`. commitهای صرفاً مستندسازیِ بعد از commit آزموده‌شده، اجرای CI مستقل خواهند داشت و در این یادداشت موفقیت پیشاپیش آن‌ها ادعا نمی‌شود.
