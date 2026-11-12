@@ -1,6 +1,6 @@
 # حافظه پروژه سهام‌بان
 
-آخرین به‌روزرسانی: ۲۰۲۶-۱۱-۱۲  
+آخرین به‌روزرسانی: ۲۰۲۶-۱۱-۱۳  
 مخزن: https://github.com/Raminhashemi1/sahamban  
 شاخه اصلی: main  
 وضعیت: PWA منتشرشده؛ پذیرش میدانی و چند دروازه داده/محصول همچنان باز هستند.
@@ -679,3 +679,27 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 2. **پذیرش گوشی واقعی UNVERIFIED:** با سبد ۲۰/۱۰۰ نماد **ساختگی** روی دستگاه واقعی، خروجی دو نوع فایل JSON، وجود فایل انتخاب‌شده، import/restore، لغو ذخیره، حالت قطع اینترنت، دسترسی و TalkBack ثبت شود. سبد Chrome/PWA قبلی خودبه‌خود به WebView منتقل نمی‌شود؛ PWA قدیمی یا داده آن نباید حذف شود.
 3. Issue [#167](https://github.com/Raminhashemi1/sahamban/issues/167) تا مدارک آزمون فیزیکی و حل واقعی مسیر پشتیبان باز بماند؛ PR [#166](https://github.com/Raminhashemi1/sahamban/pull/166) همچنان draft است. فروش و checkout فعال نیستند و روز پنجم/انتشار مایکت و بازار همچنان BLOCKED است.
 4. مبنای فنی: [AndroidX WebMessageListener](https://developer.android.com/reference/androidx/webkit/WebViewCompat) و [Android Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files). صرف صحت کد و شواهد CI تأیید ذخیره JSON در WebView واقعی نیست.
+
+## ادامه ۱۳ نوامبر ۲۰۲۶ — آزمون آفلاین مستقل اندروید، بدون انتشار عمومی
+
+### هدف و مرز اجرایی
+- به درخواست مالک، کار از مخزن `Raminhashemi1/sahamban` و شاخه `feta` ادامه یافت. شاخه `main` و GitHub Pages عمومی تغییر نکردند؛ PR #166 همچنان draft است. هیچ پرداخت یا داده خصوصی واقعی استفاده/فعال نشد.
+- چون پوسته Android فعلی سایت PWA منتشرشده از `main` را بارگذاری می‌کند، برای آزمون WebMessage و Storage Access Framework بدون وابستگی به انتشار سایت، یک مسیر تست آفلاین مستقل در APK آزمایشی ساخته شد.
+
+### تغییرات فنی
+- فایل `android-pilot/app/src/debug/java/ir/sahamban/pilot/BackupSelfTestActivity.java` فقط در **debug source set** اضافه شد. برنامه آزمایشی اکنون آیکن دوم «سهام‌بان - آزمون پشتیبان ساختگی» دارد؛ manifest مخصوص debug در `android-pilot/app/src/debug/AndroidManifest.xml` قرار دارد و این Activity وارد release نمی‌شود.
+- Activity صفحه HTML ساختگی بسته را با `loadDataWithBaseURL` روی مبدأ HTTPS و مسیر مجاز `/sahamban/` اجرا می‌کند؛ `setBlockNetworkLoads(true)`، غیرفعال‌بودن DOM storage و file/content access برای جلوگیری از خواندن اطلاعات خصوصی و درخواست شبکه حفظ شده‌اند. خروجی از همان `BackupExportBridge` واقعی و انتخابگر فایل Android (`ACTION_CREATE_DOCUMENT`) استفاده می‌کند؛ ورودی آزمایشی از `ACTION_OPEN_DOCUMENT` انجام می‌شود.
+- فایل `android-pilot/app/src/debug/assets/backup-self-test.html` امکان ذخیره JSON ساختگی برای دو قالب local و portfolio و خواندن مجدد فایل انتخاب‌شده را فراهم می‌کند. **هر ذخیره دارای nonce تصادفی تازه است**؛ فقط پس از پاسخ موفق ذخیره و مقایسه دقیق متن همان تلاش با فایل انتخاب‌شده، نتیجه `PASS` نشان داده می‌شود. فایل قدیمی، لغو ذخیره یا فایل دست‌کاری‌شده نباید PASS شود.
+- نسخه APK آزمایشی به `0.3.0-pilot`، `versionCode=3` ارتقا یافت؛ `tests/android-pilot-wrapper.test.cjs` گسترش یافت و `tests/android-backup-self-test.test.cjs` به‌عنوان تست اجرایی JS از طریق Node VM برای nonce/لغو/بازخوانی اضافه شد؛ Smoke workflow نیز این تست را اجرا می‌کند.
+- راهنمای نصب و معیارهای پذیرش در `android-pilot/README.md` و `ANDROID-TEST-ACCEPTANCE-2026-11-12.md` برای آیکن دوم و آزمون‌های فقط ساختگی به‌روزرسانی شدند.
+
+### شواهد GitHub Actions
+- GitHub Actions ساخت Android debug نسخه 0.3: [run 43304736011](https://github.com/Raminhashemi1/sahamban/actions/runs/43304736011) با نتیجه `completed/success` روی commit `38f0c3fe8df768cd8228286873b92e8b8e17c03c`، شامل Java policy، `assembleDebug` و artifact. شناسه artifact [13983985808](https://github.com/Raminhashemi1/sahamban/actions/runs/43304736011/artifacts/13983985808)، با مهلت ۷ روز و SHA-256 خود APK `8b85aeed12f6dcc835b43726a41838e15d27b402948dbb872723b476827753d0`.
+- [Smoke+Browser run 43304958128](https://github.com/Raminhashemi1/sahamban/actions/runs/43304958128) روی commit `6c36bd401f7a9b6974ca3b18a8f6f13fdf1399b6` با `completed/success` پایان یافت. گام `node --test tests/android-pilot-wrapper.test.cjs tests/android-backup-self-test.test.cjs` در job smoke موفق بود. این شواهد CI هستند و به معنی آزمون فیزیکی یا اثبات کارکرد با PWA منتشرشده نیستند.
+- تغییر مستندات پس از این commitهای آزموده‌شده لزوماً CI مستقل تازه ندارد؛ برای ادعای CI روی HEAD آینده باید SHA و run را جدا بررسی کرد.
+
+### دروازه‌های باز
+1. کاربر باید **فقط با فایل‌های ساختگی** APK 0.3 را روی گوشی فیزیکی نصب کند و از آیکن آزمون دوم دو فرمت JSON را ذخیره، با فایل انتخاب‌شده بازیابی/تطبیق و حالت لغو/فایل قدیمی/قطع اینترنت را بررسی کند. مدل گوشی، نسخه Android و WebView و PASS/FAIL بدون محتوای خصوصی در `ANDROID-TEST-ACCEPTANCE-2026-11-12.md` ثبت شوند.
+2. این مرحله در صورت PASS صرفاً تأیید مسیر native JSON است؛ انتقال/بازیابی سبد واقعی PWA با کد `feta` هنوز مستلزم تست انتشار هماهنگ یا محیط staging با مبدأ مجاز و سپس آزمون گوشی است. کد جدید سایت عمومی هنوز منتشر نشده است.
+3. [Issue #167](https://github.com/Raminhashemi1/sahamban/issues/167) تا تکمیل شواهد Android WebView و بازگردانی واقعی باز بماند؛ [PR #166](https://github.com/Raminhashemi1/sahamban/pull/166) تا بازبینی و تأیید باقی در حالت پیش‌نویس باشد.
+4. APK debug امضای مارکت و شناسه بسته نهایی ندارد و برای داده واقعی، انتشار مایکت/بازار و فروش آماده نیست؛ `DAY_5_RELEASE_BLOCKED_PENDING_ANDROID_ARTIFACT_AND_OWNER_EVIDENCE` هنوز برقرار است.
