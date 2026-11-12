@@ -38,6 +38,8 @@ jobs:
       - run: node --test tests/fundamental-evidence.test.cjs
       - run: node --test tests/capital-adjustments.test.cjs
       - run: node --test tests/tse-client-three-mode-adapter-v161.test.cjs
+      - run: node --test tests/audit-gheshdab-price-csv.test.cjs
+      - run: node --check tools/audit-gheshdab-price-csv.cjs
       - run: node --test tests/fundamental-decision-gate-v150.test.cjs
       - run: node --test tests/fundamental-browser-runtime-v150.test.cjs
       - run: node --check fundamental-evidence.js
