@@ -55,11 +55,11 @@
   - cacbed840b8e21df3a0500a70779bc2dafddd3ee — افزودن آزمون adapter.
   - 24508a67ce01718ec9aa999ccbeb00502198d1d2 — اتصال آزمون به Smoke workflow.
   - 0c1b8ded749df903d55db1855c3b1b72d3f8cbc7 — ثبت پرونده اختلاف غشهداب.
-- این سند حافظه پس از commitهای بالا نوشته شده؛ SHA نهایی این فایل باید پس از ایجاد ثبت شود.
+- اجرای GitHub Actions مربوط به commit `a6d3a95b2b3196db66e894f057c8b21ff6fa1ec0`: آزمون اختصاصی `tests/tse-client-three-mode-adapter-v161.test.cjs` و syntax check ماژول هر دو موفق شدند؛ jobهای Smoke و Browser در زمان آخرین مشاهده هنوز در حال اجرا بودند. اجرای Smoke: https://github.com/Raminhashemi1/sahamban/actions/runs/43155999590.
 
 ## گام بعدی دقیق
 
-1. آخرین HEAD و وضعیت Actions را بررسی کنید؛ به‌ویژه workflow با commitهای جدید و job smoke.
+1. نتیجه نهایی workflowهای Smoke و Browser برای commit `a6d3a95b2b3196db66e894f057c8b21ff6fa1ec0` را بررسی و در همین سند ثبت کنید؛ تست اختصاصی v161 تا این لحظه موفق است.
 2. اگر آزمون تازه شکست خورد، ابتدا فقط همان خطا را اصلاح و تست رگرسیون اضافه کنید.
 3. شناسه دقیق TSETMC نماد غشهداب را از منبع معتبر تثبیت کنید.
 4. برای بازه قبل/بعد از ۶ خرداد ۱۳۹۹، تاریخچه خام و سه سری getPrices با تنظیمات یکسان و adjustPricesهای ۰، ۱ و ۲ دریافت کنید.
