@@ -12,7 +12,13 @@ import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.m
 const TOKEN_ISSUER='sahamban-pilot',TOKEN_AUDIENCE='sahamban-api';
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const TOKEN_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const QUERY='SELECT u.id AS user_id, u.status AS account_status, e.paid_until, e.suspended, e.auto_renew_cancelled FROM sahamban_users u LEFT JOIN subscription_entitlements e ON e.user_id=u.id WHERE u.auth_subject=? LIMIT 1';
+const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
+ CASE WHEN pe.paid_until IS NOT NULL AND (le.paid_until IS NULL OR pe.paid_until>le.paid_until) THEN pe.paid_until ELSE le.paid_until END AS paid_until,
+ COALESCE(le.suspended,0) AS suspended,COALESCE(le.auto_renew_cancelled,0) AS auto_renew_cancelled
+ FROM sahamban_users u
+ LEFT JOIN subscription_entitlements le ON le.user_id=u.id
+ LEFT JOIN prepaid_subscription_entitlements pe ON pe.user_id=u.id
+ WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
