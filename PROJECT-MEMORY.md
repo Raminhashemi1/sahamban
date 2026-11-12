@@ -613,3 +613,11 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - مسیر `GET /api/v1/me/prepaid-overview` با آداپتور ESM به Worker اضافه شد؛ با توکن کنترل‌شده آزمایشی و پرچم `PREPAID_ORDERS_ENABLED` که به‌صورت پیش‌فرض false است. آزمون‌های Worker برای خاموش‌بودن، احراز هویت و پاسخ امن اضافه شد.
 - CI جدید برای commit `e4c832cc` پس از ثبت مستندات شروع شده است: Worker https://github.com/Raminhashemi1/sahamban/actions/runs/43252682934 و Smoke https://github.com/Raminhashemi1/sahamban/actions/runs/43252682952 ؛ در زمان ثبت queued و **نتیجه نهایی هنوز تأیید نشده**.
 - این مرحله فقط کد/آزمون مسیر آزمایشی است؛ هنوز نه ورود کاربران عمومی، نه دسترسی تجاری، نه درگاه پرداخت واقعی، نه اعمال migration در پایگاه داده production، نه نمایش اشتراک در PWA زنده، نه عملیات refund فعال نشده‌اند. فروش همچنان غیرفعال است.
+
+
+## مرحله تازه — اصلاح رگرسیون و ایمنی نمایش اعتبار (۱۲ نوامبر ۲۰۲۶)
+
+- اجرای Smoke قدیمی `43252781354` شکست خورده بود زیرا mock دستور SQL را روی prepared statement نگه نمی‌داشت؛ در commit `27e69f25` اصلاح شد و Smoke `43255961939` با `completed/success` پایان یافت.
+- `server/prepaid-account-overview.cjs` اکنون علاوه بر ACTIVE بودن حساب، وضعیت suspension مربوط به پرداخت را از `subscription_entitlements` به‌صورت bindشده می‌خواند. حساب دارای `payment_suspended=1` یا مقدار نامعتبر، پاسخ Pro-enabled دریافت نمی‌کند. آزمون‌های `tests/prepaid-account-overview.test.cjs` و fixture در `tests/worker-api.test.cjs` برای موارد معلق/ناصحیح تنظیم شدند.
+- اجرای `Sahamban free pilot Worker build verification` روی commit `d5c89aad` با موفقیت پایان یافت: https://github.com/Raminhashemi1/sahamban/actions/runs/43256217643 . در اجرای Smoke `43256217866` job smoke موفق شد؛ job browser هنگام این بررسی هنوز در جریان بود.
+- همچنان **پرداخت واقعی، درگاه، احراز هویت عمومی، reverse/refund قابل‌اعمال، دیتابیس خصوصی واقعی و قفل Pro سمت سرور مستقر نشده‌اند**. تغییرات فقط در GitHub و آزمون‌های محلی CI هستند، نه راه‌اندازی کسب‌وکار. روز پنجم و Gate C باز می‌مانند.
