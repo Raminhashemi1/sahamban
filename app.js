@@ -363,7 +363,8 @@ $('portfolioBackupFile').addEventListener('change',async()=>{
  pendingPortfolioBackup=null;$('portfolioBackupApply').disabled=true;
  const file=$('portfolioBackupFile').files?.[0];
  if(!file)return;
- if(file.size>30000){$('portfolioBackupStatus').textContent='حجم فایل نباید بیشتر از ۳۰ کیلوبایت باشد.';return;}
+ const maxBackupBytes=window.SahambanBackupExportClient?.MAX_BYTES??256*1024;
+ if(file.size>maxBackupBytes){$('portfolioBackupStatus').textContent='حجم فایل نباید بیشتر از '+Math.round(maxBackupBytes/1024)+' کیلوبایت باشد.';return;}
  try{
   const record=JSON.parse(await file.text());
   if($('portfolioBackupFile').files?.[0]!==file)return;
