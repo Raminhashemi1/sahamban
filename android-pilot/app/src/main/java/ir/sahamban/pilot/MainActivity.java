@@ -23,6 +23,7 @@ public final class MainActivity extends Activity {
     private static final String START_URL = "https://raminhashemi1.github.io/sahamban/";
     private static final int PICK_FILE = 3040;
     private WebView webView;
+    private BackupExportBridge backupExport;
     private ValueCallback<Uri[]> fileCallback;
 
     @Override
@@ -39,6 +40,10 @@ public final class MainActivity extends Activity {
         settings.setSupportMultipleWindows(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setSafeBrowsingEnabled(true);
+        // Explicit marker prevents unverified blob fallback on unsupported pilot WebViews.
+        settings.setUserAgentString(settings.getUserAgentString() + " SahambanPilotWebView/1");
+        backupExport = new BackupExportBridge(this, webView);
+        backupExport.install();
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -88,6 +93,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (backupExport != null && backupExport.onActivityResult(requestCode, resultCode, data)) return;
         if (requestCode != PICK_FILE || fileCallback == null) return;
         Uri[] selected = null;
         if (resultCode == RESULT_OK && data != null) {
@@ -113,6 +119,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (backupExport != null) backupExport.discard();
         if (fileCallback != null) {
             fileCallback.onReceiveValue(null);
             fileCallback = null;
