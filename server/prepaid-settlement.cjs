@@ -46,9 +46,9 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
  if(selected.priceRial!==amountRial)return {ok:false,reason:'AMOUNT_MISMATCH'};
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function')return {ok:false,reason:'DATABASE_UNAVAILABLE'};
  try{
-  // First fetch existing entitlement base date and pending order inside the same
-  // D1 batch is essential. For concurrency, statements are guarded by pending
-  // state + unique event/payment constraints. The batch rolls back on constraint errors.
+  // Preflight the order, then recalculate the entitlement base date inside
+  // the atomic D1 batch. Pending-state and unique provider-event constraints
+  // prevent replay and concurrent settlement of the same order.
   const lookup=await db.prepare(`SELECT o.user_id,o.plan_id,o.amount_rial,o.currency,o.state,
    e.paid_until FROM prepaid_subscription_orders o
    LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=o.user_id WHERE o.id=? LIMIT 1`).bind(orderId).first();
