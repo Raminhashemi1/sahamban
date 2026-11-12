@@ -104,7 +104,7 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
  assert.equal(body.proEnabled,false);
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
  assert.deepEqual(calls[0].values.slice(1,3),['SAHAMBAN_PRO_6M',8550000]);
- assert.match(calls[0].values[3],/^\\d{4}-\\d{2}-\\d{2}T/);
+ assert.match(calls[0].values[3],/^\d{4}-\d{2}-\d{2}T/);
  assert.equal(calls[0].values[4],subject);
  assert.match(calls[0].sql,/u\.auth_subject=\?/);
 });
