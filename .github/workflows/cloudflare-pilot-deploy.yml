@@ -81,23 +81,40 @@ jobs:
             echo 'AUTH_HMAC_SECRET is not provisioned in the private Worker. Refusing deployment.'
             exit 1
           }
-      - name: Abort if remote D1 already contains application tables
+      - name: Inspect D1 schema and reject incomplete installation (read-only)
+        id: schema
         shell: bash
         run: |
           set -euo pipefail
           npx wrangler d1 execute sahamban-pilot --remote --config server/wrangler.deploy.toml --json \
-            --command "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name <> '_cf_KV' LIMIT 1" > /tmp/sahamban-d1-preflight.json
+            --command "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name" > /tmp/sahamban-d1-preflight.json
           node -e '
             const fs=require("node:fs");
             const res=JSON.parse(fs.readFileSync("/tmp/sahamban-d1-preflight.json","utf8"));
             if(!Array.isArray(res)||res.length!==1||res[0].success!==true||
                !Array.isArray(res[0].results))throw Error("Cannot verify remote D1 inventory: refusing deployment");
-            if(res[0].results.length!==0)throw Error("Remote D1 already contains application tables: refusing first-time install");
-            console.log("PASS: remote D1 has no application tables; first-time installation only");
+            const names=res[0].results.map(row=>row.name);
+            if(names.some(name=>typeof name!=="string"))throw Error("Malformed remote D1 table names");
+            const required=[
+              "sahamban_users","subscription_orders","manual_bank_reconciliations",
+              "subscription_entitlements","payment_event_ledger","subscription_admin_audit",
+              "prospective_signal_runs","prospective_signal_events",
+              "prepaid_subscription_orders","prepaid_subscription_entitlements",
+              "prepaid_payment_events"
+            ];
+            const mode=names.length===0?"first_install":
+              required.every(name=>names.includes(name))?"existing":null;
+            if(mode===null)throw Error("Remote D1 has incomplete schema: refuse to migrate or deploy");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\n");
+            console.log(mode==="first_install"?
+              "PASS: empty remote D1 ready for initial schema install":
+              "PASS: existing D1 contains all required application tables; migration skipped");
           '
-      - name: Install base D1 schema remotely (owner-approved empty database only)
+      - name: Install base D1 schema remotely only on first install
+        if: steps.schema.outputs.mode == 'first_install'
         run: npx wrangler d1 execute sahamban-pilot --remote --config server/wrangler.deploy.toml --file server/d1-schema.sql --yes
-      - name: Install additive prepaid D1 schema before deploying current Worker
+      - name: Install additive prepaid D1 schema only on first install
+        if: steps.schema.outputs.mode == 'first_install'
         run: npx wrangler d1 execute sahamban-pilot --remote --config server/wrangler.deploy.toml --file server/d1-prepaid-migration.sql --yes
       - name: Deploy pilot only, orders and checkout disabled
         run: npx wrangler deploy --config server/wrangler.deploy.toml
