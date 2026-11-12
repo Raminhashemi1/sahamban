@@ -19,6 +19,27 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
  assert.ok(!java.includes('addJavascriptInterface'));
 });
 
+test('native backup export is origin-scoped, user-selected and has no broad JS file bridge',()=>{
+ const bridge=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportBridge.java');
+ const policy=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportPolicy.java');
+ const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ const deps=read('android-pilot/app/build.gradle');
+ for(const required of [
+  'WebViewCompat.addWebMessageListener', 'WEB_MESSAGE_LISTENER',
+  'sourceOrigin.toString()', 'isMainFrame', 'requestId',
+  'ACTION_CREATE_DOCUMENT', 'CATEGORY_OPENABLE', 'openOutputStream',
+  'MAX_MESSAGE_CHARS', 'MAX_JSON_BYTES', 'content.getBytes',
+  'try (OutputStream', '"saved"'])
+  assert.ok((bridge+policy).includes(required),required);
+ assert.ok(policy.includes('TrustedNavigation.isInternal(pageUrl)'));
+ assert.ok(policy.includes('https://raminhashemi1.github.io'));
+ assert.ok(!bridge.includes('addJavascriptInterface'));
+ assert.ok(activity.includes('backupExport.install()'));
+ assert.ok(activity.includes('backupExport.onActivityResult('));
+ assert.match(deps,/androidx\.webkit:webkit:1\.14\.0/);
+ assert.match(read('.github/workflows/android-pilot-debug.yml'),/BackupExportPolicyTest/);
+});
+
 test('debug APK has a temporary identity, no production signing and no checkout',()=>{
  const build=read('android-pilot/app/build.gradle');
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
