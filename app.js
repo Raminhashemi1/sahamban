@@ -347,15 +347,16 @@ function validatePortfolioBackup(record){
  if(risk<=0||risk>100||stress<0||stress>100||cap<1||cap>100)throw Error('تنظیمات ریسک یا تمرکز فایل معتبر نیستند.');
  return {version:2,data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration};
 }
-$('portfolioBackup').addEventListener('click',()=>{
+$('portfolioBackup').addEventListener('click',async()=>{
  try{
   const snapshot=portfolioSnapshot();
   const valid=validatePortfolioBackup({version:2,...snapshot});
-  const blob=new Blob([JSON.stringify({format:'sahamban-portfolio',version:2,...valid,exportedAt:new Date().toISOString()},null,2)],{type:'application/json;charset=utf-8'});
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='sahamban-portfolio-backup.json';
-  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  $('portfolioBackupStatus').textContent='درخواست دانلود پشتیبان سبد ارسال شد، اما ذخیره‌شدن فایل تأیید نشده است. وجود فایل sahamban-portfolio-backup.json را در دستگاه بررسی کنید و پیش از حذف داده‌ها، بازیابی آزمایشی انجام دهید.';
+  const content=JSON.stringify({format:'sahamban-portfolio',version:2,...valid,exportedAt:new Date().toISOString()},null,2);
+  const client=window.SahambanBackupExportClient;
+  if(!client)throw Error('ماژول امن خروجی فایل بارگذاری نشده است.');
+  const filename='sahamban-portfolio-backup.json';
+  const result=await client.save(window,filename,content);
+  $('portfolioBackupStatus').textContent=client.message(result,filename);
  }catch(e){$('portfolioBackupStatus').textContent='پشتیبان‌گیری انجام نشد: '+e.message;}
 });
 $('portfolioBackupFile').addEventListener('change',async()=>{
