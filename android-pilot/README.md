@@ -61,6 +61,39 @@ javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/
 java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
 ```
 
+## Debug-only offline backup self-test (v0.3.0-pilot)
+
+The **debug APK now has a second launcher** named «سهام‌بان - آزمون پشتیبان ساختگی».
+This test activity is **not present in release builds**. The main app launcher
+still opens the published public PWA. The second launcher uses bundled synthetic
+HTML via `loadDataWithBaseURL()` on the exact allowed HTTPS origin/path; it
+blocks network requests, disables DOM storage, and does not read PWA holdings,
+accounts or settings. No server, authentication, checkout or broker data is used.
+
+To test on a real Android device without modifying GitHub Pages:
+
+1. Install the latest **debug** APK artifact from the Android CI run. If Android
+   refuses an update because a previous CI runner generated a different debug
+   signing certificate, uninstall only the old **test-only** `ir.sahamban.pilot`
+   application *after checking it has no personal data*. **Never uninstall or
+   wipe Chrome or your existing PWA**.
+2. Launch **«سهام‌بان - آزمون پشتیبان ساختگی»** (not the main app launcher).
+3. Choose «ذخیره پشتیبان محلی ساختگی», confirm Android's Create Document picker,
+   choose a directory and save the JSON.
+4. Tap «انتخاب فایل JSON ذخیره‌شده», select the exact file just saved and inspect
+   the resulting `PASS` or `FAIL`. The saved sample includes a fresh random
+   nonce, so an older file from another attempt cannot pass.
+5. Repeat for «ذخیره پشتیبان سبد ریسک ساختگی». Also try cancelling the picker,
+   then selecting a stale JSON: this must **not** show PASS.
+6. Repeat with the phone offline (airplane mode), since the fixture is bundled.
+   Record date, device/Android/WebView versions and only PASS/FAIL outcomes;
+   do **not** upload financial content or the JSON to GitHub.
+
+This is a **native WebMessage + Android file picker + JSON readback diagnostic**
+only; it is not a full integration test of live PWA storage, portfolio
+import/export, or its JS asset versions. The real PWA still needs a coordinated
+test deployment before declaring the complete backup feature accepted.
+
 ## Acceptance still required
 
 Physical Android device: PWA loading, RTL, basic navigation, browser
