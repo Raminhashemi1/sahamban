@@ -55,7 +55,7 @@
   - cacbed840b8e21df3a0500a70779bc2dafddd3ee — افزودن آزمون adapter.
   - 24508a67ce01718ec9aa999ccbeb00502198d1d2 — اتصال آزمون به Smoke workflow.
   - 0c1b8ded749df903d55db1855c3b1b72d3f8cbc7 — ثبت پرونده اختلاف غشهداب.
-- اجرای GitHub Actions مربوط به commit `a6d3a95b2b3196db66e894f057c8b21ff6fa1ec0`: آزمون اختصاصی `tests/tse-client-three-mode-adapter-v161.test.cjs` و syntax check ماژول هر دو موفق شدند؛ jobهای Smoke و Browser در زمان آخرین مشاهده هنوز در حال اجرا بودند. اجرای Smoke: https://github.com/Raminhashemi1/sahamban/actions/runs/43155999590.
+- اجرای GitHub Actions مربوط به commit `a6d3a95b2b3196db66e894f057c8b21ff6fa1ec0`: آزمون اختصاصی `tests/tse-client-three-mode-adapter-v161.test.cjs` و syntax check ماژول موفق شدند؛ job `smoke` با نتیجه `success` پایان یافت؛ job `browser` در آخرین مشاهده هنوز در حال اجرا بود. اجرای Smoke: https://github.com/Raminhashemi1/sahamban/actions/runs/43155999590.
 
 ## گام بعدی دقیق
 
