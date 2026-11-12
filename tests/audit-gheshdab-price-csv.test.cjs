@@ -41,3 +41,16 @@ test('Persian header ZWNJ variations are accepted but normalized duplicates are 
  const duplicated=Buffer.from('\uFEFF'+[[...h,'قیمت پایانی تعدیل\u200cشده (ریال)'],...rows.map(r=>[...r,'1'])].map(r=>r.join(',')).join('\r\n'));
  assert.throws(()=>auditCsv(duplicated),/DUPLICATE_COLUMNS/);
 });
+
+test('day four: reject fractional and unsafe trade counts rather than treating them as prices',()=>{
+ const fractional=rows.map(x=>x.slice());fractional[1][6]='16243.5';
+ assert.throws(()=>auditCsv(csv(fractional)),/INVALID_POSITIVE_INTEGER/);
+ const unsafe=rows.map(x=>x.slice());unsafe[1][6]='9007199254740992';
+ assert.throws(()=>auditCsv(csv(unsafe)),/INVALID_POSITIVE_INTEGER/);
+});
+test('day four: reject text appended after a quoted CSV field',()=>{
+ const malformed=csv().toString('utf8').replace('"غشهداب"','"غشهداب"oops');
+ // Build a quoted field explicitly because the synthetic source uses unquoted symbols.
+ const bad=csv().toString('utf8').replace('غشهداب,1399-03-03','"غشهداب"oops,1399-03-03');
+ assert.throws(()=>auditCsv(Buffer.from(bad)),/INVALID_CSV_QUOTE_TRAILING_TEXT/);
+});
