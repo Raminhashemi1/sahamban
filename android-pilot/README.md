@@ -14,9 +14,17 @@ https://raminhashemi1.github.io/sahamban/
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
   PWA or wipe its data.
-- WebView file imports use Android's system file picker. **Backup export
-  and downloads are NOT yet verified in WebView** (blob: download links may
-  not work). Test both directions before considering any real user's portfolio.
+- WebView file imports use Android's system file picker. For **supported Android System WebView**,
+  the matching PWA code now requests a JSON export through an exact-origin, main-frame
+  `WebViewCompat.addWebMessageListener` bridge. Android uses `ACTION_CREATE_DOCUMENT` so the
+  user chooses the destination; filenames and size are allowlisted (256 KiB maximum),
+  no storage permission or generic `addJavascriptInterface` is granted. This is **not**
+  an on-device PASS: saved JSON must be located and restored with a synthetic portfolio.
+  Unsupported WebViews fail closed instead of claiming a blob download succeeded.
+  **Important:** this debug APK loads the published `main` GitHub Pages PWA, not the `feta`
+  branch. The companion `native-backup-export-v1.js` and updated HTML/worker must first be
+  deployed together to the served site for end-to-end field testing; do not claim success
+  merely from a green APK build.
 - It relies on HTTPS to load the current public web app, not an embedded offline
   bundle. Service-worker/offline handling and slow networks require physical
   device validation. No injected native JavaScript interface is used.
