@@ -285,3 +285,13 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - سند شروع و موانع واقعی انتشار: [DAY-5-MARKET-RELEASE-READINESS-2026-11-12.md](./DAY-5-MARKET-RELEASE-READINESS-2026-11-12.md).
 - وضعیت صحیح: `DAY_5_RELEASE_BLOCKED_PENDING_ANDROID_ARTIFACT_AND_OWNER_EVIDENCE`. هیچ فایل امضا، حساب ناشر، ارسال مارکت یا انتشار عمومی ادعا نمی‌شود.
 - گام بعدی وابسته به مالک: تعیین وجود بسته اندروید امضاشده/پروژه wrapper بیرون از مخزن و وضعیت دسترسی به حساب‌های ناشر؛ کلیدهای خصوصی و رمزها به چت یا مخزن عمومی ارسال نشوند.
+
+
+## روز پنجم — تأیید مسیر TWA و مانع ریشه دامنه (۱۲ نوامبر ۲۰۲۶)
+
+- در چارچوب «بدون افزودن قابلیت»، راه رسمی TWA برای انتشار PWA فعلی بررسی شد؛ اطلاعیه توسعه‌دهندگان کافه‌بازار، پذیرش PWA/WebView با پروتکل TWA را گزارش می‌کند (منبع: https://t.me/s/CafeBazaarDevelopers?before=261 ).
+- Digital Asset Links در `https://raminhashemi1.github.io/.well-known/assetlinks.json` باید از **ریشه origin** پاسخ معتبر بدهد، نه از زیرشاخه `/sahamban/`. محتوا باید با نام بسته و گواهی **واقعی** امضای APK منطبق باشد. منابع: https://developers.google.com/digital-asset-links/v1/create-statement و https://developer.chrome.com/docs/android/trusted-web-activity/android-for-web-devs .
+- مخزن عمومی User Pages با نام `Raminhashemi1/Raminhashemi1.github.io` در GitHub API با `404` پاسخ داد؛ قابلیت انتشار فایل در ریشه دامنه فعلی **هنوز اثبات نشده**، نه اینکه لزوماً غیرممکن باشد. واکشی مستقیم assetlinks نیز نتیجه قاطع نداشت.
+- فرایند دقیق پذیرش TWA در پنل مایکت از منابع عمومی به‌طور قطعی تأیید نشد؛ با فرض قطعی وارد ساخت بسته یا انتشار نشویم.
+- گزارش ممیزی [DAY-5-MARKET-RELEASE-READINESS-2026-11-12.md](./DAY-5-MARKET-RELEASE-READINESS-2026-11-12.md) با موانع فنی TWA تکمیل شد. هیچ APK، AAB، امضای برنامه یا بارگذاری مارکت انجام نشد؛ توسعه ویژگی جدید هم انجام نشده است.
+- گام وابسته به مالک: انتخاب روش کنترل ریشه origin (دامنه اختصاصی یا User Pages) و تأیید دسترسی ناشر مایکت/بازار و وجود یا نبود بسته/کلید امضای قبلی. کلید یا رمز در چت/مخزن عمومی وارد نشود. وضعیت روز پنجم همچنان `DAY_5_RELEASE_BLOCKED_PENDING_ANDROID_ARTIFACT_AND_OWNER_EVIDENCE` است.
