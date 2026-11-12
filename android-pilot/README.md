@@ -25,6 +25,10 @@ https://raminhashemi1.github.io/sahamban/
   fails closed instead of reporting a confirmed save. This is **not** an on-device
   PASS: saved JSON must still be located and restored with a synthetic portfolio.
   Unsupported WebViews fail closed instead of claiming a blob download succeeded.
+  The web portfolio-backup import limit now shares the export client's 256 KiB byte cap,
+  avoiding the former 30 KB import-only rejection for valid UTF-8 Persian JSON. The
+  native request listener also has a five-minute fail-closed timeout and is removed
+  on completion; a timeout never means the file was saved.
   **Important:** this debug APK loads the published `main` GitHub Pages PWA, not the `feta`
   branch. The companion `native-backup-export-v1.js` and updated HTML/worker must first be
   deployed together to the served site for end-to-end field testing; do not claim success
