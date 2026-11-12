@@ -186,3 +186,12 @@ executes real SQLite constraints and tests duplicate credits, race protection,
 renewal, suspension and rollback at each failure stage. Bank-credit validation
 and admin authentication must be implemented with trusted external systems
 before use. No live payment or free cloud service has been enabled.
+
+
+## Prepaid four-tier Pro access (new, not deployed)
+
+- `prepaid-plans.cjs` contains the provider-neutral 3/6/9/12 Gregorian-calendar-month plan rules and exact launch prices in IRR. It is pure business logic; its verification callback is only a seam for a future trusted provider adapter, not proof of payment.
+- `d1-prepaid-migration.sql` is an additive migration for prepaid orders, entitlement dates and provider event deduplication. It deliberately leaves the legacy annual schema intact. Apply only to a private D1 database after backup and migration review.
+- `prepaid-access-gate.cjs` is a read-only, fail-closed authorization query for the new prepaid entitlement table. The caller must pass an authentication subject independently verified by a real identity provider. Never accept a browser-supplied account ID as identity.
+- `tests/prepaid-plans.test.cjs`, `tests/d1-prepaid-migration.test.py`, and `tests/prepaid-access-gate.test.cjs` cover plan math, schema constraints, replay prevention and authorization denial cases. The new access-gate CI run is pending at time of this update: https://github.com/Raminhashemi1/sahamban/actions/runs/43248190028 .
+- No public API route, login system, provider verification adapter, refund processor, D1 deployment or frontend premium lock is connected yet. This is intentional: never unlock Pro from client-side state or a simulated callback. Keep checkout disabled until a trusted identity, provider-specific verification and atomic order/entitlement transaction are implemented and tested.
