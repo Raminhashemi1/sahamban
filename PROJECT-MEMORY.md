@@ -594,3 +594,12 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - اجرای Cloudflare Worker build verification برای commit `9aad3186` با موفقیت کامل شد: https://github.com/Raminhashemi1/sahamban/actions/runs/43250756128 . این اجرا شامل تست‌های امنیتی، bundle dry-run، اعمال schema سالانه موجود روی D1 محلی و تست‌های runtime/چرخه سفارش آزمایشی بوده است.
 - Smoke CI برای همان commit هنگام ثبت هنوز in progress است: https://github.com/Raminhashemi1/sahamban/actions/runs/43250756345 .
 - این فقط Worker آزمایشی است: D1 چهارپلن هنوز در D1 خصوصی واقعی اعمال نشده؛ هویت HMAC آزمایشی، درگاه/تأیید provider، refund/chargeback و frontend خرید هنوز آماده عرضه عمومی نیستند. پرچم خاموش باقی می‌ماند؛ هیچ deploy یا فروش واقعی انجام نشده است.
+
+
+## ادامه اجرا — اتصال اعتبار چهارپلن به دروازه دسترسی و آزمون D1 (۱۲ نوامبر ۲۰۲۶)
+
+- Worker entitlement lookup اکنون بین اعتبار قدیمی سالانه و `prepaid_subscription_entitlements` مقایسه می‌کند و تاریخ معتبرِ دیرتر را برای دسترسی Pro برمی‌گرداند.
+- آزمون HTTP+D1 محلی گسترش یافت: migration چهارپلن روی D1 محلی اعمال می‌شود؛ مسیر POST/GET سفارش چهارپلن، مبلغ سمت سرور، عدم پذیرش مبلغ کلاینت، جلوگیری از سفارش معلق تکراری، و عدم اعطای دسترسی با ایجاد سفارش بررسی می‌شوند.
+- workflow ساخت Worker یک مرحله اجرای چرخه سفارش چهارپلن روی D1 محلی دریافت کرد. پرچم فعال‌سازی فقط در اجرای آزمایشی CI از طریق متغیر محیطی روشن می‌شود؛ تنظیم محلی و حالت پیش‌فرض همچنان خاموش‌اند.
+- اجرای Worker build برای commit `1bd592c7` در زمان ثبت queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43251429704 . اجرای بعدی روی commit `241c1fdc` نیز پس از ثبت مستندات آغاز می‌شود.
+- این تغییرات هنوز checkout، gateway verification یا refund/chargeback را فعال نمی‌کنند. migration فقط در D1 محلی CI اعمال می‌شود، نه دیتابیس خصوصی واقعی؛ deploy عمومی انجام نشده است.
