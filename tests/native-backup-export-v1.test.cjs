@@ -54,3 +54,19 @@ test('rejects non-allowlisted filenames and oversize payloads before any native 
  await assert.rejects(client.save(win,'sahamban-local-backup-v1.json','x'.repeat(client.MAX_BYTES+1)),/حجم پشتیبان/);
  assert.equal(nativeCalled,false);
 });
+
+test('portfolio restore shares the export byte limit, including UTF-8 Persian content',()=>{
+ const fs=require('node:fs');
+ const app=fs.readFileSync('app.js','utf8');
+ assert.match(app,/const maxBackupBytes=window\.SahambanBackupExportClient\?\.MAX_BYTES\?\?256\*1024/);
+ assert.match(app,/if\(file\.size>maxBackupBytes\)/);
+ assert.doesNotMatch(app,/file\.size>30000/);
+ const json=JSON.stringify({
+  format:'sahamban-portfolio',version:2,
+  data:'ف'.repeat(15000),capital:'20000',riskCap:'5',
+  stress:'10',concentration:'30'
+ });
+ const byteLength=Buffer.byteLength(json,'utf8');
+ assert.ok(byteLength>30000,'regression fixture must exceed the old 30 KB cap');
+ assert.ok(byteLength<=client.MAX_BYTES,'fixture must remain within the shared 256 KiB cap');
+});
