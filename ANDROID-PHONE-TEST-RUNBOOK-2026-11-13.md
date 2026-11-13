@@ -31,6 +31,8 @@
 
 ۸. نمایش فارسی، لمس دکمه‌ها، بزرگ‌نمایی فونت و در صورت امکان TalkBack فارسی را بررسی کنید.
 
+**قدم مستقل بعدی برای TalkBack (آزمون دسترس‌پذیری):** در همان صفحه آزمایشی، TalkBack را از تنظیمات دسترس‌پذیری Android فعال کنید. بدون ذخیرهٔ فایل جدید و بدون استفاده از داده واقعی، صرفاً روی دو دکمه «ذخیره پشتیبان محلی ساختگی» و «ذخیره پشتیبان سبد ریسک ساختگی» و کنترل «انتخاب فایل JSON ذخیره‌شده» فوکوس کنید؛ بررسی کنید که برچسب‌های فارسی هر سه واضح و به‌ترتیب قابل فهم خوانده می‌شوند. **PASS فقط با گزارش واقعی گوشی** ثبت شود. پس از آزمون TalkBack را خاموش کنید. بررسی بزرگ‌نمایی فونت و بازیابی واقعی PWA هنوز مستقل و باز است.
+
 ## گزارش مختصر (بدون داده حساس)
 
 | آزمون | نتیجه PASS / FAIL / UNVERIFIED | توضیح کوتاه غیرحساس |
@@ -42,7 +44,7 @@
 | انتخاب و بازخوانی فایل سبد ریسک | **PASS** | فایل همان تلاش و پیام سبز تطبیق دقیق در تصویر کاربر |
 | لغو ذخیره، بدون PASS | **PASS محدود** | تصویر جدید کاربر: «ذخیره لغو شد. PASS ثبت نشده است.»؛ مشاهده پنجره SAF و نبود فایل روی دیسک از خود تصویر اثبات نمی‌شود |
 | فایل قدیمی، بدون PASS اشتباه | UNVERIFIED | |
-| آزمون در حالت پرواز | **تطبیق فایل PASS؛ وضعیت شبکه UNVERIFIED** | فایل ساختگی `test-offline-1.json` با پیام سبز PASS بازخوانی شد؛ در تصویر نشانه روشن‌بودن حالت پرواز وجود ندارد |
+| آزمون در حالت پرواز | **PASS محدود؛ حالت پرواز با تأیید کاربر** | `test-offline-1.json` با تطبیق دقیق PASS شد؛ کاربر تأیید کرد حالت پرواز در تمام مدت ذخیره و بازخوانی روشن بوده است؛ وضعیت شبکه مستقلاً ابزارسنجی نشده |
 | فارسی/فونت/TalkBack | UNVERIFIED | |
 
 **قالب گزارش:** مدل گوشی، Android، WebView/Chrome، شماره نسخه APK و وضعیت هر مورد. در صورت خطا فقط متن خطا/شماره مرحله را بفرستید، نه فایل JSON یا تصویر اطلاعات مالی.
@@ -78,3 +80,11 @@
 - **Non-duplication:** The previous fresh local/risk synthetic file readback PASS and physical cancel no-false-PASS are already logged; no rerun, new test case, code fix or APK replacement was needed for this result. The screenshot itself and JSON content are **not** committed to the public repository. The exact APK version is still not independently identifiable from the image.
 - **GitHub baseline before this docs commit:** `feta` PR #166 head `557be2aba605509bc64a6e4aa4d6e3a9980c4f15` OPEN/Draft/unmerged; **12/12 checks success and 11/11 workflow runs success** on that exact SHA, no failures or pending. Do not apply this CI verdict to subsequent documentation SHA until checked.
 - **Next single question:** Ask whether **airplane mode was actually ON during saving AND reselecting `test-offline-1.json`**. Once answered, append the measured outcome rather than performing the test again. Further Day 4 real-device accessibility/TalkBack and true PWA backup/restore remain independently `UNVERIFIED`; `MARKET_RELEASE_BLOCKED`. Issue #167 stays open, PR #166 stays Draft; no merge, deploy, trades, holdings changes, or live-user data.
+
+## 2026-11-13 — User confirms airplane mode ON for exact offline synthetic roundtrip
+- **New field attestation (user statement):** `بله، حالت پرواز گوشی در تمام مدت ذخیره و بازخوانی فایل test-offline-1.json روشن بود.` This explicitly answers the sole network-state uncertainty recorded in the previous checkpoint for the **same existing attempt**, not a newly repeated test.
+- **Paired evidence:** the previous user screenshot visibly showed `test-offline-1.json` and the green **exact-content/nonce readback PASS** in the isolated Android debug fixture. The user's subsequent explicit confirmation covers the **entire save + select/readback interval**. Classify `SYNTHETIC_LOCAL_OFFLINE_SAF_ROUNDTRIP=PASS_USER_ATTESTED` and `AIRPLANE_MODE_DURING_ROUNDTRIP=USER_CONFIRMED`. This is **limited real-device self-reported network-state field evidence**, not independent radio/network instrumentation and **not** proof that the real PWA works offline.
+- **Live GitHub pre-write:** PR #166 `feta` HEAD `102c2b092718bd4113c007947a705ffaaf6c429b` OPEN, Draft, unmerged; on exactly that SHA **12/12 check runs succeeded, 11/11 matching-head workflow runs succeeded**, no pending/failures. PR #164 remains a separate unmerged branch. Checks for **this documentation commit** must be evaluated separately.
+- **No repeat/no implementation:** native SAF, synthetic local/risk save+readback, cancellation no-false-PASS and the same offline `test-offline-1.json` readback were already tested/recorded. This update only resolves their remaining evidence label. No new APK build, production code, regression suite, actual financial data, user backup content or screenshot was uploaded to the public repository.
+- **Single next Day 4 field gate — Persian accessibility / TalkBack:** on the same **synthetic debug fixture**, with no real holdings or backup file, enable Android's **TalkBack** under Accessibility (menu labels vary), focus the two synthetic save buttons and the JSON file chooser without activating them, and report whether their Persian labels are **spoken clearly in an understandable order**. It is sufficient to report `PASS`, `FAIL` or `UNVERIFIED` and the affected control; do **not** assert screen-reader accessibility from automated WebKit/axe proxies. TalkBack changes touch gestures; disable it afterwards through the same system accessibility control. Font scaling and actual PWA backup/restore remain separate field gates.
+- **Release boundary unchanged:** `REAL_PWA_BACKUP_UNVERIFIED`, `PHYSICAL_DEVICE_FULL_ACCEPTANCE_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`. PR #166 remains Draft; Issue #167 remains open. No merge, main/Pages deploy, app-store publishing, signing, payment, order, signals, or holdings changes.
