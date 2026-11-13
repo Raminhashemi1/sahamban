@@ -26,11 +26,71 @@ android {
             // and never require uninstalling an existing pilot or public PWA.
             applicationIdSuffix '.restore'
         }
+        acceptance {
+            // Owner-approved debug-only, isolated real-PWA acceptance package.
+            // This is NOT a release build and never upgrades the existing pilot.
+            initWith debug
+            applicationIdSuffix '.acceptance'
+            matchingFallbacks = ['debug']
+        }
         release {
             // Never publish an unsigned/automatically debug-signed release.
             minifyEnabled false
         }
     }
+    sourceSets {
+        acceptance {
+            // Generated from first-party root assets on this exact checkout.
+            assets.srcDir layout.buildDirectory.dir('generated/acceptanceAssets')
+        }
+    }
+}
+
+// Do not include repository documents, financial evidence, or private fixture files.
+// The on-device acceptance variant gets ONLY the allowlisted top-level public
+// PWA assets, with a deterministic per-file SHA-256 manifest of actual bytes.
+tasks.register('prepareAcceptanceAssets') {
+    def repoRoot = rootProject.projectDir.parentFile
+    def outputDir = layout.buildDirectory.dir('generated/acceptanceAssets')
+    inputs.files(fileTree(repoRoot) {
+        include '*.html', '*.js', '*.css', '*.svg', '*.png', '*.webmanifest', '*.mp3', '*.ico'
+    })
+    outputs.dir(outputDir)
+    doLast {
+        def target = outputDir.get().asFile
+        project.delete(target)
+        def pwa = new File(target, 'pwa')
+        pwa.mkdirs()
+        def assets = fileTree(repoRoot) {
+            include '*.html', '*.js', '*.css', '*.svg', '*.png', '*.webmanifest', '*.mp3', '*.ico'
+        }.files.sort { it.name }
+        if (!assets.any { it.name == 'index.html' } ||
+            !assets.any { it.name == 'native-backup-export-v1.js' } ||
+            !assets.any { it.name == 'local-backup-v148.js' }) {
+            throw new GradleException('Matching isolated PWA assets missing')
+        }
+        def hashes = [:]
+        assets.each { source ->
+            byte[] bytes = source.bytes
+            new File(pwa, source.name).bytes = bytes
+            def digest = java.security.MessageDigest.getInstance('SHA-256').digest(bytes)
+            hashes[source.name] = [
+                sha256: digest.collect { String.format('%02x', it & 0xff) }.join(''),
+                bytes: bytes.length
+            ]
+        }
+        new File(target, 'acceptance-asset-manifest.json').text =
+            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                profile: 'synthetic-only-debug-acceptance',
+                path: '/sahamban/',
+                files: hashes
+            ]))
+    }
+}
+
+tasks.configureEach {
+    // Only package the snapshot on the acceptance variant; do not modify debug/release.
+    if (name == 'mergeAcceptanceAssets') dependsOn 'prepareAcceptanceAssets'
 }
 
 dependencies {
