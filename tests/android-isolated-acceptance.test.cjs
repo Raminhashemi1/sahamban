@@ -29,7 +29,7 @@ test('isolated acceptance WebView denies network and unknown assets, preserves e
   'loadDataWithBaseURL(TRUSTED, html', 'setServiceWorkerClient',
   'name.equals("sw.js")', 'SERVICE_WORKER_SHOULD_INTERCEPT_REQUEST',
   'BackupImportPolicy.acceptsContentUri', 'clips.getItemCount() == 1',
-  'FLAG_GRANT_READ_URI_PERMISSION', 'new BackupExportBridge(this, view)',
+  'FLAG_GRANT_READ_URI_PERMISSION', 'new BackupExportBridge(this, view, true)',
   'exporter.install()', 'exporter.onActivityResult',
   'localStorage.setItem', 'نماد-ساختگی-آزمایش',
   'isSelectedSyntheticOnly(selected)', 'new BackupExportBridge(this, view, true)'
