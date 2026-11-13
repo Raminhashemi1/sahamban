@@ -44,7 +44,11 @@ public final class BackupSelfTestActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(false); // No PWA data read, even by accident.
         settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
+        // Only this packaged, network-blocked DEBUG fixture may read a content://
+        // URI explicitly selected by the user through ACTION_OPEN_DOCUMENT.
+        // Without content access, WebView's <input type="file"> may be unable
+        // to read the returned SAF document and report a false restore failure.
+        settings.setAllowContentAccess(true);
         settings.setBlockNetworkLoads(true);  // Test HTML needs no remote resource.
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(false);
@@ -71,6 +75,7 @@ public final class BackupSelfTestActivity extends Activity {
                 Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 picker.addCategory(Intent.CATEGORY_OPENABLE);
                 picker.setType("application/json");
+                picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 try {
                     startActivityForResult(picker, PICK_TEST_JSON);
                 } catch (ActivityNotFoundException | SecurityException error) {
@@ -106,10 +111,15 @@ public final class BackupSelfTestActivity extends Activity {
         Uri[] selected = null;
         if (resultCode == RESULT_OK && data != null) {
             ClipData clips = data.getClipData();
-            if (clips != null && clips.getItemCount() > 0) {
-                selected = new Uri[]{clips.getItemAt(0).getUri()};
-            } else if (data.getData() != null) {
-                selected = new Uri[]{data.getData()};
+            Uri chosen = null;
+            if (clips != null && clips.getItemCount() == 1) {
+                chosen = clips.getItemAt(0).getUri();
+            } else if (clips == null) {
+                chosen = data.getData();
+            }
+            // Never pass file:// or a multi-selection into the isolated WebView.
+            if (chosen != null && "content".equals(chosen.getScheme())) {
+                selected = new Uri[]{chosen};
             }
         }
         fileCallback.onReceiveValue(selected);
