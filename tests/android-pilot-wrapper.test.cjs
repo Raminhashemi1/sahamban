@@ -71,12 +71,12 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
  for(const constraint of [
   'loadDataWithBaseURL(FIXTURE_URL', 'https://raminhashemi1.github.io/sahamban/',
   'setBlockNetworkLoads(true)', 'setDomStorageEnabled(false)',
-  'setAllowFileAccess(false)', 'setAllowContentAccess(false)',
+  'setAllowFileAccess(false)', 'setAllowContentAccess(true)',
   'setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW)',
   'new BackupExportBridge(this, webView)', 'exporter.onActivityResult(',
   'Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(activity.includes(constraint),constraint);
- assert.match(build,/versionName '0\.3\.1-pilot'/);
+ assert.match(build,/versionName '0\.3\.2-pilot'/);
  assert.match(html,/Content-Security-Policy/);
  assert.match(html,/connect-src 'none'/);
  assert.match(html,/default-src 'none'/);
@@ -93,4 +93,9 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
  assert.match(html,/فولاد,10,1200,1350,1100,1550/);
  assert.doesNotMatch(html,/\blocalStorage\b|\bsessionStorage\b|\bfetch\s*\(|\bXMLHttpRequest\b/);
  assert.doesNotMatch(activity,/setBlockNetworkLoads\(false\)|setAllowFileAccess\(true\)/);
+ assert.doesNotMatch(activity,/setAllowContentAccess\(false\)/);
+ assert.match(activity,/picker\.addFlags\(Intent\.FLAG_GRANT_READ_URI_PERMISSION\)/);
+ assert.match(activity,/"content"\.equals\(chosen\.getScheme\(\)\)/);
+ assert.match(activity,/clips\.getItemCount\(\) == 1/);
+ assert.match(activity,/setBlockNetworkLoads\(true\)/);
 });
