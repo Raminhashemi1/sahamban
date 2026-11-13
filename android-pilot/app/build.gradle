@@ -30,7 +30,7 @@ android {
             // Owner-approved debug-only, isolated real-PWA acceptance package.
             // This is NOT a release build and never upgrades the existing pilot.
             initWith debug
-            applicationIdSuffix '.acceptance'
+            applicationIdSuffix '.acceptancefix'
             matchingFallbacks = ['debug']
         }
         release {
