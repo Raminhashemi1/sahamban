@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <application
-        android:label="سهام‌بان — آزمون ایزوله"
+        android:label="سهام‌بان — آزمون ایزوله ۲"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
         tools:replace="android:label">
@@ -11,7 +11,7 @@
         <activity
             android:name=".IsolatedAcceptanceActivity"
             android:exported="true"
-            android:label="سهام‌بان — آزمون ایزوله"
+            android:label="سهام‌بان — آزمون ایزوله ۲"
             android:theme="@android:style/Theme.Material.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
