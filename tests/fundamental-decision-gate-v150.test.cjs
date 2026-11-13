@@ -128,3 +128,58 @@ test('fundamental gate forwards explicitly documented point-in-time share basis 
  assert.equal(invalid.financialRatios.valuation.ps,null);
  assert.ok(invalid.financialRatios.flags.includes('PB_PS_REQUIRE_DATED_MARKET_SHARE_BASIS'));
 });
+
+test('approved DPS stays blocked in the main fundamental gate until record-date capital shares reconcile',()=>{
+ const financial=sample();
+ Object.assign(financial,{
+  dividend_status:'APPROVED_BY_AGM',dividend_record_date:'۱۴۰۵/۰۸/۱۵',
+  dividend_approval_source_row:'مصوبه سود نقدی مجمع',dividend_approval_source_page:8,
+  dividend_record_date_source_row:'تاریخ ثبت',dividend_record_date_source_page:9
+ });
+ Object.assign(financial.fields,{
+  cash_dividend_approved_total:{amount:1500,source_row:'مبلغ سود نقدی مصوب',source_page:8},
+  dividend_eligible_shares:{amount:1500000,unit:'SHARES',source_row:'سهام مشمول سود',source_page:9}
+ });
+ const unlinked=evaluateFundamentalGate(financial,'ونوین');
+ assert.equal(unlinked.status,'FUNDAMENTAL_REVIEW_READY');
+ assert.equal(unlinked.dpsStatus,'INSUFFICIENT_EVIDENCE');
+ assert.equal(unlinked.dpsRialPerShare,null);
+ assert.ok(unlinked.dpsErrors.includes('DPS_CAPITAL_ACTION_RECONCILIATION_REQUIRED'));
+});
+
+test('main fundamental gate reports DPS only after record-date capital-action share chain matches',()=>{
+ const financial=sample();
+ Object.assign(financial,{
+  dividend_status:'APPROVED_BY_AGM',dividend_record_date:'۱۴۰۵/۰۸/۱۵',
+  dividend_approval_source_row:'مصوبه سود نقدی مجمع',dividend_approval_source_page:8,
+  dividend_record_date_source_row:'تاریخ ثبت',dividend_record_date_source_page:9
+ });
+ Object.assign(financial.fields,{
+  cash_dividend_approved_total:{amount:1500,source_row:'مبلغ سود نقدی مصوب',source_page:8},
+  dividend_eligible_shares:{amount:1500000,unit:'SHARES',source_row:'سهام مشمول سود',source_page:9}
+ });
+ const action={
+  symbol:'ونوین',tracing_no:'۱۲۳۴۵',
+  report_url:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345',
+  effective_date:'۱۴۰۵/۰۸/۱۲',document_sha256:'b'.repeat(64),original_document_read:true,
+  source_row:'مصوبه افزایش سرمایه',source_page:6,action_type:'BONUS_ISSUE',
+  pre_action_shares:1000000,post_action_shares:1500000
+ };
+ const reconciliation={
+  openingShares:1000000,openingDate:'۱۴۰۵/۰۸/۰۱',
+  openingSource:{row:'تعداد سهام در تاریخ مبنا',page:2},
+  capitalActions:[action],
+  coverageEvidence:{completeThroughRecordDate:true,sourceRow:'فهرست رویدادهای سرمایه تا تاریخ ثبت',sourcePage:5}
+ };
+ const matched=evaluateFundamentalGate(financial,'ونوین',{dividendCapitalReconciliation:reconciliation});
+ assert.equal(matched.dpsStatus,'DPS_RECONCILED_FOR_REVIEW');
+ assert.equal(matched.dpsRialPerShare,1000);
+ assert.equal(matched.dpsErrors.length,0);
+ assert.equal(matched.dpsCapitalReconciliation.comparison,'MATCH');
+ const mismatch=evaluateFundamentalGate({...financial,fields:{
+  ...financial.fields,dividend_eligible_shares:{...financial.fields.dividend_eligible_shares,amount:1400000}
+ }},'ونوین',{dividendCapitalReconciliation:reconciliation});
+ assert.equal(mismatch.dpsStatus,'INSUFFICIENT_EVIDENCE');
+ assert.equal(mismatch.dpsRialPerShare,null);
+ assert.ok(mismatch.dpsErrors.includes('DIVIDEND_SHARE_RECONCILIATION_REQUIRED'));
+});
