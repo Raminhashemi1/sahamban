@@ -264,3 +264,39 @@ test('real local PWA UI uses native WebMessage export and restores synthetic JSO
  assert.equal(listeners.size,0);
  assert.deepEqual(ui.state.dump(),before,'native cancellation must not alter PWA data');
 });
+
+
+test('native saved status is replaced by later import preview in the same UI status field',async()=>{
+ const client=require('../native-backup-export-v1.js');
+ const synthetic=JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'});
+ const h=uiHarness({'sahamban-v1':synthetic});
+ const replies=new Set(),requests=[];
+ h.fakeWin.SahambanBackupExportClient=client;
+ h.fakeWin.navigator={userAgent:'SahambanPilotWebView/1'};
+ h.fakeWin.setTimeout=()=>17;
+ h.fakeWin.clearTimeout=()=>{};
+ h.fakeWin.SahambanBackupExport={
+  addEventListener(kind,fn){assert.equal(kind,'message');replies.add(fn);},
+  removeEventListener(kind,fn){assert.equal(kind,'message');replies.delete(fn);},
+  postMessage(raw){requests.push(JSON.parse(raw));}
+ };
+ const before=h.state.dump();
+ const pending=h.fire('sb148Export');
+ assert.equal(requests.length,1);
+ for(const fn of [...replies])fn({data:JSON.stringify({
+  protocol:'sahamban-backup-result-v1',requestId:requests[0].requestId,status:'saved'
+ })});
+ await pending;
+ assert.match(h.element('sb148Status').textContent,/اندروید پایان نوشتن فایل/);
+ assert.deepEqual(h.state.dump(),before);
+ h.element('sb148File').files=[{
+  size:Buffer.byteLength(requests[0].content,'utf8'),
+  text:async()=>requests[0].content
+ }];
+ await h.fire('sb148File','change');
+ assert.match(h.element('sb148Status').textContent,/فایل معتبر است: 1 بخش/);
+ assert.match(h.element('sb148Status').textContent,/هنوز جایگزین نشده/);
+ assert.doesNotMatch(h.element('sb148Status').textContent,/اندروید پایان نوشتن فایل/);
+ assert.deepEqual(h.state.dump(),before,'preview must not write any local data');
+ assert.equal(replies.size,0,'native message listener must be cleaned up');
+});
