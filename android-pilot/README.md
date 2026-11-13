@@ -69,14 +69,18 @@ javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/
 java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
 ```
 
-## Debug-only offline backup self-test (v0.3.1-pilot)
+## Debug-only offline backup self-test (v0.3.2-pilot)
 
 The **debug APK now has a second launcher** named «سهام‌بان - آزمون پشتیبان ساختگی».
 This test activity is **not present in release builds**. The main app launcher
 still opens the published public PWA. The second launcher uses bundled synthetic
 HTML via `loadDataWithBaseURL()` on the exact allowed HTTPS origin/path; it
 blocks network requests, disables DOM storage, and does not read PWA holdings,
-accounts or settings. No server, authentication, checkout or broker data is used.
+accounts or settings. The debug-only WebView permits content:// reads solely to
+support the Android file chooser after the user explicitly chooses a JSON file;
+it continues to prohibit file:// access, network loads and navigation. The
+picker grants transient read access and rejects non-content:// / multi-file
+results. No server, authentication, checkout or broker data is used.
 
 To test on a real Android device without modifying GitHub Pages:
 
