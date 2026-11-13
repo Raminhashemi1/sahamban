@@ -59,6 +59,7 @@ jobs:
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
           "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.acceptance'"
+          "$AAPT" dump badging "$APK" | grep -F "launchable-activity: name='ir.sahamban.pilot.IsolatedAcceptanceActivity'"
           unzip -Z1 "$APK" | grep -Fx 'assets/pwa/index.html'
           unzip -Z1 "$APK" | grep -Fx 'assets/pwa/native-backup-export-v1.js'
           unzip -Z1 "$APK" | grep -Fx 'assets/acceptance-asset-manifest.json'
@@ -74,7 +75,9 @@ jobs:
           with zipfile.ZipFile(apk) as z:
               manifest=json.loads(z.read('assets/acceptance-asset-manifest.json'))
               assert manifest['profile']=='synthetic-only-debug-acceptance'
+              assert manifest['sourceCommit']=='${{ github.sha }}'
               assert len(manifest['files']) >= 50
+              assert manifest['files']['native-backup-export-v1.js']['mime']=='application/javascript'
               for name, evidence in manifest['files'].items():
                   data=z.read('assets/pwa/'+name)
                   assert len(data)==evidence['bytes'], name
