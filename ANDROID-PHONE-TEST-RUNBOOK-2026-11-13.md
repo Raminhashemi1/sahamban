@@ -2,7 +2,7 @@
 
 **تاریخ تهیه:** ۱۳ نوامبر ۲۰۲۶  
 **شاخه:** `feta`  
-**وضعیت پذیرش فعلی:** `PHYSICAL_DEVICE_UNVERIFIED`، `REAL_PWA_BACKUP_UNVERIFIED`، `MARKET_RELEASE_BLOCKED`
+**وضعیت پذیرش فعلی:** `PHYSICAL_DEVICE_PARTIAL_ACCEPTANCE=PASS_LOCAL_AND_RISK_SYNTHETIC`، `EXACT_APK_VERSION_FROM_SCREENSHOT_UNVERIFIED`، `REAL_PWA_BACKUP_UNVERIFIED`، `MARKET_RELEASE_BLOCKED`
 
 این راهنما فقط برای APK دیباگ آزمایشی با شناسه مستقل `ir.sahamban.pilot.retest` و فایل‌های **ساختگی** است. هیچ‌گاه اطلاعات واقعی سبد، رمز، کد ملی، اطلاعات بانکی یا فایل JSON کاربران را در گزارش GitHub قرار ندهید. صفحه آزمایش دوم هیچ ارتباطی به اطلاعات موجود در Chrome/PWA ندارد.
 
@@ -35,7 +35,7 @@
 
 | آزمون | نتیجه PASS / FAIL / UNVERIFIED | توضیح کوتاه غیرحساس |
 | --- | --- | --- |
-| نصب نسخه مستقل 0.3.4 و بازشدن آیکن آزمون | UNVERIFIED | |
+| اجرای صفحهٔ آزمون ساختگی روی گوشی | **PASS محدود** | Samsung S23 FE؛ اجرای صفحه و دو خروجی PASS مشاهده شد؛ **نسخه دقیق نصب‌شده 0.3.4 در خود تصویر تأیید نشده است** |
 | ذخیره پشتیبان محلی | **PASS** | Samsung S23 FE؛ پیام موفق native و سپس PASS نهایی در تصویر کاربر |
 | انتخاب و بازخوانی فایل محلی | **PASS** | فایل JSON یکتای همان تلاش؛ تطبیق دقیق متن و nonce در تصویر |
 | ذخیره پشتیبان سبد ریسک | **PASS** | Samsung S23 FE؛ فایل ساختگی `test-risk-6.json` و پیام موفق Native |
@@ -55,3 +55,11 @@
 
 
 **یادداشت میدانی ۱۳ نوامبر:** هر دو مسیر پشتیبان **محلی** (`test-ramin-5.json`) و **سبد ریسک** (`test-risk-6.json`) با فایل تازه و یکتا روی Samsung S23 FE و پیام سبز PASS تأیید شدند. انتخاب فایل قدیمی/نامرتبط قبلاً FAIL داد. موارد لغو، آفلاین، TalkBack و آزمون E2E نسخه وب واقعی PWA همچنان UNVERIFIED هستند. نتیجه دستگاه به معنی آمادگی انتشار مارکت نیست.
+
+
+## 2026-11-13 — exact-head CI and physical-negative-path continuation checkpoint
+- Live GitHub PR #166 `feta` HEAD before this documentation update: `1ec03b178dfb24e723866fee41aaa9b97820c4ff`, OPEN / Draft / unmerged. **12/12 exact-head check runs and 11/11 matching-head PR workflows completed/success**. Related PR #164 HEAD `e8d4253bbcf76ee01ef2c21a6598a50e3576145c`: **14/14 checks and 13/13 workflows completed/success**, OPEN / non-Draft / unmerged. Do **not** transfer those green results to the new documentation commit; query its own SHA.
+- Examined **existing** Java `BackupExportBridge.onActivityResult` cancellation (result != RESULT_OK returns `cancelled`), debug fixture `savedContent=null` reset and terminal `cancelled` message, and already-existing `tests/android-backup-self-test.test.cjs` cancelled/failed case. The **synthetic unit-level fail-closed guard is already present**; no code/tests/Android APK rebuilt or retested here.
+- Two real-device **limited** synthetic local + risk file save/exact readback PASS reports for Samsung S23 FE remain preserved from earlier user evidence. Running the fixture implies a test UI ran on the device; **the exact 0.3.4 package/version is not proven by the screenshot alone**. No user-supplied new physical result in this session: Cancel on real SAF picker, offline, TalkBack/RTL, actual PWA restore and publish eligibility remain **UNVERIFIED/BLOCKED**. Previous mismatch/oversize FAILs stay attributed to their own attempts and do not count as new tests.
+- **One next device action:** without uninstalling or deleting existing PWA/data, open the installed **synthetic debug test launcher** on Samsung S23 FE, press `ذخیره پشتیبان محلی ساختگی`, then press Android **Back/Cancel** in the save-location picker **without choosing a file**. Record whether picker opened and whether UI shows `ذخیره لغو شد. PASS ثبت نشده است.` (or another exact error) and confirms **no new PASS**. Send only PASS/FAIL and non-sensitive error text; **do not send any JSON, holdings, identifiers, or actual saved file**. A clean CANCEL on physical phone is required to promote this specific field gate; no automatic inference from CI.
+- Safety: `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`; Issue #167 stays OPEN and PR #166 stays Draft. No main merge, public deployment, app-store publication, order, payment, holdings edit, or sensitive upload. Changes are documentation/status only, and must be logged in current SHA's CI after writing.

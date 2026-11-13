@@ -1,6 +1,6 @@
 # چک‌لیست پذیرش بسته آزمایشی اندروید سهام‌بان
 
-**وضعیت:** APK آزمایشی ساخته شده؛ پذیرش دستگاه واقعی هنوز انجام نشده است.
+**وضعیت روزآمد:** آزمون واقعی **محدود** روی Samsung S23 FE برای دو فایل JSON ساختگی local و risk با بازخوانی دقیق PASS شده است؛ آزمون لغو ذخیره/آفلاین/TalkBack و یکپارچگی PWA واقعی انجام یا تأیید نشده است. پذیرش کامل فیزیکی و عرضه همچنان مسدود است. بخش‌های بعدی این سند تاریخچهٔ زمانی مراحل قبلی‌اند.
 
 ## شاهد ساخت
 
@@ -133,3 +133,11 @@
 - وضعیت مسیر پشتیبان محلی نیز از آزمون قبلی **PASS** است (فایل `test-ramin-5.json`). در نتیجه **هر دو مسیر ساختگی local و risk** در گوشی آزمایش‌شده PASS دارند؛ خطاهای قبلی انتخاب فایل اشتباه/قدیمی و جست‌وجوی ناموفق محفوظ‌اند و نتیجه نهایی آن‌ها را با موفقیت اجرای تازه اشتباه نکنید.
 - **محدوده:** نسخه دقیق APK در خود تصویر مشخص نیست؛ استفاده از پایلوت نصب مستقل 0.3.4 از گفتگو استنباط می‌شود، نه از متادیتای تصویر. هیچ نمونه واقعی سهام‌بان، بازیابی در PWA اصلی، شواهد تست لغو انتخابگر، آفلاین، TalkBack فارسی، Android OS/WebView version و انتشار مارکت هنوز تأیید نشده‌اند. `PHYSICAL_DEVICE_PARTIAL_ACCEPTANCE=PASS_LOCAL_AND_RISK_SYNTHETIC` ولی `REAL_PWA_BACKUP_UNVERIFIED` و `MARKET_RELEASE_BLOCKED`.
 - **مرحله بعدی** فقط در صورت تمایل کاربر: بررسی لغو ذخیره (`Cancel` بدون `PASS`) و سپس آزمون آفلاین/دسترس‌پذیری با فایل ساختگی؛ برنامه‌ها و فایل‌های قبلی حذف نشوند، `main` تغییر نکند، PR #166 Draft و Issue #167 باز بمانند.
+
+
+## 2026-11-13 — exact-head CI and physical-negative-path continuation checkpoint
+- Live GitHub PR #166 `feta` HEAD before this documentation update: `1ec03b178dfb24e723866fee41aaa9b97820c4ff`, OPEN / Draft / unmerged. **12/12 exact-head check runs and 11/11 matching-head PR workflows completed/success**. Related PR #164 HEAD `e8d4253bbcf76ee01ef2c21a6598a50e3576145c`: **14/14 checks and 13/13 workflows completed/success**, OPEN / non-Draft / unmerged. Do **not** transfer those green results to the new documentation commit; query its own SHA.
+- Examined **existing** Java `BackupExportBridge.onActivityResult` cancellation (result != RESULT_OK returns `cancelled`), debug fixture `savedContent=null` reset and terminal `cancelled` message, and already-existing `tests/android-backup-self-test.test.cjs` cancelled/failed case. The **synthetic unit-level fail-closed guard is already present**; no code/tests/Android APK rebuilt or retested here.
+- Two real-device **limited** synthetic local + risk file save/exact readback PASS reports for Samsung S23 FE remain preserved from earlier user evidence. Running the fixture implies a test UI ran on the device; **the exact 0.3.4 package/version is not proven by the screenshot alone**. No user-supplied new physical result in this session: Cancel on real SAF picker, offline, TalkBack/RTL, actual PWA restore and publish eligibility remain **UNVERIFIED/BLOCKED**. Previous mismatch/oversize FAILs stay attributed to their own attempts and do not count as new tests.
+- **One next device action:** without uninstalling or deleting existing PWA/data, open the installed **synthetic debug test launcher** on Samsung S23 FE, press `ذخیره پشتیبان محلی ساختگی`, then press Android **Back/Cancel** in the save-location picker **without choosing a file**. Record whether picker opened and whether UI shows `ذخیره لغو شد. PASS ثبت نشده است.` (or another exact error) and confirms **no new PASS**. Send only PASS/FAIL and non-sensitive error text; **do not send any JSON, holdings, identifiers, or actual saved file**. A clean CANCEL on physical phone is required to promote this specific field gate; no automatic inference from CI.
+- Safety: `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`; Issue #167 stays OPEN and PR #166 stays Draft. No main merge, public deployment, app-store publication, order, payment, holdings edit, or sensitive upload. Changes are documentation/status only, and must be logged in current SHA's CI after writing.
