@@ -7,7 +7,7 @@ const read=p=>fs.readFileSync(p,'utf8');
 test('acceptance variant has separate identity and no release-side source or signing change',()=>{
  const gradle=read('android-pilot/app/build.gradle');
  const manifest=read('android-pilot/app/src/acceptance/AndroidManifest.xml');
- assert.match(gradle,/acceptance\s*\{[\s\S]*applicationIdSuffix '\.acceptance'/);
+ assert.match(gradle,/acceptance\s*\{[\s\S]*applicationIdSuffix '\.acceptancefix'/);
  assert.match(gradle,/assets\.srcDir layout\.buildDirectory\.dir\('generated\/acceptanceAssets'\)/);
  assert.match(manifest,/android:name="\.MainActivity" android:enabled="false"/);
  assert.match(manifest,/android:name="\.IsolatedAcceptanceActivity"/);
@@ -32,7 +32,7 @@ test('isolated acceptance WebView denies network and unknown assets, preserves e
   'FLAG_GRANT_READ_URI_PERMISSION', 'new BackupExportBridge(this, view, true)',
   'exporter.install()', 'exporter.onActivityResult',
   'localStorage.setItem', 'نماد-ساختگی-آزمایش',
-  'isSelectedSyntheticOnly(selected)', 'new BackupExportBridge(this, view, true)'
+  'isSelectedSyntheticOnly(selected)'
  ]) assert.ok(java.includes(required),required);
  assert.match(java,/https:\/\/raminhashemi1\.github\.io\/sahamban\//);
  assert.match(bridge,/Collections\.singleton\("https:\/\/raminhashemi1\.github\.io"\)/);
@@ -52,7 +52,7 @@ test('acceptance CI only assembles test APK with pinned asset digest audit',()=>
  assert.match(workflow,/app-acceptance\.apk/);
  assert.match(workflow,/acceptance-asset-manifest\.json/);
  assert.match(workflow,/hashlib\.sha256/);
- assert.match(workflow,/ir\.sahamban\.pilot\.acceptance/);
+ assert.match(workflow,/ir\.sahamban\.pilot\.acceptancefix/);
  assert.match(workflow,/upload-artifact/);
  assert.doesNotMatch(workflow,/assembleRelease|bundleRelease|deploy|publishRelease|marketplace/);
  const gradle=read('android-pilot/app/build.gradle');
