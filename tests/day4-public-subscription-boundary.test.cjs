@@ -2,7 +2,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const path=require('node:path');
 
 const html=fs.readFileSync('index.html','utf8');
 const worker=fs.readFileSync('sw.js','utf8');
@@ -10,6 +9,8 @@ const publicScripts=[...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/g)]
  .map(match=>match[1].split('?')[0].replace(/^\.\//,''));
 const workerAssets=[...worker.matchAll(/['"]\.\/([^'"?]+)(?:\?[^'"]*)?['"]/g)]
  .map(match=>match[1]);
+// Recognize static imports, dynamic imports, require(), and re-exports of server modules.
+const SERVER_MODULE_IMPORT=/\b(?:import\s*(?:\(\s*)?|require\s*\(\s*|from\s*)['"](?:\.\.\/|\.\/|\/)*server\//;
 
 test('public PWA HTML and service-worker assets never ship server-only payment/entitlement code',()=>{
  assert.ok(publicScripts.includes('app.js'),'public entry must actually be scanned');
@@ -31,7 +32,7 @@ test('all referenced first-party PWA scripts exist and cannot pull in server-onl
   assert.match(script,/^[A-Za-z0-9][A-Za-z0-9._-]*\.js$/,'unusual script location: '+script);
   assert.ok(fs.existsSync(script),'missing public script: '+script);
   const source=fs.readFileSync(script,'utf8');
-  assert.doesNotMatch(source,/(?:require\s*\(|import\s*\(|from\s+)(?:['"]|\s*['"])\.?\.?\/server\//,
+  assert.doesNotMatch(source,SERVER_MODULE_IMPORT,
    'server-only code imported into public script: '+script);
  }
 });
@@ -52,4 +53,25 @@ test('server payment domain logic stays dependent on verified backend inputs, no
  assert.match(entitlement,/verifyProviderEvent\(event\)!==true/);
  assert.match(gate,/WHERE u\.auth_subject = \?/);
  assert.match(gate,/NOT_AUTHENTICATED/);
+});
+
+
+test('public import guard detects relative server imports and ignores ordinary client modules',()=>{
+ const forbidden=[
+  "import '../server/subscription-entitlements.cjs'",
+  "import './server/subscription-orders.cjs'",
+  "import('/server/pro-access-gate.cjs')",
+  "const grant=require('../server/manual-subscription-settlement.cjs')",
+  "import { grant } from '../server/subscription-entitlements.cjs'",
+  "export { grant } from './server/subscription-entitlements.cjs'"
+ ];
+ for(const payload of forbidden)
+  assert.match(payload,SERVER_MODULE_IMPORT,'guard must reject: '+payload);
+ const safe=[
+  "import './local-backup-v148.js'",
+  "const helper=require('./client-module.cjs')",
+  "import {x} from '../client/safe-module.js'"
+ ];
+ for(const payload of safe)
+  assert.doesNotMatch(payload,SERVER_MODULE_IMPORT,'guard must accept: '+payload);
 });
