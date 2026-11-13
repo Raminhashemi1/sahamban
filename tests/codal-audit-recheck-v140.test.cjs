@@ -11,8 +11,8 @@ function file(bytes,name='codal.pdf'){
 }
 async function fixture(){
  const source=file(docBytes);
- const h=await orig.inspect(source,{symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
-  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'},{subtle:webcrypto.subtle});
+ const h=await orig.inspect(source,{symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'},{subtle:webcrypto.subtle});
  assert.equal(h.status,'LOCAL_FILE_FINGERPRINT_ONLY');
  const result=rows.auditPacket({fingerprint:h,periodEnd:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',auditStatus:'UNAUDITED',
  statementBasis:'STANDALONE',rows:[{metric:'net_income',amount:'1234',page:'3',sourceRow:'سود خالص'}]});
@@ -88,8 +88,8 @@ test('local UI is embedded without storage, network, or scripttag injections',()
 
 test('recheck canonicalization preserves optional AGM dividend evidence metadata',async()=>{
  const source=file(docBytes);
- const h=await orig.inspect(source,{symbol:'ونوین',tracingNo:'12345',published:'۱۴۰۵/۰۸/۱۳',
-  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=12345'},{subtle:webcrypto.subtle});
+ const h=await orig.inspect(source,{symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'},{subtle:webcrypto.subtle});
  const result=rows.auditPacket({fingerprint:h,periodEnd:'۱۴۰۵/۰۶/۳۱',unit:'MILLION_IRR',auditStatus:'AUDITED',
   statementBasis:'STANDALONE',rows:[
    {metric:'cash_dividend_approved_total',amount:'1000',page:'8',sourceRow:'کل سود نقدی مصوب'},
@@ -102,4 +102,259 @@ test('recheck canonicalization preserves optional AGM dividend evidence metadata
  const matched=await recheck.recheck(result.packet,source,{subtle:webcrypto.subtle});
  assert.equal(matched.status,'LOCAL_FILE_BYTES_MATCH');
  assert.equal(matched.figuresVerified,false);
+});
+
+function officialResponse(bytes,options={}){
+ const response=new Response(bytes,options);
+ Object.defineProperty(response,'url',{value:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d',configurable:true});
+ return response;
+}
+
+test('v152 keeps numeric TracingNo separate from opaque LetterSerial and supports CODAL download hs token',()=>{
+ const {verifiedUrl}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const token='qr1ypqX8jr8rIaRvVJxoNA==';
+ const base={symbol:'وبملت',tracingNo:'1278431',letterSerial:token,published:'۱۴۰۳/۰۹/۱۴',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&rt=3&let=6&ct=0&ft=-1'};
+ const decision=verifiedUrl(base);
+ assert.ok(decision);
+ assert.equal(decision.filing.tracingNo,'1278431');
+ assert.equal(decision.letterSerial,token);
+ const download=verifiedUrl({...base,
+  reportUrl:'https://www.codal.ir/DownloadFile.aspx?hs=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&ft=1005&let=6'});
+ assert.ok(download);
+ const wrong=verifiedUrl({...base,letterSerial:'anotherValidToken123'});
+ assert.equal(wrong,null);
+ const {letterSerial,...withoutToken}=base;
+ const noToken=verifiedUrl(withoutToken);
+ assert.equal(noToken,null);
+});
+test('v152 independently compares official-hosted response bytes but never elevates provenance to trading authorization',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const official={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const file=(()=>{const b=Buffer.from('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES');return {name:'original.pdf',size:b.length,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength)};})();
+ let requested;
+ const fetcher=async (url,opts)=>{
+  requested={url,opts};
+  return officialResponse(Buffer.from('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES'),{status:200});
+ };
+ const match=await compareRemoteCodalFile(file,official,{fetcher});
+ assert.equal(match.status,'CODAL_REMOTE_BYTES_MATCH_REVIEW_ONLY');
+ assert.equal(match.sha256,require('node:crypto').createHash('sha256').update('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES').digest('hex'));
+ for(const key of ['originVerified','figuresVerified','entryEligible','tradingSignalsEnabled'])
+  assert.equal(match[key],false);
+ assert.equal(requested.url,official.reportUrl);
+ assert.equal(requested.opts.redirect,'manual');
+ assert.equal(requested.opts.credentials,'omit');
+ assert.equal(requested.opts.cache,'no-store');
+});
+test('v152 rejects forged CODAL identity, unsafe URLs and redirect responses before any trust elevation',async()=>{
+ const {compareRemoteCodalFile,verifiedUrl}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const base={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const bytes=Buffer.from('%PDF-1.7\\nSYNTHETIC_CODAL_BYTES');
+ const file={name:'original.pdf',size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ for(const reportUrl of [
+  'https://codal.ir.evil.example/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d',
+  'http://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=otherValidToken123',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d#fragment',
+  'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d&alt=1',
+ ]){
+  assert.equal(verifiedUrl({...base,reportUrl}),null);
+  let called=0;
+  const r=await compareRemoteCodalFile(file,{...base,reportUrl},{fetcher:async()=>{called++;return officialResponse(bytes);}});
+  assert.equal(called,0);assert.equal(r.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ }
+ let redirected=await compareRemoteCodalFile(file,base,{fetcher:async()=>officialResponse(null,{status:302,headers:{location:'https://evil.example/'}})});
+ assert.equal(redirected.reason,'REMOTE_HTTP_STATUS_OR_STREAM_UNAVAILABLE');
+ assert.equal(redirected.entryEligible,false);
+});
+test('v152 rejects modified bytes, missing network and oversize remote responses without leaking any financial evidence',async()=>{
+ const {compareRemoteCodalFile,MAX_BYTES}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const bytes=Buffer.from('%PDF-1.7\\nORIGINAL');
+ const file={name:'original.pdf',size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const modified=await compareRemoteCodalFile(file,filing,{fetcher:async()=>officialResponse(Buffer.from('%PDF-1.7\\nMODIFIED'))});
+ assert.equal(modified.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ assert.equal(modified.originVerified,false);
+ const tooLong=await compareRemoteCodalFile(file,filing,{fetcher:async()=>officialResponse(bytes,{headers:{'content-length':String(MAX_BYTES+1)}})});
+ assert.equal(tooLong.reason,'REMOTE_CONTENT_LENGTH_INVALID');
+ const unavailable=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{throw Error('network offline');}});
+ assert.equal(unavailable.reason,'REMOTE_FETCH_FAILED');
+});
+
+test('v152 rejects mismatched response URLs, hidden redirects and remote bodies larger than local file',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const raw=Buffer.from('%PDF-1.7\\nORIGINAL');
+ const file={name:'original.pdf',size:raw.length,
+  arrayBuffer:async()=>raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength)};
+ const unknown=await compareRemoteCodalFile(file,filing,{fetcher:async()=>new Response(raw)});
+ assert.equal(unknown.reason,'REMOTE_RESPONSE_URL_MISMATCH');
+ const other=await compareRemoteCodalFile(file,filing,{fetcher:async()=>officialResponse(raw)});
+ assert.equal(other.status,'CODAL_REMOTE_BYTES_MATCH_REVIEW_ONLY');
+ const sneaky=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{
+  const r=officialResponse(raw);
+  Object.defineProperty(r,'url',{value:'https://attacker.example/file'});
+  return r;
+ }});
+ assert.equal(sneaky.reason,'REMOTE_RESPONSE_URL_MISMATCH');
+ const tooBig=await compareRemoteCodalFile(file,filing,{fetcher:async()=>officialResponse(Buffer.concat([raw,Buffer.from('Z')]))});
+ assert.equal(tooBig.reason,'REMOTE_STREAM_ERROR_OR_TOO_LARGE');
+ assert.equal(tooBig.entryEligible,false);
+});
+
+test('v152 bounds an unresponsive CODAL fetch even if custom fetcher ignores abort',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const data=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'x.pdf',size:data.length,arrayBuffer:async()=>data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)};
+ // AbortSignal.timeout uses an unref'ed timer; keep the synthetic test process alive.
+ const keepAlive=setTimeout(()=>{},250);
+ const start=Date.now();
+ const result=await compareRemoteCodalFile(file,filing,{fetcher:()=>new Promise(()=>{}),timeoutMs:35});
+ clearTimeout(keepAlive);
+ assert.equal(result.reason,'REMOTE_DEADLINE_EXCEEDED');
+ assert.equal(result.entryEligible,false);
+ assert.ok(Date.now()-start<3000);
+});
+test('v152 times out stalled streams and does not block on a stalled cancel',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const data=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'x.pdf',size:data.length,arrayBuffer:async()=>data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)};
+ const fetcher=async()=>{
+  const response=officialResponse(data);
+  Object.defineProperty(response,'body',{value:{getReader:()=>({
+   read:()=>new Promise(()=>{}),cancel:()=>new Promise(()=>{})
+  })}});
+  return response;
+ };
+ // AbortSignal.timeout uses an unref'ed timer; keep the synthetic test process alive.
+ const keepAlive=setTimeout(()=>{},250);
+ const start=Date.now();
+ const result=await compareRemoteCodalFile(file,filing,{fetcher,timeoutMs:35});
+ clearTimeout(keepAlive);
+ assert.equal(result.reason,'REMOTE_DEADLINE_EXCEEDED');
+ assert.equal(result.tradingSignalsEnabled,false);
+ assert.ok(Date.now()-start<3000);
+});
+
+test('v152 rejects hostile response metadata and reader failures without throwing or authorizing trading',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const cases=[
+  {get status(){throw Error('untrusted status');}},
+  {status:200,redirected:false,url:filing.reportUrl,
+   get headers(){throw Error('malformed headers')},
+   body:{getReader:()=>({read:async()=>({done:true})})}},
+  {status:200,redirected:false,url:filing.reportUrl,
+   headers:{get:()=>null},body:{getReader(){throw Error('locked reader')}}}
+ ];
+ for(const response of cases){
+  const result=await compareRemoteCodalFile(file,filing,{fetcher:async()=>response});
+  assert.equal(result.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+  assert.equal(result.originVerified,false);
+  assert.equal(result.entryEligible,false);
+ }
+});
+test('v152 rejects mismatched response URL and attempts best-effort stream cleanup',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ let cancels=0;
+ const response={status:200,redirected:false,url:'https://host.invalid/forged',
+  headers:{get:()=>null},body:{getReader:()=>({}),cancel:()=>{cancels++;return Promise.resolve()}}};
+ const r=await compareRemoteCodalFile(file,filing,{fetcher:async()=>response});
+ assert.equal(r.reason,'REMOTE_RESPONSE_URL_MISMATCH');
+ assert.equal(cancels,1);
+ assert.equal(r.tradingSignalsEnabled,false);
+});
+
+test('v152 fails closed when filing metadata or local file inspection throws',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const valid={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const hostile={get symbol(){throw Error('hostile metadata getter')}};
+ const invalid=await compareRemoteCodalFile(file,hostile,{fetcher:async()=>{throw Error('must not fetch')}});
+ assert.equal(invalid.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ assert.equal(invalid.reason,'INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');
+ const hostileFile={get size(){throw Error('hostile file getter')}};
+ const failed=await compareRemoteCodalFile(hostileFile,valid,{fetcher:async()=>{throw Error('must not fetch')}});
+ assert.equal(failed.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+ assert.equal(failed.reason,'LOCAL_FILE_INSPECTION_FAILED');
+ assert.equal(failed.entryEligible,false);
+});
+
+test('v152 fails closed when the runtime cannot provide a bounded timeout primitive',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const bytes=Buffer.from('%PDF-1.7\\nTEST');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',published:'۱۴۰۵/۰۸/۱۳',
+  reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ const file={name:'proof.pdf',size:bytes.length,
+  arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'AbortSignal');
+ try{
+  Object.defineProperty(globalThis,'AbortSignal',{configurable:true,writable:true,value:function AbortSignalUnavailable(){}});
+  let called=0;
+  const result=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{called++;return officialResponse(bytes)}});
+  assert.equal(result.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+  assert.equal(result.reason,'REMOTE_TIMEOUT_UNAVAILABLE');
+  assert.equal(result.entryEligible,false);
+  assert.equal(called,0);
+ }finally{
+  if(descriptor)Object.defineProperty(globalThis,'AbortSignal',descriptor);
+ }
+});
+
+test('v152 rejects contradictory originalUrl and reportUrl before local file reads or fetch',async()=>{
+ const {verifiedUrl,compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const correct='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d';
+ const conflicting='https://www.codal.ir/Reports/Other.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d';
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',
+  published:'۱۴۰۵/۰۸/۱۳',originalUrl:correct,reportUrl:conflicting};
+ assert.equal(verifiedUrl(filing),null);
+ let fileReads=0,networkCalls=0;
+ const file={name:'proof.pdf',size:15,arrayBuffer:async()=>{fileReads++;return new ArrayBuffer(15);}};
+ const result=await compareRemoteCodalFile(file,filing,{fetcher:async()=>{networkCalls++;throw Error('should not fetch')}});
+ assert.equal(result.reason,'INVALID_OFFICIAL_REPORT_IDENTITY_OR_URL');
+ assert.equal(fileReads,0);assert.equal(networkCalls,0);
+ assert.equal(result.entryEligible,false);
+ assert.ok(verifiedUrl({...filing,reportUrl:correct}));
+});
+
+test('v152 starts the timeout before local file inspection and bounds a stalled File read',async()=>{
+ const {compareRemoteCodalFile}=require('../codal-remote-byte-corroboration-v152.cjs');
+ const filing={symbol:'ونوین',tracingNo:'12345',letterSerial:'qr1ypqX8jr8rIaRvVJxoNA==',
+  published:'۱۴۰۵/۰۸/۱۳',reportUrl:'https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3d%3d'};
+ let networkCalls=0;
+ const file={name:'stalled.pdf',size:20,arrayBuffer:()=>new Promise(()=>{})};
+ const keepAlive=setTimeout(()=>{},500);
+ try{
+  const start=Date.now();
+  const result=await compareRemoteCodalFile(file,filing,{
+   timeoutMs:45,fetcher:async()=>{networkCalls++;throw Error('network must not be reached');}
+  });
+  assert.equal(result.status,'REMOTE_CORROBORATION_INSUFFICIENT');
+  assert.equal(result.reason,'LOCAL_FILE_INSPECTION_DEADLINE_EXCEEDED');
+  assert.equal(networkCalls,0);
+  assert.equal(result.entryEligible,false);
+  assert.ok(Date.now()-start<250,'local file inspection escaped deadline');
+ }finally{clearTimeout(keepAlive);}
 });
