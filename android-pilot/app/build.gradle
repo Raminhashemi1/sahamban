@@ -21,6 +21,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // CI debug keystores are ephemeral: avoid signature-clashing upgrades
+            // and never require uninstalling an existing pilot or public PWA.
+            applicationIdSuffix '.retest'
+        }
         release {
             // Never publish an unsigned/automatically debug-signed release.
             minifyEnabled false
