@@ -162,3 +162,7 @@ The normal «سهام‌بان» launcher is an online WebView shell. `MainActiv
 
 If the main launcher is blank, first turn airplane mode off and enable Wi-Fi or mobile data, then reopen «سهام‌بان» and wait about 20 seconds. Do not uninstall the APK, clear Chrome/app data, or select any backup file during this diagnosis. If the screen remains blank with working internet, verify the same URL in Chrome on the phone and capture the screen; investigate WebView load/TLS errors before making code changes.
 
+## Public PWA blank-screen triage after Chrome test
+
+The user reports the same public PWA URL stalls around halfway through Chrome's loading bar and leaves a white page, not only in the Android WebView. On 2026-11-12, public `main` Pages build/deploy succeeded and the public HTTPS asset inventory verified 84 first-party files from GitHub Actions. These remote runner checks do not certify a particular mobile network or execute the live site in that user's Chrome session. Before changing app code, ask whether `https://example.com` loads on the same phone/network. If it does, investigate live PWA runtime; if not, investigate network/VPN/DNS. Do not clear storage or uninstall during diagnosis.
+
