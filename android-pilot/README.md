@@ -145,3 +145,14 @@ Physical import-only check (after the new artifact has a green Android build):
 5. Report only PASS/FAIL and Android/WebView version; never upload the JSON or financial content.
 
 This verifies only the SAF file-selection/read/restore leg on a real WebView. It does not verify native export, live branch assets, persistence across app reinstall, or release readiness.
+
+## Launcher troubleshooting — do not confuse the two debug icons
+
+The debug APK intentionally exposes two separate launcher icons:
+- **«سهام‌بان»** — normal `MainActivity`, which loads the published PWA at `https://raminhashemi1.github.io/sahamban/`. Use this launcher for the PWA import-only test.
+- **«سهام‌بان - آزمون پشتیبان ساختگی (نصب مستقل)»** — secondary debug-only `BackupSelfTestActivity`, which opens the bundled offline page titled **«آزمون محلی خروجی و بازیابی فایل»**. This is the synthetic SAF export/readback fixture, not the public PWA and not its restore workflow.
+
+If the screen title is «آزمون محلی خروجی و بازیابی فایل», exit to Home/app drawer and open the normal «سهام‌بان» icon instead. The local fixture is intentionally offline; the main launcher loads the published HTTPS PWA and may need network access. Do not treat a PASS on the local fixture as a PWA restore PASS.
+
+Do not use the self-test's `test-offline-1.json` (or other nonce-bound self-test output) in the PWA importer until the format is verified. The PWA has separate JSON backup formats and import controls. First capture the main PWA screen; identify the correct import control and prepare a matching synthetic PWA-format fixture before restoring anything.
+
