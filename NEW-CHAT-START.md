@@ -62,3 +62,14 @@
 - User confirms `https://example.com` opens in the same Chrome session/network. General connectivity is therefore working; this makes a broad network outage less likely, but does not rule out a GitHub Pages path/runtime/cache issue.
 - Next low-risk diagnostic: open `https://raminhashemi1.github.io/sahamban/install.html`. This is a lightweight standalone installation guide with one small inline script, unlike the main `index.html` which loads the full app script stack. If it renders, investigate the main page's startup scripts / service-worker state; if it is also blank, investigate delivery or browser cache for this origin.
 - Keep all app/browser data and existing APK intact. Do not uninstall, clear storage/cache, select backups, change source code or redeploy until this isolation result is known. No data or code changed.
+
+
+## 2026-11-13 — superseding live CI/status correction
+This entry supersedes the immediately preceding live-audit entry's stale pre-checkpoint SHA references; no source/test state changed.
+- Correct live PR #164 HEAD at audit: `0fa3dc31591450c689ad59ef27f316949fc068b8`, OPEN/non-Draft/unmerged. Its exact-head PR workflow set contains 13 runs: **11 success, 2 in progress** (Smoke and WebKit). The connector exposed no check-run records for this SHA; do not claim a check-run total or final-green status.
+- Correct live PR #166 HEAD: `73e01124f1227cb5ccfb07bd3c599a9923b1b510`, OPEN/Draft/unmerged. Its exact-head PR workflow set contains 11 runs: **8 success, 3 in progress** (WebKit, Smoke, 100-holding synthetic lifecycle). No failure was reported at poll time; CI is still IN_PROGRESS.
+- Public `main` remains `a5c10548904ee0e1cd80169729071d0bb390f606`; Issue #167 remains OPEN. PR #164 and PR #166 are separate branches; no cherry-pick or code transfer.
+- Existing Android preflight conclusion unchanged: `main` lacks the native backup helper and service-worker precache; `feta` contains them. Live PWA↔Android integration is UNVERIFIED. Existing synthetic local/risk/offline and cancellation observations are not repeated; screen-reader work remains out of current scope, NOT_TESTED.
+- The single outstanding user-side diagnostic is still opening `https://raminhashemi1.github.io/sahamban/install.html` in the same phone's Chrome session and reporting visible/blank. No device result is present yet. Preserve app/browser data; no uninstall, cache/storage clearing, backup selection, code change or deployment before that result.
+- No tests were rerun and no product code changed in this audit. Original five-day plan unchanged; financial gates remain `day3FinalAccepted=false`, `historyBasisAuthenticated=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`.
+- No merge, deploy, publication, signing, trade, order, payment, signal activation, holdings mutation or sensitive data upload.
