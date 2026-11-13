@@ -12,11 +12,21 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
  assert.match(m,/android:allowBackup="false"/);
  assert.equal((m.match(/android:exported="true"/g)||[]).length,1);
  const java=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ const importPolicy=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BackupImportPolicy.java');
  for(const guard of ['setAllowFileAccess(false)','setAllowContentAccess(false)',
   'setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW)',
   'setSafeBrowsingEnabled(true)','handler.cancel()','Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(java.includes(guard),guard);
  assert.ok(!java.includes('addJavascriptInterface'));
+ assert.match(java,/setAllowContentAccess\\(true\\)/);
+ assert.match(java,/picker\\.setType\\("application\\/json"\\)/);
+ assert.match(java,/FLAG_GRANT_READ_URI_PERMISSION/);
+ assert.match(java,/BackupImportPolicy\\.acceptsContentUri\\(chosen\\.toString\\(\\)\\)/);
+ assert.match(java,/clips\\.getItemCount\\(\\) == 1/);
+ assert.doesNotMatch(java,/clips\\.getItemCount\\(\\) <= 10/);
+ assert.match(java,/data\\.getFlags\\(\\) & Intent\\.FLAG_GRANT_READ_URI_PERMISSION/);
+ assert.match(importPolicy,/content/.);
+ assert.doesNotMatch(importPolicy,/file:\\/\\//);
 });
 
 test('native backup export is origin-scoped, user-selected and has no broad JS file bridge',()=>{

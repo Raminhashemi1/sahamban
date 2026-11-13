@@ -15,7 +15,7 @@ https://raminhashemi1.github.io/sahamban/
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
   PWA or wipe its data.
-- WebView file imports use Android's system file picker. For **supported Android System WebView**,
+- WebView file imports use Android's system file picker. The main PWA WebView now enables `content://` reads only for the single JSON document explicitly selected by the user: the returned intent must carry `FLAG_GRANT_READ_URI_PERMISSION`, and a pure-Java policy rejects `file://`, network URLs, malformed or authority-less content URIs, and multi-selection. `file://` access remains disabled; no persistable URI grant is taken. For **supported Android System WebView**,
   the matching PWA code now requests a JSON export through an exact-origin, main-frame
   `WebViewCompat.addWebMessageListener` bridge. Android uses `ACTION_CREATE_DOCUMENT` so the
   user chooses the destination; filenames and size are allowlisted (256 KiB maximum),
@@ -41,9 +41,7 @@ https://raminhashemi1.github.io/sahamban/
 - Only HTTPS `raminhashemi1.github.io/sahamban/` navigation remains inside
   the app. Other HTTPS links go to an external browser; non-HTTPS and
   special-scheme navigation is blocked.
-- Internet is the only declared Android permission; WebView file/content
-  access and cleartext HTTP are explicitly disabled; automatic Android backup
-  of app data is disabled.
+- Internet is the only declared Android permission; WebView `file://` access and cleartext HTTP remain disabled; automatic Android backup of app data is disabled. WebView `content://` access is enabled only because the PWA's JSON file input must read a document explicitly selected through Android `ACTION_OPEN_DOCUMENT`. The picker requests `application/json` plus a transient read grant; the Activity passes at most one URI, requires the returned read-grant flag, and accepts only a non-empty-authority `content://` URI. No persistent URI grant or broad JavaScript file bridge is added.
 - A user-approved package ID, actual release signing key handled only in a
   secure owner-controlled build environment, genuine asset/icon and screenshots,
   store policy compliance, private data handling, and physical Android

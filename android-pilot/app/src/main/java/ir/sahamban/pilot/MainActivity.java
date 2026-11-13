@@ -35,7 +35,9 @@ public final class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true); // Required by the existing PWA.
         settings.setDomStorageEnabled(true); // Separate from Chrome's local storage.
         settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
+        // Needed only for the one user-selected SAF content:// URI returned to the JSON file input.
+        // file:// access remains disabled and the picker result is scheme/permission checked below.
+        settings.setAllowContentAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
@@ -77,10 +79,11 @@ public final class MainActivity extends Activity {
                 fileCallback = callback;
                 Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 picker.addCategory(Intent.CATEGORY_OPENABLE);
-                picker.setType("*/*"); // PWA validates imported file content itself.
+                picker.setType("application/json");
+                picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 try {
                     startActivityForResult(picker, PICK_FILE);
-                } catch (ActivityNotFoundException ignored) {
+                } catch (ActivityNotFoundException | SecurityException ignored) {
                     fileCallback.onReceiveValue(null);
                     fileCallback = null;
                 }
@@ -96,15 +99,19 @@ public final class MainActivity extends Activity {
         if (backupExport != null && backupExport.onActivityResult(requestCode, resultCode, data)) return;
         if (requestCode != PICK_FILE || fileCallback == null) return;
         Uri[] selected = null;
-        if (resultCode == RESULT_OK && data != null) {
+        if (resultCode == RESULT_OK && data != null
+                && (data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
             ClipData clips = data.getClipData();
-            if (clips != null && clips.getItemCount() > 0 && clips.getItemCount() <= 10) {
-                selected = new Uri[clips.getItemCount()];
-                for (int i = 0; i < clips.getItemCount(); i++) {
-                    selected[i] = clips.getItemAt(i).getUri();
-                }
-            } else if (data.getData() != null) {
-                selected = new Uri[]{data.getData()};
+            Uri chosen = null;
+            // The PWA file input is single-select. Reject provider multi-select rather
+            // than passing an unexpected set of content URIs into the WebView.
+            if (clips != null) {
+                if (clips.getItemCount() == 1) chosen = clips.getItemAt(0).getUri();
+            } else {
+                chosen = data.getData();
+            }
+            if (chosen != null && BackupImportPolicy.acceptsContentUri(chosen.toString())) {
+                selected = new Uri[]{chosen};
             }
         }
         fileCallback.onReceiveValue(selected);

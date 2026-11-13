@@ -25,3 +25,8 @@ This is a **module-level JS integration simulation only**. The mocked `saved` re
 
 ## Next non-duplicative real-world dependency
 **`REAL_PWA_BACKUP_UNVERIFIED`** until an explicitly authorized, **origin-correct** controlled environment serves the entire matching PWA bundle and the physical Android main launcher saves and restores a synthetic snapshot (without transferring Chrome/PWA's private storage or destroying existing portfolios). Do **not** independently publish `feta` to public GitHub Pages, alter `main`, bypass origin guards, or call a debug-only synthetic PASS a release signoff. Leave PR #166 Draft, Issue #167 OPEN, `MARKET_RELEASE_BLOCKED`.
+
+## 2026-11-13 follow-up — Android SAF import policy correction
+Review of the actual production `MainActivity` uncovered that the file chooser returned a SAF URI to the PWA's `<input type=file>` while WebView content access was disabled. The same chooser accepted `*/*` and could forward up to ten URIs without scheme checks. This was a concrete restore-path defect not covered by the synthetic fixture (which already enabled content access).
+
+The current branch corrects this narrowly: `content://` access is enabled for WebView, but `file://` remains disabled; the chooser requests JSON and a read-only transient grant; the Activity requires the returned read-grant flag and forwards only one URI accepted by `BackupImportPolicy`. Pure-Java tests cover content provider URIs and reject file/network/malformed inputs. This does not grant persistent access and does not itself establish physical restore PASS. The exact new SHA and Android CI must be checked before claiming the correction is green.

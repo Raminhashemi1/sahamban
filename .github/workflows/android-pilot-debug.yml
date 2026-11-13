@@ -24,12 +24,15 @@ jobs:
           javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java \
             android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportPolicy.java \
             android-pilot/app/src/main/java/ir/sahamban/pilot/BackupFileVerifier.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupImportPolicy.java \
             android-pilot/tests/TrustedNavigationTest.java \
             android-pilot/tests/BackupExportPolicyTest.java \
-            android-pilot/tests/BackupFileVerifierTest.java
+            android-pilot/tests/BackupFileVerifierTest.java \
+            android-pilot/tests/BackupImportPolicyTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupExportPolicyTest
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupFileVerifierTest
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupImportPolicyTest
       - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
         shell: bash
         run: |
