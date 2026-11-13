@@ -22,6 +22,7 @@ jobs:
       - run: node --test tests/reliability-security-v149.test.cjs
       - run: node --test tests/portfolio-insights-scroll-v115.test.cjs
       - run: node --test tests/subscription-entitlements.test.cjs tests/subscription-orders.test.cjs
+      - run: node --test tests/day4-public-subscription-boundary.test.cjs
       - run: node --test tests/pro-access-gate.test.cjs
       - run: node --test tests/worker-api.test.cjs
       - run: node --test tests/pilot-orders-api.test.cjs
