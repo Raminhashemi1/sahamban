@@ -184,13 +184,14 @@ public final class IsolatedAcceptanceActivity extends Activity {
             failure("نسخه WebView برای آزمون امن خروجی بومی پشتیبانی نمی‌شود.");
             return;
         }
-        try (InputStream input = getAssets().open("pwa/index.html");
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            byte[] data = new byte[8192];
-            int n;
-            while ((n = input.read(data)) != -1) output.write(data, 0, n);
-            String html = new String(output.toByteArray(), StandardCharsets.UTF_8);
-            view.loadDataWithBaseURL(TRUSTED, html, "text/html", "UTF-8", TRUSTED);
+        try (InputStream index = getAssets().open("pwa/index.html")) {
+            if (index.read() < 0) throw new java.io.IOException("Empty PWA index");
+            // Do NOT call loadDataWithBaseURL: WebView internally turns that
+            // request into a data:text/html;base64 URL and our fail-closed
+            // shouldInterceptRequest correctly rejects all data: URLs with 403.
+            // Load the *approved* HTTPS URL itself. shouldInterceptRequest
+            // supplies index.html from APK, never from the public network.
+            view.loadUrl(TRUSTED);
         } catch (Exception error) {
             failure("بسته محلی PWA در APK وجود ندارد. بارگذاری آنلاین ممنوع است.");
         }
