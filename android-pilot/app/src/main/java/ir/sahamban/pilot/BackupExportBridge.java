@@ -30,6 +30,7 @@ public final class BackupExportBridge {
     private static final String PROTOCOL = "sahamban-backup-export-v1";
     private final Activity activity;
     private final WebView webView;
+    private final boolean syntheticOnly;
     private Pending pending;
 
     private static final class Pending {
@@ -44,8 +45,30 @@ public final class BackupExportBridge {
     }
 
     public BackupExportBridge(Activity activity, WebView webView) {
+        this(activity, webView, false);
+    }
+
+    /** Isolated acceptance variant only. Existing public pilot behavior is unchanged. */
+    public BackupExportBridge(Activity activity, WebView webView, boolean syntheticOnly) {
         this.activity = activity;
         this.webView = webView;
+        this.syntheticOnly = syntheticOnly;
+    }
+
+    private static boolean isSyntheticLocalSnapshot(JSONObject document) {
+        if (!"sahamban-local-backup".equals(document.optString("format"))
+                || document.optInt("schema") != 1) return false;
+        JSONObject items = document.optJSONObject("items");
+        if (items == null || items.length() != 1 || !items.has("sahamban-v1"))
+            return false;
+        try {
+            JSONObject alert = new JSONObject(items.getString("sahamban-v1"));
+            return "نماد-ساختگی-آزمایش".equals(alert.optString("symbol"))
+                    && "100".equals(alert.optString("aStop"))
+                    && "200".equals(alert.optString("aTarget"));
+        } catch (JSONException ignored) {
+            return false;
+        }
     }
 
     public boolean install() {
@@ -108,6 +131,11 @@ public final class BackupExportBridge {
                 return;
             }
 
+            if (syntheticOnly && (!BackupExportPolicy.LOCAL_NAME.equals(name)
+                    || !isSyntheticLocalSnapshot(document))) {
+                reply(replyProxy, id, "rejected");
+                return;
+            }
             pending = new Pending(id, content.getBytes(StandardCharsets.UTF_8), replyProxy);
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
