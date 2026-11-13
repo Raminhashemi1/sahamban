@@ -1,5 +1,7 @@
 # سهام‌بان — دستور تحویل بین چت‌ها
 
+**شروع گفتگوی جدید:** [NEW-CHAT-START.md](NEW-CHAT-START.md) را برای پیام ثابت قابل کپی ببینید. بخش‌های تاریخی این فایل لزوماً وضعیت جاری PR/CI را بیان نمی‌کنند؛ همیشه GitHub زنده و آخرین یادداشت را بررسی کنید.
+
 **اول این فایل را بخوان، سپس** [MASTER-PLAN.md](MASTER-PLAN.md)، [PROJECT-STATE.md](PROJECT-STATE.md)، [DECISIONS.md](DECISIONS.md)، [WORK-LOG.md](WORK-LOG.md) و [PROJECT-CONTINUITY.md](PROJECT-CONTINUITY.md) را مطالعه کن. این پرونده‌ها یک حافظه اجرایی قابل ممیزی‌اند، نه قابلیت بازیابی خودکار تمام گفتگوهای قدیمی.
 
 ## نقطه تحویل
@@ -642,3 +644,10 @@
 - Under DEC-008 the Day 3 **bounded engineering** milestone remains closed; the last Ghشہداب/غشهداب adjustment discrepancy is a quarantined source-basis anomaly, not certified financial history. All financial/entry/signal gates remain false. No new original provider/CODAL attestation, real transaction or sensitive user artifact was obtained or uploaded.
 - **Work completed here:** source/PR/CI inventory and documentation checkpoint only; no tests rerun, no production code/plan change, no GitHub PR-status mutation, merge, deploy, orders, payments, portfolios or signals.
 - **Single next dependency:** continue pending synthetic physical negative-path checks on existing PR #166 / Issue #167; never duplicate its Android implementation in PR #164. PR #164 exact new-head checks must be read independently before any further completion claim.
+
+
+## 2026-11-13 — Verified green exact-head CI and durable new-chat prompt
+- Before writing: PR #164 on `faab9bdff591f4c22c0a3141dbb3dc0e455249ec` had **14/14 successful check runs** and **13/13 successful exact-head PR workflow runs**. PR #166 / `feta` on `1ec03b178dfb24e723866fee41aaa9b97820c4ff` had **12/12 successful checks** and **11/11 successful workflows**. Both unmerged, PR #166 Draft, Issue #167 OPEN. These are **pre-documentation heads**; do not copy their CI verdict onto a new SHA.
+- Created [NEW-CHAT-START.md](NEW-CHAT-START.md) as a fixed copy/paste cross-chat bootstrap; the six-file order and **live GitHub first** procedure are explicit. This is intentionally not an automatic capacity alarm: ChatGPT has no reliable context-remaining trigger or background notifier for the current page.
+- Existing two physical Samsung S23 FE synthetic save/readback PASS results were *read from PR #166 documentation*, **not re-run**. Physical Cancel, offline, Persian TalkBack, real PWA restore and publication are still unverified/blocked. Existing Android runbook already describes tests; no duplicate launcher, bridge, file parser, app version, or test logic created. Proceed only with evidence-based next field test.
+- Scope unchanged: DEC-008 bounded Day 3 engineering remains complete; original-source financial attestation and entry/trading gates stay false. No code execution beyond live CI inspection; no merge, deploy, trading, money, holdings or sensitive files. Only safe documentation changes. After this commit, recheck exact-new-head CI.
