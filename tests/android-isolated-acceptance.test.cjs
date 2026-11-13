@@ -55,6 +55,9 @@ test('acceptance CI only assembles test APK with pinned asset digest audit',()=>
  assert.doesNotMatch(workflow,/assembleRelease|bundleRelease|deploy|publishRelease|marketplace/);
  const gradle=read('android-pilot/app/build.gradle');
  assert.match(gradle,/MessageDigest\.getInstance\('SHA-256'\)/);
+ assert.match(gradle,/sourceCommit: sourceCommit/);
+ assert.match(workflow,/manifest\['sourceCommit'\]/);
+ assert.match(workflow,/IsolatedAcceptanceActivity/);
  assert.match(gradle,/native-backup-export-v1\.js/);
  assert.match(gradle,/tasks\.configureEach/);
 });
