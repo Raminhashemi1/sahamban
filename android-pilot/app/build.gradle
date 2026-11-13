@@ -74,14 +74,28 @@ tasks.register('prepareAcceptanceAssets') {
             byte[] bytes = source.bytes
             new File(pwa, source.name).bytes = bytes
             def digest = java.security.MessageDigest.getInstance('SHA-256').digest(bytes)
+            def extension = source.name.substring(source.name.lastIndexOf('.') + 1)
+            def mime = [
+                html: 'text/html', js: 'application/javascript', css: 'text/css',
+                svg: 'image/svg+xml', png: 'image/png', webmanifest: 'application/manifest+json',
+                mp3: 'audio/mpeg', ico: 'image/x-icon'
+            ][extension]
+            if (mime == null) throw new GradleException('Unexpected asset extension')
             hashes[source.name] = [
                 sha256: digest.collect { String.format('%02x', it & 0xff) }.join(''),
-                bytes: bytes.length
+                bytes: bytes.length, mime: mime
             ]
+        }
+        def headProcess = new ProcessBuilder('git', '-C', repoRoot.absolutePath,
+                'rev-parse', 'HEAD').redirectErrorStream(true).start()
+        def sourceCommit = headProcess.inputStream.getText('UTF-8').trim()
+        if (headProcess.waitFor() != 0 || !(sourceCommit ==~ /[0-9a-f]{40}/)) {
+            throw new GradleException('Cannot pin acceptance assets to a Git commit')
         }
         new File(target, 'acceptance-asset-manifest.json').text =
             groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
                 profile: 'synthetic-only-debug-acceptance',
+                sourceCommit: sourceCommit,
                 path: '/sahamban/',
                 files: hashes
             ]))
