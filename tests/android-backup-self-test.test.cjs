@@ -9,7 +9,7 @@ const source=html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)?.[1];
 assert.ok(source,'debug fixture must have a local inline script');
 
 function harness(withBridge=true){
- const elements=new Map(),handlers=new Map(),requests=[];
+ const elements=new Map(),handlers=new Map(),requests=[],timeouts=[];
  const node=(id)=>{
   if(!elements.has(id))elements.set(id,{
    id,textContent:'',className:'',disabled:false,files:[],
@@ -27,7 +27,7 @@ function harness(withBridge=true){
   for(let i=0;i<array.length;i++)array[i]=value++;
   return array;
  }};
- const window={crypto};
+ const window={crypto,setTimeout(cb,ms){timeouts.push({cb,ms});return timeouts.length;}};
  if(withBridge)window.SahambanBackupExport=bridge;
  vm.runInNewContext(source,{window,document:{getElementById:node},crypto,Uint32Array,FileReader:class{}});
  const click=id=>handlers.get(id+':click')();
@@ -42,7 +42,10 @@ function harness(withBridge=true){
   });
   for(const cb of callbacks)cb({data});
  };
- return {node,requests,click,read,reply};
+ return {node,requests,click,read,reply,
+  expireSaveWarning(){for(const timeout of timeouts)timeout.cb();},
+  saveWarningDelay(){return timeouts.at(-1)?.ms;}
+ };
 }
 
 test('fresh random nonce binds PASS to the same saved synthetic file, never a stale one',async()=>{
@@ -103,4 +106,26 @@ test('payload tampering and invalid JSON cannot pass readback',async()=>{
  assert.match(h.node('status').textContent,/^FAIL:/);
  await h.read('not a JSON file');
  assert.match(h.node('status').textContent,/^FAIL:/);
+});
+
+test('no native picker response warns the user after 12 seconds without claiming saved',()=>{
+ const h=harness();
+ h.click('local');
+ assert.equal(h.saveWarningDelay(),12000);
+ assert.match(h.node('status').textContent,/درخواست ذخیره ارسال شد/);
+ h.expireSaveWarning();
+ assert.match(h.node('status').textContent,/هنوز پاسخی از انتخابگر اندروید نرسیده است/);
+ assert.match(h.node('status').textContent,/هیچ فایل تأیید نشده است/);
+ assert.doesNotMatch(h.node('status').textContent,/^PASS:/);
+ assert.equal(h.node('local').disabled,true);
+});
+
+test('late warning never overrides native save response before expiry',()=>{
+ const h=harness();
+ h.click('local');
+ h.reply(h.requests.at(-1),'saved');
+ const afterSave=h.node('status').textContent;
+ h.expireSaveWarning();
+ assert.equal(h.node('status').textContent,afterSave);
+ assert.doesNotMatch(afterSave,/^PASS:/);
 });
