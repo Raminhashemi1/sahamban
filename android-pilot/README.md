@@ -156,3 +156,9 @@ If the screen title is «آزمون محلی خروجی و بازیابی فای
 
 Do not use the self-test's `test-offline-1.json` (or other nonce-bound self-test output) in the PWA importer until the format is verified. The PWA has separate JSON backup formats and import controls. First capture the main PWA screen; identify the correct import control and prepare a matching synthetic PWA-format fixture before restoring anything.
 
+## Main launcher blank-screen troubleshooting
+
+The normal «سهام‌بان» launcher is an online WebView shell. `MainActivity` loads `https://raminhashemi1.github.io/sahamban/` and the app manifest declares `android.permission.INTERNET`. The bundled «آزمون پشتیبان ساختگی» screen is a separate offline fixture and does not prove that the online PWA can load.
+
+If the main launcher is blank, first turn airplane mode off and enable Wi-Fi or mobile data, then reopen «سهام‌بان» and wait about 20 seconds. Do not uninstall the APK, clear Chrome/app data, or select any backup file during this diagnosis. If the screen remains blank with working internet, verify the same URL in Chrome on the phone and capture the screen; investigate WebView load/TLS errors before making code changes.
+
