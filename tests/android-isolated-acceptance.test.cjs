@@ -26,7 +26,7 @@ test('isolated acceptance WebView denies network and unknown assets, preserves e
   'setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW)',
   'shouldInterceptRequest', 'getAssets().open("pwa/" + name)',
   'new WebResourceResponse("text/plain"', 'return blocked()',
-  'loadDataWithBaseURL(TRUSTED, html', 'setServiceWorkerClient',
+  'view.loadUrl(TRUSTED)', 'setServiceWorkerClient',
   'name.equals("sw.js")', 'SERVICE_WORKER_SHOULD_INTERCEPT_REQUEST',
   'BackupImportPolicy.acceptsContentUri', 'clips.getItemCount() == 1',
   'FLAG_GRANT_READ_URI_PERMISSION', 'new BackupExportBridge(this, view, true)',
@@ -40,7 +40,9 @@ test('isolated acceptance WebView denies network and unknown assets, preserves e
  assert.match(bridge,/syntheticOnly &&/);
  assert.match(bridge,/isSyntheticLocalSnapshot\(document\)/);
  assert.match(java,/BackupExportBridge\.isSyntheticLocalSnapshot/);
- assert.doesNotMatch(java,/addJavascriptInterface|setBlockNetworkLoads\(false\)/);
+ assert.doesNotMatch(java,/addJavascriptInterface|setBlockNetworkLoads\(false\)|view\.loadDataWithBaseURL\(/);
+ assert.match(java,/view\.loadUrl\(TRUSTED\)/);
+ assert.match(java,/return localResource\(request\.getUrl\(\)\)/);
  assert.doesNotMatch(java,/http:\/\/|10\.0\.2\.2|localhost/);
 });
 
