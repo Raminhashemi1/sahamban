@@ -55,15 +55,22 @@ public final class BackupExportBridge {
         this.syntheticOnly = syntheticOnly;
     }
 
-    private static boolean isSyntheticLocalSnapshot(JSONObject document) {
+    public static boolean isSyntheticLocalSnapshot(JSONObject document) {
         if (!"sahamban-local-backup".equals(document.optString("format"))
                 || document.optInt("schema") != 1) return false;
+        if (document.length() < 3 || document.length() > 4) return false;
+        for (java.util.Iterator<String> keys = document.keys(); keys.hasNext();) {
+            String key = keys.next();
+            if (!"format".equals(key) && !"schema".equals(key)
+                    && !"createdAt".equals(key) && !"items".equals(key)) return false;
+        }
         JSONObject items = document.optJSONObject("items");
         if (items == null || items.length() != 1 || !items.has("sahamban-v1"))
             return false;
         try {
             JSONObject alert = new JSONObject(items.getString("sahamban-v1"));
-            return "نماد-ساختگی-آزمایش".equals(alert.optString("symbol"))
+            return alert.length() == 3
+                    && "نماد-ساختگی-آزمایش".equals(alert.optString("symbol"))
                     && "100".equals(alert.optString("aStop"))
                     && "200".equals(alert.optString("aTarget"));
         } catch (JSONException ignored) {
