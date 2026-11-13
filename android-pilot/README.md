@@ -7,8 +7,9 @@ https://raminhashemi1.github.io/sahamban/
 ## Strict scope
 
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
-  The temporary `ir.sahamban.pilot` package ID and build-generated debug
-  certificate must **not** become the final app identity/signing key.
+  The temporary release-base `ir.sahamban.pilot` ID and debug-only retest
+  `ir.sahamban.pilot.retest` ID are not production identities. GitHub CI uses
+  ephemeral debug signing certificates; none may become the final signing key.
 - No checkout, Pro subscription, account registration or payments are added.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
@@ -69,9 +70,9 @@ javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/
 java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
 ```
 
-## Debug-only offline backup self-test (v0.3.2-pilot)
+## Debug-only offline backup self-test (v0.3.4-pilot)
 
-The **debug APK now has a second launcher** named «سهام‌بان - آزمون پشتیبان ساختگی».
+The **debug APK now has a second launcher** named «سهام‌بان - آزمون پشتیبان ساختگی (نصب مستقل)».
 This test activity is **not present in release builds**. The main app launcher
 still opens the published public PWA. The second launcher uses bundled synthetic
 HTML via `loadDataWithBaseURL()` on the exact allowed HTTPS origin/path; it
@@ -84,11 +85,14 @@ results. No server, authentication, checkout or broker data is used.
 
 To test on a real Android device without modifying GitHub Pages:
 
-1. Install the latest **debug** APK artifact from the Android CI run. If Android
-   refuses an update because a previous CI runner generated a different debug
-   signing certificate, uninstall only the old **test-only** `ir.sahamban.pilot`
-   application *after checking it has no personal data*. **Never uninstall or
-   wipe Chrome or your existing PWA**.
+1. Install the [verified 0.3.4 debug APK artifact](https://github.com/Raminhashemi1/sahamban/actions/runs/43374677852/artifacts/14013104846)
+   on the phone after extracting `app-debug.apk` from the downloaded ZIP.
+   A prior device update to 0.3.3 failed to install (cause unknown; a mismatch
+   between ephemeral CI debug signing keys is plausible). The 0.3.4 **debug
+   variant only** has a new application ID `ir.sahamban.pilot.retest` via
+   `applicationIdSuffix '.retest'`. It installs side by side with the previous
+   `ir.sahamban.pilot`, so **do not uninstall** the older pilot, Chrome or PWA.
+   No release ID/signing policy was changed.
 2. Launch **«سهام‌بان - آزمون پشتیبان ساختگی»** (not the main app launcher).
 3. Choose «ذخیره پشتیبان محلی ساختگی», confirm Android's Create Document picker,
    choose a directory and save the JSON.
