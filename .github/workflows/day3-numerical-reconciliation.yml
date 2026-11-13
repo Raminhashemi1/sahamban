@@ -1,0 +1,38 @@
+name: Day 3 bounded numerical reconciliation safety
+on:
+  pull_request:
+    paths:
+      - 'day3_vesakht_capture_reconcile.py'
+      - 'scripts/day3_event_rounding_audit.py'
+      - 'tests/test_day3_event_rounding_audit.py'
+      - 'test_day3_vesakht_capture_reconcile.py'
+      - 'evidence/day3/**'
+      - '.github/workflows/day3-numerical-reconciliation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fail-closed-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify 10 fail-closed numerical regression cases
+        run: python3 -m unittest -v test_day3_vesakht_capture_reconcile.py
+      - name: Verify no unsupported 4-rial rounding waiver in full-history audit
+        run: python3 -m unittest discover -s tests -p 'test_day3_event_rounding_audit.py' -v
+      - name: Verify exact user-captured Vesakht bytes and reconstruct 500 historical sessions
+        run: |
+          python3 day3_vesakht_capture_reconcile.py \
+            --daily evidence/day3/vasakht-20261110-daily-500.json \
+            --adjustments evidence/day3/vasakht-20261110-adjustments-15.json \
+            --output "$RUNNER_TEMP/vasakht-500-review-only.json"
+      - name: Save derived audit output, never a trading approval
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-vesakht-reviewed-bounded-numerical-series
+          path: ${{ runner.temp }}/vasakht-500-review-only.json
+          retention-days: 30

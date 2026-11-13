@@ -1,0 +1,60 @@
+name: Day 3 genuine TSE Client three-mode execution
+# Legacy tse-client CLI is demonstrably unusable against TseClient2.aspx HTTP.
+# Retained as an opt-in diagnostic; NOT a Day 3 acceptance check.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install published TSE Client
+        run: npm install --global tse-client
+      - name: Execute actual library modes 0, 1, 2 for full Vesakht history
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p day3-output/mode0 day3-output/mode1 day3-output/mode2
+          # Raw/default mode 0 has no -j flag. Mode 1 = capital + dividends.
+          # Mode 2 = capital increases only. Start at earliest documented date.
+          tse "وساخت" -b 20030123 -x csv -o day3-output/mode0 -n mode0
+          tse "وساخت" -b 20030123 -j 1 -x csv -o day3-output/mode1 -n mode1
+          tse "وساخت" -b 20030123 -j 2 -x csv -o day3-output/mode2 -n mode2
+          find day3-output -type f -printf '%p %s bytes\n'
+          python3 - <<'PY'
+          import csv,glob,os,json,hashlib
+          report={'instrument':'وساخت','insCode':'25514780181345713',
+                  'source':'published npm tse-client CLI','modes':{},
+                  'allModesPresent':False,'day3FinalAccepted':False,
+                  'historyBasisAuthenticated':False,'tradingSignalsEnabled':False}
+          for mode in ('mode0','mode1','mode2'):
+            paths=glob.glob('day3-output/'+mode+'/**/*',recursive=True)
+            paths=[p for p in paths if os.path.isfile(p) and p.lower().endswith('.csv')]
+            if len(paths)!=1: raise SystemExit(f'{mode}: expected exactly one CSV, got {paths}')
+            p=paths[0]; raw=open(p,'rb').read()
+            with open(p,encoding='utf-8-sig',newline='') as f: rows=list(csv.reader(f))
+            if len(rows)<2: raise SystemExit(f'{mode}: empty CSV')
+            report['modes'][mode]={'file':p,'sha256':hashlib.sha256(raw).hexdigest(),
+              'bytes':len(raw),'rowsIncludingHeader':len(rows),'header':rows[0],
+              'firstDataRow':rows[1],'lastDataRow':rows[-1]}
+          counts=[v['rowsIncludingHeader'] for v in report['modes'].values()]
+          if len(set(counts))!=1: raise SystemExit('Mode row-count mismatch: '+repr(counts))
+          report['allModesPresent']=True
+          report['comparison']='Three genuine library outputs captured; numeric row-by-row comparison required before acceptance.'
+          open('day3-output/three-mode-manifest.json','w').write(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - name: Upload actual three-mode outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: day3-vesakht-genuine-tse-client-modes
+          path: day3-output/
+          retention-days: 30
+          if-no-files-found: warn

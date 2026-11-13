@@ -43,6 +43,7 @@ jobs:
       - run: python tests/d1-prepaid-migration.test.py
       - run: python tests/d1-prepaid-settlement-sqlite.integration.test.py
       - run: node --test tests/decision-support-v129.test.cjs tests/external-screener-v130.test.cjs tests/market-sample-v131.test.cjs tests/signal-audit-v132.test.cjs tests/candidate-ranking-v133.test.cjs tests/temporal-holdout-v134.test.cjs
+      - run: node --test tests/history-basis-consumption-v162.test.cjs
       - run: node --test tests/fundamental-evidence.test.cjs
       - run: node --test tests/capital-adjustments.test.cjs
       - run: node --test tests/tse-client-three-mode-adapter-v161.test.cjs
@@ -64,6 +65,15 @@ jobs:
       - run: node tests/market-validation.cjs
       - run: node tests/market-freshness-v111.test.cjs
       - run: node --test tests/market-date-tehran-v127.test.cjs
+      - run: node --test tests/trade-cost-v1.test.cjs
+      - run: node --test tests/trade-cost-receipt-review-v1.test.cjs
+      - run: node --test tests/tsetmc-capture-integrity-review-v1.test.cjs
+      - run: node --test tests/tsetmc-single-day-integrity-review-v1.test.cjs
+      - run: node --test day3-trusted-evidence-boundary-v1.test.cjs
+      - run: node --test tests/day3-dividend-corroboration-v1.test.cjs
+      - run: python3 -m unittest discover -s tests -p test_day3_fetch_original_codal.py -v
+      - run: node --test tests/day3-real-evidence-audit-v1.test.cjs
+      - run: node --test tests/day3-original-capture-cli.test.cjs
       - run: node tests/live-market-connectivity.cjs
       - name: Preserve explicit live-market status (including network skip)
         if: always()
@@ -89,8 +99,12 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save playwright@1.56.1 axe-core@4.10.3
-      - run: npx playwright install --with-deps chromium
+      # GitHub hosted Ubuntu apt mirrors intermittently fail DNS, making --with-deps fail
+      # before any browser test runs. Chromium libraries are provided by the runner.
+      # Install the Playwright-pinned browser only; do not skip any browser tests.
+      - run: npx playwright install chromium
       - run: node tests/browser.cjs
+      - run: node tests/trade-cost-v1-browser.cjs
       - run: node tests/field-alert-talkback-v126.cjs
       - run: node tests/learning-v128.cjs
       - run: node tests/external-screener-browser-v130.cjs
