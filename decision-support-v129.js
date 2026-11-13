@@ -27,7 +27,17 @@
   else if(score<40){action='فعلاً عدم ورود',code='AVOID',reason='امتیاز شروط روند و مومنتوم پایین است؛ برای ورود عجله نکنید.';}
   const stop=priorLow,riskPerShare=last-stop,target=last+2*riskPerShare;
   const reasons=[['روند صعودی (قیمت > SMA20 > SMA50)',trend],['RSI در بازه ۵۰ تا ۶۸',healthyRsi],['MACD مثبت و رو به تقویت',positiveMacd],['بازده ۲۰ جلسه مثبت',positiveMomentum],['شکست سقف ۲۰ جلسه قبل',breakout]];
-  return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,action,code,reason,stop:stop<last?stop:null,target:stop<last?target:null,riskPerShare:stop<last?riskPerShare:null,reasons};
+  // Fail closed at the engine boundary, not only in individual screen wrappers.
+  // Indicator values remain descriptive; no entry/exit classification or risk levels survive.
+  const basisAttested=q.historyPriceBasisEvidence==='INDEPENDENTLY_ATTESTED';
+  return {symbol:q.symbol,marketDate:h.at(-1).date,ageDays:age,last,sma20:s20,sma50:s50,rsi,macd,hist,momentum,priorHigh,priorLow,score,points,
+   action:basisAttested?action:'عدم صدور سیگنال؛ مبنای تعدیل تاریخچه تأیید نشده',
+   code:basisAttested?code:'DATA_BASIS_UNVERIFIED',
+   reason:basisAttested?reason:'مبنای تعدیل تاریخچه قیمت مستقلاً تأیید نشده است؛ اندیکاتورها صرفاً تشخیصی‌اند.',
+   stop:basisAttested&&stop<last?stop:null,target:basisAttested&&stop<last?target:null,
+   riskPerShare:basisAttested&&stop<last?riskPerShare:null,
+   dataBasisStatus:basisAttested?'INDEPENDENTLY_ATTESTED':'UNKNOWN_NOT_ATTESTED',
+   historyPriceBasisEvidence:q.historyPriceBasisEvidence??'NOT_ESTABLISHED',reasons};
  }
  function sizePosition({capital,riskPercent,entry,stop}){
   for(const [k,v] of Object.entries({capital,riskPercent,entry,stop}))
@@ -47,14 +57,15 @@
  // A conditional, date-stamped interpretation of rule output, not an order.
  // No user holdings, brokerage access, execution or network calls.
  function decisionPlan(r,{fundamentalReview}={}){
-  if(!r||!['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT'].includes(r.code)||
+  if(!r||!['ENTRY_CANDIDATE','WAIT','AVOID','EXIT_REVIEW','RISK_EXIT','DATA_BASIS_UNVERIFIED'].includes(r.code)||
     !validDate(r.marketDate)||!Number.isFinite(r.last)||r.last<=0||
     !Number.isFinite(r.priorHigh)||r.priorHigh<=0||
     !Number.isFinite(r.priorLow)||r.priorLow<=0)
    throw new TypeError('گزارش تحلیلی معتبر برای برنامه مشروط لازم است.');
   const common={symbol:r.symbol,asOf:r.marketDate,automaticTrade:false,
    dataStatus:'قیمت پایانی تاریخ ذکرشده؛ لزوماً قیمت لحظه‌ای یا قابل معامله نیست.',
-   evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.'};
+   evidence:'این فقط ارزیابی قواعد تکنیکال است؛ اعتبار بنیادی و برتری آماری راهبرد جداگانه باید اثبات شود.',historyPriceBasisEvidence:r.historyPriceBasisEvidence??'NOT_ESTABLISHED'};
+   if(common.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED'||r.code==='DATA_BASIS_UNVERIFIED')return {...common,decision:'NO_ACTION',when:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ برنامه ورود یا خروج صادر نمی‌شود.',invalidation:'پس از ارائه شواهد مستقل و قابل ممیزی درباره مبنای تاریخچه، تحلیل باید از ابتدا اجرا شود.',condition:'DATA_BASIS_UNVERIFIED',historicalPriceBasis:'UNKNOWN_NOT_ATTESTED'};
   if(r.code==='ENTRY_CANDIDATE'){
    const sameSymbol=normalizeSymbol(fundamentalReview?.symbol)===normalizeSymbol(r.symbol);
    const fundamentalReady=fundamentalReview?.status==='FUNDAMENTAL_REVIEW_READY'&&
