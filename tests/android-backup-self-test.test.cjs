@@ -129,3 +129,14 @@ test('late warning never overrides native save response before expiry',()=>{
  assert.equal(h.node('status').textContent,afterSave);
  assert.doesNotMatch(afterSave,/^PASS:/);
 });
+
+test('Android source/path rejection without request id visibly fails closed',async()=>{
+ const h=harness();
+ h.click('local');
+ h.reply({...h.requests.at(-1),requestId:''},'rejected');
+ assert.match(h.node('status').textContent,/ذخیره ناموفق یا رد شد/);
+ assert.equal(h.node('local').disabled,false);
+ assert.doesNotMatch(h.node('status').textContent,/^PASS:/);
+ h.expireSaveWarning();
+ assert.match(h.node('status').textContent,/ذخیره ناموفق یا رد شد/);
+});
