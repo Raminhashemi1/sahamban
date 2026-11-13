@@ -55,7 +55,7 @@ jobs:
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
           test -x "$AAPT"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot' versionCode='4' versionName='0.3.1-pilot'"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot' versionCode='5' versionName='0.3.2-pilot'"
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F 'BackupSelfTestActivity'
           unzip -Z1 "$APK" | grep -Fx 'assets/backup-self-test.html'
           "$AAPT" dump permissions "$APK" > /tmp/sahamban-apk-permissions.txt
