@@ -114,9 +114,21 @@ test deployment before declaring the complete backup feature accepted.
 
 Physical Android device: PWA loading, RTL, basic navigation, browser
 handoff, permissions, synthetic 20/100-holding portfolio import and export,
-offline/slow network, cold/warm start, font scaling, TalkBack, and secure
-update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach.
+offline/slow network, cold/warm start, and secure update behavior.
+Record device/Android/WebView versions and actual results. Dedicated Persian
+TalkBack/VoiceOver support and physical screen-reader acceptance are **out of
+current pilot scope at owner direction**, untested, and only a possible future
+update if requested. This does not attest accessibility or waive store/legal
+requirements. Only afterwards choose a market-specific release wrapper/signing
+approach.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
+
+## 2026-11-13 — Owner scope decision: screen-reader support/testing moved to future backlog
+- **Explicit owner decision (supersedes prior temporary skip):** dedicated **TalkBack/VoiceOver screen-reader support, Persian speech/reading-order assessment and related manual device testing** are **out of the CURRENT delivery scope**. Do not ask the owner to run them, schedule them as the next step, or spend development time on them now. Reconsider only if users request it or the owner chooses a future release. Keep this as an **unscheduled future option**, not a completed item.
+- **Precise classification:** `SCREEN_READER_SCOPE=CURRENT_RELEASE_OUT_OF_SCOPE_BY_OWNER`, `TALKBACK_PHYSICAL_RESULT=NOT_TESTED`, `VOICEOVER_PHYSICAL_RESULT=NOT_TESTED`; neither an automated proxy nor this owner decision implies `PASS`, full WCAG compliance, or validated screen-reader access. Preserve all previous historical observations unmodified.
+- **Do not delete functioning app functionality:** TalkBack/VoiceOver belong to Android/iOS, not a standalone Sahamban prediction feature. Existing labels, keyboard support, automated regression/axe checks and broad visual/mobile safeguards must remain intact to avoid unrelated regressions. This is removal of **current feature effort and active manual test tasks**, not a destructive code change.
+- **Compliance caveat:** market submission, accessibility legal requirements and any specific store policy have not been independently assessed; this project must not falsely certify accessibility or imply that owner prioritization waives external obligations. Other deployment/payment/financial/recovery gates remain unchanged.
+- **Live GitHub baseline before writing:** `feta` PR #166 OPEN/Draft/unmerged at `c1aa61674e226860d2eaf16ba93ea6b61ef6a89a`, with **10/12 checks successful, two in progress (`webkit-mobile`, `browser`)** and **9/11 matching-head workflows success** when inspected. Those checks belong to the pre-documentation SHA; verify the resulting new SHA separately.
+- **Next non-accessibility work:** review-only preflight of the already-built **actual PWA ↔ Android WebMessage backup** path, which currently needs matching deployed web assets in a controlled environment. Do not reimplement the synthetic tests, overwrite the public PWA or deploy/merge without authorization. Issue #167 stays OPEN. `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`, PR #166 Draft. No orders, payments or real user files.

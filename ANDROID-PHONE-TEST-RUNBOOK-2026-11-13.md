@@ -29,9 +29,9 @@
 
 ۷. حالت پرواز را روشن کنید و ذخیره و بازخوانی فایل ساختگی را تکرار کنید. صفحه داخلی APK باید بدون دسترسی به اینترنت کار کند. پس از پایان، حالت پرواز را خاموش کنید.
 
-۸. نمایش فارسی، لمس دکمه‌ها، بزرگ‌نمایی فونت و در صورت امکان TalkBack فارسی را بررسی کنید.
+۸. آزمون اختصاصی صفحه‌خوان (TalkBack/VoiceOver) با تصمیم مالک **از دامنه فعلی خارج شد**؛ در این مرحله انجام نشود. آزمون‌های معمول رابط کاربری و پشتیبان‌گیری جداگانه پیگیری می‌شوند.
 
-**قدم مستقل بعدی برای TalkBack (آزمون دسترس‌پذیری):** در همان صفحه آزمایشی، TalkBack را از تنظیمات دسترس‌پذیری Android فعال کنید. بدون ذخیرهٔ فایل جدید و بدون استفاده از داده واقعی، صرفاً روی دو دکمه «ذخیره پشتیبان محلی ساختگی» و «ذخیره پشتیبان سبد ریسک ساختگی» و کنترل «انتخاب فایل JSON ذخیره‌شده» فوکوس کنید؛ بررسی کنید که برچسب‌های فارسی هر سه واضح و به‌ترتیب قابل فهم خوانده می‌شوند. **PASS فقط با گزارش واقعی گوشی** ثبت شود. پس از آزمون TalkBack را خاموش کنید. بررسی بزرگ‌نمایی فونت و بازیابی واقعی PWA هنوز مستقل و باز است.
+**تصمیم جدید مالک:** آزمون صفحه‌خوان در این نسخه انجام نمی‌شود و فقط در backlog آینده (در صورت درخواست کاربران) قرار دارد. هیچ PASS برای آن ثبت نمی‌شود.
 
 ## گزارش مختصر (بدون داده حساس)
 
@@ -45,8 +45,8 @@
 | لغو ذخیره، بدون PASS | **PASS محدود** | تصویر جدید کاربر: «ذخیره لغو شد. PASS ثبت نشده است.»؛ مشاهده پنجره SAF و نبود فایل روی دیسک از خود تصویر اثبات نمی‌شود |
 | فایل قدیمی، بدون PASS اشتباه | UNVERIFIED | |
 | آزمون در حالت پرواز | **PASS محدود؛ حالت پرواز با تأیید کاربر** | `test-offline-1.json` با تطبیق دقیق PASS شد؛ کاربر تأیید کرد حالت پرواز در تمام مدت ذخیره و بازخوانی روشن بوده است؛ وضعیت شبکه مستقلاً ابزارسنجی نشده |
-| TalkBack فارسی (آزمون روی گوشی) | **DEFERRED_BY_USER / UNVERIFIED** | به درخواست کاربر از ادامه فعلی کنار گذاشته شد؛ نتیجه PASS یا پذیرش محصول نیست |
-| بزرگ‌نمایی فونت و سایر تعامل‌های دسترس‌پذیری | UNVERIFIED | آزمون میدانی جداگانه هنوز شواهد ندارد؛ فعلاً درخواست نمی‌شود |
+| TalkBack / VoiceOver | **OUT_OF_CURRENT_SCOPE / NOT_TESTED** | از برنامه فعلی حذف شد؛ فقط برای به‌روزرسانی احتمالی آینده و در صورت درخواست کاربران باقی است |
+| بزرگ‌نمایی فونت و آزمون اختصاصی دسترس‌پذیری | **NOT_SCHEDULED** | در نسخه فعلی درخواست آزمون جدید داده نمی‌شود؛ این وضعیت نشان‌دهندهٔ تأیید دسترس‌پذیری نیست |
 
 **قالب گزارش:** مدل گوشی، Android، WebView/Chrome، شماره نسخه APK و وضعیت هر مورد. در صورت خطا فقط متن خطا/شماره مرحله را بفرستید، نه فایل JSON یا تصویر اطلاعات مالی.
 
@@ -96,3 +96,11 @@
 - **GitHub baseline:** `feta` PR #166 OPEN/Draft/unmerged, head `5afee2c51cc75c6d33acfd476046f0bdbdf54e48`, exact-head **12/12 checks successful** and **11/11 workflow runs successful**; Issue #167 OPEN. The successful automation already covers synthetic WebMessage/SAF handling, not live TalkBack. No test was rerun or relabeled PASS.
 - **Proceed without duplication:** the next non-accessibility Day 4 item is a **review-only preflight of real PWA ↔ Android native backup integration**. Existing `android-pilot/README.md` and `MainActivity.java` explicitly say the app launcher loads `https://raminhashemi1.github.io/sahamban/` from public `main`, while the coordinated `native-backup-export-v1.js`, `index.html`, `sw.js` work remains in unmerged `feta`. The isolated offline debug fixture PASS does **not** validate the real served PWA. A controlled environment with the complete matching web assets is needed **only after approval for that environment**; no uncontrolled publishing or changes to public `main`.
 - **Preserve boundaries:** `REAL_PWA_BACKUP_UNVERIFIED`, `PHYSICAL_DEVICE_FULL_ACCEPTANCE_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`. Keep PR #166 Draft and Issue #167 OPEN. No merge, deployment, production signing, store submission, payment, trade, use of personal portfolio, data clearing or image upload. This change is documentation-only; check CI again for its new SHA.
+
+## 2026-11-13 — Owner scope decision: screen-reader support/testing moved to future backlog
+- **Explicit owner decision (supersedes prior temporary skip):** dedicated **TalkBack/VoiceOver screen-reader support, Persian speech/reading-order assessment and related manual device testing** are **out of the CURRENT delivery scope**. Do not ask the owner to run them, schedule them as the next step, or spend development time on them now. Reconsider only if users request it or the owner chooses a future release. Keep this as an **unscheduled future option**, not a completed item.
+- **Precise classification:** `SCREEN_READER_SCOPE=CURRENT_RELEASE_OUT_OF_SCOPE_BY_OWNER`, `TALKBACK_PHYSICAL_RESULT=NOT_TESTED`, `VOICEOVER_PHYSICAL_RESULT=NOT_TESTED`; neither an automated proxy nor this owner decision implies `PASS`, full WCAG compliance, or validated screen-reader access. Preserve all previous historical observations unmodified.
+- **Do not delete functioning app functionality:** TalkBack/VoiceOver belong to Android/iOS, not a standalone Sahamban prediction feature. Existing labels, keyboard support, automated regression/axe checks and broad visual/mobile safeguards must remain intact to avoid unrelated regressions. This is removal of **current feature effort and active manual test tasks**, not a destructive code change.
+- **Compliance caveat:** market submission, accessibility legal requirements and any specific store policy have not been independently assessed; this project must not falsely certify accessibility or imply that owner prioritization waives external obligations. Other deployment/payment/financial/recovery gates remain unchanged.
+- **Live GitHub baseline before writing:** `feta` PR #166 OPEN/Draft/unmerged at `c1aa61674e226860d2eaf16ba93ea6b61ef6a89a`, with **10/12 checks successful, two in progress (`webkit-mobile`, `browser`)** and **9/11 matching-head workflows success** when inspected. Those checks belong to the pre-documentation SHA; verify the resulting new SHA separately.
+- **Next non-accessibility work:** review-only preflight of the already-built **actual PWA ↔ Android WebMessage backup** path, which currently needs matching deployed web assets in a controlled environment. Do not reimplement the synthetic tests, overwrite the public PWA or deploy/merge without authorization. Issue #167 stays OPEN. `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`, PR #166 Draft. No orders, payments or real user files.
