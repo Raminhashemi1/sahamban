@@ -130,3 +130,18 @@ signing certificate; a Project Pages path alone cannot satisfy it.
 - **Compliance caveat:** market submission, accessibility legal requirements and any specific store policy have not been independently assessed; this project must not falsely certify accessibility or imply that owner prioritization waives external obligations. Other deployment/payment/financial/recovery gates remain unchanged.
 - **Live GitHub baseline before writing:** `feta` PR #166 OPEN/Draft/unmerged at `c1aa61674e226860d2eaf16ba93ea6b61ef6a89a`, with **10/12 checks successful, two in progress (`webkit-mobile`, `browser`)** and **9/11 matching-head workflows success** when inspected. Those checks belong to the pre-documentation SHA; verify the resulting new SHA separately.
 - **Next non-accessibility work:** review-only preflight of the already-built **actual PWA ↔ Android WebMessage backup** path, which currently needs matching deployed web assets in a controlled environment. Do not reimplement the synthetic tests, overwrite the public PWA or deploy/merge without authorization. Issue #167 stays OPEN. `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`, PR #166 Draft. No orders, payments or real user files.
+
+## 2026-11-13 — Fresh isolated restore-test APK identity (v0.3.5-pilot)
+
+The next debug build uses package ID `ir.sahamban.pilot.restore` (`applicationIdSuffix '.restore'`) and versionCode 8 / versionName `0.3.5-pilot`. It installs side-by-side with the earlier `ir.sahamban.pilot.retest` debug app, so do not uninstall the older pilot, Chrome or installed PWA. This distinct debug identity also avoids depending on an ephemeral CI debug-signing key to update the prior test package.
+
+This build includes the SAF import correction: the main PWA WebView can read only a single user-selected `content://` JSON URI with a returned transient read grant. Use synthetic JSON only. The published `main` PWA still does **not** load `native-backup-export-v1.js`; this APK can validate the PWA file-picker/import side but cannot establish the new native export path from the unmerged `feta` assets. Do not mistake a successful restore test for full PWA↔Android export/restore acceptance.
+
+Physical import-only check (after the new artifact has a green Android build):
+1. Install the new `ir.sahamban.pilot.restore` APK alongside older apps; do not uninstall or clear Chrome/PWA data.
+2. Launch the normal «سهام‌بان» main launcher in this debug APK; it opens the currently published PWA in a fresh app-local WebView store.
+3. In the PWA's local-backup import control, choose only a previously saved **synthetic** `test-offline-1.json` or another synthetic JSON fixture. Do not select any real portfolio export.
+4. Confirm the preview lists only the expected synthetic keys, then explicitly confirm restore. Check the synthetic value appears; the app must reject non-JSON, multi-select and non-`content://` inputs.
+5. Report only PASS/FAIL and Android/WebView version; never upload the JSON or financial content.
+
+This verifies only the SAF file-selection/read/restore leg on a real WebView. It does not verify native export, live branch assets, persistence across app reinstall, or release readiness.

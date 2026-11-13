@@ -17,7 +17,8 @@ import android.webkit.WebViewClient;
 
 /**
  * Test-only HTTPS WebView shell for the existing public PWA.
- * No JavaScript bridge, injected identity, payment integration or browser data import.
+ * Uses only an origin-scoped backup WebMessage listener; no generic JS interface,
+ * injected identity, payment integration or Chrome/PWA data migration.
  */
 public final class MainActivity extends Activity {
     private static final String START_URL = "https://raminhashemi1.github.io/sahamban/";

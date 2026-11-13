@@ -11,8 +11,8 @@ android {
         applicationId 'ir.sahamban.pilot'
         minSdk 26
         targetSdk 35
-        versionCode 7
-        versionName '0.3.4-pilot'
+        versionCode 8
+        versionName '0.3.5-pilot'
     }
 
     compileOptions {
@@ -24,7 +24,7 @@ android {
         debug {
             // CI debug keystores are ephemeral: avoid signature-clashing upgrades
             // and never require uninstalling an existing pilot or public PWA.
-            applicationIdSuffix '.retest'
+            applicationIdSuffix '.restore'
         }
         release {
             // Never publish an unsigned/automatically debug-signed release.
