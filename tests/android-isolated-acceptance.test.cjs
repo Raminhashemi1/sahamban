@@ -11,6 +11,7 @@ test('acceptance variant has separate identity and no release-side source or sig
  assert.match(gradle,/assets\.srcDir layout\.buildDirectory\.dir\('generated\/acceptanceAssets'\)/);
  assert.match(manifest,/android:name="\.MainActivity" android:enabled="false"/);
  assert.match(manifest,/android:name="\.IsolatedAcceptanceActivity"/);
+ assert.match(manifest,/سهام‌بان — آزمون ایزوله ۲/);
  assert.match(manifest,/android:allowBackup="false"/);
  assert.doesNotMatch(manifest,/android\.permission\.(READ_|WRITE_|CAMERA|RECORD_AUDIO)/);
  assert.match(gradle,/include '\*\.html', '\*\.js', '\*\.css'/);
