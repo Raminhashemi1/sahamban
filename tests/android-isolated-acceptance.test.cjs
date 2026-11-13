@@ -31,11 +31,15 @@ test('isolated acceptance WebView denies network and unknown assets, preserves e
   'BackupImportPolicy.acceptsContentUri', 'clips.getItemCount() == 1',
   'FLAG_GRANT_READ_URI_PERMISSION', 'new BackupExportBridge(this, view)',
   'exporter.install()', 'exporter.onActivityResult',
-  'localStorage.setItem', 'نماد-ساختگی-آزمایش'
+  'localStorage.setItem', 'نماد-ساختگی-آزمایش',
+  'isSelectedSyntheticOnly(selected)', 'new BackupExportBridge(this, view, true)'
  ]) assert.ok(java.includes(required),required);
  assert.match(java,/https:\/\/raminhashemi1\.github\.io\/sahamban\//);
  assert.match(bridge,/Collections\.singleton\("https:\/\/raminhashemi1\.github\.io"\)/);
  assert.match(policy,/TrustedNavigation\.isInternal\(pageUrl\)/);
+ assert.match(bridge,/syntheticOnly &&/);
+ assert.match(bridge,/isSyntheticLocalSnapshot\(document\)/);
+ assert.match(java,/BackupExportBridge\.isSyntheticLocalSnapshot/);
  assert.doesNotMatch(java,/addJavascriptInterface|setBlockNetworkLoads\(false\)/);
  assert.doesNotMatch(java,/http:\/\/|10\.0\.2\.2|localhost/);
 });
