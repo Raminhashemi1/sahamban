@@ -106,8 +106,12 @@ button:disabled{opacity:.5}
   bridge.addEventListener('message',event=>{
    let data;
    try{data=JSON.parse(event.data);}catch{return;}
-   if(!data||data.protocol!=='sahamban-backup-result-v1'
-       ||data.requestId!==pendingId)return;
+   if(!data||data.protocol!=='sahamban-backup-result-v1'||pendingId===null)return;
+   // The native source/path guard can reject a message before parsing its
+   // requestId, in which case Android sends a blank correlation id.
+   // A rejection is terminal, never proof of saving a backup.
+   const earlyRejected=data.status==='rejected'&&data.requestId==='';
+   if(data.requestId!==pendingId&&!earlyRejected)return;
    pendingId=null;
    enable(true);
    if(data.status==='saved'){
