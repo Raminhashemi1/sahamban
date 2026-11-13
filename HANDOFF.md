@@ -699,3 +699,13 @@
 - Exact PR #166 head `7aa6098935328137ff9675e384f57af3896400d0`: **13/13 check runs PASS**; Android debug build run [43426682550](https://github.com/Raminhashemi1/sahamban/actions/runs/43426682550) succeeded. PR #166 remains OPEN/Draft; Issue #167 remains OPEN. Main SHA and Pages deployment unchanged.
 - Next single user-side isolation step: open `https://raminhashemi1.github.io/sahamban/install.html` in the same Chrome. It is a small standalone HTML page and does not load the main app script stack, though it registers the existing service worker after page load. If visible, report that; if blank, send a screenshot. Preserve all app/browser data; do not uninstall, clear storage/cache, select backups, merge, deploy or change product code before this result.
 - No product code, user data, main deployment, roadmap or release state changed. `REAL_PWA_BACKUP_UNVERIFIED`; `MARKET_RELEASE_BLOCKED`.
+
+
+## 2026-11-13 — live continuation audit (documentation-only)
+- Re-read NEW-CHAT-START.md and the six required project memory/plan/decision/log documents on this branch; reviewed DAY4-BASELINE-DUPLICATE-INVENTORY-20261113.md.
+- Live refs at audit: PR #164 branch `feat/day2-history-basis-gates-20261109` HEAD `4f8eb71dde58d723da706a9f71c23cff9e8f0df6`; PR #164 OPEN, non-Draft, unmerged. Exact SHA CI: 14/14 check runs success and 13/13 matching PR workflow runs success. These results belong only to this pre-checkpoint SHA.
+- Public `main` remains `a5c10548904ee0e1cd80169729071d0bb390f606`. Separate Android PR #166 branch `feta` HEAD at audit `dfff2e21f13979ff7a204080982f5a29dcaab88c`; PR #166 OPEN/Draft/unmerged; exact SHA 12/12 checks and 11/11 matching PR workflow runs success. Issue #167 OPEN.
+- Android review confirms the existing integration mismatch: public main does not load/precache `native-backup-export-v1.js`, while the separate feta branch does. No code/tests rerun, no Android feature duplicated, no physical result inferred from CI.
+- Original five-day plan unchanged. DEC-008 remains bounded Day 3 engineering only; `day3FinalAccepted=false`, `historyBasisAuthenticated=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. `REAL_PWA_BACKUP_UNVERIFIED`; `MARKET_RELEASE_BLOCKED`.
+- No source code, user data, APK, public Pages, PR state, financial data, holdings, orders, payments, signals, merge or deployment changed. This is a documentation-only audit; this commit's CI must be checked independently.
+- **Single next dependency:** user-side open `https://raminhashemi1.github.io/sahamban/install.html` in the same Chrome session and report visible/blank. Preserve app/browser storage; do not uninstall, clear data/cache or select backup files. No code change/redeploy until this result is known.
