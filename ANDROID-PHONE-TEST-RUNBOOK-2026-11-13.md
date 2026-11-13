@@ -2,7 +2,7 @@
 
 **تاریخ تهیه:** ۱۳ نوامبر ۲۰۲۶  
 **شاخه:** `feta`  
-**وضعیت پذیرش فعلی:** `PHYSICAL_DEVICE_PARTIAL_ACCEPTANCE=PASS_LOCAL_AND_RISK_SYNTHETIC`، `EXACT_APK_VERSION_FROM_SCREENSHOT_UNVERIFIED`، `REAL_PWA_BACKUP_UNVERIFIED`، `MARKET_RELEASE_BLOCKED`
+**وضعیت پذیرش فعلی:** `PHYSICAL_DEVICE_PARTIAL_ACCEPTANCE=PASS_LOCAL_RISK_AND_CANCEL_NO_FALSE_PASS`، `EXACT_APK_VERSION_FROM_SCREENSHOT_UNVERIFIED`، `REAL_PWA_BACKUP_UNVERIFIED`، `MARKET_RELEASE_BLOCKED`
 
 این راهنما فقط برای APK دیباگ آزمایشی با شناسه مستقل `ir.sahamban.pilot.retest` و فایل‌های **ساختگی** است. هیچ‌گاه اطلاعات واقعی سبد، رمز، کد ملی، اطلاعات بانکی یا فایل JSON کاربران را در گزارش GitHub قرار ندهید. صفحه آزمایش دوم هیچ ارتباطی به اطلاعات موجود در Chrome/PWA ندارد.
 
@@ -40,7 +40,7 @@
 | انتخاب و بازخوانی فایل محلی | **PASS** | فایل JSON یکتای همان تلاش؛ تطبیق دقیق متن و nonce در تصویر |
 | ذخیره پشتیبان سبد ریسک | **PASS** | Samsung S23 FE؛ فایل ساختگی `test-risk-6.json` و پیام موفق Native |
 | انتخاب و بازخوانی فایل سبد ریسک | **PASS** | فایل همان تلاش و پیام سبز تطبیق دقیق در تصویر کاربر |
-| لغو ذخیره، بدون PASS | UNVERIFIED | |
+| لغو ذخیره، بدون PASS | **PASS محدود** | تصویر جدید کاربر: «ذخیره لغو شد. PASS ثبت نشده است.»؛ مشاهده پنجره SAF و نبود فایل روی دیسک از خود تصویر اثبات نمی‌شود |
 | فایل قدیمی، بدون PASS اشتباه | UNVERIFIED | |
 | آزمون در حالت پرواز | UNVERIFIED | |
 | فارسی/فونت/TalkBack | UNVERIFIED | |
@@ -63,3 +63,11 @@
 - Two real-device **limited** synthetic local + risk file save/exact readback PASS reports for Samsung S23 FE remain preserved from earlier user evidence. Running the fixture implies a test UI ran on the device; **the exact 0.3.4 package/version is not proven by the screenshot alone**. No user-supplied new physical result in this session: Cancel on real SAF picker, offline, TalkBack/RTL, actual PWA restore and publish eligibility remain **UNVERIFIED/BLOCKED**. Previous mismatch/oversize FAILs stay attributed to their own attempts and do not count as new tests.
 - **One next device action:** without uninstalling or deleting existing PWA/data, open the installed **synthetic debug test launcher** on Samsung S23 FE, press `ذخیره پشتیبان محلی ساختگی`, then press Android **Back/Cancel** in the save-location picker **without choosing a file**. Record whether picker opened and whether UI shows `ذخیره لغو شد. PASS ثبت نشده است.` (or another exact error) and confirms **no new PASS**. Send only PASS/FAIL and non-sensitive error text; **do not send any JSON, holdings, identifiers, or actual saved file**. A clean CANCEL on physical phone is required to promote this specific field gate; no automatic inference from CI.
 - Safety: `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`; Issue #167 stays OPEN and PR #166 stays Draft. No main merge, public deployment, app-store publication, order, payment, holdings edit, or sensitive upload. Changes are documentation/status only, and must be logged in current SHA's CI after writing.
+
+## 2026-11-13 — physical Android SAF cancel: no false PASS (user screenshot)
+- **Evidence:** user-uploaded screenshot of the already used synthetic debug backup test page. The visible status is **`ذخیره لغو شد. PASS ثبت نشده است.`**; the file selector shows **`فایلی انتخاب نشده است`**. This matches the existing fixture's terminal `cancelled` branch in `backup-self-test.html`; no `PASS` is displayed. This is a **real-device UI observation, not a new automated test**. The screenshot is not committed to the public repository and contains no backup JSON.
+- **Narrow field verdict:** `SYNTHETIC_SAF_CANCEL_NO_FALSE_PASS=PASS_OBSERVED` for the reported cancellation attempt, in the same Samsung S23 FE test sequence. The image **does not independently show the Android picker itself, establish the exact APK version, verify the OS/WebView version, or prove no physical file was created**; those specific claims remain `UNVERIFIED`. Earlier synthetic local and risk save+exact readback `PASS` results remain separately established.
+- **GitHub pre-documentation checkpoint:** PR #166 `feta` at `051fe3dd5f74595d5da45d21e8ae0d0ef0250f4e`, OPEN / Draft / unmerged; **12/12 exact-head checks success and 11/11 matching-head PR workflows success**, zero failed/pending. These checks are **not** evidence of physical offline/PWA acceptance; this documentation commit will have a different SHA and requires its own exact-head checks.
+- **Do not repeat:** The native cancellation code, fixture, and unit test already existed; no application source, APK, tests, physical prior PASS, or market data were changed or rerun.
+- **Next single physical test:** With the same synthetic debug launcher on the phone, enable **airplane mode**; generate a **fresh uniquely named synthetic local JSON**, complete save via Android's document picker, select **that exact newly saved file** for readback, and report `PASS`/`FAIL` plus the visible message without sharing file contents. Turn airplane mode off afterward. This determines the offline test gate only; if Android's picker/provider is unavailable offline, report the exact failure rather than claim application success. Do not delete existing files or PWA.
+- `REAL_PWA_BACKUP_UNVERIFIED`, `PHYSICAL_DEVICE_FULL_ACCEPTANCE_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`; Issue #167 OPEN and PR #166 Draft. No merge/deploy/production signing/paid service/real portfolio data/order/signal/holdings change.
