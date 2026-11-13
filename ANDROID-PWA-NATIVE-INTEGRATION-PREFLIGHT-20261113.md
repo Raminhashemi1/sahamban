@@ -89,3 +89,11 @@ This entry supersedes the immediately preceding Android continuation entry's sta
 - Issue #167 remains OPEN. The PWA/native integration gap remains: published main does not load/precache `native-backup-export-v1.js`, whereas `feta` does. Real served-PWA↔Android save/restore remains UNVERIFIED; existing synthetic fixture results must not be represented as E2E acceptance.
 - Do not repeat synthetic save/readback, offline or cancellation tests; do not request TalkBack/VoiceOver testing. The next and only owner-side isolation step remains opening `https://raminhashemi1.github.io/sahamban/install.html` in the same Chrome session and reporting whether it renders. No result supplied yet.
 - Documentation-only audit: no code, APK, tests, physical device test, main Pages, merge, deploy, publication, order, payment, trade, or holdings change. Keep Issue #167 open, PR #166 Draft, `REAL_PWA_BACKUP_UNVERIFIED`, and `MARKET_RELEASE_BLOCKED`.
+
+
+## 2026-11-13 — exact-head CI completion and physical acceptance gate
+- Re-polled PR #166 current exact SHA `ca4c1cc702bdc395e97e41e4c556092279299d3e`: **11/11 matching PR workflow runs completed successfully**. PR #166 remains OPEN/Draft/unmerged. This does not prove physical PWA↔Android backup/restore.
+- PR #164 exact SHA `9ab4ac97a52bcae06fc43591e3b9e78b8e223950`: **13/13 matching workflow runs completed successfully**; OPEN/non-Draft/unmerged. Public `main` remains `a5c10548904ee0e1cd80169729071d0bb390f606`.
+- Issue #167 remains OPEN. Public main still lacks `native-backup-export-v1.js` and its service-worker precache; `feta` contains both. Keep live PWA↔Android integration UNVERIFIED.
+- The user-side same-session Chrome check of `https://raminhashemi1.github.io/sahamban/install.html` has not been reported. It remains the next action; wait for visible/blank/loading result before code changes or deployment. Preserve all app/browser data and synthetic fixture files.
+- Docs only; no code, APK, tests, physical device, Pages, merge, deploy, release, signing, orders, payments, trades or holdings changed. Issue stays open; PR stays Draft; `REAL_PWA_BACKUP_UNVERIFIED`, `MARKET_RELEASE_BLOCKED`.
