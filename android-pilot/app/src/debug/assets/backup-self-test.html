@@ -85,6 +85,16 @@ button:disabled{opacity:.5}
    bridge.postMessage(JSON.stringify({
     protocol:'sahamban-backup-export-v1',requestId,name:sample.name,content:pendingContent
    }));
+   // postMessage returning does not mean Android opened SAF or saved a file.
+   // If native never replies, show a useful diagnostic rather than an
+   // indefinite, misleading "request sent" screen. Do not forge PASS/FAIL.
+   if(typeof window.setTimeout==='function'){
+    window.setTimeout(()=>{
+     if(pendingId===requestId){
+      show('هنوز پاسخی از انتخابگر اندروید نرسیده است. اگر پنجره ذخیره باز نشد، این آزمون موفق نیست؛ برنامه آزمایشی را ببندید، دوباره باز کنید و مشکل را گزارش دهید. هیچ فایل تأیید نشده است.');
+     }
+    },12000);
+   }
   }catch{
    pendingId=null;
    pendingContent=null;
