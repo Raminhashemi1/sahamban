@@ -94,7 +94,12 @@ public final class BackupSelfTestActivity extends Activity {
             int count;
             while ((count = input.read(bytes)) != -1) output.write(bytes, 0, count);
             String html = new String(output.toByteArray(), StandardCharsets.UTF_8);
-            webView.loadDataWithBaseURL(FIXTURE_URL, html, "text/html", "UTF-8", null);
+            // The bridge checks WebView.getUrl() as well as the message origin.
+            // Android defaults a null historyUrl to about:blank, which can
+            // cause this trusted offline fixture to fail the native path gate
+            // without showing the SAF create-document picker.
+            // Match the HTTP(S) baseUrl and historyUrl per Android guidance.
+            webView.loadDataWithBaseURL(FIXTURE_URL, html, "text/html", "UTF-8", FIXTURE_URL);
         } catch (Exception error) {
             // No fallback to a network page; the fixture must be bundled in this APK.
             android.widget.TextView notice = new android.widget.TextView(this);
