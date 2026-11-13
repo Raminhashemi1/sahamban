@@ -888,3 +888,12 @@ https://bourseeye.com/stocks/501/%D8%BA%D8%B4%D9%87%D8%AF%D8%A7%D8%A8-%DA%A9%D8%
 - Existing review-only asset comparison stands: public main lacks the native export helper while feta includes it; actual served PWA ↔ Android bridge remains unverified. No implementation, tests, APK, physical device run, user data, deployment or PR/issue state changed.
 - Do not repeat synthetic save/readback, cancellation/offline tests, or screen-reader work (owner removed dedicated TalkBack/VoiceOver work from current scope). Keep `REAL_PWA_BACKUP_UNVERIFIED` and `MARKET_RELEASE_BLOCKED`.
 - **Single next dependency:** user opens `https://raminhashemi1.github.io/sahamban/install.html` in the same Chrome session and reports whether it renders. Until that result, no code changes or deployment. Preserve all PWA/browser data and existing APK.
+
+
+## 2026-11-13 — superseding exact-head CI/status correction
+This entry supersedes the immediately preceding Android continuation entry's stale pre-checkpoint SHA references.
+- Correct live PR #166 / `feta` HEAD: `73e01124f1227cb5ccfb07bd3c599a9923b1b510`, OPEN/Draft/unmerged; exact-head PR workflows: **8/11 success, 3/11 in progress** (WebKit, Smoke, 100-holding synthetic lifecycle). No failure was reported at poll time; do not mark CI green.
+- PR #164 / `feat/day2-history-basis-gates-20261109` HEAD at that audit: `0fa3dc31591450c689ad59ef27f316949fc068b8`, OPEN/non-Draft/unmerged; exact-head PR workflows: **11/13 success, 2/13 in progress** (Smoke and WebKit). Public `main`: `a5c10548904ee0e1cd80169729071d0bb390f606`.
+- Issue #167 remains OPEN. The PWA/native integration gap remains: published main does not load/precache `native-backup-export-v1.js`, whereas `feta` does. Real served-PWA↔Android save/restore remains UNVERIFIED; existing synthetic fixture results must not be represented as E2E acceptance.
+- Do not repeat synthetic save/readback, offline or cancellation tests; do not request TalkBack/VoiceOver testing. The next and only owner-side isolation step remains opening `https://raminhashemi1.github.io/sahamban/install.html` in the same Chrome session and reporting whether it renders. No result supplied yet.
+- Documentation-only audit: no code, APK, tests, physical device test, main Pages, merge, deploy, publication, order, payment, trade, or holdings change. Keep Issue #167 open, PR #166 Draft, `REAL_PWA_BACKUP_UNVERIFIED`, and `MARKET_RELEASE_BLOCKED`.
