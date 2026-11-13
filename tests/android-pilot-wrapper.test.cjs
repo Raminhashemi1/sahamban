@@ -76,7 +76,11 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
   'new BackupExportBridge(this, webView)', 'exporter.onActivityResult(',
   'Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(activity.includes(constraint),constraint);
- assert.match(build,/versionName '0\.3\.2-pilot'/);
+ assert.match(build,/versionName '0\\.3\\.3-pilot'/);
+ assert.match(activity,/loadDataWithBaseURL\\(FIXTURE_URL, html, "text\\/html", "UTF-8", FIXTURE_URL\\)/);
+ assert.doesNotMatch(activity,/loadDataWithBaseURL\\([^;]*null\\)/);
+ assert.match(html,/هنوز پاسخی از انتخابگر اندروید نرسیده است/);
+ assert.match(html,/12000/);
  assert.match(html,/Content-Security-Policy/);
  assert.match(html,/connect-src 'none'/);
  assert.match(html,/default-src 'none'/);
