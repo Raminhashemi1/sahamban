@@ -27,8 +27,11 @@ test('public PWA HTML and service-worker assets never ship server-only payment/e
  }
 });
 
-test('all referenced first-party PWA scripts exist and cannot pull in server-only modules',()=>{
- for(const script of publicScripts){
+test('all HTML-loaded and service-worker-cached first-party scripts cannot import server-only modules',()=>{
+ const cachedScripts=workerAssets.filter(asset=>asset.endsWith('.js'));
+ const scannedScripts=new Set([...publicScripts,...cachedScripts]);
+ assert.ok(scannedScripts.size>=publicScripts.length,'the worker script inventory must be included');
+ for(const script of scannedScripts){
   assert.match(script,/^[A-Za-z0-9][A-Za-z0-9._-]*\.js$/,'unusual script location: '+script);
   assert.ok(fs.existsSync(script),'missing public script: '+script);
   const source=fs.readFileSync(script,'utf8');
