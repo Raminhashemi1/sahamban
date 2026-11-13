@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import org.json.JSONObject;
 
 /**
  * Acceptance BUILD TYPE ONLY: the full pinned PWA runs inside this package's
@@ -81,6 +82,25 @@ public final class IsolatedAcceptanceActivity extends Activity {
         } catch (Exception ignored) {
             // Never fall back to public GitHub Pages if an asset is missing.
             return blocked();
+        }
+    }
+
+    private boolean isSelectedSyntheticOnly(Uri uri) {
+        // Read only the chosen SAF file, reject any real portfolio or unexpected
+        // metadata BEFORE granting it to the PWA file input. No content is logged.
+        try (InputStream input = getContentResolver().openInputStream(uri);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            if (input == null) return false;
+            byte[] buffer = new byte[4096];
+            int size;
+            while ((size = input.read(buffer)) != -1) {
+                if (output.size() + size > 256 * 1024) return false;
+                output.write(buffer, 0, size);
+            }
+            return BackupExportBridge.isSyntheticLocalSnapshot(
+                    new JSONObject(new String(output.toByteArray(), StandardCharsets.UTF_8)));
+        } catch (Exception ignored) {
+            return false;
         }
     }
 
@@ -159,7 +179,7 @@ public final class IsolatedAcceptanceActivity extends Activity {
                 return true;
             }
         });
-        exporter = new BackupExportBridge(this, view);
+        exporter = new BackupExportBridge(this, view, true);
         if (!exporter.install()) {
             failure("نسخه WebView برای آزمون امن خروجی بومی پشتیبانی نمی‌شود.");
             return;
@@ -186,7 +206,8 @@ public final class IsolatedAcceptanceActivity extends Activity {
             ClipData clips = data.getClipData();
             Uri selected = clips == null ? data.getData() :
                     clips.getItemCount() == 1 ? clips.getItemAt(0).getUri() : null;
-            if (selected != null && BackupImportPolicy.acceptsContentUri(selected.toString()))
+            if (selected != null && BackupImportPolicy.acceptsContentUri(selected.toString())
+                    && isSelectedSyntheticOnly(selected))
                 accepted = new Uri[]{selected};
         }
         fileCallback.onReceiveValue(accepted);
