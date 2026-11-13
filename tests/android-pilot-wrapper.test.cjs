@@ -51,6 +51,11 @@ test('native backup export is origin-scoped, user-selected and has no broad JS f
 test('debug APK has a temporary identity, no production signing and no checkout',()=>{
  const build=read('android-pilot/app/build.gradle');
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
+ // Debug APKs are signed by ephemeral CI debug keys. A separate package ID
+ // enables side-by-side field retesting without uninstalling old pilot data.
+ assert.match(build,/applicationIdSuffix '\.retest'/);
+ const wfIdentity=read('.github/workflows/android-pilot-debug.yml');
+ assert.match(wfIdentity,/package: name='ir\.sahamban\.pilot\.retest'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/assembleDebug/);
@@ -66,6 +71,7 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
  const html=read('android-pilot/app/src/debug/assets/backup-self-test.html');
  const build=read('android-pilot/app/build.gradle');
  assert.match(debugManifest,/BackupSelfTestActivity/);
+ assert.match(debugManifest,/نصب مستقل/);
  assert.match(debugManifest,/android.intent.action.MAIN/);
  assert.doesNotMatch(mainManifest,/BackupSelfTestActivity/);
  for(const constraint of [
@@ -76,7 +82,7 @@ test('debug-only offline self-test uses synthetic JSON, exact trusted origin and
   'new BackupExportBridge(this, webView)', 'exporter.onActivityResult(',
   'Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(activity.includes(constraint),constraint);
- assert.match(build,/versionName '0\.3\.3-pilot'/);
+ assert.match(build,/versionName '0\.3\.4-pilot'/);
  assert.match(activity,/loadDataWithBaseURL\(FIXTURE_URL, html, "text\/html", "UTF-8", FIXTURE_URL\)/);
  assert.doesNotMatch(activity,/loadDataWithBaseURL\([^;]*null\)/);
  assert.match(html,/هنوز پاسخی از انتخابگر اندروید نرسیده است/);
