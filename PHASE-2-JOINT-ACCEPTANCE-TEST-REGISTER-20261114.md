@@ -37,10 +37,10 @@ Purpose: durable, non-duplicative register for owner-assisted acceptance tests o
 
 - [x] PWA local-backup UI produced a one-section JSON backup and owner confirmed file presence.
 - [x] Previously saved synthetic file reopened and showed a valid preview; no data was replaced.
-- [x] Observe a visible Android completion message after SAF write: screenshot shows the app reporting that Android reported completion of writing `sahamban-local-backup-v7.1.json`; message states the JSON is unencrypted and contains one saved section, with no recorded audio. Physical native write-completion acknowledgement: PASS (screenshot evidence in conversation, 2026-11-14). Exact-byte readback comparison is NOT yet evidenced and remains UNVERIFIED.
+- [x] Observe a visible Android completion message after SAF write: screenshot reports Android completion for the filename `sahamban-local-backup-v7.1.json`; message states one saved section and no recorded audio. Physical native write-completion acknowledgement: PASS. **Filename reconciliation remains UNVERIFIED:** owner reports the file visible in Downloads is version `v1`, not `v7.1`; do not assume these are the same artifact. Exact-byte readback is also UNVERIFIED.
 - [ ] Restore a correctly shaped synthetic local-backup fixture **only inside the isolated acceptance app**, after its explicit consent flow; verify the expected synthetic value is restored and no unrelated data changes.
 - **Do not repeat:** export merely to prove a file exists; reselect/re-preview the already accepted `-01.json`/`-02.json` files; never restore a real profile.
-- Current status: `PARTIAL — physical Android write-completion acknowledgement PASS; exact-byte readback UNVERIFIED; isolated synthetic restore NOT YET OBSERVED`.
+- Current status: `PARTIAL — Android completion callback PASS; filename/file-identity mismatch (reported v1 vs UI v7.1) UNVERIFIED; exact-byte readback UNVERIFIED; isolated synthetic restore NOT YET OBSERVED`.
 
 ### J2 — Risk portfolio backup: PWA path and isolated restore
 
@@ -81,7 +81,7 @@ Purpose: durable, non-duplicative register for owner-assisted acceptance tests o
 
 ## Current next action
 
-Next J1 action: verify the saved file's presence and size in Android Files/Downloads, without opening or importing it yet. This will add file-presence evidence but does not by itself prove exact-byte readback. Then inspect whether the isolated acceptance app exposes a safe synthetic-only restore consent flow. Do not repeat export or preview. Stop if the file cannot be identified unambiguously or if any real data is requested.
+Next J1 action: reconcile the filename mismatch first. Owner reports seeing a `v1` file, while the app completion message screenshot names `v7.1`. Ask for a screenshot of the exact Downloads filename and file details (size/date) without opening it. Do not rename, delete, re-export, select, or restore any file until identity is clear. Then inspect whether the isolated acceptance app exposes a safe synthetic-only restore consent flow.
 
 ## GitHub evidence pointers
 
@@ -93,4 +93,4 @@ Next J1 action: verify the saved file's presence and size in Android Files/Downl
 ## Change log
 
 - 2026-11-14: Initial non-duplicate six-work-package register created from existing Android acceptance log, Issue #167 evidence, PR #166/#178 context, and active-branch autonomous test audit.
-- 2026-11-14: J1 physical step — owner tapped the synthetic-only local backup export. Android save picker opened; owner accepted the save and the app displayed: `Android پایان نوشتن فایل sahamban-local-backup-v7.1.json را گزارش کرد`; UI reports one saved section and no recorded audio. Marked visible native write-completion acknowledgement PASS. Exact-byte readback and restore remain UNVERIFIED. Next: verify file presence/size in Downloads, without opening/importing. No existing data changed; no restore, merge, deployment, release, payment, trade or portfolio mutation performed.
+- 2026-11-14: J1 physical step — owner tapped the synthetic-only local backup export. Android save picker opened; owner accepted the save and the app displayed a completion message naming `sahamban-local-backup-v7.1.json`, one saved section, and no recorded audio. Native completion acknowledgement is PASS. Owner then reported that Downloads shows a `v1` file, not `v7.1`; exact file identity is therefore unresolved. No rename, deletion, re-export, file selection or restore was performed. Next: obtain screenshot of exact Downloads filename and file details without opening it. Exact-byte readback and restore remain UNVERIFIED.
