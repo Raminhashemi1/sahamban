@@ -854,3 +854,10 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 ## 2026-11-13 — current-chat adversarial server-import guard checkpoint
 - Found a concrete blind spot in the newly created public-PWA subscription boundary test's relative-import matcher, fixed in commit `939474729bec7af05a01f605b5c1676b496646b1`. Added six forbidden + three allowed import examples, all nine verified with a direct Node assertion run. This is **not** a full repository test or CI PASS; exact SHA `939474729...` had no matching GitHub Actions workflow/check run when polled. Detailed audit added to `DAY4-ACCEPTANCE-GATES-CLOSEOUT-20261113.md` at `a7fc3707fea632410d4a86f902109c0b793d9a84`.
 - GitHub branch/file changed concurrently during this record update; previous write returned conflict and was not forced. This checkpoint appends only to freshly fetched branch version. No public, PSP, bank, Android, merge, deployment or financial state changed.
+
+
+## 2026-11-14 — exact candidate CI verified for public subscription boundary regression
+- On integrated test candidate `b0e41e2e8df1361336f3196dd84f2709200f2b7d`, GitHub Smoke run `43578386425` executed `node --test tests/day4-public-subscription-boundary.test.cjs`: **4 tests PASS / 0 FAIL**. This closes the previously pending exact-CI execution question for this regression on this candidate SHA.
+- Exact SHA CI completed **14/14 Check Runs SUCCESS and 13/13 workflow runs SUCCESS**. Smoke, Chromium browser, and WebKit mobile jobs succeeded. Android low-end v110 browser proxy ran and its artifact was uploaded; this is not physical-device acceptance.
+- Smoke live-market step remained `UNVERIFIED_NETWORK` / `UND_ERR_CONNECT_TIMEOUT` for فولاد; no authenticated TSETMC connection or quote was established.
+- No source/test code was changed in this continuation. No duplicate phone test, PWA restore, market-data capture, merge, deployment, payment, order, trade or holdings mutation was performed.
