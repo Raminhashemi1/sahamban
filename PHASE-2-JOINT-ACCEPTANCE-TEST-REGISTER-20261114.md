@@ -82,7 +82,7 @@ Purpose: durable, non-duplicative register for owner-assisted acceptance tests o
 
 ## Current next action
 
-Next J1 action: owner should reload the same app page once, as explicitly instructed by the restore confirmation, then capture the restored settings view. Verify the synthetic test value is visible and unrelated settings remain unchanged. Do not repeat restore or export. Exact-byte readback remains independently unverified.
+Owner exited/re-entered the app and supplied screenshots of the valuation/portfolio module. These screenshots show the module overview and a notice that no real-asset file is stored in this browser; they do not display the restored synthetic backup value or a before/after comparison. Therefore post-reopen persistence and unrelated-data integrity remain UNVERIFIED. Next: inspect the read-only `دارایی‌ها و قیمت‌ها` tab (no fetch/update/import actions) for the known synthetic fixture value; if not visible, stop and report that this UI cannot evidence the restored setting. Do not repeat restore or export. Exact-byte readback remains independently unverified.
 
 ## GitHub evidence pointers
 
@@ -101,3 +101,5 @@ Next J1 action: owner should reload the same app page once, as explicitly instru
 - 2026-11-14: J1 in-app preview — owner selected `sahamban-local-backup-phase2-01.json`. Screenshot shows selected filename truncated as `sahamban-l...se2-01.json`; app reports `فایل معتبر است؛ ۱ بخش؛ هیچ چیزی هنوز جایگزین نشده.` Marked physical file selection and valid one-section preview PASS. No restore was executed and no data was replaced. Exact-byte readback remains UNVERIFIED. Owner then explicitly approved restore. The app confirmation screenshot reports one section restored in the same browser and requests one page reload to display restored settings. Next: reload once and verify the restored synthetic value and unrelated-data integrity; do not restore again.
 
 - 2026-11-14: J1 restore step — after explicit owner approval, app displayed `۱ بخش در همین مرورگر بازیابی شد. برای نمایش تنظیمات بازیابی‌شده، صفحه را یک بار بارگذاری مجدد کنید.` Restore acknowledgement for one section: PASS. Post-reload persistence/visible values and no-unrelated-change verification remain pending. Exact-byte readback remains UNVERIFIED. Next: reload the same page once and capture the resulting settings view; do not repeat restore.
+
+- 2026-11-14: J1 post-reopen evidence — owner exited and re-entered the app, then supplied screenshots of the valuation/portfolio module. The screenshots show module overview and a notice that no real-asset file is stored in this browser; no synthetic backup value is visible and no before/after comparison is available. This is not sufficient to claim restore persistence. Post-reopen persistence and unrelated-data integrity remain UNVERIFIED. Next: inspect read-only `دارایی‌ها و قیمت‌ها` tab only, without triggering any data fetch/update/import. Exact-byte readback remains UNVERIFIED.
