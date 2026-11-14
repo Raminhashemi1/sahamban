@@ -25,6 +25,7 @@ test('v92 keeps all ten modules and adds an optional four-step first-use tour',(
  const a=boot();
  assert.equal(a.cards.length,10);assert.equal(a.tour.hidden,true);
  const open=a.quick.children[1];assert.equal(open.attrs['aria-expanded'],'false');
+ assert.equal(typeof open.handlers.pointerup,'function');assert.equal(typeof open.handlers.touchend,'function');
  open.handlers.click();assert.equal(a.tour.hidden,false);assert.equal(open.attrs['aria-expanded'],'true');
  const top=a.tour.children[0],title=a.tour.children[1],actions=a.tour.children[3];
  assert.match(title.textContent,/سبدتان/);
