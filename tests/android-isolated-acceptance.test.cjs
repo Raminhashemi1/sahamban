@@ -73,5 +73,5 @@ test('synthetic acceptance action is the only visible export control and is full
  assert.match(panel,/id="sb148ExportActions" style="display:grid;grid-template-columns:minmax\(0,1fr\)/);
  assert.match(panel,/id="sb148SyntheticExport"/);
  assert.match(panel,/style="width:100%;min-height:56px;white-space:normal"/);
- assert.doesNotMatch(panel,/id="sb148Export"/);
+ assert.match(panel,/id="sb148Export" type="button" hidden style="display:none"/);
 });
