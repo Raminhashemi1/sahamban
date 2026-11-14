@@ -67,6 +67,56 @@ jobs:
             echo 'Unexpected high-risk Android permission in debug APK' >&2
             exit 1
           fi
+
+      - name: Build ISOLATED synthetic-only PWA acceptance APK
+        run: gradle -p android-pilot --no-daemon :app:assembleAcceptance
+      - name: Audit isolated acceptance package and pinned PWA assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -f "$APK"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.acceptancefix' versionCode='8' versionName='0.3.5-pilot'"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > /tmp/sahamban-acceptance-manifest.txt
+          grep -F 'IsolatedAcceptanceActivity' /tmp/sahamban-acceptance-manifest.txt
+          grep -F 'MainActivity' /tmp/sahamban-acceptance-manifest.txt
+          unzip -Z1 "$APK" | grep -Fx 'assets/pwa/index.html'
+          unzip -Z1 "$APK" | grep -Fx 'assets/pwa/native-backup-export-v1.js'
+          unzip -Z1 "$APK" | grep -Fx 'assets/acceptance-asset-manifest.json'
+          if unzip -Z1 "$APK" | grep -Eq '^assets/pwa/sw\\.js        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sahamban-android-pilot-debug-UNSIGNED-FOR-STORE
+          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+; then
+            echo 'Service worker must not be bundled in isolated acceptance APK' >&2
+            exit 1
+          fi
+          unzip -p "$APK" assets/acceptance-asset-manifest.json > /tmp/sahamban-acceptance-assets.json
+          python3 - <<'PY'
+          import json, os
+          with open('/tmp/sahamban-acceptance-assets.json', encoding='utf-8') as f:
+              manifest = json.load(f)
+          assert manifest['profile'] == 'synthetic-only-debug-acceptance'
+          assert manifest['sourceCommit'] == os.environ['GITHUB_SHA']
+          assert manifest['path'] == '/sahamban/'
+          assert 'index.html' in manifest['files']
+          assert 'native-backup-export-v1.js' in manifest['files']
+          assert 'local-backup-v148.js' in manifest['files']
+          print('Acceptance asset manifest matches exact workflow checkout')
+          PY
+          sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sahamban-android-ISOLATED-ACCEPTANCE-SYNTHETIC-ONLY
+          path: android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Print reproducibility digest (never a private certificate)
         run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
