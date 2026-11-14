@@ -58,3 +58,10 @@
 - PR #166 و Issue #167 همچنان مسیر مستقل Android هستند؛ دو PASS محدود فایل مصنوعی روی گوشی ثبت شده‌اند، اما یکپارچگی PWA واقعی هنوز اثبات نشده. TalkBack/VoiceOver بنا به تصمیم مالک خارج از دامنه چرخه فعلی است. هیچ کار تکراری Android در PR #164 انجام نشود.
 - **تنها قدم بعدی:** گرفتن رکورد هویت معتبر/اصلی که دو شناسه را به هم پیوند دهد، یا capture مجدد endpoint تعدیلات همراه با raw bytes، URL، UTC، content-type و SHA-256. تا آن زمان اتصال ۱۵ رویداد به ۵۰۰ ردیف ممنوع و FIN-05 مسدود است.
 - وضعیت مالی همچنان بسته: `sourceAuthenticated=false`, `historyPriceBasisVerified=false`, `capitalActionsVerified=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`, `day3FinalAccepted=false`.
+## افزودهٔ FIN-06 — پژوهش شناسهٔ تعدیلات و وضعیت زندهٔ شاخه‌ها
+- پژوهش عمومی ثانویه تأیید می‌کند API جست‌وجوی TSETMC فیلدهای primary `insCode` و کدهای قدیمی/مرتبط `insCode2/3/4` دارد؛ اما هیچ منبعی معنای `priceAdjust[].insCode` را در پاسخ `GetPriceAdjustList` یا رابطهٔ ...710 و ...713 را توضیح نمی‌دهد. دیتاست ثالث وساخت را با ...713 ثبت کرده و هیچ crosswalk برای ...710 ندارد.
+- endpointهای مستقیم CDN برای جست‌وجو/هویت دو کد/تعدیلات در این محیط قابل دسترسی نبودند؛ هیچ پاسخ تازه‌ای دریافت یا capture نشد. این محدودیت محیط است، نه ادعای ازکارافتادگی سرویس. GitHub connector نیز ابزار dispatch workflow ندارد.
+- FIN-06=`BLOCKED_NEEDS_PROVIDER_IDENTITY_RESPONSE`. تنها مدرک لازم: پاسخ provider-origin برای جست‌وجوی وساخت و identity هر دو کد یا capture تازهٔ تعدیلات با raw bytes، URL، UTC، HTTP status، content-type و SHA-256.
+- گزارش پژوهش: `evidence/day3/FIN-06-adjustment-id-crosswalk-research-20261114.md`. گزارش 14/15 تطبیق عددی قبلی صرفاً diagnostic است و تعلق ردیف‌ها به وساخت را ثابت نمی‌کند.
+- وضعیت Android جدا: PR #166 head `7b1f881dc2e99c2d421cfb6027a75cbff0f45a50`، 12/12 check-run موفق و 11/11 workflow موفق؛ PR همچنان Draft/Open و Issue #167 باز. این نتایج جایگزین پذیرش واقعی PWA backup/restore نیستند.
+- هیچ داده خام یا قیمت ویرایش نشد. گیت‌های مالی همچنان false. PR #164 ادغام نشده؛ آخرین SHA هر بار باید زنده استعلام شود.
