@@ -13,6 +13,7 @@
         <activity
             android:name=".IsolatedAcceptanceActivity"
             android:exported="true"
+            android:icon="@drawable/ic_launcher"
             android:label="سهام‌بان — آزمون ایزوله ۳"
             android:theme="@android:style/Theme.Material.Light.NoActionBar">
             <intent-filter>
