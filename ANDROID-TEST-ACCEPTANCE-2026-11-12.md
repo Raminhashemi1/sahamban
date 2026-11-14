@@ -449,3 +449,12 @@
 - Fixed the concrete packaging defect in `android-pilot/app/build.gradle` commit `0e1937ab0d6a6e3d30bd02df23b19bffe0fa4f2a`: exclude `sw.js` from both acceptance asset inputs and copied assets. No PWA source, backup behavior, public asset, financial code or release config changed.
 - The corrected exact-head CI started two Android jobs: dedicated `acceptance-apk` run `43579664257` and the updated `debug-apk` run `43579664225`, both for commit `0e1937ab0d6a6e3d30bd02df23b19bffe0fa4f2a`. At this note, both had passed Java policy checks and Android SDK setup and were in Gradle setup; build/audit/artifact results remain pending.
 - Do not install or use the failed first APK. Do not claim the corrected artifact exists until the rerun passes and the artifact is inspected. No phone install, PWA/Chrome storage access, personal backup read, merge, deploy, publication, payment, trade or holdings mutation.
+
+
+## 2026-11-14 — isolated Acceptance APK build/audit PASS (CI only)
+- Corrected packaging fix commit `0e1937ab0d6a6e3d30bd02df23b19bffe0fa4f2a` was built by dedicated run `43579664257`; job `acceptance-apk` completed SUCCESS, including the pinned asset audit and artifact upload.
+- Verified APK identity: package `ir.sahamban.pilot.acceptancefix`, versionCode 8, versionName `0.3.5-pilot`; launchable activity is `IsolatedAcceptanceActivity`. Audit log confirms bundled `assets/pwa/index.html`, `assets/pwa/native-backup-export-v1.js`, and `assets/acceptance-asset-manifest.json`; generated asset SHA-256 values match the manifest. The corrected build excludes `sw.js`. APK SHA-256: `8ed65f9a2e10d23c9046be1218230279454d800c4c5f0aec6750734e43c40818`.
+- Artifact: `sahamban-SYNTHETIC-isolated-acceptance-APK-NOT-FOR-RELEASE`, artifact ID `14108010596`, 1,683,630 bytes, seven-day retention. This is an unsigned/test-only APK artifact; no physical installation or phone test has occurred.
+- Important scope: this acceptance build blocks network and service-worker behavior and only permits a synthetic local fixture. Its CI success validates compilation/package/audit only, not a real Android SAF roundtrip, PWA restore, service-worker lifecycle or user backup recovery.
+- The earlier combined `debug-apk` workflow run `43579664225` was still in progress at the time of this note; its result is separate from the successful dedicated acceptance build.
+- No merge, deployment, release, payment, trade, order, holdings mutation or real-user data access.
