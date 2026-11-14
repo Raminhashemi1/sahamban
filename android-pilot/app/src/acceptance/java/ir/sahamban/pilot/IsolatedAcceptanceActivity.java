@@ -97,8 +97,9 @@ public final class IsolatedAcceptanceActivity extends Activity {
                 if (output.size() + size > 256 * 1024) return false;
                 output.write(buffer, 0, size);
             }
-            return BackupExportBridge.isSyntheticLocalSnapshot(
-                    new JSONObject(new String(output.toByteArray(), StandardCharsets.UTF_8)));
+            JSONObject document = new JSONObject(new String(output.toByteArray(), StandardCharsets.UTF_8));
+            return BackupExportBridge.isSyntheticLocalSnapshot(document)
+                    || BackupExportBridge.isSyntheticPortfolioSnapshot(document);
         } catch (Exception ignored) {
             return false;
         }
@@ -157,7 +158,12 @@ public final class IsolatedAcceptanceActivity extends Activity {
                 // A fabricated alert only; do not inspect/migrate Chrome or pilot data.
                 webView.evaluateJavascript(
                         "localStorage.setItem('sahamban-v1'," +
-                        "JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'}));",
+                        "JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'}));" +
+                        "document.getElementById('portfolioData').value='نماد-ساختگی-آزمایش,10,100,120,90,150';" +
+                        "document.getElementById('portfolioCapital').value='10000';" +
+                        "document.getElementById('portfolioRiskCap').value='5';" +
+                        "document.getElementById('portfolioStress').value='10';" +
+                        "document.getElementById('portfolioConcentration').value='30';",
                         null);
             }
         });
