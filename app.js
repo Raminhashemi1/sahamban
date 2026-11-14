@@ -347,22 +347,24 @@ function validatePortfolioBackup(record){
  if(risk<=0||risk>100||stress<0||stress>100||cap<1||cap>100)throw Error('تنظیمات ریسک یا تمرکز فایل معتبر نیستند.');
  return {version:2,data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration};
 }
-$('portfolioBackup').addEventListener('click',()=>{
+$('portfolioBackup').addEventListener('click',async()=>{
  try{
   const snapshot=portfolioSnapshot();
   const valid=validatePortfolioBackup({version:2,...snapshot});
-  const blob=new Blob([JSON.stringify({format:'sahamban-portfolio',version:2,...valid,exportedAt:new Date().toISOString()},null,2)],{type:'application/json;charset=utf-8'});
-  const url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download='sahamban-portfolio-backup.json';
-  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  $('portfolioBackupStatus').textContent='فایل پشتیبان از سبد فعلی آماده دانلود شد. آن را در جای امن نگه دارید.';
+  const content=JSON.stringify({format:'sahamban-portfolio',version:2,...valid,exportedAt:new Date().toISOString()},null,2);
+  const client=window.SahambanBackupExportClient;
+  if(!client)throw Error('ماژول امن خروجی فایل بارگذاری نشده است.');
+  const filename='sahamban-portfolio-backup.json';
+  const result=await client.save(window,filename,content);
+  $('portfolioBackupStatus').textContent=client.message(result,filename);
  }catch(e){$('portfolioBackupStatus').textContent='پشتیبان‌گیری انجام نشد: '+e.message;}
 });
 $('portfolioBackupFile').addEventListener('change',async()=>{
  pendingPortfolioBackup=null;$('portfolioBackupApply').disabled=true;
  const file=$('portfolioBackupFile').files?.[0];
  if(!file)return;
- if(file.size>30000){$('portfolioBackupStatus').textContent='حجم فایل نباید بیشتر از ۳۰ کیلوبایت باشد.';return;}
+ const maxBackupBytes=window.SahambanBackupExportClient?.MAX_BYTES??256*1024;
+ if(file.size>maxBackupBytes){$('portfolioBackupStatus').textContent='حجم فایل نباید بیشتر از '+Math.round(maxBackupBytes/1024)+' کیلوبایت باشد.';return;}
  try{
   const record=JSON.parse(await file.text());
   if($('portfolioBackupFile').files?.[0]!==file)return;
