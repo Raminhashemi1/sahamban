@@ -82,7 +82,7 @@ Purpose: durable, non-duplicative register for owner-assisted acceptance tests o
 
 ## Current next action
 
-Owner exited/re-entered the app and supplied screenshots of the valuation/portfolio module. These screenshots show the module overview and a notice that no real-asset file is stored in this browser; they do not display the restored synthetic backup value or a before/after comparison. Therefore post-reopen persistence and unrelated-data integrity remain UNVERIFIED. Next: inspect the read-only `دارایی‌ها و قیمت‌ها` tab (no fetch/update/import actions) for the known synthetic fixture value; if not visible, stop and report that this UI cannot evidence the restored setting. Do not repeat restore or export. Exact-byte readback remains independently unverified.
+The owner supplied a post-re-entry screenshot of the read-only `هشدار دستی قیمت` section. It visibly shows the synthetic symbol `نماد-ساختگی-آزمایش`, checked price `10000`, stop `100`, and target `200` (all ریال). The non-default stop/target and synthetic symbol are visible after re-entry, so persistence of the manual-alert settings is now physical PASS. Do not repeat restore/export or press save/check. J1 remains PARTIAL: exact-byte SAF readback and unrelated-localStorage-data integrity are still UNVERIFIED; the screenshot cannot establish either. The next distinct device package is J2: use only the isolated acceptance build and seeded synthetic risk data for the risk-backup roundtrip, following the J2 safeguards below. Do not use a real portfolio or any existing backup.
 
 ## GitHub evidence pointers
 
