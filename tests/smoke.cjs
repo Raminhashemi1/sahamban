@@ -21,6 +21,18 @@ vm.runInContext(['portfolioNumber','parsePortfolio','portfolioRewardRisk','marke
 const brokerImport=fs.readFileSync('broker-import.js','utf8');
 const portfolioLive=fs.readFileSync('portfolio-pilot-v61.js','utf8');
 test('JavaScript parses',()=>{new vm.Script(app);new vm.Script(sw);new vm.Script(brokerImport);new vm.Script(portfolioLive);});
+const firstUseTour=fs.readFileSync('compact-dashboard-v92.js','utf8');
+test('First-use guide is bundled and opens on Android touch or click',()=>{
+ new vm.Script(firstUseTour);
+ assert.ok(html.includes('./compact-dashboard-v92.js?v=92.1'));
+ assert.ok(sw.includes('./compact-dashboard-v92.js?v=92.1'));
+ assert.ok(sw.includes('sahamban-static-v150-15'));
+ assert.ok(firstUseTour.includes("open.addEventListener('click',openTour)"));
+ assert.ok(firstUseTour.includes("open.addEventListener('pointerup',openTour)"));
+ assert.ok(firstUseTour.includes("open.addEventListener('touchend',openTour,{passive:true})"));
+ assert.ok(firstUseTour.includes('panel.hidden=false'));
+ assert.ok(firstUseTour.includes("panel.scrollIntoView({block:'nearest',behavior:'auto'})"));
+});
 const persianUi=fs.readFileSync('persian-ui.js','utf8');
 test('Rial-only portfolio examples and Persian numerical display are wired',()=>{
  new vm.Script(persianUi);
