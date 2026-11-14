@@ -54,6 +54,7 @@ tasks.register('prepareAcceptanceAssets') {
     def outputDir = layout.buildDirectory.dir('generated/acceptanceAssets')
     inputs.files(fileTree(repoRoot) {
         include '*.html', '*.js', '*.css', '*.svg', '*.png', '*.webmanifest', '*.mp3', '*.ico'
+        exclude 'sw.js'
     })
     outputs.dir(outputDir)
     doLast {
@@ -63,6 +64,7 @@ tasks.register('prepareAcceptanceAssets') {
         pwa.mkdirs()
         def assets = fileTree(repoRoot) {
             include '*.html', '*.js', '*.css', '*.svg', '*.png', '*.webmanifest', '*.mp3', '*.ico'
+            exclude 'sw.js'
         }.files.sort { it.name }
         if (!assets.any { it.name == 'index.html' } ||
             !assets.any { it.name == 'native-backup-export-v1.js' } ||
