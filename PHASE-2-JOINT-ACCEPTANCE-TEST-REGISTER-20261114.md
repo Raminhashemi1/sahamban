@@ -39,9 +39,9 @@ Purpose: durable, non-duplicative register for owner-assisted acceptance tests o
 - [x] Previously saved synthetic file reopened and showed a valid preview; no data was replaced.
 - [x] Observe a visible Android completion message after SAF write: screenshot reports Android completion for the filename `sahamban-local-backup-v7.1.json`; message states one saved section and no recorded audio. Physical native write-completion acknowledgement: PASS. **File presence confirmed:** Downloads screenshot shows a newly named `sahamban-local-b...phase2-01.json` file, size 226 bytes, alongside a separate older `sahamban-local-backup-v1 (4).json` file (also 226 bytes). This resolves the earlier confusion: the `v1` file is a separate older item, not the newly named phase2-01 test file. The content viewer screenshot shows JSON-like text but is insufficient to establish byte-for-byte equality with the native write payload. Exact-byte readback remains UNVERIFIED.
 - [x] Select the exact new `sahamban-local-backup-phase2-01.json` in the app; screenshot shows selected filename truncated as `sahamban-l...se2-01.json` and app preview reports: `فایل معتبر است؛ ۱ بخش؛ هیچ چیزی هنوز جایگزین نشده.` Physical selection and valid one-section preview: PASS; no data has been changed.
-- [ ] Restore this correctly shaped synthetic local-backup fixture **only inside the isolated acceptance app**, after a separate explicit owner approval; verify the expected synthetic value is restored and no unrelated data changes.
+- [x] Owner explicitly approved restore and confirmed the app action. Result screenshot reports: `۱ بخش در همین مرورگر بازیابی شد. برای نمایش تنظیمات بازیابی‌شده، صفحه را یک بار بارگذاری مجدد کنید.` Marked restore operation acknowledgement PASS for one section in the current browser. Post-reload persistence/visible restored values and absence of unrelated changes are still pending verification.
 - **Do not repeat:** export merely to prove a file exists; reselect/re-preview the already accepted `-01.json`/`-02.json` files; never restore a real profile.
-- Current status: `PARTIAL — Android completion callback PASS; filename/file-identity mismatch (reported v1 vs UI v7.1) UNVERIFIED; exact-byte readback UNVERIFIED; isolated synthetic restore NOT YET OBSERVED`.
+- Current status: `PARTIAL — Android save completion PASS; file presence (226 bytes) PASS; valid one-section preview PASS; restore acknowledgement PASS (one section restored in same browser); exact-byte readback UNVERIFIED; post-reload persistence and unrelated-data integrity verification PENDING`.
 
 ### J2 — Risk portfolio backup: PWA path and isolated restore
 
@@ -82,7 +82,7 @@ Purpose: durable, non-duplicative register for owner-assisted acceptance tests o
 
 ## Current next action
 
-Next J1 action: selection and preview of `sahamban-local-backup-phase2-01.json` are complete and valid (one section, nothing replaced). The only remaining user-facing action is the isolated synthetic restore, which requires a separate explicit approval immediately before pressing the restore control. Exact-byte readback is still not independently evidenced by the UI preview.
+Next J1 action: owner should reload the same app page once, as explicitly instructed by the restore confirmation, then capture the restored settings view. Verify the synthetic test value is visible and unrelated settings remain unchanged. Do not repeat restore or export. Exact-byte readback remains independently unverified.
 
 ## GitHub evidence pointers
 
@@ -98,4 +98,6 @@ Next J1 action: selection and preview of `sahamban-local-backup-phase2-01.json` 
 
 - 2026-11-14: J1 file-presence follow-up — Downloads screenshot confirms `sahamban-local-b...phase2-01.json` at 226 bytes; separate older `sahamban-local-backup-v1 (4).json` also exists at 226 bytes. The new test artifact is present. Exact-byte comparison and restore remain unverified. Next action is in-app selection/preview of only the exact `phase2-01.json` file; no restore until a separate explicit approval.
 
-- 2026-11-14: J1 in-app preview — owner selected `sahamban-local-backup-phase2-01.json`. Screenshot shows selected filename truncated as `sahamban-l...se2-01.json`; app reports `فایل معتبر است؛ ۱ بخش؛ هیچ چیزی هنوز جایگزین نشده.` Marked physical file selection and valid one-section preview PASS. No restore was executed and no data was replaced. Exact-byte readback remains UNVERIFIED. Next: ask owner for separate explicit approval before any isolated synthetic restore.
+- 2026-11-14: J1 in-app preview — owner selected `sahamban-local-backup-phase2-01.json`. Screenshot shows selected filename truncated as `sahamban-l...se2-01.json`; app reports `فایل معتبر است؛ ۱ بخش؛ هیچ چیزی هنوز جایگزین نشده.` Marked physical file selection and valid one-section preview PASS. No restore was executed and no data was replaced. Exact-byte readback remains UNVERIFIED. Owner then explicitly approved restore. The app confirmation screenshot reports one section restored in the same browser and requests one page reload to display restored settings. Next: reload once and verify the restored synthetic value and unrelated-data integrity; do not restore again.
+
+- 2026-11-14: J1 restore step — after explicit owner approval, app displayed `۱ بخش در همین مرورگر بازیابی شد. برای نمایش تنظیمات بازیابی‌شده، صفحه را یک بار بارگذاری مجدد کنید.` Restore acknowledgement for one section: PASS. Post-reload persistence/visible values and no-unrelated-change verification remain pending. Exact-byte readback remains UNVERIFIED. Next: reload the same page once and capture the resulting settings view; do not repeat restore.
