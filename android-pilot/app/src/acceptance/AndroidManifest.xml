@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
+        android:label="سهام‌بان — آزمون ایزوله ۳"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false"
+        tools:replace="android:label">
+        <!-- Disable the public-network MainActivity in this ACCEPTANCE build only. -->
+        <activity android:name=".MainActivity" android:enabled="false" tools:replace="android:enabled" />
+        <activity
+            android:name=".IsolatedAcceptanceActivity"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher"
+            android:label="سهام‌بان — آزمون ایزوله ۳"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

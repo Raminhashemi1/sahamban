@@ -1,0 +1,115 @@
+name: Sahamban isolated PWA Android acceptance APK
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - '*.js'
+      - '*.css'
+      - 'android-pilot/**'
+      - 'tests/android-isolated-acceptance.test.cjs'
+      - 'tests/native-backup-export-v1.test.cjs'
+      - 'tests/local-backup-v148.test.cjs'
+      - '.github/workflows/android-isolated-acceptance.yml'
+  push:
+    paths:
+      - 'android-pilot/**'
+      - 'index.html'
+      - '*.js'
+      - 'tests/android-isolated-acceptance.test.cjs'
+      - 'tests/native-backup-export-v1.test.cjs'
+      - 'tests/local-backup-v148.test.cjs'
+      - '.github/workflows/android-isolated-acceptance.yml'
+permissions:
+  contents: read
+jobs:
+  acceptance-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify PWA and synthetic-only export integration
+        run: |
+          node tests/smoke.cjs
+          node --test tests/local-backup-v148.test.cjs tests/native-backup-export-v1.test.cjs tests/android-isolated-acceptance.test.cjs
+      - name: Verify pure Java trust and SAF policies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sahamban-acceptance-java
+          javac -d /tmp/sahamban-acceptance-java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportPolicy.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupFileVerifier.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupImportPolicy.java \
+            android-pilot/tests/TrustedNavigationTest.java \
+            android-pilot/tests/BackupExportPolicyTest.java \
+            android-pilot/tests/BackupFileVerifierTest.java \
+            android-pilot/tests/BackupImportPolicyTest.java
+          for suite in TrustedNavigationTest BackupExportPolicyTest BackupFileVerifierTest BackupImportPolicyTest; do
+            java -cp /tmp/sahamban-acceptance-java ir.sahamban.pilot."$suite"
+          done
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?Hosted runner must provide Android SDK}"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [[ -z "$SDKMANAGER" ]]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Compile isolated acceptance APK without release signing credentials
+        run: gradle -p android-pilot --no-daemon :app:assembleAcceptance
+      - name: Audit isolated APK and pinned assets; never install or publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -f "$APK"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.acceptancefix3'"
+          "$AAPT" dump badging "$APK" | grep -F "launchable-activity: name='ir.sahamban.pilot.IsolatedAcceptanceActivity'"
+          unzip -Z1 "$APK" | grep -Fx 'assets/pwa/index.html'
+          unzip -Z1 "$APK" | grep -Fx 'assets/pwa/native-backup-export-v1.js'
+          unzip -Z1 "$APK" | grep -Fx 'assets/acceptance-asset-manifest.json'
+          "$AAPT" dump permissions "$APK" > /tmp/sahamban-acceptance-permissions.txt
+          grep -F 'android.permission.INTERNET' /tmp/sahamban-acceptance-permissions.txt
+          if grep -Eq 'android.permission.(READ_|WRITE_|CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION)' /tmp/sahamban-acceptance-permissions.txt; then
+            echo 'Unexpected sensitive permission in acceptance APK' >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, hashlib, zipfile
+          apk='android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk'
+          with zipfile.ZipFile(apk) as z:
+              manifest=json.loads(z.read('assets/acceptance-asset-manifest.json'))
+              assert manifest['profile']=='synthetic-only-debug-acceptance'
+              assert manifest['sourceCommit']=='${{ github.sha }}'
+              assert len(manifest['files']) >= 50
+              assert manifest['files']['native-backup-export-v1.js']['mime']=='application/javascript'
+              for name, evidence in manifest['files'].items():
+                  data=z.read('assets/pwa/'+name)
+                  assert len(data)==evidence['bytes'], name
+                  assert hashlib.sha256(data).hexdigest()==evidence['sha256'], name
+          print('PASS: all packaged PWA asset SHA-256 values agree with the generated manifest')
+          PY
+          sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sahamban-SYNTHETIC-isolated-acceptance-APK-NOT-FOR-RELEASE
+          path: android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
+          if-no-files-found: error
+          retention-days: 7

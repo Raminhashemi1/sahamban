@@ -91,8 +91,8 @@ test('web HTML and service worker use the same locally cached backup module',()=
  const sw=fs.readFileSync('sw.js','utf8');
  assert.match(html,/id="sb148LocalBackup"/);
  for(const id of ['sb148Export','sb148File','sb148Restore','sb148Status'])assert.ok(html.includes('id="'+id+'"'));
- assert.match(html,/local-backup-v148\.js\?v=148\.1/);
- assert.match(sw,/local-backup-v148\.js\?v=148\.1/);
+ assert.match(html,/local-backup-v148\.js\?v=148\.2/);
+ assert.match(sw,/local-backup-v148\.js\?v=148\.2/);
  assert.match(html,/رمزگذاری نشده/);
 });
 
