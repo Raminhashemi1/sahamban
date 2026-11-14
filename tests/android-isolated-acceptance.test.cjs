@@ -71,7 +71,7 @@ test('synthetic acceptance action is the only visible export control and is full
  const end=html.indexOf('</div></section>',start);
  const panel=html.slice(start,end);
  assert.match(panel,/id="sb148ExportActions" style="display:grid;grid-template-columns:minmax\(0,1fr\)/);
- assert.match(panel,/id="sb148SyntheticExport"/);
- assert.match(panel,/style="width:100%;min-height:56px;white-space:normal"/);
- assert.match(panel,/id="sb148Export" type="button" class="secondary" hidden style="display:none"/);
+ assert.match(panel,/id="sb148Export" type="button" class="secondary" style="width:100%;min-height:56px;white-space:normal"/);
+ assert.match(panel,/id="sb148SyntheticExport" type="button" class="secondary" hidden style="display:none"/);
+ assert.match(panel,/پل بومی هر محتوای غیرساختگی یا هر کلید اضافه را رد می‌کند/);
 });
