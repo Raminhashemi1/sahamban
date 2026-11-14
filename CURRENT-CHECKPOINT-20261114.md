@@ -65,3 +65,9 @@
 - گزارش پژوهش: `evidence/day3/FIN-06-adjustment-id-crosswalk-research-20261114.md`. گزارش 14/15 تطبیق عددی قبلی صرفاً diagnostic است و تعلق ردیف‌ها به وساخت را ثابت نمی‌کند.
 - وضعیت Android جدا: PR #166 head `7b1f881dc2e99c2d421cfb6027a75cbff0f45a50`، 12/12 check-run موفق و 11/11 workflow موفق؛ PR همچنان Draft/Open و Issue #167 باز. این نتایج جایگزین پذیرش واقعی PWA backup/restore نیستند.
 - هیچ داده خام یا قیمت ویرایش نشد. گیت‌های مالی همچنان false. PR #164 ادغام نشده؛ آخرین SHA هر بار باید زنده استعلام شود.
+## افزودهٔ FIN-07 — ممیزی verifier موجود
+- ممیزی فقط‌خواندنی `tsetmc-capture-integrity-review-v1.cjs` نشان داد شناسه‌های خام JSON را پیش از parse عددی با شناسه مانیفست دقیقاً مقایسه می‌کند؛ برای مانیفست ...713 و ردیف‌های تعدیل ...710، نتیجه مورد انتظار `RAW_INSTRUMENT_ID_MISMATCH_ADJUSTMENTS` است.
+- تست موجود، mismatch ردیف روزانه و تعدیلات را حتی با SHA مجدداً محاسبه‌شده رد می‌کند و precision شناسه‌های ۱۷ رقمی را هم می‌آزماید؛ بنابراین تست تکراری یا تغییر کد اضافه نشد. `CAPTURED_FOR_MANUAL_REVIEW` در collector صرفاً ضبط bytes است، نه تأیید مالی.
+- Workflow `smoke-tests.yml` اجرای این تست را دارد؛ ولی PR #164 head قبلی `c35e73f...` هیچ check-run/workflow/status نداشت. PR #162 head `3cc42ee...` 12/12 check و 11/11 workflow موفق دارد، اما این نتیجه متعلق به PR #162 است و به PR #164 منتقل نمی‌شود.
+- گزارش: `evidence/day3/FIN-07-adjustment-id-fail-closed-verifier-audit-20261114.md`. نتیجه: `PASS_STATIC_FAIL_CLOSED_REVIEW / EXACT_HEAD_CI_UNVERIFIED`. FIN-05/06 همچنان به‌علت نبود پاسخ هویت provider مسدود است.
+- وضعیت زنده cross-lane: PR #166 head `7b1f881...`، 12/12 check و 11/11 workflow موفق؛ PR باز و Draft. Issue #167 باز. آزمون واقعی یکپارچه PWA↔Android هنوز اثبات نشده؛ این مسیر در کار مالی فعلاً متوقف می‌ماند.
