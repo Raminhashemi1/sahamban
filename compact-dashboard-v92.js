@@ -73,7 +73,7 @@
  function hide(){
   panel.hidden=true;open.setAttribute('aria-expanded','false');open.focus();
  }
- function openTour(){current=0;reveal();panel.scrollIntoView({block:'nearest',behavior:'auto'});}
+ function openTour(){current=0;reveal();panel.scrollIntoView?.({block:'nearest',behavior:'auto'});}
  // Android WebView touch fallback: pointer/touch and click all reveal idempotently.
  open.addEventListener('click',openTour);
  open.addEventListener('pointerup',openTour);
