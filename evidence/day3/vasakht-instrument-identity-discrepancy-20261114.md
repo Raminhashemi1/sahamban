@@ -24,3 +24,11 @@ No public search result located an authoritative mapping between `25514780181345
 
 ## Safety
 `sourceAuthenticated=false`, `historyPriceBasisVerified=false`, `capitalActionsVerified=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`, `day3FinalAccepted=false`. No price mutation, merge, deploy, order, trade, payment or holdings change.
+
+## Cross-check correction — prior 15-event numerical reconciliation is not instrument-identity proof (2026-11-14)
+
+The original manifest explicitly records that the adjustment response was requested from `https://cdn.tsetmc.com/api/ClosingPrice/GetPriceAdjustList/25514780181345713`, with SHA-256 `9363ac67e70d2b86c398d46b4d33dc4e623df35132bef8b0417e7087be6c5cdd`, 2,076 bytes and 15 rows. The committed adjustment payload has that same recorded hash/size, but its visible row-level `insCode` values are `25514780181345710`.
+
+The 2026-11-11 event-date audit reports 14/15 preceding-close matches and its heading/context identifies instrument `...713`; however, it does not document a row-level identity crosswalk for the 15 adjustment records. Therefore those numerical comparisons remain historical diagnostic results only. They cannot prove the adjustment rows belong to `...713`, nor validate issuer events for that instrument. Keep the numeric results and four-IRR note as historical observations, but downgrade any instrument-specific interpretation to `PROVISIONAL_IDENTITY_UNRESOLVED`.
+
+Do not rerun or rewrite the prior event calculations until an authoritative identity record resolves the mismatch. Existing fail-closed verifier remains correct.
