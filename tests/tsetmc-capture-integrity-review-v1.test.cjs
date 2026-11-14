@@ -266,3 +266,25 @@ test('Top=0 full-available-history capture over 1MiB validates bytes but never a
  f.manifest.fullHistoryVerified=true;
  assert.equal(verify(f).reason,'INVALID_CAPTURE_SCOPE');
 });
+
+
+test('verifies the exact committed Vesakht raw captures against their manifest without granting financial trust',()=>{
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const root=path.resolve(__dirname,'..');
+ const manifest=JSON.parse(fs.readFileSync(path.join(root,'evidence/day3/vasakht-20261110-manifest.json'),'utf8'));
+ const dailyBytes=fs.readFileSync(path.join(root,'evidence/day3/vasakht-20261110-daily-500.json'));
+ const adjustmentsBytes=fs.readFileSync(path.join(root,'evidence/day3/vasakht-20261110-adjustments-15.json'));
+ assert.equal(manifest.insCode,'25514780181345713');
+ assert.equal(manifest.files.adjustments.sha256,'9363ac67e70d2b86c398d46b4d33dc4e623df35132bef8b0417e7087be6c5cdd');
+ const result=verify({manifest,dailyBytes,adjustmentsBytes});
+ assert.equal(result.status,'RAW_BYTES_MATCH_MANIFEST_FOR_REVIEW');
+ assert.deepEqual(result.rowCounts,{daily:500,adjustments:15});
+ assert.equal(result.insCode,'25514780181345713');
+ assert.equal(result.byteIntegrityVerified,true);
+ assert.equal(result.sourceAuthenticated,false);
+ assert.equal(result.historyPriceBasisVerified,false);
+ assert.equal(result.capitalActionsVerified,false);
+ assert.equal(result.entryEligible,false);
+ assert.equal(result.tradingSignalsEnabled,false);
+});
