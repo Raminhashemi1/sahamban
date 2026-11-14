@@ -951,3 +951,19 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 
 ### Explicitly unchanged
 - Five-day plan; existing DEC-006/007/008; all fail-closed financial flags; main branch and all open PR states. No merge, deployment, release, trade, order, payment, asset/holding mutation, or device action.
+
+
+## 2026-11-14 — FIN-01 completed: fail-closed consumer audit (read-only)
+- **Task:** FIN-01, audit direct financial-analysis consumers for absent/unverified historical price basis.
+- **Reviewed exact branch files and tests:** `decision-support-v129.js` + `tests/decision-support-v129.test.cjs` (26 Node tests); `external-screener-v130.js` + its tests (5); `market-sample-v131.js` + its tests (5); `candidate-ranking-v133.js` + its tests (4); `temporal-holdout-v134.js` + its tests (10); `portfolio-pilot-v61.js` quote construction; `day3-trusted-evidence-boundary-v1.cjs` + its tests (15 test declarations by source inspection). These are inspected source/test inventories, **not newly executed test results**.
+- **Consumer matrix:**
+  - Core technical analyze/decisionPlan: absent status becomes `DATA_BASIS_UNVERIFIED`; stop/target/risk-per-share null; plan `NO_ACTION`. Test suite exercises this behavior.
+  - External screener: TSETMC quote builder hardcodes `UNKNOWN_NOT_ATTESTED` / `NOT_ESTABLISHED`; UI consumer removes actionable levels unless evidence string says attested.
+  - Market sample: quote builder uses same unverified labels; suppresses stop/target and skips historical audit/holdout unless status says attested.
+  - Candidate ranking: rejects missing/unverified basis; tests cover both.
+  - Temporal holdout: rejects missing/unverified basis before evaluation.
+  - Portfolio quote builder: marks source as unknown/unattested and disallows capital adjustment.
+- **Important boundary gap confirmed, not a new discovery:** several browser-side consumers accept the literal string `INDEPENDENTLY_ATTESTED` as their gate. The Node trusted verifier `day3-trusted-evidence-boundary-v1.cjs` cryptographically binds instrument, date, daily digest, three distinct aligned mode digests, expiry and signature, but `TRUSTED_REVIEWER_KEYS` is deliberately empty and the verifier is not shown integrated into these browser consumers. Therefore the ordinary unverified path fails closed, but the string itself is not proof and must never be set by UI/API/user input. Do not populate the key registry with a self-generated or browser-supplied key.
+- **FIN-01 disposition:** `PASS_WITH_BLOCKER` — consumer inventory complete; fail-closed behavior for absent/unverified source labels is present in reviewed paths; independent attestation cannot currently be established/propagated into the client. No tests were re-run because no source changed. No new code defect was proven within the unauthenticated-data path; no code changed.
+- **Next single task FIN-02:** inspect the existing three-mode adjustment adapter/classifier and its tests against the documented provider semantics. Determine whether it accepts only genuine separately sourced mode outputs or could relabel/derive them. Do not fetch live market data, fabricate modes, enroll reviewer keys, or relax flags. Produce a finite input→normalization→classification matrix; patch only a demonstrated defect.
+- Financial flags remain false: `day3FinalAccepted=false`, `historyBasisAuthenticated=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. Five-day plan unchanged; Android/subscription lanes remain paused. No merge, deploy, release, payment, trade, order or holdings mutation.
