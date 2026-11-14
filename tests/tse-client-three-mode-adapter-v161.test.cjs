@@ -60,7 +60,7 @@ test('rejects mismatched array lengths, duplicate dates, invalid dates and price
   assert.equal(x.status,'INSUFFICIENT_EVIDENCE');
  }
 });
-test('validates raw daily history and immutable source arrays',()=>{
+test('rejects coercible non-number prices and non-string instrument IDs',()=>{\n for(const bad of ['1000',true,null,{},NaN,Infinity]){\n  const mode=response(0);mode.data[0].close[0]=bad;\n  assert.equal(build(input({noneResult:mode})).status,'INSUFFICIENT_EVIDENCE');\n  assert.equal(build(input({dailyHistory:[{dEven:20260101,pClosing:bad}]})).status,'INSUFFICIENT_EVIDENCE');\n }\n for(const insCode of [123456789012345,null,true]) assert.equal(build(input({insCode})).status,'INSUFFICIENT_EVIDENCE');\n});\ntest('validates raw daily history and immutable source arrays',()=>{
  const x=input(),before=JSON.stringify(x);
  const out=build(x);
  assert.equal(out.status,'NORMALIZED_FOR_REVIEW');
