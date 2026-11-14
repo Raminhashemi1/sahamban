@@ -8,10 +8,17 @@ on:
       - '*.css'
       - 'android-pilot/**'
       - 'tests/android-isolated-acceptance.test.cjs'
+      - 'tests/native-backup-export-v1.test.cjs'
+      - 'tests/local-backup-v148.test.cjs'
       - '.github/workflows/android-isolated-acceptance.yml'
   push:
     paths:
       - 'android-pilot/**'
+      - 'index.html'
+      - '*.js'
+      - 'tests/android-isolated-acceptance.test.cjs'
+      - 'tests/native-backup-export-v1.test.cjs'
+      - 'tests/local-backup-v148.test.cjs'
       - '.github/workflows/android-isolated-acceptance.yml'
 permissions:
   contents: read
