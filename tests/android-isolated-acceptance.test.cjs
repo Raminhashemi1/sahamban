@@ -7,11 +7,11 @@ const read=p=>fs.readFileSync(p,'utf8');
 test('acceptance variant has separate identity and no release-side source or signing change',()=>{
  const gradle=read('android-pilot/app/build.gradle');
  const manifest=read('android-pilot/app/src/acceptance/AndroidManifest.xml');
- assert.match(gradle,/acceptance\s*\{[\s\S]*applicationIdSuffix '\.acceptancefix'/);
+ assert.match(gradle,/acceptance\s*\{[\s\S]*applicationIdSuffix '\.acceptancefix2'/);
  assert.match(gradle,/assets\.srcDir layout\.buildDirectory\.dir\('generated\/acceptanceAssets'\)/);
  assert.match(manifest,/android:name="\.MainActivity" android:enabled="false"/);
  assert.match(manifest,/android:name="\.IsolatedAcceptanceActivity"/);
- assert.match(manifest,/سهام‌بان — آزمون ایزوله ۲/);
+ assert.match(manifest,/سهام‌بان — آزمون ایزوله ۳/);
  assert.match(manifest,/android:allowBackup="false"/);
  assert.doesNotMatch(manifest,/android\.permission\.(READ_|WRITE_|CAMERA|RECORD_AUDIO)/);
  assert.match(gradle,/include '\*\.html', '\*\.js', '\*\.css'/);
@@ -53,7 +53,7 @@ test('acceptance CI only assembles test APK with pinned asset digest audit',()=>
  assert.match(workflow,/app-acceptance\.apk/);
  assert.match(workflow,/acceptance-asset-manifest\.json/);
  assert.match(workflow,/hashlib\.sha256/);
- assert.match(workflow,/ir\.sahamban\.pilot\.acceptancefix/);
+ assert.match(workflow,/ir\.sahamban\.pilot\.acceptancefix2/);
  assert.match(workflow,/upload-artifact/);
  assert.doesNotMatch(workflow,/assembleRelease|bundleRelease|deploy|publishRelease|marketplace/);
  const gradle=read('android-pilot/app/build.gradle');
@@ -63,4 +63,15 @@ test('acceptance CI only assembles test APK with pinned asset digest audit',()=>
  assert.match(workflow,/IsolatedAcceptanceActivity/);
  assert.match(gradle,/native-backup-export-v1\.js/);
  assert.match(gradle,/tasks\.configureEach/);
+});
+
+test('synthetic acceptance action is the only visible export control and is full width',()=>{
+ const html=read('index.html');
+ const start=html.indexOf('id="sb148LocalBackup"');
+ const end=html.indexOf('</div></section>',start);
+ const panel=html.slice(start,end);
+ assert.match(panel,/id="sb148ExportActions" style="display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(panel,/id="sb148SyntheticExport"/);
+ assert.match(panel,/style="width:100%;min-height:56px;white-space:normal"/);
+ assert.doesNotMatch(panel,/id="sb148Export"/);
 });
