@@ -7,7 +7,7 @@ const read=p=>fs.readFileSync(p,'utf8');
 test('acceptance variant has separate identity and no release-side source or signing change',()=>{
  const gradle=read('android-pilot/app/build.gradle');
  const manifest=read('android-pilot/app/src/acceptance/AndroidManifest.xml');
- assert.match(gradle,/acceptance\s*\{[\s\S]*applicationIdSuffix '\.acceptancefix2'/);
+ assert.match(gradle,/acceptance\s*\{[\s\S]*applicationIdSuffix '\.acceptancefix3'/);
  assert.match(gradle,/assets\.srcDir layout\.buildDirectory\.dir\('generated\/acceptanceAssets'\)/);
  assert.match(manifest,/android:name="\.MainActivity" android:enabled="false"/);
  assert.match(manifest,/android:name="\.IsolatedAcceptanceActivity"/);
@@ -57,7 +57,7 @@ test('acceptance CI only assembles test APK with pinned asset digest audit',()=>
  assert.match(workflow,/app-acceptance\.apk/);
  assert.match(workflow,/acceptance-asset-manifest\.json/);
  assert.match(workflow,/hashlib\.sha256/);
- assert.match(workflow,/ir\.sahamban\.pilot\.acceptancefix2/);
+ assert.match(workflow,/ir\.sahamban\.pilot\.acceptancefix3/);
  assert.match(workflow,/upload-artifact/);
  assert.doesNotMatch(workflow,/assembleRelease|bundleRelease|deploy|publishRelease|marketplace/);
  const gradle=read('android-pilot/app/build.gradle');
