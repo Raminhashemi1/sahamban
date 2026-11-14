@@ -13,12 +13,16 @@ public final class TrustedNavigation {
         if (rawUrl == null || rawUrl.length() > 8192) return false;
         try {
             URI uri = URI.create(rawUrl);
+            String rawPath = uri.getRawPath();
             String path = uri.getPath();
+            // Keep the path unambiguous across URI parsers and HTTP servers:
+            // reject percent-encoded paths and any literal dot-segment traversal.
+            if (rawPath == null || !rawPath.equals(path)
+                    || !rawPath.equals(uri.normalize().getRawPath())) return false;
             return "https".equalsIgnoreCase(uri.getScheme())
                 && HOST.equalsIgnoreCase(uri.getHost())
                 && uri.getRawUserInfo() == null
                 && (uri.getPort() == -1 || uri.getPort() == 443)
-                && path != null
                 && (APP_PATH.equals(path) || path.startsWith(APP_PATH + "/"));
         } catch (IllegalArgumentException e) {
             return false;
