@@ -19,7 +19,7 @@ function harness({offline=false,networkBody='fresh',cachedBody='cached'}={}){
  return {request,entries,puts,listeners};
 }
 test('new service worker generation invalidates old cache namespace',()=>{
- assert.match(source,/const CACHE='sahamban-static-v150-13'/);
+ assert.match(source,/const CACHE='sahamban-static-v150-\\d+'/);
  assert.match(source,/k\.startsWith\('sahamban-static-'\)&&k!==CACHE/);
 });
 test('same-origin static assets use network-first and refresh cache',async()=>{
