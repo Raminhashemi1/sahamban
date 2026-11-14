@@ -1,7 +1,7 @@
 name: Sahamban smoke tests
 on:
   push:
-    branches: [main]
+    branches: [main, feat/day2-history-basis-gates-20261109]
   pull_request:
     branches: [main]
   workflow_dispatch:
