@@ -21,7 +21,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/sahamban-java-check
-          javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java \
+          javac -d /tmp/sahamban-java-check \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java \
             android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportPolicy.java \
             android-pilot/app/src/main/java/ir/sahamban/pilot/BackupFileVerifier.java \
             android-pilot/app/src/main/java/ir/sahamban/pilot/BackupImportPolicy.java \
@@ -67,7 +68,6 @@ jobs:
             echo 'Unexpected high-risk Android permission in debug APK' >&2
             exit 1
           fi
-
       - name: Build ISOLATED synthetic-only PWA acceptance APK
         run: gradle -p android-pilot --no-daemon :app:assembleAcceptance
       - name: Audit isolated acceptance package and pinned PWA assets
@@ -85,14 +85,7 @@ jobs:
           unzip -Z1 "$APK" | grep -Fx 'assets/pwa/index.html'
           unzip -Z1 "$APK" | grep -Fx 'assets/pwa/native-backup-export-v1.js'
           unzip -Z1 "$APK" | grep -Fx 'assets/acceptance-asset-manifest.json'
-          if unzip -Z1 "$APK" | grep -Eq '^assets/pwa/sw\\.js        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sahamban-android-pilot-debug-UNSIGNED-FOR-STORE
-          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 7
-; then
+          if unzip -Z1 "$APK" | grep -Eq '^assets/pwa/sw[.]js$'; then
             echo 'Service worker must not be bundled in isolated acceptance APK' >&2
             exit 1
           fi
@@ -116,7 +109,6 @@ jobs:
           path: android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
           if-no-files-found: error
           retention-days: 7
-
       - name: Print reproducibility digest (never a private certificate)
         run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
