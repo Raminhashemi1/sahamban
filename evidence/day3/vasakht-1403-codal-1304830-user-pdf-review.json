@@ -1,0 +1,55 @@
+{
+  "schema": "sahamban.day3.user_supplied_codal_pdf_review.v1",
+  "instrument": {
+    "symbol": "وساخت",
+    "issuer": "سرمایه گذاری ساختمان ایران",
+    "insCode": "25514780181345713"
+  },
+  "document": {
+    "trackingNo": "1304830",
+    "meetingType": "ORDINARY_GENERAL_MEETING_CONVENED_EXTRAORDINARILY",
+    "fiscalYearEndJalali": "1403/06/31",
+    "meetingDateJalali": "1403/11/14",
+    "sourceDocumentClaim": "CODAL",
+    "sourceUrlClaim": "https://codal.ir/DownloadFile.aspx?ft=1005&hs=5Wo3QKfOOObOOOKbPJKdmPwLDPfg%3D%3D&let=21",
+    "sourceUrlIndependentlyFetched": false
+  },
+  "attachment": {
+    "filenameAtReview": "seo-codal-report.pdf",
+    "sha256": "1ac1d28b9656a068b5ade67da3031351f40c0d98579f4750eb35e05f78a8f94f",
+    "sizeBytes": 52754,
+    "pages": 3,
+    "pdfVersion": "1.4",
+    "creator": "wkhtmltopdf 0.12.4",
+    "digitallySigned": false,
+    "rawPdfCommittedToPublicRepository": false
+  },
+  "extractedFromPage2": {
+    "dpsRial": 30,
+    "epsRial": 124,
+    "registeredCapitalMillionRial": 30842726,
+    "declaredCashDividendMillionRial": 925282,
+    "retainedBeforeDividendMillionRial": 1158224,
+    "retainedAfterDividendMillionRial": 232942
+  },
+  "arithmetic": {
+    "nominalShareAssumptionRial": 1000,
+    "shareCount": "30842726000",
+    "calculatedCashDividendRial": "925281780000",
+    "roundedCashDividendMillionRial": 925282,
+    "retainedAfterDividendCheckMillionRial": 232942,
+    "internalConsistency": true
+  },
+  "boundaries": {
+    "hashOfUploadedBytesVerified": true,
+    "issuerOriginalAuthenticated": false,
+    "independentSourceDownloadVerified": false,
+    "correspondingCodalVersionVerified": false,
+    "marketHistoryAuthenticated": false,
+    "priceAdjustmentBasisAuthenticated": false,
+    "day3FinalAccepted": false,
+    "entryEligible": false,
+    "tradingSignalsEnabled": false
+  },
+  "note": "Public manifest contains no signatory identifiers or raw PDF. This is a user-supplied PDF with internally consistent numbers, NOT CODAL-authenticated original bytes. Original-chain-of-custody verification requires a second independent fetch and SHA-256 comparison (PDF conversion to wkhtmltopdf may affect byte identity)."
+}

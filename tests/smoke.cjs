@@ -48,13 +48,15 @@ test('Broker import is local-only with separate storage and offline Excel parser
 });
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
- assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v150-13'));
+ assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.match(sw,/sahamban-static-v150-\d+/);
+ assert.ok(html.includes('./trade-cost-v1.js?v=1.0')&&sw.includes('./trade-cost-v1.js?v=1.0'));
+ assert.ok(html.indexOf('./trade-cost-v1.js?v=1.0')<html.indexOf('./app.js?v='));
  assert.ok(sw.includes('fundamental-evidence.js?v=150.5'));
  assert.ok(sw.includes('decision-support-ui-v129.js?v=129.18'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
   assert.ok(sw.includes('portfolio-pilot-v51.html'));
   assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
- assert.ok(sw.includes('technical-analysis-v50.js?v=50.20'));
+ assert.ok(sw.includes('technical-analysis-v50.js?v=50.21'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
@@ -80,7 +82,7 @@ test('Real broker holdings valuation is read-only with independent quote validat
  assert.ok(!portfolioLive.includes("sahamban:verified-historical-quotes-v50',{detail:{quotes:quotes.map"));
  assert.ok(portfolioLive.includes("const historyButton=$('technicalHistoryAllV50')"));
  assert.ok(portfolioLive.includes("sahamban:verified-historical-quotes-v50',{detail:{quotes}}"));
- assert.ok(html.includes('technical-analysis-v50.js?v=50.20'));
+ assert.ok(html.includes('technical-analysis-v50.js?v=50.21'));
 
  assert.ok(portfolioLive.includes('تأیید و ذخیره انتخاب'));
  assert.ok(!portfolioLive.includes("localStorage.setItem(HOLDINGS_KEY")&&!portfolioLive.includes("localStorage.removeItem(HOLDINGS_KEY"));

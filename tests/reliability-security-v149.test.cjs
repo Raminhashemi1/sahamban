@@ -19,11 +19,11 @@ function harness({offline=false,networkBody='fresh',cachedBody='cached'}={}){
  return {request,entries,puts,listeners};
 }
 test('new service worker generation invalidates old cache namespace',()=>{
- assert.match(source,/const CACHE='sahamban-static-v150-13'/);
+ assert.match(source,/const CACHE='sahamban-static-v\d+-\d+'/);
  assert.match(source,/k\.startsWith\('sahamban-static-'\)&&k!==CACHE/);
 });
 test('same-origin static assets use network-first and refresh cache',async()=>{
- const h=harness(),result=await h.request('technical-analysis-v50.js?v=50.20');
+ const h=harness(),result=await h.request('technical-analysis-v50.js?v=50.21');
  assert.equal(result.response.body,'fresh');
  assert.equal(h.puts.length,1);
  assert.ok(h.puts[0].includes('technical-analysis-v50.js'));

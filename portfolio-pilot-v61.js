@@ -366,7 +366,7 @@
     if(history.length<15||unique.size!==history.length)throw Error('کمتر از ۱۵ قیمت روزانه معتبر یا تاریخ‌های تکراری دریافت شد.');
     const historyStartDate=history[0].date,historyEndDate=history[history.length-1].date;
     const diagnosticCandidate={...enrichedCandidate,historyStartDate,historyEndDate,historyCount:history.length};
-    return {ok:true,quote:{symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode},candidate:diagnosticCandidate};
+    return {ok:true,quote:{symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode,historyPriceBasis:'UNKNOWN_NOT_ATTESTED',historyPriceBasisEvidence:'NOT_ESTABLISHED',capitalAdjustmentAllowed:false,historicalPriceSource:{provider:'TSETMC',endpoint:'/ClosingPrice/GetClosingPriceDailyList/'+insCode+'/0',dateField:'dEven',priceField:'pClosing',dateCalendar:'GREGORIAN_YYYYMMDD',adjustmentBasis:'UNKNOWN_NOT_ATTESTED'}},candidate:diagnosticCandidate};
    }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);

@@ -9,7 +9,8 @@ const history=Array.from({length:60},(_,i)=>({
  date:new Date(Date.UTC(2026,7,1+i)).toISOString().slice(0,10).replaceAll('-',''),close:100+i
 }));
 history[59]={date:day,close:159};
-const quote=s=>({symbol:s,history:history.map(x=>({...x}))});
+// Synthetic fixture for the already-attested branch of the trusted server gate; not real market evidence.
+const quote=s=>({symbol:s,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED',history:history.map(x=>({...x}))});
 function harness(){
  const sql=new DatabaseSync(':memory:');sql.exec('PRAGMA foreign_keys=ON');sql.exec(schema);
  const db={
@@ -39,6 +40,18 @@ test('all selected symbols including WAIT are recorded; changes and deletion ref
  assert.ok(rows.every(x=>x.n===64));
  assert.throws(()=>h.sql.prepare("UPDATE prospective_signal_events SET signal_code='WAIT'").run(),/PROSPECTIVE_IMMUTABLE/);
  assert.throws(()=>h.sql.prepare('DELETE FROM prospective_signal_runs').run(),/PROSPECTIVE_IMMUTABLE/);
+});
+test('unattested historical price basis is recorded as unavailable, never as a trade signal',async()=>{
+ const h=harness();
+ h.options.snapshots[0].historyPriceBasisEvidence='NOT_ESTABLISHED';
+ delete h.options.snapshots[1].historyPriceBasisEvidence;
+ h.options.snapshots[2].historyPriceBasisEvidence='SELF_ATTESTED';
+ const result=await record(h.db,h.options);
+ assert.equal(result.unavailableCount,3);
+ assert.equal(result.evaluatedCount,0);
+ const rows=h.sql.prepare('SELECT status,signal_code,history_digest FROM prospective_signal_events').all();
+ assert.equal(rows.length,3);
+ assert.ok(rows.every(r=>r.status==='DATA_UNAVAILABLE'&&r.signal_code===null&&r.history_digest===null));
 });
 test('missing history is recorded as unavailable rather than excluded',async()=>{
  const h=harness();h.options.snapshots[1].history=[];

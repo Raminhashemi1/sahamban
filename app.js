@@ -5,9 +5,11 @@ const fmt = value => new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).fo
 $('calculate').addEventListener('click',()=>{
  const [capital,risk,entry,stop,target,budget]=['capital','risk','entry','stop','target','budget'].map(n);
  if(![capital,risk,entry,stop,target,budget].every(Number.isFinite)||capital<=0||risk<=0||risk>100||entry<=0||stop<0||stop>=entry||target<=entry||budget<=0){$('calcResult').textContent='مقادیر معتبر وارد کنید: حد ضرر کمتر از قیمت ورود و حد سود بیشتر از آن باشد.';return;}
- const allowed=capital*risk/100, qty=Math.max(0,Math.floor(Math.min(allowed/(entry-stop),Math.min(budget,capital)/entry)));
- const loss=qty*(entry-stop),gain=qty*(target-entry);
- $('calcResult').textContent=`سقف خرید محاسباتی: ${fmt(qty)} سهم | ارزش خرید: ${fmt(qty*entry)} ریال | زیان نظری تا حد ضرر: ${fmt(loss)} ریال | سود نظری تا حد سود: ${fmt(gain)} ریال | نسبت سود به زیان: ${fmt((target-entry)/(entry-stop))}`;
+ try{
+  const r=window.SahambanTradeCostV1.calculateRiskSizedPosition({capitalRial:capital,riskPercent:risk,entryPriceRial:entry,stopPriceRial:stop,targetPriceRial:target,budgetRial:budget});
+  if(!r.quantity){$('calcResult').textContent='با احتساب سقف کارمزد خرید و فروش، حتی یک سهم نیز در محدودیت سرمایه و ریسک شما جا نمی‌شود.';return;}
+  $('calcResult').textContent=`سقف خرید محاسباتی: ${fmt(r.quantity)} سهم | مبلغ ناخالص خرید: ${fmt(r.buy.grossRial)} ریال | کارمزد خرید: ${fmt(r.buy.feesRial)} ریال | وجه لازم: ${fmt(r.buy.settlementRial)} ریال | زیان تا حد ضرر پس از هزینه فروش: ${fmt(r.lossAtStopRial)} ریال از سقف ${fmt(r.riskLimitRial)} ریال | سود تا هدف پس از هزینه فروش: ${fmt(r.gainAtTargetRial)} ریال | نسبت سود خالص به زیان خالص: ${fmt(r.rewardRiskRatio)}. محاسبه بر اساس سقف کارمزد سهام/حق‌تقدم است؛ لغزش قیمت لحاظ نشده.`;
+ }catch(e){$('calcResult').textContent='محاسبه انجام نشد: '+e.message;}
 });
 function playBeep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();c.resume().then(()=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.value=.3;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.45);o.onended=()=>c.close()}).catch(()=>{})}catch(e){}}
 function speak(s){playBeep();const out=$('alertAudioStatus');const saved=localStorage.getItem('sahamban-recorded-alert');if(saved){try{const a=new Audio(saved);a.play().then(()=>{if(out)out.textContent='بوق و پیام صوتی ضبط‌شده پخش شدند.'}).catch(()=>{if(out)out.textContent='بوق پخش شد، اما پخش صدای ضبط‌شده در مرورگر ممکن نشد.'});return}catch(e){}}if(out)out.textContent='بوق پخش شد. برای پیام فارسی، یک بار صدای خودت را با دکمه ضبط هشدار ثبت کن.'}

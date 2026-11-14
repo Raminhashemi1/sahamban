@@ -17,7 +17,9 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save playwright@1.56.1
-      - run: npx playwright install --with-deps chromium
+      # Avoid intermittent Ubuntu apt mirror DNS failures before browser tests start.
+      # Keep browser installation and the actual tests enabled.
+      - run: npx playwright install chromium
       - run: node --check tests/broker-amount-limits-v124.cjs
       - run: node tests/broker-amount-limits-v124.cjs
       - name: Preserve monetary boundary test
