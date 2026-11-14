@@ -893,3 +893,9 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 - External reference context (reverse-engineered/secondary, not official): https://github.com/amirziveh/tsetmc-skill/blob/master/references/api-endpoints.md and https://pypi.org/project/tsetmc/0.29.0/.
 - PR #164 latest documentation head is `f36a5db532f4d06e259fb57477a2c510414e2462`; no exact-head CI result was checked after this note commit. Historical CI must not be carried forward to this SHA.
 - Safety unchanged: `sourceAuthenticated=false`, `historyPriceBasisVerified=false`, `capitalActionsVerified=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`, `day3FinalAccepted=false`. No merge/deploy/trade/order/payment/holdings mutation.
+
+
+## 2026-11-14 — FIN-05 clarification: prior numerical event audit does not resolve row identity
+- Manifest records the exact adjustment request URL ending in `/GetPriceAdjustList/25514780181345713`, SHA-256 `9363ac67e70d2b86c398d46b4d33dc4e623df35132bef8b0417e7087be6c5cdd`, 2,076 bytes and 15 rows. The visible row-level `insCode` values in that exact committed payload are `25514780181345710`.
+- The 2026-11-11 14/15 event-date comparison is retained as a numerical diagnostic only. Its report does not establish a row-level identity crosswalk for the adjustment rows. It cannot establish those 15 records as capital events for instrument `...713`; issuer-specific interpretation is now `PROVISIONAL_IDENTITY_UNRESOLVED` until authoritative mapping exists.
+- Do not delete or rewrite historical numerical outputs; do not use them to open capital-action/history-basis gates. Keep strict verifier behavior unchanged.
