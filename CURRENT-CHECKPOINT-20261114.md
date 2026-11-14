@@ -100,3 +100,7 @@
 4. Android remains separate on `feta`; its next work is review-only release/branch reconciliation unless a specific new defect or separately authorized synthetic physical test is supplied.
 
 This entry is a documentation-only live audit. No product source, test, raw capture, financial value, APK, phone state, personal file, portfolio or public deployment was changed. Exact-head CI for the documentation commit created by this entry must be checked independently and must not be inferred from PR #169 or #166.
+
+
+## 2026-11-14 19:52 +03:30 — superseding live recheck
+The active branch now points to `59b7cdffb1ac494c3d0e05e151a0ac63e8482f33`; exact-head checks are 2/2 SUCCESS (Browser/Smoke), with one successful push workflow and no PR-event workflow. PR #164 is 638 ahead / 168 behind `main`, diverged and non-mergeable; PR #169 remains a separate clean Draft candidate with 14/14 checks and 13/13 workflows. Android PR #166 head `757e799...` is Draft with 12/12 checks and 11/11 workflows; Issue #167 remains open. Newer isolated PWA acceptance PR #178 is Draft with 13/13 checks and 12/12 workflows, but physical synthetic local/risk PWA save/readback/restore is still pending. See [`LIVE-RECONCILIATION-20261114-1952.md`](LIVE-RECONCILIATION-20261114-1952.md) for full exact refs, evidence boundaries and the single next gate. Five-day plan and financial flags unchanged.

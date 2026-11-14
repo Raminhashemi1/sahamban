@@ -619,3 +619,7 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 - This evidence covers launch and home-screen rendering only. It does not prove synthetic export, Android file picker, import preview, native saved callback, Restore, offline behavior, or full PWA integration. Physical acceptance remains partial; real PWA backup/restore unverified.
 - Next: open the first-use tutorial (4 steps) for the synthetic workflow; do not tap "نصب سهام‌بان روی گوشی". Use only fabricated data and a dedicated test folder when file operations begin. Preserve existing apps, Chrome/PWA data and personal files. Stop on broad/unexpected permissions or requests for real portfolio backups.
 - No APK re-install, deletion, data clearing, Restore, merge, deploy, publication, payment, trade, order or holdings mutation. Five-day plan and fail-closed financial flags unchanged.
+
+
+## 2026-11-14 — cross-branch reconciliation checkpoint
+Current `feta`/PR #166 and the newer isolated acceptance PRs #177/#178 were checked against live refs and exact-head CI. The latest synthetic PWA local/risk acceptance candidate is PR #178; its physical test is still pending and must not be conflated with prior local/risk fixture PASS or PWA file-presence observations. Full detail and the non-duplicative next gate: [`LIVE-RECONCILIATION-20261114-1952.md`](LIVE-RECONCILIATION-20261114-1952.md). No Android code was copied to PR #164.

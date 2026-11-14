@@ -1068,3 +1068,7 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 - On exact PR #169 HEAD `abf725933519901bd70bfea1667b2031884d7c52`, Smoke run `43576639513`, job `132392187965` executed `tests/tsetmc-capture-integrity-review-v1.test.cjs`: **21 tests passed, 0 failed**. The new subtest `verifies the exact committed Vesakht raw captures against their manifest without granting financial trust` is explicitly logged `ok 21`.
 - Exact-head aggregate CI: 14/14 Check Runs SUCCESS; 13/13 Workflow Runs SUCCESS. PR #169 remains Draft, open, mergeable and unmerged. PR #164 remains separate, open, dirty/diverged and has no exact-head CI proof.
 - This confirms only committed raw-artifact hash/size/schema/row-ID consistency. `sourceAuthenticated=false`, `historyPriceBasisVerified=false`, `capitalActionsVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. No merge, deploy, financial action or holdings change.
+
+
+## 2026-11-14 — live GitHub and cross-lane reconciliation (read-only)
+Recorded the exact-head state and results in [`LIVE-RECONCILIATION-20261114-1952.md`](LIVE-RECONCILIATION-20261114-1952.md). Active SHA `59b7cdff...`: 2/2 Browser/Smoke checks SUCCESS and push run `43614795460` SUCCESS; no PR-event run on that SHA. Reconciled #164 divergence, clean #169 candidate, #166/#167 and separate #177/#178 Android candidates. No source/test rerun or device action; no market payload obtained. Five-day plan and all financial gates unchanged.
