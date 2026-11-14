@@ -58,3 +58,29 @@ test('PWA wires the native client before local backup and offers an explicit syn
  assert.match(sw,/sahamban-static-v150-14/);
  assert.match(sw,/native-backup-export-v1\.js\?v=1\.0/);
 });
+
+test('Android acceptance blocks real localStorage export before reading or messaging native code',async()=>{
+ const nodes=new Map(),reads=[],calls=[];
+ const element=id=>{if(!nodes.has(id))nodes.set(id,{id,textContent:'',disabled:id==='sb148Restore',files:[],actions:{},addEventListener(name,fn){this.actions[name]=fn;}});return nodes.get(id);};
+ const win={
+  document:{getElementById:element},
+  navigator:{userAgent:'SahambanPilotWebView/1'},
+  localStorage:{getItem(key){reads.push(key);return JSON.stringify({symbol:'REAL_USER_DATA'});}},
+  SahambanBackupExportClient:{
+   async save(_win,name,json){calls.push({name,json});return {status:'saved'};},
+   message(){return 'saved';}
+  }
+ };
+ backup.mount(win);
+ await nodes.get('sb148Export').actions.click();
+ assert.equal(reads.length,0);
+ assert.equal(calls.length,0);
+ assert.match(nodes.get('sb148Status').textContent,/هیچ داده‌ای به پل native ارسال نشد/);
+ await nodes.get('sb148SyntheticExport').actions.click();
+ assert.equal(reads.length,0);
+ assert.equal(calls.length,1);
+ const fixture=JSON.parse(calls[0].json);
+ assert.deepEqual(JSON.parse(fixture.items['sahamban-v1']),{
+  symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'
+ });
+});
