@@ -33,13 +33,17 @@ test('isolated acceptance WebView denies network and unknown assets, preserves e
   'FLAG_GRANT_READ_URI_PERMISSION', 'new BackupExportBridge(this, view, true)',
   'exporter.install()', 'exporter.onActivityResult',
   'localStorage.setItem', 'نماد-ساختگی-آزمایش',
-  'isSelectedSyntheticOnly(selected)'
+  'isSelectedSyntheticOnly(selected)', 'portfolioData', 'portfolioCapital',
+  'portfolioRiskCap', 'portfolioStress', 'portfolioConcentration',
+  'نماد-ساختگی-آزمایش,10,100,120,90,150'
  ]) assert.ok(java.includes(required),required);
  assert.match(java,/https:\/\/raminhashemi1\.github\.io\/sahamban\//);
  assert.match(bridge,/Collections\.singleton\("https:\/\/raminhashemi1\.github\.io"\)/);
  assert.match(policy,/TrustedNavigation\.isInternal\(pageUrl\)/);
  assert.match(bridge,/syntheticOnly &&/);
  assert.match(bridge,/isSyntheticLocalSnapshot\(document\)/);
+ assert.match(bridge,/isSyntheticPortfolioSnapshot\(document\)/);
+ assert.match(java,/BackupExportBridge\.isSyntheticPortfolioSnapshot/);
  assert.match(java,/BackupExportBridge\.isSyntheticLocalSnapshot/);
  assert.doesNotMatch(java,/addJavascriptInterface|setBlockNetworkLoads\(false\)|view\.loadDataWithBaseURL\(/);
  assert.match(java,/view\.loadUrl\(TRUSTED\)/);
