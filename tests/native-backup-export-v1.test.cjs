@@ -50,11 +50,12 @@ test('synthetic fixture is exactly the shape accepted by Android acceptance guar
  assert.equal(JSON.stringify(snapshot).includes('PRIVATE'),false);
 });
 
-test('PWA wires the native client before local backup and offers an explicit synthetic-only action',()=>{
+test('PWA wires native helper before the visible local-backup action and keeps the legacy synthetic button hidden',()=>{
  const fs=require('node:fs'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
  assert.ok(html.indexOf('native-backup-export-v1.js')<html.indexOf('local-backup-v148.js'));
- assert.match(html,/id="sb148SyntheticExport"/);
- assert.match(html,/خروجی حاوی اطلاعات واقعی عمداً رد می‌شود/);
+ assert.match(html,/id="sb148Export" type="button" class="secondary" style="width:100%;min-height:56px;white-space:normal"/);
+ assert.match(html,/id="sb148SyntheticExport" type="button" class="secondary" hidden style="display:none"/);
+ assert.match(html,/پل بومی هر محتوای غیرساختگی یا هر کلید اضافه را رد می‌کند/);
  assert.match(sw,/sahamban-static-v150-14/);
  assert.match(sw,/native-backup-export-v1\.js\?v=1\.0/);
 });
