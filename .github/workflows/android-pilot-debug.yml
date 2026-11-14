@@ -21,8 +21,19 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/sahamban-java-check
-          javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
+          javac -d /tmp/sahamban-java-check \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportPolicy.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupFileVerifier.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupImportPolicy.java \
+            android-pilot/tests/TrustedNavigationTest.java \
+            android-pilot/tests/BackupExportPolicyTest.java \
+            android-pilot/tests/BackupFileVerifierTest.java \
+            android-pilot/tests/BackupImportPolicyTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupExportPolicyTest
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupFileVerifierTest
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupImportPolicyTest
       - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
         shell: bash
         run: |
@@ -40,6 +51,64 @@ jobs:
           gradle-version: '8.11.1'
       - name: Build TEST-ONLY debug APK without owner signing credentials
         run: gradle -p android-pilot --no-daemon :app:assembleDebug
+      - name: Audit test APK identity, bundled offline screen and permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -f "$APK"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.restore' versionCode='8' versionName='0.3.5-pilot'"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F 'BackupSelfTestActivity'
+          unzip -Z1 "$APK" | grep -Fx 'assets/backup-self-test.html'
+          "$AAPT" dump permissions "$APK" > /tmp/sahamban-apk-permissions.txt
+          grep -F 'android.permission.INTERNET' /tmp/sahamban-apk-permissions.txt
+          if grep -Eq 'android.permission.(READ_|WRITE_|CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION)' /tmp/sahamban-apk-permissions.txt; then
+            echo 'Unexpected high-risk Android permission in debug APK' >&2
+            exit 1
+          fi
+      - name: Build ISOLATED synthetic-only PWA acceptance APK
+        run: gradle -p android-pilot --no-daemon :app:assembleAcceptance
+      - name: Audit isolated acceptance package and pinned PWA assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -f "$APK"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.acceptancefix' versionCode='8' versionName='0.3.5-pilot'"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > /tmp/sahamban-acceptance-manifest.txt
+          grep -F 'IsolatedAcceptanceActivity' /tmp/sahamban-acceptance-manifest.txt
+          grep -F 'MainActivity' /tmp/sahamban-acceptance-manifest.txt
+          unzip -Z1 "$APK" | grep -Fx 'assets/pwa/index.html'
+          unzip -Z1 "$APK" | grep -Fx 'assets/pwa/native-backup-export-v1.js'
+          unzip -Z1 "$APK" | grep -Fx 'assets/acceptance-asset-manifest.json'
+          if unzip -Z1 "$APK" | grep -Eq '^assets/pwa/sw[.]js$'; then
+            echo 'Service worker must not be bundled in isolated acceptance APK' >&2
+            exit 1
+          fi
+          unzip -p "$APK" assets/acceptance-asset-manifest.json > /tmp/sahamban-acceptance-assets.json
+          python3 - <<'PY'
+          import json, os
+          with open('/tmp/sahamban-acceptance-assets.json', encoding='utf-8') as f:
+              manifest = json.load(f)
+          assert manifest['profile'] == 'synthetic-only-debug-acceptance'
+          assert manifest['sourceCommit'] == os.environ['GITHUB_SHA']
+          assert manifest['path'] == '/sahamban/'
+          assert 'index.html' in manifest['files']
+          assert 'native-backup-export-v1.js' in manifest['files']
+          assert 'local-backup-v148.js' in manifest['files']
+          print('Acceptance asset manifest matches exact workflow checkout')
+          PY
+          sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sahamban-android-ISOLATED-ACCEPTANCE-SYNTHETIC-ONLY
+          path: android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
+          if-no-files-found: error
+          retention-days: 7
       - name: Print reproducibility digest (never a private certificate)
         run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4

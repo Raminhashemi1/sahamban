@@ -25,6 +25,7 @@ test('v92 keeps all ten modules and adds an optional four-step first-use tour',(
  const a=boot();
  assert.equal(a.cards.length,10);assert.equal(a.tour.hidden,true);
  const open=a.quick.children[1];assert.equal(open.attrs['aria-expanded'],'false');
+ assert.equal(typeof open.handlers.pointerup,'function');assert.equal(typeof open.handlers.touchend,'function');
  open.handlers.click();assert.equal(a.tour.hidden,false);assert.equal(open.attrs['aria-expanded'],'true');
  const top=a.tour.children[0],title=a.tour.children[1],actions=a.tour.children[3];
  assert.match(title.textContent,/سبدتان/);
@@ -41,9 +42,9 @@ test('v92 is safe, keyboard navigable and offline-ready',()=>{
  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css,/@media\(max-width:360px\)/);
  assert.match(css,/:focus-visible/);
- assert.match(html,/compact-dashboard-v92\.js\?v=92\.0/);
+ assert.match(html,/compact-dashboard-v92\.js\?v=92\.1/);
  assert.match(html,/compact-dashboard-v92\.css\?v=92\.0/);
  assert.match(sw,/sahamban-static-v150-[1-9][0-9]*/);
- assert.match(sw,/compact-dashboard-v92\.js\?v=92\.0/);
+ assert.match(sw,/compact-dashboard-v92\.js\?v=92\.1/);
  assert.match(sw,/compact-dashboard-v92\.css\?v=92\.0/);
 });

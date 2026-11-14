@@ -73,7 +73,11 @@
  function hide(){
   panel.hidden=true;open.setAttribute('aria-expanded','false');open.focus();
  }
- open.addEventListener('click',()=>{if(panel.hidden){current=0;reveal();}else hide();});
+ function openTour(){current=0;reveal();panel.scrollIntoView?.({block:'nearest',behavior:'auto'});}
+ // Android WebView touch fallback: pointer/touch and click all reveal idempotently.
+ open.addEventListener('click',openTour);
+ open.addEventListener('pointerup',openTour);
+ open.addEventListener('touchend',openTour,{passive:true});
  close.addEventListener('click',hide);
  prev.addEventListener('click',()=>{if(current>0){current--;render();title.focus();}});
  next.addEventListener('click',()=>{current=(current+1)%tourSteps.length;render();title.focus();});

@@ -15,6 +15,10 @@ public final class TrustedNavigationTest {
         deny("https://raminhashemi1.github.io.evil.example/sahamban/");
         deny("https://raminhashemi1.github.io@evil.example/sahamban/");
         deny("https://raminhashemi1.github.io/sahamban-evil/");
+        deny("https://raminhashemi1.github.io/sahamban/../outside/");
+        deny("https://raminhashemi1.github.io/sahamban/%2e%2e/outside/");
+        deny("https://raminhashemi1.github.io/sahamban/%2Foutside/");
+        deny("https://raminhashemi1.github.io/sahamban/./outside/");
         deny("https://raminhashemi1.github.io/");
         deny("https://raminhashemi1.github.io:444/sahamban/");
         deny("file:///sdcard/Download/secret.html");

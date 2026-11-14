@@ -1,0 +1,7 @@
+{
+  "format": "sahamban-local-backup",
+  "schema": 1,
+  "items": {
+    "sahamban-v1": "{\"symbol\":\"نماد-کاملاً-ساختگی\",\"aStop\":\"100\",\"aTarget\":\"200\"}"
+  }
+}

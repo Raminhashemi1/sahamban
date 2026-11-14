@@ -128,13 +128,14 @@
  function mount(win){
   const doc=win.document,byId=id=>doc.getElementById(id),status=s=>{byId('sb148Status').textContent=s;};
   let pending=null,generation=0;
-  byId('sb148Export').addEventListener('click',()=>{
+  byId('sb148Export').addEventListener('click',async()=>{
    try{
     const snapshot=createSnapshot(win.localStorage),encoded=JSON.stringify(snapshot,null,2);
-    const url=win.URL.createObjectURL(new Blob([encoded],{type:'application/json;charset=utf-8'}));
-    const a=doc.createElement('a');a.href=url;a.download='sahamban-local-backup-v1.json';doc.body.append(a);a.click();a.remove();
-    win.setTimeout(()=>win.URL.revokeObjectURL(url),1000);
-    status('پشتیبان محلی آماده دانلود شد؛ فایل JSON رمزگذاری نشده است. شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
+    const client=win.SahambanBackupExportClient;
+    if(!client)throw Error('ماژول امن خروجی فایل بارگذاری نشده است.');
+    const filename='sahamban-local-backup-v1.json';
+    const result=await client.save(win,filename,encoded);
+    status(client.message(result,filename)+' فایل JSON رمزگذاری نشده است؛ شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
    }catch(e){status('پشتیبان‌گیری ناموفق: '+e.message);}
   });
   byId('sb148File').addEventListener('change',async()=>{

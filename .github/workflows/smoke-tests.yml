@@ -36,7 +36,7 @@ jobs:
       - run: node --test tests/manual-settlement-db.test.cjs
       - run: node --test tests/prospective-signal-ledger.test.cjs
       - run: node --test tests/fixed-rule-evaluator.test.cjs
-      - run: node --test tests/android-pilot-wrapper.test.cjs
+      - run: node --test tests/android-pilot-wrapper.test.cjs tests/android-backup-self-test.test.cjs tests/android-isolated-acceptance.test.cjs
       - run: node --test tests/generate-pilot-deploy-config.test.cjs
       - run: node --test tests/d1-schema.test.cjs
       - run: python tests/d1-schema.integration.test.py
@@ -75,7 +75,7 @@ jobs:
           retention-days: 14
       - run: node --test tests/broker-import-security-v145.test.cjs
       - run: node --test tests/broker-import-race-v146.test.cjs
-      - run: node --test tests/local-backup-v148.test.cjs
+      - run: node --test tests/local-backup-v148.test.cjs tests/native-backup-export-v1.test.cjs
       - run: node --check portfolio-pilot-v61.js
       - run: node --test tests/pilot-v61-coverage.test.cjs tests/home-portfolio-v61-entry.test.cjs
   browser:

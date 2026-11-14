@@ -91,9 +91,10 @@ test('web HTML and service worker use the same locally cached backup module',()=
  const sw=fs.readFileSync('sw.js','utf8');
  assert.match(html,/id="sb148LocalBackup"/);
  for(const id of ['sb148Export','sb148File','sb148Restore','sb148Status'])assert.ok(html.includes('id="'+id+'"'));
- assert.match(html,/local-backup-v148\.js\?v=148\.1/);
- assert.match(sw,/local-backup-v148\.js\?v=148\.1/);
+ assert.match(html,/local-backup-v148\.js\?v=148\.2/);
+ assert.match(sw,/local-backup-v148\.js\?v=148\.2/);
  assert.match(html,/رمزگذاری نشده/);
+ assert.match(html,/native-backup-export-v1\.js\?v=1\.0/);
 });
 
 function uiHarness(initial={}){
@@ -169,4 +170,133 @@ test('rejects oversized direct backup objects before mutating storage',()=>{
  const destination=storage({'sahamban-v1':'UNCHANGED'});
  assert.throws(()=>api.restoreSnapshot(destination,snapshot),/از حد مجاز بزرگ‌تر است/);
  assert.equal(destination.getItem('sahamban-v1'),'UNCHANGED');
+});
+
+test('backup exports delegate to an explicit native-or-browser helper without claiming disk writes',()=>{
+ const fs=require('node:fs');
+ const helper=fs.readFileSync('native-backup-export-v1.js','utf8');
+ assert.match(helper,/ذخیره‌شدن فایل تأیید نشده است/);
+ assert.match(helper,/بازیابی آزمایشی انجام دهید/);
+ for(const source of ['local-backup-v148.js','app.js']){
+  const src=fs.readFileSync(source,'utf8');
+  assert.match(src,/client\.save\(/);
+  assert.match(src,/client\.message\(/);
+  assert.doesNotMatch(src,/پشتیبان محلی آماده دانلود شد|فایل پشتیبان از سبد فعلی آماده دانلود شد/);
+ }
+});
+
+
+test('real local PWA UI uses native WebMessage export and restores synthetic JSON only with consent',async()=>{
+ const client=require('../native-backup-export-v1.js');
+ const alertRaw=JSON.stringify(alert),watchRaw=JSON.stringify(watch);
+ const ui=uiHarness({
+  'sahamban-v1':alertRaw,'sahamban-watchlist-v6':watchRaw,
+  'unrelated-private':'NOT_FOR_EXPORT'
+ });
+ const before=ui.state.dump(),listeners=new Set(),requests=[];
+ ui.fakeWin.SahambanBackupExportClient=client;
+ ui.fakeWin.navigator={userAgent:'SahambanPilotWebView/1'};
+ ui.fakeWin.setTimeout=(callback,ms)=>{assert.equal(ms,300000);return 42;};
+ ui.fakeWin.clearTimeout=(id)=>assert.equal(id,42);
+ ui.fakeWin.SahambanBackupExport={
+  addEventListener(type,fn){assert.equal(type,'message');listeners.add(fn);},
+  removeEventListener(type,fn){assert.equal(type,'message');listeners.delete(fn);},
+  postMessage(raw){requests.push(JSON.parse(raw));}
+ };
+ const send=(request,status,id=request.requestId)=>{
+  for(const fn of [...listeners])fn({data:JSON.stringify({
+   protocol:'sahamban-backup-result-v1',requestId:id,status
+  })});
+ };
+ const pending=ui.fire('sb148Export');
+ assert.equal(requests.length,1,'UI must call the real native-export helper once');
+ const request=requests[0],snapshot=JSON.parse(request.content);
+ assert.equal(request.protocol,'sahamban-backup-export-v1');
+ assert.match(request.requestId,/^[A-Za-z0-9_-]{1,80}$/);
+ assert.equal(request.name,'sahamban-local-backup-v1.json');
+ assert.equal(snapshot.format,api.FORMAT);
+ assert.equal(snapshot.schema,api.SCHEMA);
+ assert.deepEqual(Object.keys(snapshot.items),['sahamban-v1','sahamban-watchlist-v6']);
+ assert.equal(snapshot.items['sahamban-v1'],alertRaw);
+ assert.equal(snapshot.items['sahamban-watchlist-v6'],watchRaw);
+ assert.equal(request.content.includes('NOT_FOR_EXPORT'),false);
+ assert.ok(Buffer.byteLength(request.content,'utf8')<=client.MAX_BYTES);
+ assert.equal(listeners.size,1);
+ assert.deepEqual(ui.state.dump(),before,'export must not mutate the local PWA store');
+ assert.doesNotMatch(ui.element('sb148Status').textContent,/اندروید پایان نوشتن/);
+ send(request,'saved','unrelated-request');
+ assert.equal(listeners.size,1,'forged correlation must not settle native save');
+ send(request,'saved');
+ await pending;
+ assert.equal(listeners.size,0,'native listener must be removed after reply');
+ assert.match(ui.element('sb148Status').textContent,/اندروید پایان نوشتن/);
+ assert.match(ui.element('sb148Status').textContent,/رمزگذاری نشده/);
+ assert.deepEqual(ui.state.dump(),before);
+
+ const oldAlert=JSON.stringify({...alert,symbol:'نماد قدیمی'});
+ const imported=uiHarness({'sahamban-v1':oldAlert,'external-state':'preserve'});
+ const selectedFile={size:Buffer.byteLength(request.content,'utf8'),
+  text:async()=>request.content};
+ imported.element('sb148File').files=[selectedFile];
+ await imported.fire('sb148File','change');
+ assert.equal(imported.element('sb148Restore').disabled,false);
+ assert.equal(imported.state.getItem('sahamban-v1'),oldAlert,
+  'valid preview alone must never replace local data');
+ imported.fakeWin.confirm=()=>false;
+ imported.fire('sb148Restore');
+ assert.equal(imported.state.getItem('sahamban-v1'),oldAlert,
+  'declined consent must preserve current data');
+ imported.element('sb148File').files=[selectedFile];
+ await imported.fire('sb148File','change');
+ imported.fakeWin.confirm=()=>true;
+ imported.fire('sb148Restore');
+ assert.equal(imported.state.getItem('sahamban-v1'),alertRaw);
+ assert.equal(imported.state.getItem('sahamban-watchlist-v6'),watchRaw);
+ assert.equal(imported.state.getItem('external-state'),'preserve');
+ assert.match(imported.element('sb148Status').textContent,/بازیابی شد/);
+
+ const cancelled=ui.fire('sb148Export');
+ assert.equal(requests.length,2);
+ send(requests[1],'cancelled');
+ await cancelled;
+ assert.match(ui.element('sb148Status').textContent,/لغو شد/);
+ assert.doesNotMatch(ui.element('sb148Status').textContent,/اندروید پایان نوشتن/);
+ assert.equal(listeners.size,0);
+ assert.deepEqual(ui.state.dump(),before,'native cancellation must not alter PWA data');
+});
+
+
+test('native saved status is replaced by later import preview in the same UI status field',async()=>{
+ const client=require('../native-backup-export-v1.js');
+ const synthetic=JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'});
+ const h=uiHarness({'sahamban-v1':synthetic});
+ const replies=new Set(),requests=[];
+ h.fakeWin.SahambanBackupExportClient=client;
+ h.fakeWin.navigator={userAgent:'SahambanPilotWebView/1'};
+ h.fakeWin.setTimeout=()=>17;
+ h.fakeWin.clearTimeout=()=>{};
+ h.fakeWin.SahambanBackupExport={
+  addEventListener(kind,fn){assert.equal(kind,'message');replies.add(fn);},
+  removeEventListener(kind,fn){assert.equal(kind,'message');replies.delete(fn);},
+  postMessage(raw){requests.push(JSON.parse(raw));}
+ };
+ const before=h.state.dump();
+ const pending=h.fire('sb148Export');
+ assert.equal(requests.length,1);
+ for(const fn of [...replies])fn({data:JSON.stringify({
+  protocol:'sahamban-backup-result-v1',requestId:requests[0].requestId,status:'saved'
+ })});
+ await pending;
+ assert.match(h.element('sb148Status').textContent,/اندروید پایان نوشتن فایل/);
+ assert.deepEqual(h.state.dump(),before);
+ h.element('sb148File').files=[{
+  size:Buffer.byteLength(requests[0].content,'utf8'),
+  text:async()=>requests[0].content
+ }];
+ await h.fire('sb148File','change');
+ assert.match(h.element('sb148Status').textContent,/فایل معتبر است: 1 بخش/);
+ assert.match(h.element('sb148Status').textContent,/هنوز جایگزین نشده/);
+ assert.doesNotMatch(h.element('sb148Status').textContent,/اندروید پایان نوشتن فایل/);
+ assert.deepEqual(h.state.dump(),before,'preview must not write any local data');
+ assert.equal(replies.size,0,'native message listener must be cleaned up');
 });
