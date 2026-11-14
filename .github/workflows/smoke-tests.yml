@@ -64,6 +64,17 @@ jobs:
       - run: node --test tests/day3-real-evidence-audit-v1.test.cjs
       - run: node --test tests/day3-original-capture-cli.test.cjs
       - run: node tests/live-market-connectivity.cjs
+      - name: Run read-only TSE web gateway fallback diagnostic
+        if: always()
+        run: node tests/live-market-webgw-fallback.cjs
+      - name: Preserve read-only TSE web gateway diagnostic
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-live-market-webgw-fallback
+          path: test-artifacts/live-market-webgw.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Preserve explicit live-market status (including network skip)
         if: always()
         uses: actions/upload-artifact@v6
