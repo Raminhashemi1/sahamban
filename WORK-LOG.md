@@ -926,3 +926,46 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 - This evidence covers launch and home-screen rendering only. It does not prove synthetic export, Android file picker, import preview, native saved callback, Restore, offline behavior, or full PWA integration. Physical acceptance remains partial; real PWA backup/restore unverified.
 - Next: open the first-use tutorial (4 steps) for the synthetic workflow; do not tap "نصب سهام‌بان روی گوشی". Use only fabricated data and a dedicated test folder when file operations begin. Preserve existing apps, Chrome/PWA data and personal files. Stop on broad/unexpected permissions or requests for real portfolio backups.
 - No APK re-install, deletion, data clearing, Restore, merge, deploy, publication, payment, trade, order or holdings mutation. Five-day plan and fail-closed financial flags unchanged.
+
+
+## 2026-11-14 — project operating decision and single-lane execution control
+
+### Owner decision (authoritative)
+- Priority order: **(1) financial calculation and stock-analysis correctness, (2) release readiness**.
+- Authorized: inspect, edit and test code on an existing experimental branch. **Not authorized:** merge any PR, deploy Pages/server, publish/release/sign a production APK, enable actionable signals, place trades/orders, make payments, or mutate holdings/assets. These require separate explicit approval.
+- The original user-approved five-day plan in `MASTER-PLAN.md` is frozen. This operating control changes sequencing/reporting discipline only; it does not rewrite the five-day plan or reclassify any day as accepted.
+
+### One active work lane
+- **ACTIVE:** financial correctness / historical price-basis evidence and fail-closed propagation, under the existing Day-2/PR #164 scope.
+- **PAUSED (no opportunistic work):** Android/PWA acceptance (#166/#167), subscription/integration candidate (#169), UI polish, release preparation. Existing evidence is retained; no repeated device export, file selection, preview, fixture roundtrip, or already-green CI job unless its relevant source SHA changes or a concrete defect is found.
+- Exception: a newly demonstrated critical security defect may be handled in a separate narrowly scoped fix; it must not silently change the active financial task.
+
+### Baseline snapshot at decision time
+- Active working branch `feat/day2-history-basis-gates-20261109` HEAD: `536a0df23959655b6fac6f9cd15090d7d171461b`. Public `main`: `a5c10548904ee0e1cd80169729071d0bb390f606`. Branch compare: **583 ahead / 168 behind**; this is not merge-ready and must not be rebased/merged without a separate review/approval.
+- PR #164 / Issue #164: OPEN; financial history-basis fail-closed scope. Issue #164 latest recorded body remains explicit that no independently attested historical basis exists. Keep it open until evidence gates are met.
+- PR #166 / Issue #166 and Issue #167: OPEN; Android work is paused. Existing limited synthetic fixture and UI/preview evidence is retained; native saved callback/full physical restore remains unverified. Do not repeat already-passed steps.
+- PR #169 / Issue #169: OPEN, TEST-ONLY integration candidate based on public main. Its recorded 13/13 workflow success belongs to exact candidate SHA `2ab130fd046e7ff6bddd0d0131f38e62d5884ff1`; this is not approval to merge and not financial-history attestation.
+- The exact current working-branch documentation HEAD `536a0df...` returned no PR-triggered workflow rows from the workflow-run query. Therefore no exact-HEAD CI claim is made for this SHA. Historical green results remain attached only to their exact tested SHAs.
+
+### Financial gate — current known blockers, do not re-investigate without new evidence
+1. Complete original-source TSETMC history/capture and independent provenance are not established for the full requested period.
+2. Of 15 adjustment events, 10 older event-day closing values do not match the event's `pClosingNotAdjusted`; no silent extrapolation or fabricated adjusted series is allowed.
+3. Genuine separately captured upstream `adjustPrices=0/1/2` outputs are not available/verified; DEC-007 Track B is review-only and cannot set `threeModesVerified` or `historyBasisAuthenticated` true.
+4. Trusted reviewer public-key registry is intentionally empty; no independently enrolled signer or valid provenance-bound signed review exists.
+5. Until these are resolved, keep `day3FinalAccepted=false`, `historyBasisAuthenticated=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`; no actionable trade signals or execution.
+
+### Anti-duplication rules (mandatory)
+- Before any task: read this board + relevant decision/evidence doc; query current branch/PR/Issue/CI; compare the relevant source SHA to the last tested SHA.
+- If source SHA is unchanged and the previous test is PASS, reuse that evidence; do not rerun it. Re-run only after relevant source/test/config change, an expired/time-sensitive dependency, or a reproducible defect.
+- Every task must have one ID, one scope, one acceptance criterion, one owner/dependency, and one terminal state: PASS / FAIL / BLOCKED / NOT RUN. No vague “review again” loops.
+- Work only on the ACTIVE lane. Do not create a new branch or start a different PR without a concrete need. Never merge/rebase/deploy as a convenience.
+- After each task, update this board, `WORK-LOG.md`, and `HANDOFF.md` once with the exact commit SHA and evidence. Do not append duplicate progress summaries to multiple unrelated branches.
+- User-facing reports must show: task ID, what changed, exact test/CI SHA, result, blocker, and the single next task. Clearly separate code tests, external financial evidence, and physical-device evidence.
+
+### Next task — FIN-01 (single active task)
+- **Scope:** read-only audit of the existing historical-basis trust contract and its direct API consumers/tests on the active financial branch; verify every decision-plan, event-study, temporal-holdout, ranking and portfolio path fails closed when evidence is absent, unverified, expired, wrong-instrument, wrong-date-span or wrong-digest.
+- **Acceptance:** produce a finite consumer matrix (file/function → guard → test → outcome), identify only concrete missing guards or regressions, and add no code unless a specific failing path is proven. No new market fetch, no source substitution, no key enrollment, no synthetic attestation, and no changes to financial flags.
+- **Stop condition:** if all direct consumers are already covered, mark FIN-01 PASS and move to the next single external-evidence dependency; do not repeat the same audit under a new name.
+
+### Explicitly unchanged
+- Five-day plan; existing DEC-006/007/008; all fail-closed financial flags; main branch and all open PR states. No merge, deployment, release, trade, order, payment, asset/holding mutation, or device action.
