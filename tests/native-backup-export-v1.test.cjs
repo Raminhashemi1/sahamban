@@ -56,8 +56,21 @@ test('PWA wires native helper before the visible local-backup action and keeps t
  assert.match(html,/id="sb148Export" type="button" class="secondary" style="width:100%;min-height:56px;white-space:normal"/);
  assert.match(html,/id="sb148SyntheticExport" type="button" class="secondary" hidden style="display:none"/);
  assert.match(html,/پل بومی هر محتوای غیرساختگی یا هر کلید اضافه را رد می‌کند/);
- assert.match(sw,/sahamban-static-v150-14/);
+ assert.match(sw,/sahamban-static-v150-15/);
  assert.match(sw,/native-backup-export-v1\.js\?v=1\.0/);
+});
+
+test('risk portfolio PWA backup uses the shared native JSON helper and 256 KiB restore cap',()=>{
+ const fs=require('node:fs'),app=fs.readFileSync('app.js','utf8'),html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');
+ const start=app.indexOf("$('portfolioBackup').addEventListener");
+ const end=app.indexOf("$('portfolioBackupFile').addEventListener",start);
+ const handler=app.slice(start,end);
+ assert.match(handler,/client\.save\(window,filename,content\)/);
+ assert.match(handler,/client\.message\(result,filename\)/);
+ assert.doesNotMatch(handler,/createObjectURL|\.download=/);
+ assert.match(app,/file\.size>maxBackupBytes/);
+ assert.match(html,/app\.js\?v=127\.1/);
+ assert.match(sw,/app\.js\?v=127\.1/);
 });
 
 test('isolated acceptance exercises the real PWA local-backup button with only its seeded synthetic record',async()=>{
