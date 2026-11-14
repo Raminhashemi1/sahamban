@@ -17,6 +17,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify PWA and native backup JavaScript integration
+        run: |
+          node tests/smoke.cjs
+          node --test tests/local-backup-v148.test.cjs tests/native-backup-export-v1.test.cjs
       - name: Verify URL origin policy with a real Java runtime
         shell: bash
         run: |
