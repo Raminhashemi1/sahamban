@@ -5,7 +5,7 @@
 ## وضعیت شاخه‌ها و PRها
 - مخزن: `Raminhashemi1/sahamban`
 - شاخهٔ کاری قدیمی: `feat/day2-history-basis-gates-20261109`
-- PR #164: باز، non-Draft، ادغام‌نشده و از نظر GitHub `mergeable=false / dirty`. در مقایسه با `main` فعلی، 624 commit جلو و 168 commit عقب است؛ HEAD در آخرین بررسی پیش از این checkpoint برابر `5de050b9061637f5434420f3840bd63e84465b4f` بود. آن را merge نکن و برای ادغام، تاریخچهٔ آن را بی‌اجازه بازنویسی نکن.
+- PR #164: باز، non-Draft، ادغام‌نشده و از نظر GitHub `mergeable=false / dirty`. در مقایسه با `main` فعلی، 624 commit جلو و 168 commit عقب است. گزارش‌ها و checkpoint این شاخه اصلاح شده‌اند؛ SHA و CI دقیق آن را در هر ادامه زنده استعلام کن. آن را merge نکن و تاریخچه‌اش را بی‌اجازه بازنویسی نکن.
 - PR #169: کاندیدای یکپارچه‌سازی تمیز و مستقل، Draft و ادغام‌نشده؛ بر مبنای همان SHA فعلی `main` یعنی `a5c10548904ee0e1cd80169729071d0bb390f606`، `mergeable=true / clean`.
 - HEAD فعلی PR #169: `abf725933519901bd70bfea1667b2031884d7c52`.
 - CI دقیق HEAD در PR #169: **14/14 Check Runs SUCCESS و 13/13 Workflow Runs SUCCESS**. اجرای Smoke شامل گام `node --test tests/tsetmc-capture-integrity-review-v1.test.cjs) است و با موفقیت تمام شده؛ تست تازهٔ بررسی فایل‌های واقعی هم در همان گام اجرا شده است.
@@ -54,3 +54,9 @@
 - PR #169 و تست دقیق artifact در HEAD یادشده
 
 «پروژه سهام‌بان را از PR #169 ادامه بده؛ وضعیت CI دقیق HEAD را دوباره استعلام کن. PR #164 را merge یا rebase نکن. گیت‌های احراز منبع و مبنای قیمت تاریخی همچنان بسته‌اند. هیچ اقدام مالی یا انتشار بدون اجازه انجام نده.»
+
+
+## آخرین بازبینی پس از اصلاح
+- PR #164 هنوز OPEN/non-Draft و `mergeable=false`; exact-head check-runs و workflow-runs روی آخرین SHA آن صفر بود. نتیجه CI مربوط به PR #169 را به #164 تعمیم نده.
+- PR #169 هنوز OPEN/Draft و `mergeable=true`; HEAD `abf725933519901bd70bfea1667b2031884d7c52`، 14/14 checks و 13/13 workflows موفق.
+- PR #169 smoke step برای تست واقعی artifact `tests/tsetmc-capture-integrity-review-v1.test.cjs` SUCCESS است. تمام trust/financial flags در خروجی verifier false می‌مانند.
