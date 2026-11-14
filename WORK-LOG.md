@@ -861,3 +861,10 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 - Exact SHA CI completed **14/14 Check Runs SUCCESS and 13/13 workflow runs SUCCESS**. Smoke, Chromium browser, and WebKit mobile jobs succeeded. Android low-end v110 browser proxy ran and its artifact was uploaded; this is not physical-device acceptance.
 - Smoke live-market step remained `UNVERIFIED_NETWORK` / `UND_ERR_CONNECT_TIMEOUT` for فولاد; no authenticated TSETMC connection or quote was established.
 - No source/test code was changed in this continuation. No duplicate phone test, PWA restore, market-data capture, merge, deployment, payment, order, trade or holdings mutation was performed.
+
+
+## 2026-11-14 — Android acceptance environment feasibility review
+- Exact PR #169 docs SHA `2d257d6e89679ceff44cd86d630dde3e298908ff` is now fully green: 14/14 checks and 13/13 workflows SUCCESS. PR #169 remains Draft/unmerged.
+- Android PR #166 current head `7b1f881dc2e99c2d421cfb6027a75cbff0f45a50` remains OPEN/Draft with 12/12 checks and 11/11 workflows SUCCESS; Issue #167 remains OPEN.
+- Read-only review found the normal launcher still targets the public Pages PWA, whose `main` branch does not contain `native-backup-export-v1.js`. The separate `acceptance` variant on `feta` is designed to avoid this mismatch: it disables the network MainActivity, packages allowlisted root PWA files with per-file SHA-256 and source-commit manifest, serves the snapshot under the same HTTPS origin used by the WebMessage bridge, blocks network requests/service-worker use, and accepts only a synthetic fixture. This is a feasible isolated integration harness without publishing `main`.
+- Limitation: this harness does not validate service-worker lifecycle or real user backup recovery. No APK build/install or device operation was performed; no backup bytes were read. Next step requires owner authorization for a fresh acceptance APK and synthetic-only isolated PWA export/import roundtrip. Preserve all existing app/PWA data and keep PR #166 separate.
