@@ -60,3 +60,9 @@
 - PR #164 هنوز OPEN/non-Draft و `mergeable=false`; exact-head check-runs و workflow-runs روی آخرین SHA آن صفر بود. نتیجه CI مربوط به PR #169 را به #164 تعمیم نده.
 - PR #169 هنوز OPEN/Draft و `mergeable=true`; HEAD `abf725933519901bd70bfea1667b2031884d7c52`، 14/14 checks و 13/13 workflows موفق.
 - PR #169 smoke step برای تست واقعی artifact `tests/tsetmc-capture-integrity-review-v1.test.cjs` SUCCESS است. تمام trust/financial flags در خروجی verifier false می‌مانند.
+
+
+## جزئیات اجرای تست واقعی artifact
+- لاگ واقعی GitHub Actions برای PR #169، Smoke run `43576639513`، job `132392187965` بررسی شد. تست `tests/tsetmc-capture-integrity-review-v1.test.cjs` شامل **21 PASS و صفر FAIL** بود.
+- تست جدید `verifies the exact committed Vesakht raw captures against their manifest without granting financial trust` صریحاً در لاگ `ok 21` ثبت شده است.
+- این PASS فقط سازگاری artifact ذخیره‌شده را تأیید می‌کند؛ احراز provider یا مبنای تعدیل نیست. همهٔ گیت‌های مالی همچنان false هستند.
