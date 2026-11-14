@@ -65,7 +65,7 @@ jobs:
           APK=android-pilot/app/build/outputs/apk/acceptance/app-acceptance.apk
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           test -f "$APK"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.acceptancefix'"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='ir.sahamban.pilot.acceptancefix2'"
           "$AAPT" dump badging "$APK" | grep -F "launchable-activity: name='ir.sahamban.pilot.IsolatedAcceptanceActivity'"
           unzip -Z1 "$APK" | grep -Fx 'assets/pwa/index.html'
           unzip -Z1 "$APK" | grep -Fx 'assets/pwa/native-backup-export-v1.js'
