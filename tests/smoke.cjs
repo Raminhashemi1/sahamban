@@ -31,7 +31,7 @@ test('First-use guide is bundled and opens on Android touch or click',()=>{
  assert.ok(firstUseTour.includes("open.addEventListener('pointerup',openTour)"));
  assert.ok(firstUseTour.includes("open.addEventListener('touchend',openTour,{passive:true})"));
  assert.ok(firstUseTour.includes('panel.hidden=false'));
- assert.ok(firstUseTour.includes("panel.scrollIntoView({block:'nearest',behavior:'auto'})"));
+ assert.ok(firstUseTour.includes("panel.scrollIntoView?.({block:'nearest',behavior:'auto'})"));
 });
 const persianUi=fs.readFileSync('persian-ui.js','utf8');
 test('Rial-only portfolio examples and Persian numerical display are wired',()=>{
