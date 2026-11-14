@@ -125,6 +125,11 @@
   }
   return inspected.count;
  }
+  function createSyntheticSnapshot(){
+   return {format:FORMAT,schema:SCHEMA,createdAt:new Date().toISOString(),items:{
+    'sahamban-v1':JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'})
+   }};
+  }
  function mount(win){
   const doc=win.document,byId=id=>doc.getElementById(id),status=s=>{byId('sb148Status').textContent=s;};
   let pending=null,generation=0;
@@ -133,11 +138,6 @@
    if(!client)throw Error('ماژول امن خروجی فایل بارگذاری نشده است.');
    const result=await client.save(win,filename,JSON.stringify(snapshot,null,2));
    return client.message(result,filename);
-  }
-  function createSyntheticSnapshot(){
-   return {format:FORMAT,schema:SCHEMA,createdAt:new Date().toISOString(),items:{
-    'sahamban-v1':JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'})
-   }};
   }
   byId('sb148Export').addEventListener('click',async()=>{
    try{
