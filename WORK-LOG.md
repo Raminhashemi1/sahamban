@@ -1062,3 +1062,9 @@ This entry supersedes the immediately preceding live-audit entry's stale pre-che
 - The prior ...710 claim and the resulting FIN-05/06/07 conclusions based on that mismatch were erroneous and are withdrawn. Correct status: `NO_COMMITTED_ROW_ID_MISMATCH`; source authentication, historical price basis and capital-action completeness remain unverified.
 - Added an exact-committed-artifact regression test on PR #169 commit `abf725933519901bd70bfea1667b2031884d7c52`; it runs the strict verifier against the manifest and both raw files and asserts review-only status plus false financial trust flags. Await exact-head CI before claiming byte/hash validation.
 - Detailed corrected notes: `evidence/day3/vasakht-instrument-identity-discrepancy-20261114.md`, `evidence/day3/FIN-06-adjustment-id-crosswalk-research-20261114.md`, and `evidence/day3/FIN-07-adjustment-id-fail-closed-verifier-audit-20261114.md`.
+
+
+## 2026-11-14 — exact committed-capture verifier test completed on PR #169
+- On exact PR #169 HEAD `abf725933519901bd70bfea1667b2031884d7c52`, Smoke run `43576639513`, job `132392187965` executed `tests/tsetmc-capture-integrity-review-v1.test.cjs`: **21 tests passed, 0 failed**. The new subtest `verifies the exact committed Vesakht raw captures against their manifest without granting financial trust` is explicitly logged `ok 21`.
+- Exact-head aggregate CI: 14/14 Check Runs SUCCESS; 13/13 Workflow Runs SUCCESS. PR #169 remains Draft, open, mergeable and unmerged. PR #164 remains separate, open, dirty/diverged and has no exact-head CI proof.
+- This confirms only committed raw-artifact hash/size/schema/row-ID consistency. `sourceAuthenticated=false`, `historyPriceBasisVerified=false`, `capitalActionsVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`. No merge, deploy, financial action or holdings change.
