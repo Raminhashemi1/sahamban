@@ -435,3 +435,10 @@
 - This creates a reproducible CI APK artifact only. It does not install the APK on a phone, access personal files, or establish physical WebMessage/SAF save+restore. The acceptance harness blocks network and service-worker behavior; it cannot certify production PWA service-worker lifecycle or real-user recovery.
 - At the time of this note, the workflow commit is `ba9da45834dff7899c1f6ec29fa46fb8388e8886`; no run/check result for this commit was yet exposed by the PR-scoped workflow-run query. Do not claim the new build/audit succeeded until its actual run and artifact are inspected.
 - No release signing, production package identity, merge, deploy, publication, real backup, payment, trade or holdings mutation.
+
+
+## 2026-11-14 — corrected acceptance workflow and first live CI execution
+- The Android workflow audit lane was corrected before relying on it; the final workflow definition is commit `9f7516abbe0ae418071ae0338b31f9630f0dfc04`. This is the workflow SHA to evaluate; the earlier intermediate workflow commit `ba9da45834dff7899c1f6ec29fa46fb8388e8886` was superseded before this run.
+- GitHub Actions run `43579544694` started for PR #166 at exact SHA `9f7516abbe0ae418071ae0338b31f9630f0dfc04`. The Java URI/security policy suite completed SUCCESS; Android SDK/platform installation and Gradle setup completed SUCCESS. At the time of this note, the existing debug APK build was in progress; the new acceptance build/audit/artifact steps had not yet run.
+- The added workflow is designed to build `:app:assembleAcceptance`, verify isolated package identity and bundled PWA SHA/source manifest, ensure `sw.js` is absent, and upload a distinct synthetic-only artifact. Do not claim success until those exact steps complete and the artifact is inspected.
+- No APK has been installed on a device. No PWA/Chrome storage or personal backup was accessed. No merge/deploy/release, real restore, payment, trade or holdings mutation.
