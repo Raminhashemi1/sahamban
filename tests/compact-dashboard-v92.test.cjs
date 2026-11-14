@@ -42,9 +42,9 @@ test('v92 is safe, keyboard navigable and offline-ready',()=>{
  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css,/@media\(max-width:360px\)/);
  assert.match(css,/:focus-visible/);
- assert.match(html,/compact-dashboard-v92\.js\?v=92\.0/);
+ assert.match(html,/compact-dashboard-v92\.js\?v=92\.1/);
  assert.match(html,/compact-dashboard-v92\.css\?v=92\.0/);
  assert.match(sw,/sahamban-static-v150-[1-9][0-9]*/);
- assert.match(sw,/compact-dashboard-v92\.js\?v=92\.0/);
+ assert.match(sw,/compact-dashboard-v92\.js\?v=92\.1/);
  assert.match(sw,/compact-dashboard-v92\.css\?v=92\.0/);
 });
