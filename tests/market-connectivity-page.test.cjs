@@ -14,7 +14,7 @@ assert.match(html,/UNVERIFIED_OUTSIDE_SESSION/);
 assert.match(html,/UNVERIFIED_STALE_SESSION_DATE/);
 assert.match(html,/UNVERIFIED_STALE_TRADE/);
 assert.match(html,/۱۵ دقیقه/);
-assert.match(html,/q\.freshness\.status!=='FRESH'/);
+assert.match(html,/!\['FRESH','SESSION_CLOSED_FINAL'\]\.includes\(q\.freshness\.status\)/);
 assert.match(html,/اتصال به TSETMC و دریافت قیمت پایانی و تاریخچه: موفق/);
 assert.match(html,/تأیید تازگی قیمت زنده: انجام نشد/);
 assert.match(html,/ریال/);
@@ -51,14 +51,16 @@ assert.match(html,/historyStatus==='PENDING_TODAY_ROW'/);
 assert.match(html,/sameDay.length===0&&date===tehranMarketNow\(\)\.date/);
 assert.match(html,/lastDates\[0\]<date/);
 assert.match(html,/q\.freshness\.status==='FRESH'\?'FRESH_QUOTE_HISTORY_PENDING':'UNVERIFIED_HISTORY_NOT_PUBLISHED'/);
-assert.match(html,/تطبیق مستقل تاریخچه امروز: هنوز در انتظار انتشار/);
-assert.ok(html.indexOf("if(q.historyStatus==='PENDING_TODAY_ROW')") < html.indexOf("if(q.freshness.status!=='FRESH')"));
+assert.match(html,/تطبیق تاریخچه روزانه: هنوز تأیید نشده است/);
+assert.ok(html.includes("GetClosingPriceDaily/'+code+'/'+date"));
+assert.match(html,/MATCHED_DAILY_ENDPOINT/);
+assert.ok(html.indexOf("if(q.historyStatus==='MATCHED_DAILY_ENDPOINT')") < html.indexOf("if(!['FRESH','SESSION_CLOSED_FINAL'].includes(q.freshness.status))"));
 assert.match(html,/if\(valid.length!==1\)/);
 
 assert.match(html,/آخرین معامله:/);
 assert.match(html,/تازگی پاسخ قیمت:/);
 assert.match(html,/تاریخچه جداگانه تأیید نشد:/);
-assert.match(html,/valid\.push\(\{code,price,date,freshness,historyStatus,historyDetail\}\)/);
+assert.match(html,/valid\.push\(\{symbol,price,date,count:uniqueDays\.size,code,historyStatus:'MATCHED',historyDetail:/);
 assert.ok(html.indexOf('const freshness=quoteFreshness(info?.finalLastDate||date,info?.lastHEven);') < html.indexOf('verifyPublicClosingHistory(date,price,hist);'));
 
 assert.match(html,/rejectionReasons\.push\(reason\)/);
@@ -71,3 +73,6 @@ const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
 assert.equal(scripts.length,1,'exactly one self-contained script');
 new vm.Script(scripts[0]);
 console.log('PASS: standalone market diagnostic syntax, editable dynamic-size basket validation, Persian/Rial UI and no portfolio-storage access');
+
+// Execute the offline fail-closed scenarios in CI alongside the page contract check.
+require('./market-daily-endpoint-fallback.test.cjs');
