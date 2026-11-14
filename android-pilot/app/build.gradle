@@ -11,8 +11,8 @@ android {
         applicationId 'ir.sahamban.pilot'
         minSdk 26
         targetSdk 35
-        versionCode 8
-        versionName '0.3.5-pilot'
+        versionCode 9
+        versionName '0.3.6-pilot'
     }
 
     compileOptions {
@@ -30,7 +30,7 @@ android {
             // Owner-approved debug-only, isolated real-PWA acceptance package.
             // This is NOT a release build and never upgrades the existing pilot.
             initWith debug
-            applicationIdSuffix '.acceptancefix'
+            applicationIdSuffix '.acceptancefix2'
             matchingFallbacks = ['debug']
         }
         release {
