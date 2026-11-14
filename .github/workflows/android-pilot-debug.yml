@@ -4,6 +4,12 @@ on:
   push:
     paths:
       - 'android-pilot/**'
+      - 'app.js'
+      - 'index.html'
+      - 'local-backup-v148.js'
+      - 'native-backup-export-v1.js'
+      - 'tests/native-backup-export-v1.test.cjs'
+      - 'tests/local-backup-v148.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
 permissions:
   contents: read
