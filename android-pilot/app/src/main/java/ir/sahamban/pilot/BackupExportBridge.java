@@ -78,6 +78,21 @@ public final class BackupExportBridge {
         }
     }
 
+    public static boolean isSyntheticPortfolioSnapshot(JSONObject document) {
+        if (!"sahamban-portfolio".equals(document.optString("format"))
+                || document.optInt("version") != 2 || document.length() != 8) return false;
+        String[] allowed = {"format", "version", "data", "capital", "riskCap",
+                "stress", "concentration", "exportedAt"};
+        for (String key : allowed) if (!document.has(key)) return false;
+        return "نماد-ساختگی-آزمایش,10,100,120,90,150".equals(document.optString("data"))
+                && "10000".equals(document.optString("capital"))
+                && "5".equals(document.optString("riskCap"))
+                && "10".equals(document.optString("stress"))
+                && "30".equals(document.optString("concentration"))
+                && !document.optString("exportedAt").isEmpty()
+                && document.optString("exportedAt").length() <= 40;
+    }
+
     public boolean install() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return false;
         WebViewCompat.addWebMessageListener(
@@ -138,8 +153,9 @@ public final class BackupExportBridge {
                 return;
             }
 
-            if (syntheticOnly && (!BackupExportPolicy.LOCAL_NAME.equals(name)
-                    || !isSyntheticLocalSnapshot(document))) {
+            if (syntheticOnly && !(
+                    (BackupExportPolicy.LOCAL_NAME.equals(name) && isSyntheticLocalSnapshot(document))
+                    || (BackupExportPolicy.PORTFOLIO_NAME.equals(name) && isSyntheticPortfolioSnapshot(document)))) {
                 reply(replyProxy, id, "rejected");
                 return;
             }
