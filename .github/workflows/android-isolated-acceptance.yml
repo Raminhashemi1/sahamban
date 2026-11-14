@@ -1,6 +1,14 @@
 name: Sahamban isolated PWA Android acceptance APK
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - '*.js'
+      - '*.css'
+      - 'android-pilot/**'
+      - 'tests/android-isolated-acceptance.test.cjs'
+      - '.github/workflows/android-isolated-acceptance.yml'
   push:
     paths:
       - 'android-pilot/**'
