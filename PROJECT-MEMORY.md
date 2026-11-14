@@ -1013,3 +1013,11 @@ This entry supersedes the immediately preceding Android continuation entry's sta
 - This supersedes any older instruction to repeat the local export merely to establish whether a file was created. Do not ask the owner to repeat export, choose the same file again, preview it again, or run the synthetic fixture roundtrips already recorded. Do not restore real data.
 - Code-side next task: review the exact current PWA↔Android WebMessage response path and existing tests for the gap between owner-confirmed file presence and the unobserved native `saved` acknowledgement / full restore. Add no speculative product patch unless a concrete reproducible defect is found. Any further physical gate must be new, synthetic-only, and separately authorized.
 - No backup bytes were accessed; no phone operation was performed by the assistant. No code, APK, merge, deploy, publication, storage clearing, Restore, trade, order or asset mutation.
+
+
+## 2026-11-14 — Android trusted-path traversal hardening
+- Code review found that `TrustedNavigation.isInternal` checked only a path prefix after URI parsing. Literal dot segments such as `/sahamban/../outside/` could therefore satisfy the prefix test; percent-encoded path forms also lacked an explicit ambiguity rejection.
+- Fixed on this Android branch: require raw path to equal decoded path (reject percent-encoded path forms) and require the raw path to equal its normalized URI path (reject literal dot-segment traversal). Existing exact HTTPS host, port, and app-path restrictions remain unchanged. Query strings remain allowed.
+- Added negative cases for literal `..`, encoded `%2e%2e`, encoded slash `%2F`, and literal `./` to `TrustedNavigationTest.java`; retained positive tests for the app root, install page and query string.
+- Local independent Java compile/run of the changed policy and test completed: `PASS TrustedNavigation path-boundary regression`. GitHub exact-head CI for code SHA `310291d145272cd66f05928f992a42b23051270c` had not yet appeared at the time of this note; do not infer CI status from the local test.
+- Scope: Android trusted navigation only. No export/import behavior, app data, PWA asset bundle, origin allowlist, package identity, release configuration, public deployment, merge, device state, payment, trade or holdings changed.
