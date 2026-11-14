@@ -141,6 +141,10 @@
   }
   byId('sb148Export').addEventListener('click',async()=>{
    try{
+    if(String(win.navigator?.userAgent||'').includes('SahambanPilotWebView/1')){
+     status('خروجی داده‌های واقعی در این نسخه پذیرش عمداً غیرفعال است؛ فقط دکمه آزمون ساختگی مجاز است. هیچ داده‌ای به پل native ارسال نشد.');
+     return;
+    }
     const snapshot=createSnapshot(win.localStorage);
     const result=await saveDocument(snapshot,'sahamban-local-backup-v1.json');
     status(result+' فایل JSON رمزگذاری نشده است؛ شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
