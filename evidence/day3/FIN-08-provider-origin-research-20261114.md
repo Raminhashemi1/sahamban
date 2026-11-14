@@ -70,3 +70,16 @@ All financial flags remain false:
 `sourceAuthenticated=false`, `historyPriceBasisVerified=false`, `capitalActionsVerified=false`, `threeModesVerified=false`, `entryEligible=false`, `tradingSignalsEnabled=false`, `day3FinalAccepted=false`.
 
 No tests were rerun because this was a source-research/documentation-only pass and the exact-artifact regression has already passed on PR #169. No source code, test code, raw capture, financial value, app state, APK, portfolio, order, trade, payment, merge, deployment, or publication was changed.
+
+
+## 2026-11-14 — exact PR #169 candidate diagnostic artifact inspection
+- Rechecked exact candidate commit `87083b2d3f0b666532c99604d5db8bef4ad60d6e`. At inspection time, 13/14 Check Runs and 12/13 workflow runs were SUCCESS; one Check Run and the Smoke workflow remained in progress. Do not label this exact SHA fully green until the remaining run completes.
+- Downloaded and inspected artifact `sahamban-live-market-v111-outcome` from Smoke run `43578261253` (artifact ID `14107257780`). Its JSON says:
+  - `status=UNVERIFIED_NETWORK`
+  - `checked_at=2026-11-14T08:58:23.902Z`
+  - `source=https://cdn.tsetmc.com/api`
+  - `symbol=فولاد`
+  - `network_error_code=UND_ERR_CONNECT_TIMEOUT`
+- This is a current CI-run transport diagnostic for فولاد, not a fresh raw capture for وساخت. It confirms the candidate's fail-closed diagnostic behavior; it does not authenticate provider origin, deliver any new history/adjustment bytes, or establish a quote/history basis. Do not transfer the فولاد result to وساخت.
+- Separately attempted direct read-only opens of the exact وساخت TSETMC daily endpoint, adjustment endpoint and TSE gateway archive through the web retrieval environment; all three were inaccessible. This is tool-access evidence only, not proof the providers are globally unavailable.
+- No tests were re-run or modified. No financial gates were relaxed; no source data, holdings, trade, order, payment, merge, deploy or publication changed.
