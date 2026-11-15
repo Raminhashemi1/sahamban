@@ -55,4 +55,12 @@ function createGooglePlayReadOnlyClient({packageName,getAccessToken,fetchImpl}={
    reason:'PLAY_API_READ_ONLY_DURABLE_LEDGER_REQUIRED'});
  }});
 }
-module.exports=Object.freeze({createGooglePlayReadOnlyClient});
+function asFourChannelQuery(client){
+ if(!client||typeof client.query!=='function')throw new TypeError('PLAY_CLIENT_REQUIRED');
+ return async ({channel,sku,receipt}={})=>{
+  if(channel!=='GOOGLE_PLAY')return Object.freeze({status:'NOT_VERIFIED',channel:'GOOGLE_PLAY',
+   providerVerified:false,realEntitlement:false,reason:'PLAY_CROSS_CHANNEL'});
+  return client.query({sku,purchaseToken:receipt});
+ };
+}
+module.exports=Object.freeze({createGooglePlayReadOnlyClient,asFourChannelQuery});
