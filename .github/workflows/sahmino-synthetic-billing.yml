@@ -61,3 +61,12 @@ jobs:
           PGPASSWORD: ephemeral_ci_only
         run: |
           psql -X -v ON_ERROR_STOP=1 -f billing/staging/002_postgres_smoke_synthetic.psql
+      - name: Exercise account row lock and duplicate receipt across two DB sessions
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sahmino_synthetic_ci
+          PGUSER: sahmino_ci
+          PGPASSWORD: ephemeral_ci_only
+        shell: bash
+        run: bash billing/staging/003_postgres_concurrency_synthetic.sh
