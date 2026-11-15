@@ -6,6 +6,7 @@ on:
     paths:
       - 'billing/**'
       - 'server/sahmino-staging-server.cjs'
+      - 'server/sahmino-staging-snapshot-reader.cjs'
       - 'server/README.md'
       - 'tests/sahmino-*.test.cjs'
       - '.github/workflows/sahmino-synthetic-billing.yml'
@@ -36,7 +37,8 @@ jobs:
             tests/sahmino-receipt-claim-boundary-v1.test.cjs \
             tests/sahmino-offline-auth-boundary-v1.test.cjs \
             tests/sahmino-staging-server.test.cjs \
-            tests/sahmino-staging-loopback-guard.test.cjs
+            tests/sahmino-staging-loopback-guard.test.cjs \
+            tests/sahmino-staging-db-read.test.cjs
 
   postgres-staging-smoke:
     name: Disposable PostgreSQL schema and rollback smoke (synthetic)
