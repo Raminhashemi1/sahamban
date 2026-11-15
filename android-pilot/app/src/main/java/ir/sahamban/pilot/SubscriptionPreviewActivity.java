@@ -17,9 +17,8 @@ import android.widget.TextView;
  */
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
-    // The APK distribution itself selects this provider. No UI provider switch.
-    private final BillingDistributionPolicy distribution =
-        BillingDistributionPolicy.from(BuildConfig.BILLING_CHANNEL);
+    // Detected only from Android installer metadata; no user selector.
+    private BillingDistributionPolicy distribution;
     private int selectedDays = DAYS[0];
     private TextView details;
     private LinearLayout planList;
@@ -56,9 +55,9 @@ public final class SubscriptionPreviewActivity extends Activity {
         }
         String status = distribution.isConfiguredBuild()
             ? distribution.statusText()
-            : "نسخه نامعتبر: مسیر پرداخت در زمان ساخت مشخص نشده است.";
+            : "منبع نصب شناسایی نشد؛ پرداخت غیرفعال است.";
         details.setText("دوره انتخابی: " + selectedDays + " روز\\n"
-            + "مسیر پرداخت این نسخه: " + distribution.displayName()
+            + "مسیر تشخیص‌داده‌شده این نصب: " + distribution.displayName()
             + "\\n" + status
             + "\\n\\nپرداخت واقعی غیرفعال است. شناسه محصول و قیمت رسمی هنوز تنظیم نشده‌اند."
             + "\\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
@@ -67,6 +66,7 @@ public final class SubscriptionPreviewActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        distribution = BillingInstallSource.detect(this);
         setTitle("اشتراک آزمایشی");
         ScrollView scroll = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
@@ -83,13 +83,13 @@ public final class SubscriptionPreviewActivity extends Activity {
         content.addView(logo, logoParams);
         TextView title = text("انتخاب اشتراک سهمینو", 24f, Color.rgb(12, 37, 64));
         content.addView(title);
-        content.addView(text("پیش‌نمایش اشتراک — درگاه بر اساس نسخه نصب‌شده، بدون دریافت وجه", 14f,
+        content.addView(text("پیش‌نمایش اشتراک — درگاه بر اساس منبع نصب، بدون دریافت وجه", 14f,
             Color.rgb(137, 63, 18)));
         content.addView(text("۱. مدت اشتراک را انتخاب کنید", 18f, Color.rgb(12, 37, 64)));
         planList = new LinearLayout(this);
         planList.setOrientation(LinearLayout.VERTICAL);
         content.addView(planList);
-        content.addView(text("۲. درگاه مخصوص همین نسخه: " + distribution.displayName(),
+        content.addView(text("۲. مسیر متناسب با محل نصب: " + distribution.displayName(),
             18f, Color.rgb(12, 37, 64)));
         details = text("", 15f, Color.rgb(12, 37, 64));
         details.setContentDescription("وضعیت اتصال پرداخت انتخابی");
