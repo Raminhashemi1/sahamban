@@ -51,3 +51,20 @@ decision: UNVERIFIED | REJECTED | INDEPENDENTLY_ATTESTED
 
 ## گزارش تغییر
 فقط این فایل پژوهشی در شاخه فعال اضافه شد. کد، تست، شیوه تحلیل، شواهد اولیه، برنامه پنج‌روزه، PR #178، APK، حساب، holdings، پرداخت، سیگنال، merge، deploy و release دست‌نخورده باقی ماندند.
+
+## پیگیری پژوهشی 2026-11-15 — نتیجه بررسی مستقیم منابع عمومی G1/G2
+
+### مشاهده مستقیم منابع
+- مرجع جامعه‌محور `amirziveh/tsetmc-skill/references/api-endpoints.md` مسیر `GET /ClosingPrice/GetClosingPriceDailyList/{insCode}/{n}` را با `n=0` به معنای تاریخچه درخواستی بدون سقف، فیلدهای `dEven` و `pClosing` معرفی می‌کند؛ `GET /ClosingPrice/GetPriceAdjustList/{insCode}` را *فهرست تعدیلات* می‌خواند. https://github.com/amirziveh/tsetmc-skill/blob/master/references/api-endpoints.md
+- کد مستقل جامعه‌محور `5j9/tsetmc/tsetmc/instruments.py` تابع `daily_closing_price(n=0)` را با `n` تعداد روزها و API `GetPriceAdjustList` را جداگانه استفاده می‌کند. این دو منبع قرینه‌ای برای semantics پارامتر Top هستند، ولی **مستند رسمی بورس/قرارداد حقوقی نیستند**: https://github.com/5j9/tsetmc/blob/main/tsetmc/instruments.py
+- README پروژه مستقل `m-ahmadi/tse-client` قرارداد `getPrices(...,{adjustPrices:0|1|2})` را تعریف می‌کند: ۰ بدون تعدیل، ۱ افزایش سرمایه + سود نقدی، ۲ افزایش سرمایه؛ `getAdjustInfo` نیز جداست. این‌ها **حالت‌های خروجی یک client** هستند و از مستندات عمومی به‌تنهایی نمی‌توان منشأ ۳ سری مجزای provider-authenticated یا صحت تعدیل را اثبات کرد. https://github.com/m-ahmadi/tse-client (بخش `getPrices`, `AdjustOption`).
+- منبع دوم `omiom33/tse-client2` همان قرارداد ۰/۱/۲ را منتشر کرده است؛ تأیید تعریف گزینه نرم‌افزاری، **نه شاهد independent market provenance**: https://github.com/omiom33/tse-client2/blob/master/README.md
+- تلاش مستقیم برای بازکردن `https://api.tsetmc.com/docs/` و `https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/25514780181345713/1` در ابزار جست‌وجو **موفق نشد**؛ `https://www.codal.ir/` timeout شد. این‌ها `UNVERIFIED_ACCESS_FROM_THIS_TOOL` هستند و به معنی قطعی downtime، خرابی سرویس، نبود داده یا عدم مشروعیت API نیستند. در این نوبت **هیچ capture زنده‌ای تأیید نشده**.
+
+### نتیجه اجرایی جدید
+1. **G1: BLOCKED BY PROVIDER ORIGIN** — شواهد داخلی و مستندات جامعه‌محور کافی‌اند که قالب/مسیر تهیه شاهد را بشناسیم؛ اما نه برای احراز HTTPS origin و نه برای استفاده در سیگنال مالی.
+2. **G2: SEMANTICS PARTIALLY DOCUMENTED, AUTHENTICATION UNVERIFIED** — تعریف حالت‌های ۰/۱/۲ در خود `tse-client` روشن است. تا منشأ دقیق محاسبه، نسخه و هش خروجی‌ها، صورت‌های مالی/رویدادهای شرکت، هم‌ترازی تاریخ و شواهد رسمی مستقل روشن نشود، نباید آن‌ها را ۳ آرشیو رسمی مستقل بنامیم.
+3. **G3/G4: NO CHANGE** — `TRUSTED_REVIEWER_KEYS` خالی می‌ماند و هیچ داده، UI، کلید یا برچسبی اجازهٔ افزایش `entryEligible` یا `tradingSignalsEnabled` ندارد.
+4. **اولین وابستگی واقعی برای پیشرفت فنی بیشتر:** دسترسی مجاز و قابل راستی‌آزمایی به سند ارائه‌دهنده و raw-source captures با شواهد مستقل (بدون عبور از محدودیت شبکه)، سپس گزارش بازبین واجد صلاحیت. تا آن هنگام طراحی/ممیزی مستندات **تمام** اما پذیرش G1/G2 **ناتمام** است.
+
+**محدوده دقیق:** فقط این سند تحقیقاتی تغییر کرده است. هیچ درخواست معامله/پرداخت، ورود به حساب یا تغییر کد/CI/برنامه پنج‌روزه انجام نشده است.
