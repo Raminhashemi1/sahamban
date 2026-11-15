@@ -8,6 +8,7 @@
  const host=document.querySelector('main');
  if(!host)return;
  const specs=[
+  {id:'subscriptionSectionSahmino',icon:'◇',name:'طرح اشتراک',desc:'مشاهده و انتخاب دوره اشتراک سهمینو',featured:true,guide:['دوره موردنظر را از بین ۳۰، ۶۰، ۹۰، ۱۸۰ و ۳۶۵ روز انتخاب کنید.','مسیریابی درگاه پرداخت در نسخه اندروید خودکار است و کاربر درگاه را انتخاب نمی‌کند.','تا اتصال رسمی فروشگاه و تأیید سروری، دریافت وجه و فعال‌سازی اشتراک غیرفعال است.']},
   {id:'externalScreenerV130',icon:'⌕',name:'جست‌وجوی نمادهای جدید',desc:'غربال نمادهای دلخواه خارج از سبد',guide:['نام ۱ تا ۸ نماد را با ویرگول وارد کنید.','دکمه «دریافت و بررسی نمادها» را بزنید و منتظر پاسخ منبع بازار بمانید.','نتیجه هر نماد را با تاریخ داده، دلایل و محدودیت‌ها بررسی کنید.','این نسخه کل بازار را به‌طور خودکار جست‌وجو نمی‌کند و هیچ تغییری در دارایی‌ها ایجاد نمی‌کند.']},
   {id:'educationSectionV128',icon:'?',name:'آموزش کامل سهام‌بان',desc:'راهنمای گام‌به‌گام همه بخش‌ها',guide:['این راهنما برای آشنایی کامل کاربران تازه‌کار تهیه شده است.','فصل موردنظر را باز کنید، مراحل را بخوانید و سپس از پیوند ورود به همان ماژول استفاده کنید.','مطالعه آموزش هیچ تغییری در اطلاعات دارایی‌ها یا تنظیمات شما ایجاد نمی‌کند.']},
   {id:'decisionSupportV129',icon:'↗',name:'دستیار تصمیم‌گیری خرید و فروش',desc:'غربال چندشاخصی ورود، نگهداری و خروج',guide:['ابتدا قیمت‌های جاری و سپس تاریخچه تأییدشده همه نمادها را در بخش تحلیل تکنیکال دریافت کنید.','در این بخش «تحلیل همه نمادها» را بزنید؛ داده‌های قدیمی یا ناکافی عمداً کنار گذاشته می‌شوند.','امتیاز، دلایل و وضعیت هر نماد را بخوانید. نامزد ورود به معنی دستور خرید نیست و خروج نیازمند بررسی موقعیت و حد ضرر است.','برای محاسبه تعداد نظری، سرمایه و درصد ریسک خود را وارد کنید؛ حداکثر ریسک ورودی ۵ درصد است.']},
@@ -51,7 +52,7 @@
   guides.hidden=false;guides.scrollIntoView({block:'nearest',behavior:'smooth'});
  }
  for(const spec of specs){
-  const card=document.createElement('div');card.className='sahamban-module-v87';
+  const card=document.createElement('div');card.className='sahamban-module-v87'+(spec.featured?' sahmino-subscription-featured':'');
   const link=document.createElement('a');link.href='#'+spec.id;link.className='sahamban-module-link-v87';link.setAttribute('aria-label','ورود به ماژول '+spec.name);
   const ico=document.createElement('span');ico.className='sahamban-module-icon-v87';ico.setAttribute('aria-hidden','true');ico.textContent=spec.icon;
   const heading=document.createElement('strong');heading.textContent=spec.name;
