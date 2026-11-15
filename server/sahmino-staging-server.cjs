@@ -15,7 +15,7 @@ function createStagingServer({verifySession=defaultVerifySession,buildChannel='W
  if(typeof verifySession!=='function'||!CHANNELS.includes(buildChannel))
   throw new TypeError('INVALID_STAGING_SERVER_CONFIGURATION');
  const boundary=createOfflineReceiptBoundary({verifySession,buildChannel});
- return http.createServer(async(req,res)=>{
+ const server=http.createServer(async(req,res)=>{
   const path=req.url?.split('?')[0];
   if(req.method==='GET'&&path==='/healthz'){
    return reply(res,200,{status:'ok',service:'sahmino-staging',billingEnabled:false});
@@ -52,6 +52,18 @@ function createStagingServer({verifySession=defaultVerifySession,buildChannel='W
   }
   return reply(res,404,{status:'not_found',billingEnabled:false});
  });
+ // Prevent accidentally exposing this prototype when imported and .listen() called.
+ // No implicit host, Unix socket or public interface is allowed.
+ const originalListen=server.listen.bind(server);
+ server.listen=function(...args){
+  const first=args[0];
+  const host=first!==null&&typeof first==='object'?first.host:
+   (typeof args[1]==='string'?args[1]:undefined);
+  if(host!=='127.0.0.1'&&host!=='::1')
+   throw new Error('STAGING_LOOPBACK_ONLY');
+  return originalListen(...args);
+ };
+ return server;
 }
 if(require.main===module){
  const port=Number(process.env.SAHMINO_STAGING_PORT||8787);
