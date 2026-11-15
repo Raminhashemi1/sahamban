@@ -81,3 +81,21 @@ test('provider adapter is explicit and cannot be enabled by request fields',()=>
  /INVALID_PROVIDER_CHANNEL/);
  assert.throws(()=>createSyntheticProviderReconciler({channel:'MYKET'}),/PROVIDER_QUERY_REQUIRED/);
 });
+
+test('contradictory lifecycle flags deny all four mock SETTLED responses',async()=>{
+ for(const channel of channels){
+  const {expected,evidence}=fixture(channel);
+  for(const flag of ['refunded','revoked','chargeback','cancelled','pending']){
+   const result=await evaluate(channel,expected,{...evidence,[flag]:true});
+   assert.equal(result.reason,'NOT_SETTLED',channel+'/'+flag);
+   assert.equal(result.syntheticMatch,false);
+   assert.equal(result.providerVerified,false);
+   assert.equal(result.entitlementGranted,false);
+   assert.equal(result.realEntitlement,false);
+  }
+  // An explicitly false flag should not create an independent payment proof.
+  const result=await evaluate(channel,expected,{...evidence,refunded:false});
+  assert.equal(result.reason,'SYNTHETIC_MATCH_NOT_VERIFICATION');
+  assert.equal(result.realEntitlement,false);
+ }
+});
