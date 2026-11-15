@@ -1,7 +1,6 @@
 package ir.sahamban.pilot;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
@@ -116,8 +115,8 @@ public final class SubscriptionPreviewActivity extends Activity {
         Button payment = choice("پرداخت واقعی — غیرفعال");
         payment.setEnabled(false);
         content.addView(payment);
-        Button back = choice("باز کردن برنامه اصلی سهام‌بان");
-        back.setOnClickListener(v -> startActivity(new Intent(this, MainActivity.class)));
+        Button back = choice("بازگشت به سهام‌بان");
+        back.setOnClickListener(v -> finish());
         content.addView(back);
         scroll.addView(content);
         setContentView(scroll);
