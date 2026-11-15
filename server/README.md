@@ -219,3 +219,10 @@ This is an accidental-exposure guard on a development prototype, **not** a subst
 - Unit tests inject a fake `databaseQuery(sql, params)` and fake session verifier. **No actual PostgreSQL driver is wired to this HTTP server**. Tests verify no cross-account parameter substitution, denial of unauthenticated queries and fail-closed DB errors.
 - The response may show a `syntheticActive` marker when fed synthetic snapshot rows; it **always** returns `realEntitlement:false`, even if a synthetic expiry is in the future. Never use that marker to unlock features.
 - The old Worker/D1 pilot is unchanged. Exact-head GitHub Actions and live PostgreSQL integration remain unverified. Real auth, DB credentials, driver integration and an approved operator-run staging environment are separate blocked tasks.
+
+
+### Disposable PostgreSQL HTTP integration (CI only; not live)
+- `server/sahmino-disposable-postgres.cjs` binds the existing staging snapshot reader to an explicitly injected `pg.Pool`; it refuses any host/database/port/user except loopback `127.0.0.1:5432`, database `sahmino_synthetic_ci`, and user `sahmino_ci`.
+- The adapter accepts only the fixed parameterized `SELECT` with a UUID account parameter. It has a close method, no write methods and does **not** automatically connect from the command-line server.
+- `tests/sahmino-postgres-http-integration.test.cjs` tests rejection of unsafe database settings and queries, then (only when `SAHMINO_RUN_PG_INTEGRATION=1` in disposable PostgreSQL CI) opens an actual Node.js HTTP server and checks the fake snapshot from PostgreSQL. The CI job installs a pinned `pg` package ephemerally into `server/node_modules`; no payment credentials or production database are involved.
+- CI still needs to report a verified successful run. The test's injected verifier is a synthetic fixture, **not** a production sign-in. The API always returns `realEntitlement:false`; payments and release remain blocked.
