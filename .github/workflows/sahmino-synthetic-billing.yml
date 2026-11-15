@@ -46,7 +46,8 @@ jobs:
             tests/sahmino-four-provider-boundary.test.cjs \
             tests/sahmino-four-channel-evidence-reconcile.test.cjs \
             tests/sahmino-provider-connection-gate.test.cjs \
-            tests/sahmino-google-play-readonly-client.test.cjs
+            tests/sahmino-google-play-readonly-client.test.cjs \
+            tests/sahmino-myket-readonly-client.test.cjs
 
   postgres-staging-smoke:
     name: Disposable PostgreSQL schema and rollback smoke (synthetic)
