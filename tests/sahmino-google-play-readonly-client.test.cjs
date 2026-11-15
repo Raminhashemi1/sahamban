@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {createGooglePlayReadOnlyClient}=require('../billing/staging/sahmino-google-play-readonly-client.cjs');
+const {createGooglePlayReadOnlyClient,asFourChannelQuery}=require('../billing/staging/sahmino-google-play-readonly-client.cjs');
 const pkg='ir.sahmino.test';
 const token='synthetic-test-token';
 const sku='sahmino_30';
@@ -74,4 +74,21 @@ test('fail closed on provider HTTP errors, auth errors and malformed JSON',async
 test('client configuration requires explicit backend package and token source',()=>{
  assert.throws(()=>createGooglePlayReadOnlyClient({packageName:'fake',getAccessToken:async()=>{},fetchImpl:async()=>{}}),/INVALID_PLAY_PACKAGE/);
  assert.throws(()=>createGooglePlayReadOnlyClient({packageName:pkg}),/PLAY_SERVER_AUTH_AND_FETCH_REQUIRED/);
+});
+
+test('read-only Google client bridges to existing four-channel gate without granting access',async()=>{
+ const {makeProviderConnectionGate}=require('../billing/staging/sahmino-provider-connection-gate.cjs');
+ const c=client().c;
+ const bridge=asFourChannelQuery(c);
+ const catalog=[30,60,90,180,365].map(days=>({days,sku:'sahmino_'+days,
+  priceMinor:50000+days,currency:'IRR'}));
+ const gate=makeProviderConnectionGate({channel:'GOOGLE_PLAY',catalog,
+  merchantApproved:true,queryOfficialProvider:bridge});
+ const result=await gate.check({principal:{authenticated:true,subject:'user_7'},
+  serverOrder:{channel:'GOOGLE_PLAY',accountId:'user_7',planDays:30,sku,
+   priceMinor:50030,currency:'IRR'},receipt:token});
+ assert.equal(result.reason,'PROVIDER_RESPONSE_REQUIRES_DURABLE_REVIEW');
+ assert.equal(result.providerVerified,false);assert.equal(result.realEntitlement,false);
+ const cross=await bridge({channel:'MYKET',sku,receipt:token});
+ assert.equal(cross.reason,'PLAY_CROSS_CHANNEL');
 });
