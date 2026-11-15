@@ -38,6 +38,8 @@ test('pending, cancelled, mismatched products, quantity and missing order fail c
   [{...evidence,productLineItem:[{productId:'other'}]},'PLAY_PRODUCT_MISMATCH'],
   [{...evidence,productLineItem:[{productId:sku},{productId:sku}]},'PLAY_PRODUCT_MISMATCH'],
   [{...evidence,productLineItem:[{productId:sku,productOfferDetails:{quantity:2}}]},'PLAY_UNSUPPORTED_QUANTITY'],
+  [{...evidence,productLineItem:[{productId:sku,productOfferDetails:{quantity:1,refundableQuantity:0}}]},'PLAY_REFUND_OR_QUANTITY_REVIEW_REQUIRED'],
+  [{...evidence,productLineItem:[{productId:sku,productOfferDetails:{quantity:1,refundableQuantity:2}}]},'PLAY_REFUND_OR_QUANTITY_REVIEW_REQUIRED'],
   [{...evidence,orderId:undefined},'PLAY_ORDER_MISSING']
  ];
  for(const [response,reason] of invalid){
