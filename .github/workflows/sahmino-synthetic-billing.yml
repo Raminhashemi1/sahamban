@@ -5,6 +5,8 @@ on:
       - feat/sahmino-synthetic-entitlement-core-20261115
     paths:
       - 'billing/**'
+      - 'server/sahmino-staging-server.cjs'
+      - 'server/README.md'
       - 'tests/sahmino-*.test.cjs'
       - '.github/workflows/sahmino-synthetic-billing.yml'
   workflow_dispatch:
@@ -32,7 +34,8 @@ jobs:
             tests/sahmino-channel-policy-v1.test.cjs \
             tests/sahmino-prototype-account-regression.test.cjs \
             tests/sahmino-receipt-claim-boundary-v1.test.cjs \
-            tests/sahmino-offline-auth-boundary-v1.test.cjs
+            tests/sahmino-offline-auth-boundary-v1.test.cjs \
+            tests/sahmino-staging-server.test.cjs
 
   postgres-staging-smoke:
     name: Disposable PostgreSQL schema and rollback smoke (synthetic)
