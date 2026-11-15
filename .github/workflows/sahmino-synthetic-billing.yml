@@ -7,6 +7,7 @@ on:
       - 'billing/**'
       - 'server/sahmino-staging-server.cjs'
       - 'server/sahmino-staging-snapshot-reader.cjs'
+      - 'server/sahmino-disposable-postgres.cjs'
       - 'server/README.md'
       - 'tests/sahmino-*.test.cjs'
       - '.github/workflows/sahmino-synthetic-billing.yml'
@@ -38,7 +39,8 @@ jobs:
             tests/sahmino-offline-auth-boundary-v1.test.cjs \
             tests/sahmino-staging-server.test.cjs \
             tests/sahmino-staging-loopback-guard.test.cjs \
-            tests/sahmino-staging-db-read.test.cjs
+            tests/sahmino-staging-db-read.test.cjs \
+            tests/sahmino-postgres-http-integration.test.cjs
 
   postgres-staging-smoke:
     name: Disposable PostgreSQL schema and rollback smoke (synthetic)
@@ -78,6 +80,17 @@ jobs:
           PGPASSWORD: ephemeral_ci_only
         run: |
           psql -X -v ON_ERROR_STOP=1 -f billing/staging/004_atomic_ledger_fixture.psql
+      - name: Run actual Node HTTP and disposable PostgreSQL integration
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sahmino_synthetic_ci
+          PGUSER: sahmino_ci
+          PGPASSWORD: ephemeral_ci_only
+          SAHMINO_RUN_PG_INTEGRATION: '1'
+        run: |
+          npm install --no-save --no-package-lock --prefix server pg@8.16.3
+          node --test tests/sahmino-postgres-http-integration.test.cjs
       - name: Exercise account row lock and duplicate receipt across two DB sessions
         env:
           PGHOST: 127.0.0.1
