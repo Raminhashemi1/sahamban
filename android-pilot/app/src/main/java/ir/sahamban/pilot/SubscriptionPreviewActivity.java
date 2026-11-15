@@ -17,18 +17,12 @@ import android.widget.TextView;
  */
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
-    private static final String[] CHANNELS = {"کافه‌بازار", "مایکت", "Google Play", "وب‌سایت"};
-    private static final String[] CHANNEL_STATUS = {
-        "اتصال رسمی بازار هنوز پیکربندی نشده است.",
-        "استعلام سروری آزمایشی آماده است؛ خرید داخل اپ متصل نیست.",
-        "استعلام سروری آزمایشی آماده است؛ Play Billing متصل نیست.",
-        "جریان آزمایشی سروری آماده است؛ درگاه بانکی انتخاب نشده است."
-    };
+    // The APK distribution itself selects this provider. No UI provider switch.
+    private final BillingDistributionPolicy distribution =
+        BillingDistributionPolicy.from(BuildConfig.BILLING_CHANNEL);
     private int selectedDays = DAYS[0];
-    private int selectedChannel = -1;
     private TextView details;
     private LinearLayout planList;
-    private LinearLayout providerList;
 
     private TextView text(String value, float size, int color) {
         TextView view = new TextView(this);
@@ -60,24 +54,14 @@ public final class SubscriptionPreviewActivity extends Activity {
             });
             planList.addView(button);
         }
-        providerList.removeAllViews();
-        for (int index = 0; index < CHANNELS.length; index++) {
-            final int channelIndex = index;
-            Button button = choice((index == selectedChannel ? "✓  " : "") + CHANNELS[index]);
-            button.setOnClickListener(v -> {
-                selectedChannel = channelIndex;
-                renderChoices();
-            });
-            providerList.addView(button);
-        }
-        String status = selectedChannel < 0
-            ? "یکی از چهار مسیر پرداخت را انتخاب کنید."
-            : CHANNEL_STATUS[selectedChannel];
-        details.setText("دوره انتخابی: " + selectedDays + " روز\n"
-            + "مسیر پرداخت: " + (selectedChannel < 0 ? "انتخاب نشده" : CHANNELS[selectedChannel])
-            + "\n" + status
-            + "\n\nپرداخت واقعی غیرفعال است. قیمت و شناسه محصول رسمی هنوز تنظیم نشده‌اند."
-            + "\nاین صفحه فقط برای آزمایش نمایش و انتخاب مسیر است؛ هیچ اشتراکی فعال نمی‌شود.");
+        String status = distribution.isConfiguredBuild()
+            ? distribution.statusText()
+            : "نسخه نامعتبر: مسیر پرداخت در زمان ساخت مشخص نشده است.";
+        details.setText("دوره انتخابی: " + selectedDays + " روز\\n"
+            + "مسیر پرداخت این نسخه: " + distribution.displayName()
+            + "\\n" + status
+            + "\\n\\nپرداخت واقعی غیرفعال است. شناسه محصول و قیمت رسمی هنوز تنظیم نشده‌اند."
+            + "\\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
     }
 
     @Override
@@ -99,16 +83,14 @@ public final class SubscriptionPreviewActivity extends Activity {
         content.addView(logo, logoParams);
         TextView title = text("انتخاب اشتراک سهمینو", 24f, Color.rgb(12, 37, 64));
         content.addView(title);
-        content.addView(text("پیش‌نمایش فنی چهار درگاه — بدون دریافت وجه", 14f,
+        content.addView(text("پیش‌نمایش اشتراک — درگاه بر اساس نسخه نصب‌شده، بدون دریافت وجه", 14f,
             Color.rgb(137, 63, 18)));
         content.addView(text("۱. مدت اشتراک را انتخاب کنید", 18f, Color.rgb(12, 37, 64)));
         planList = new LinearLayout(this);
         planList.setOrientation(LinearLayout.VERTICAL);
         content.addView(planList);
-        content.addView(text("۲. مسیر پرداخت را انتخاب کنید", 18f, Color.rgb(12, 37, 64)));
-        providerList = new LinearLayout(this);
-        providerList.setOrientation(LinearLayout.VERTICAL);
-        content.addView(providerList);
+        content.addView(text("۲. درگاه مخصوص همین نسخه: " + distribution.displayName(),
+            18f, Color.rgb(12, 37, 64)));
         details = text("", 15f, Color.rgb(12, 37, 64));
         details.setContentDescription("وضعیت اتصال پرداخت انتخابی");
         content.addView(details);
