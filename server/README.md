@@ -186,3 +186,22 @@ executes real SQLite constraints and tests duplicate credits, race protection,
 renewal, suspension and rollback at each failure stage. Bank-credit validation
 and admin authentication must be implemented with trusted external systems
 before use. No live payment or free cloud service has been enabled.
+
+
+## Sahmino local staging HTTP server (new isolated prototype; NO deployment)
+
+`server/sahmino-staging-server.cjs` is an **additional** dependency-free Node.js 22 HTTP server prototype, separate from the earlier Cloudflare Worker, annual Pro entitlement code and D1 pilot. It does not replace or alter those existing modules.
+
+Run on your own development machine:
+
+```bash
+node server/sahmino-staging-server.cjs
+node --test tests/sahmino-staging-server.test.cjs
+```
+
+The executable binds **127.0.0.1:8787 only** unless a local `SAHMINO_STAGING_PORT` overrides the port. It implements:
+- `GET /healthz`: local readiness, explicitly `billingEnabled: false`.
+- `GET /api/v1/plans`: exactly 30, 60, 90, 180 and 365-day terms, checkout disabled.
+- `POST /api/v1/billing/verify`: accepts bounded JSON for validation, but **always denies real payment and entitlement**. Default server-owned session verifier rejects everyone; even a test-injected verifier cannot enable store purchase verification. No checkout, refund or login route exists.
+
+No store SDKs, provider credentials, database or auth service are connected. The server does **not** prove ownership of purchases, grant features, connect to existing annual Pro flows, deploy, or change any phone app. Never bind it publicly or treat synthetic tests as financial authorization. The new five fixed-day terms do not modify old annual pilot code and require a separate reviewed migration plan before commercial use. CI only runs standalone tests; production merge/publication remain blocked.
