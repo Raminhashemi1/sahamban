@@ -7,9 +7,9 @@ https://raminhashemi1.github.io/sahamban/
 ## Strict scope
 
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
-  The temporary `ir.sahamban.pilot.preview` package ID (distinct from the earlier pilot APK so both can coexist) and build-generated debug
+  The temporary `ir.sahamban.pilot` package ID and build-generated debug
   certificate must **not** become the final app identity/signing key.
-- A **test-only subscription navigation preview** is available from the top of the debug Android shell. It displays 30/60/90/180/365-day plans and **exactly one fixed payment channel per build**. The customer never chooses a payment gateway. Other gateways are not displayed. The payment action remains disabled in every build. It does NOT ship payment SDKs or enable checkout, Pro subscriptions, account registration, or payment verification.
+- A **test-only subscription navigation preview** is available from the top of the debug Android shell. It displays 30/60/90/180/365-day plans, with **one universal APK and no customer payment gateway selector**. Android installer metadata is consulted to choose at most one market-specific UI path (CafeBazaar, Myket or Google Play). When installed by direct download, an unknown installer or conflicting installer data, the payment path is disabled. The website channel cannot be automatically established from a sideloaded APK; browser/PWA web checkout will require its own origin-bound implementation. The payment action remains disabled in ALL installs. It does NOT ship payment SDKs or enable checkout, Pro subscriptions, account registration, or payment verification.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
@@ -33,7 +33,7 @@ https://raminhashemi1.github.io/sahamban/
 
 ## How to build a test APK
 
-GitHub Actions workflow `Sahamban Android pilot debug APK` builds four fixed-channel test flavors: `Bazaar`, `Myket`, `Play`, `Web`. Each build displays only its assigned billing provider; the build flavor cannot be switched by a user or by the installation source. No real store SDK, merchant API credentials, registered SKUs, or paid checkout are wired into the Android wrapper. The website route is likewise reserved for its own distribution, NOT for inclusion in a store build. These outputs are debug previews only. The workflow uses Java 17,
+GitHub Actions workflow `Sahamban Android pilot debug APK` builds **one universal debug APK**. One build may be uploaded to supported stores after package identity, signing and policy eligibility review, but real payment is not automatically enabled by the installer string. `PackageManager.getInstallSourceInfo` exposes mutable/nullable installation metadata (Android 11+), so the routing is strictly a UI diagnostic. Trusted provider verification, account binding, durable purchases and merchant approval are separate release gates. No real store SDK or checkout exists in this pilot. The workflow uses Java 17,
 Android SDK 35, Gradle 8.11.1 and Android Gradle Plugin 8.9.2 to build
 `app-debug.apk` in CI. It uploads a **debug artifact**, not a marketplace
 release. No key files or signing passwords are stored in the repository.
@@ -41,8 +41,7 @@ release. No key files or signing passwords are stored in the repository.
 For local development with an installed Android SDK:
 
 ```sh
-gradle -p android-pilot :app:assembleBazaarDebug
-# Or :app:assembleMyketDebug, :app:assemblePlayDebug, :app:assembleWebDebug
+gradle -p android-pilot :app:assembleDebug
 ```
 
 Run pure Java navigation checks:
