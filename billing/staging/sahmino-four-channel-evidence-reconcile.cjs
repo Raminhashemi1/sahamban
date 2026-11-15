@@ -22,7 +22,8 @@ function createSyntheticProviderReconciler({channel,queryProvider}={}){
    return fail(channel,'INVALID_SERVER_ORDER');
   if(typeof purchaseToken!=='string'||purchaseToken.length<8||purchaseToken.length>4096)
    return fail(channel,'INVALID_RECEIPT');
-  if(channel==='WEB_DIRECT'&&(!Number.isSafeInteger(expected.amountMinor)||
+  if(channel==='WEB_DIRECT'&&(!REGEX.test(expected.orderId||'')||
+     !Number.isSafeInteger(expected.amountMinor)||
      expected.amountMinor<=0||typeof expected.currency!=='string'||
      !/^[A-Z]{3}$/.test(expected.currency)))
    return fail(channel,'INVALID_SERVER_PRICE');
