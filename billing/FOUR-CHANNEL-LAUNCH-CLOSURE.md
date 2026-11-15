@@ -17,6 +17,24 @@ For each channel, **exactly** 30, 60, 90, 180, 365 fixed 24-hour days. Never 270
 
 **This table is a list of missing independently verifiable facts, not a statement that accounts do not exist.** Owner said accounts are available, but the GitHub connector does not authenticate into merchant consoles. No actual storefront inventory, merchant eligibility, receipts, prices, payment tokens, host or signed release was supplied to this execution session.
 
+## Verified channel-specific implementation constraints (official docs checked 2026-11-15)
+
+| Channel | Required server-side verification | Exact duration caveat |
+| --- | --- | --- |
+| CafeBazaar | Use the current Bazaar developer API and verify purchase on the server using the developer API credentials/token; never trust the app callback alone. The developer's current API/token and package/product mapping must be configured from that app's console. | Five exact day counts must be represented by five separately configured products unless the current console/API explicitly supports the required duration model. Actual SKU list remains unknown. |
+| Myket | Implement only against Myket's current official developer API/SDK contract and verify purchase server-side before granting. The live account's application key, SKU configuration and purchase verification response schema have not been provided to this repository. | Support for exact 30/60/90/180/365-day fixed terms is not established by accessible official public docs or the screenshot of the app list. Must be confirmed in the Myket console before claiming parity. |
+| Google Play | Verify tokens server-to-server with Google Play Developer API; process lifecycle changes via RTDN; acknowledge only after successful durable processing. | **Important mismatch:** Play Console prepaid base-plan duration choices are 1 day, 3 days, 1 week, 4 weeks, 1/2/3/4/6/8 months and 1 year—not arbitrary exact 30/60/90/180/365-day terms. Do not label 4 weeks as 30 days or calendar months as fixed 60/90/180 days. Need a deliberate product-model decision (for example, supported one-time products with app-managed fixed-day access if allowed by current policy, or adjust the shared term contract). |
+| Official website | Create payment request server-side, bind it to a pending order/user/amount/currency, validate callback status and call PSP verify API server-side; grant only after verified success. | Fixed day terms can be app-managed, but PSP merchant, registered domain, amount unit (Rial/Toman), callback domain and refund/chargeback process must be configured and tested. No PSP has been selected or proven connected. |
+
+### Public documentation checked
+- CafeBazaar current API entry point: https://developers.cafebazaar.ir/fa/guidelines/in-app-billing/api/postman-and-bazaar-api-new
+- Google Play supported merchant/developer locations: https://support.google.com/googleplay/android-developer/answer/9306917
+- Google Play prepaid base-plan duration choices: https://support.google.com/googleplay/android-developer/answer/140504
+- Google Play backend purchase verification and RTDN: https://developer.android.com/google/play/billing/backend
+- Google Play Developer API setup: https://developer.android.com/google/play/billing/getting-ready
+
+The screenshot of Myket's developer console proves that a Myket developer account page is accessible and lists other active apps. It does **not** prove Sahmino is registered, that billing SKUs exist, or that server verification is configured.
+
 ## Smallest remaining critical path
 
 1. **Console facts (owner-assisted, non-secret):** provide five SKU identifiers per store, the currency and final price of each, plus confirmation of fixed-day/renewal semantics. For Play also provide approved merchant/sales region and console-based proof that five exact durations are supported; for Myket provide actual approved product mode; for website, domain and PSP provider name. Keep access tokens, passwords, keystores and merchant secrets out of chat and git.
