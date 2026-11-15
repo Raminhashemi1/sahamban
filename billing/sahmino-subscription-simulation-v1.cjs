@@ -8,7 +8,8 @@ const id=x=>typeof x==='string'&&/^[a-zA-Z0-9:_-]{1,128}$/.test(x);
 function cleanUtc(x){
  if(typeof x!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{3})?Z$/.test(x))throw new TypeError('INVALID_UTC');
  const n=Date.parse(x);
- if(!Number.isFinite(n)||new Date(n).toISOString()!==new Date(x).toISOString())throw new TypeError('INVALID_UTC');
+ const expected=x.includes('.')?x:x.replace('Z','.000Z');
+ if(!Number.isFinite(n)||new Date(n).toISOString()!==expected)throw new TypeError('INVALID_UTC');
  return n;
 }
 function newSyntheticState(){return Object.freeze({simulationOnly:true,ledger:Object.freeze([]),expiries:Object.freeze({})});}
