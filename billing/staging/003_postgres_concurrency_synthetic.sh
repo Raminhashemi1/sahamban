@@ -2,6 +2,10 @@
 # DISPOSABLE CI POSTGRES ONLY. Verifies DB mechanics; NOT production billing.
 set -euo pipefail
 : "$PGPASSWORD"
+# Destructive test fixture must never target production, even if invoked manually.
+if [[ "${PGDATABASE:-}" != 'sahmino_synthetic_ci' || "${PGHOST:-}" != '127.0.0.1' ]]; then
+  echo 'Refusing non-ephemeral/non-loopback database' >&2; exit 1
+fi
 tmp="$(mktemp -d)"
 holder=''
 cleanup() {
