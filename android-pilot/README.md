@@ -7,7 +7,7 @@ https://raminhashemi1.github.io/sahamban/
 ## Strict scope
 
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
-  The temporary `ir.sahamban.pilot` package ID and build-generated debug
+  The temporary `ir.sahamban.pilot.preview` package ID (distinct from the earlier pilot APK so both can coexist) and build-generated debug
   certificate must **not** become the final app identity/signing key.
 - A **test-only subscription navigation preview** is available from the top of the debug Android shell. It displays 30/60/90/180/365-day plans and CafeBazaar/Myket/Google Play/Web channels, their unavailable-in-this-APK connection states, and a permanently disabled payment control. It does NOT ship payment SDKs or enable checkout, Pro subscriptions, account registration, or payment verification.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
