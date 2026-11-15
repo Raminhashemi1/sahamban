@@ -11,6 +11,7 @@ function createDisposablePostgresQuery({Pool,env={}}={}){
  const pool=new Pool({host:'127.0.0.1',port:5432,database:'sahmino_synthetic_ci',
   user:'sahmino_ci',password:env.PGPASSWORD,
   max:2,connectionTimeoutMillis:1500,idleTimeoutMillis:2000,
+  options:'-c default_transaction_read_only=on',
   application_name:'sahmino_synthetic_ci_read_only'});
  let closed=false;
  async function query(sql,params){
