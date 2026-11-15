@@ -30,3 +30,33 @@ jobs:
             tests/sahmino-synthetic-ledger-v1.test.cjs \
             tests/sahmino-staging-schema-contract.test.cjs \
             tests/sahmino-channel-policy-v1.test.cjs
+
+  postgres-staging-smoke:
+    name: Disposable PostgreSQL schema and rollback smoke (synthetic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sahmino_synthetic_ci
+          POSTGRES_USER: sahmino_ci
+          POSTGRES_PASSWORD: ephemeral_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sahmino_ci -d sahmino_synthetic_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Assert PostgreSQL constraints and rollback on disposable database
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sahmino_synthetic_ci
+          PGUSER: sahmino_ci
+          PGPASSWORD: ephemeral_ci_only
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f billing/staging/002_postgres_smoke_synthetic.psql
