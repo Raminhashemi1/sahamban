@@ -1,11 +1,13 @@
 package ir.sahamban.pilot;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -90,6 +92,12 @@ public final class SubscriptionPreviewActivity extends Activity {
         content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         content.setBackgroundColor(Color.rgb(247, 250, 253));
 
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.ic_sahamban_logo);
+        logo.setContentDescription("لوگوی برنامه سهام‌بان");
+        LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(94, 94);
+        logoParams.gravity = Gravity.CENTER_HORIZONTAL;
+        content.addView(logo, logoParams);
         TextView title = text("انتخاب اشتراک سهمینو", 24f, Color.rgb(12, 37, 64));
         content.addView(title);
         content.addView(text("پیش‌نمایش فنی چهار درگاه — بدون دریافت وجه", 14f,
@@ -108,8 +116,8 @@ public final class SubscriptionPreviewActivity extends Activity {
         Button payment = choice("پرداخت واقعی — غیرفعال");
         payment.setEnabled(false);
         content.addView(payment);
-        Button back = choice("بازگشت به برنامه");
-        back.setOnClickListener(v -> finish());
+        Button back = choice("باز کردن برنامه اصلی سهام‌بان");
+        back.setOnClickListener(v -> startActivity(new Intent(this, MainActivity.class)));
         content.addView(back);
         scroll.addView(content);
         setContentView(scroll);
