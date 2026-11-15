@@ -29,7 +29,8 @@ jobs:
             tests/sahmino-subscription-simulation-v1.test.cjs \
             tests/sahmino-synthetic-ledger-v1.test.cjs \
             tests/sahmino-staging-schema-contract.test.cjs \
-            tests/sahmino-channel-policy-v1.test.cjs
+            tests/sahmino-channel-policy-v1.test.cjs \
+            tests/sahmino-prototype-account-regression.test.cjs
 
   postgres-staging-smoke:
     name: Disposable PostgreSQL schema and rollback smoke (synthetic)
