@@ -35,7 +35,8 @@ jobs:
             tests/sahmino-prototype-account-regression.test.cjs \
             tests/sahmino-receipt-claim-boundary-v1.test.cjs \
             tests/sahmino-offline-auth-boundary-v1.test.cjs \
-            tests/sahmino-staging-server.test.cjs
+            tests/sahmino-staging-server.test.cjs \
+            tests/sahmino-staging-loopback-guard.test.cjs
 
   postgres-staging-smoke:
     name: Disposable PostgreSQL schema and rollback smoke (synthetic)
