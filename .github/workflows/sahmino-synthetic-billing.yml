@@ -1,0 +1,32 @@
+name: Sahmino synthetic billing (isolated)
+on:
+  push:
+    branches:
+      - feat/sahmino-synthetic-entitlement-core-20261115
+    paths:
+      - 'billing/**'
+      - 'tests/sahmino-*.test.cjs'
+      - '.github/workflows/sahmino-synthetic-billing.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-only:
+    name: Node synthetic test suite (no payment access)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run exact synthetic-only billing tests
+        shell: bash
+        run: |
+          node --test \
+            tests/sahmino-subscription-simulation-v1.test.cjs \
+            tests/sahmino-synthetic-ledger-v1.test.cjs \
+            tests/sahmino-staging-schema-contract.test.cjs \
+            tests/sahmino-channel-policy-v1.test.cjs
