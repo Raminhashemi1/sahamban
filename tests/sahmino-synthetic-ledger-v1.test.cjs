@@ -59,3 +59,45 @@ test('synthetic state cannot be used as real proof',()=>{
  assert.equal(Object.hasOwn(a,'paymentVerified'),false);
  assert.equal(syntheticBalance(a.state,'alice',t).realEntitlement,false);
 });
+
+test('20 channel-plan simulated purchase, restore, refund and replay journeys',()=>{
+ for(const channel of ['CAFEBAZAAR','MYKET','GOOGLE_PLAY','WEB_DIRECT']){
+  for(const planDays of [30,60,90,180,365]){
+   const key='purchase_'+channel+'_'+planDays;
+   const start=initialState();
+   const purchased=buy(start,key,'alice',channel,planDays,t);
+   assert.equal(purchased.applied,true,channel+'/'+planDays);
+   assert.equal(purchased.state.events.length,1);
+   const restored=syntheticBalance(purchased.state,'alice','2026-11-16T00:00:00.000Z');
+   assert.equal(restored.syntheticActive,true,channel+'/'+planDays);
+   assert.equal(restored.expiresAtUtc,
+    new Date(Date.parse(t)+planDays*86400000).toISOString());
+   assert.equal(restored.realEntitlement,false);
+   const replay=buy(purchased.state,key,'alice',channel,planDays,t);
+   assert.equal(replay.applied,false);
+   assert.equal(replay.state,purchased.state);
+   assert.throws(()=>buy(purchased.state,key,'bob',channel,planDays,t),/PURCHASE_KEY_CONFLICT/);
+   const refunded=refund(purchased.state,key,'alice',channel,'2026-11-16T00:00:00.000Z');
+   assert.equal(refunded.applied,true);
+   const revoked=syntheticBalance(refunded.state,'alice','2026-11-17T00:00:00.000Z');
+   assert.equal(revoked.syntheticActive,false);
+   assert.equal(revoked.realEntitlement,false);
+   assert.equal(refund(refunded.state,key,'alice',channel,'2026-11-18T00:00:00.000Z').applied,false);
+   assert.equal(buy(refunded.state,key,'alice',channel,planDays,t).applied,false);
+  }
+ }
+});
+test('all four simulated providers preserve account isolation and summed extension',()=>{
+ for(const channel of ['CAFEBAZAAR','MYKET','GOOGLE_PLAY','WEB_DIRECT']){
+  const first=buy(initialState(),'purchase_A','alice',channel,30);
+  const second=buy(first.state,'purchase_B','alice',channel,60,'2026-11-16T00:00:00.000Z');
+  const other=buy(second.state,'purchase_C','bob',channel,90);
+  const alice=syntheticBalance(other.state,'alice','2026-11-17T00:00:00.000Z');
+  assert.equal(alice.expiresAtUtc,new Date(Date.parse(t)+90*86400000).toISOString());
+  assert.equal(alice.acceptedFixtureCount,2);
+  const after=refund(other.state,'purchase_A','alice',channel);
+  assert.equal(syntheticBalance(after.state,'alice','2026-11-17T00:00:00.000Z').acceptedFixtureCount,1);
+  assert.equal(syntheticBalance(after.state,'bob','2026-11-17T00:00:00.000Z').acceptedFixtureCount,1);
+  assert.equal(syntheticBalance(after.state,'bob','2026-11-17T00:00:00.000Z').realEntitlement,false);
+ }
+});
