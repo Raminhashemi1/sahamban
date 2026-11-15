@@ -1,5 +1,5 @@
 -- SAHMINO STAGING-ONLY POSTGRESQL SCHEMA DRAFT
--- NOT EXECUTED. NOT FOR PRODUCTION MIGRATIONS. NO CHECKOUT OR REAL ENTITLEMENTS.
+-- NOT EXECUTED IN PRODUCTION. CI MAY APPLY TO DISPOSABLE DB ONLY. NO CHECKOUT OR REAL ENTITLEMENTS.
 -- Standalone schema deliberately does not depend on unknown app_users tables.
 -- Authentication must bind account_id to the server session before any future use.
 BEGIN;
