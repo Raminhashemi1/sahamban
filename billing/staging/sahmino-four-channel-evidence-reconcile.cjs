@@ -40,7 +40,11 @@ function createSyntheticProviderReconciler({channel,queryProvider}={}){
      evidence.productId!==expected.productId||
      typeof evidence.purchaseId!=='string'||!REGEX.test(evidence.purchaseId))
    return fail(channel,'RECEIPT_IDENTITY_MISMATCH');
-  if(evidence.status!=='SETTLED')
+  // Contradictory synthetic lifecycle flags must never pass comparison,
+  // even if an injected mock reports SETTLED. This is not provider verification.
+  if(evidence.status!=='SETTLED'||evidence.refunded===true||
+     evidence.revoked===true||evidence.chargeback===true||
+     evidence.cancelled===true||evidence.pending===true)
    return fail(channel,'NOT_SETTLED');
   if(channel==='WEB_DIRECT'&&
     (evidence.orderId!==expected.orderId||
