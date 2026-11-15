@@ -12,34 +12,11 @@ android {
         minSdk 26
         targetSdk 35
         versionCode 2
-        versionName '0.2.1-subscription-in-app'
+        versionName '0.2.2-installer-routing-preview'
     }
 
-    // Distribution determines payment provider, never the customer.
-    // These are test builds; merchant SDK and real checkout are still disabled.
-    buildFeatures {
-        buildConfig true
-    }
-    flavorDimensions 'distribution'
-    productFlavors {
-        bazaar {
-            dimension 'distribution'
-            buildConfigField 'String', 'BILLING_CHANNEL', '"CAFEBAZAAR"'
-        }
-        myket {
-            dimension 'distribution'
-            buildConfigField 'String', 'BILLING_CHANNEL', '"MYKET"'
-        }
-        play {
-            dimension 'distribution'
-            buildConfigField 'String', 'BILLING_CHANNEL', '"GOOGLE_PLAY"'
-        }
-        web {
-            dimension 'distribution'
-            buildConfigField 'String', 'BILLING_CHANNEL', '"WEB_DIRECT"'
-        }
-    }
-
+    // One identical APK for all stores. Installer provenance is assessed at
+    // runtime as a best-effort UI hint, NEVER as payment authorization.
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
