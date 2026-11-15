@@ -26,7 +26,7 @@ function simulatePurchase({state,accountId,channel,planDays,purchaseId,nowUtc}={
   if(previous.accountId!==accountId||previous.planDays!==planDays)throw new Error('REPLAY_OR_CONFLICT');
   return Object.freeze({state,applied:false,reason:'DUPLICATE_SYNTHETIC_PURCHASE'});
  }
- const oldExpiry=state.expiries[accountId];
+ const oldExpiry=Object.hasOwn(state.expiries,accountId)?state.expiries[accountId]:undefined;
  const anchor=Math.max(now,oldExpiry===undefined?now:cleanUtc(oldExpiry));
  const nextMs=anchor+planDays*DAY_MS;
  if(!Number.isFinite(nextMs)||nextMs>8640000000000000)throw new RangeError('INVALID_EXPIRY');
@@ -35,7 +35,7 @@ function simulatePurchase({state,accountId,channel,planDays,purchaseId,nowUtc}={
   simulationOnly:true,source:'SYNTHETIC_FIXTURE_NOT_PROVIDER_VERIFIED'});
  const nextState=Object.freeze({simulationOnly:true,
   ledger:Object.freeze([...state.ledger,event]),
-  expiries:Object.freeze({...state.expiries,[accountId]:expiresAtUtc})});
+  expiries:Object.freeze(Object.assign(Object.create(null),state.expiries,{[accountId]:expiresAtUtc}))});
  return Object.freeze({state:nextState,applied:true,expiresAtUtc,
   simulationOnly:true,reason:'SYNTHETIC_ACCOUNTING_ONLY'});
 }
