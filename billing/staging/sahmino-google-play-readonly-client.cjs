@@ -41,9 +41,15 @@ function createGooglePlayReadOnlyClient({packageName,getAccessToken,fetchImpl}={
   const items=data.productLineItem;
   if(!Array.isArray(items)||items.length!==1||items[0]?.productId!==sku)
    return fail('PLAY_PRODUCT_MISMATCH');
-  if(items[0].productOfferDetails?.quantity!==undefined&&
-     items[0].productOfferDetails.quantity!==1)
+  const offer=items[0].productOfferDetails;
+  if(offer?.quantity!==undefined&&offer.quantity!==1)
    return fail('PLAY_UNSUPPORTED_QUANTITY');
+  // Zero refundable quantity can mean fully refunded; deny until provider
+  // lifecycle reconciliation establishes the definitive receipt state.
+  if(offer?.refundableQuantity!==undefined&&
+     (!Number.isSafeInteger(offer.refundableQuantity)||
+      offer.refundableQuantity!==1))
+   return fail('PLAY_REFUND_OR_QUANTITY_REVIEW_REQUIRED');
   if(typeof data.orderId!=='string'||data.orderId.length<5||
      data.orderId.length>128||!/^[A-Za-z0-9._-]+$/.test(data.orderId))
    return fail('PLAY_ORDER_MISSING');
