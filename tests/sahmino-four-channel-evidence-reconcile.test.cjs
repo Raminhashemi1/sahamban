@@ -99,3 +99,35 @@ test('contradictory lifecycle flags deny all four mock SETTLED responses',async(
   assert.equal(result.realEntitlement,false);
  }
 });
+
+test('complete twenty-cell channel and fixed-day matrix remains synthetic-only',async()=>{
+ for(const channel of channels){
+  for(const days of [30,60,90,180,365]){
+   const {expected,evidence}=fixture(channel,days);
+   // SKU is always explicit and bound to the server-side selected day count.
+   expected.productId='sahmino_'+days;
+   evidence.productId=expected.productId;
+   const result=await evaluate(channel,expected,evidence);
+   assert.equal(result.reason,'SYNTHETIC_MATCH_NOT_VERIFICATION',channel+'/'+days);
+   assert.equal(result.syntheticMatch,true);
+   assert.equal(result.providerVerified,false);
+   assert.equal(result.entitlementGranted,false);
+   assert.equal(result.realEntitlement,false);
+   const mismatch=await evaluate(channel,expected,{...evidence,productId:'sahmino_30_wrong'});
+   assert.equal(mismatch.reason,'RECEIPT_IDENTITY_MISMATCH',channel+'/'+days);
+  }
+ }
+});
+test('invalid tokens are denied before an injected provider query is invoked',async()=>{
+ for(const channel of channels){
+  const {expected}=fixture(channel);
+  let calls=0;
+  const reconciler=createSyntheticProviderReconciler({channel,
+   queryProvider:async()=>{calls++;throw Error('MUST_NOT_QUERY');}});
+  for(const purchaseToken of ['', 'short', null, 123, 'x'.repeat(4097)]){
+   const result=await reconciler.reconcile({principal,expected,purchaseToken});
+   assert.equal(result.reason,'INVALID_RECEIPT',channel);
+  }
+  assert.equal(calls,0);
+ }
+});
