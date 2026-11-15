@@ -42,9 +42,11 @@ function createSyntheticProviderReconciler({channel,queryProvider}={}){
    return fail(channel,'RECEIPT_IDENTITY_MISMATCH');
   // Contradictory synthetic lifecycle flags must never pass comparison,
   // even if an injected mock reports SETTLED. This is not provider verification.
-  if(evidence.status!=='SETTLED'||evidence.refunded===true||
-     evidence.revoked===true||evidence.chargeback===true||
-     evidence.cancelled===true||evidence.pending===true)
+  // If a lifecycle flag is present, only an explicit boolean false is safe.
+  // Strings, numbers, null, and true are ambiguous and fail closed.
+  const negativeFlags=['refunded','revoked','chargeback','cancelled','pending'];
+  if(evidence.status!=='SETTLED'||
+     negativeFlags.some(flag=>Object.hasOwn(evidence,flag)&&evidence[flag]!==false))
    return fail(channel,'NOT_SETTLED');
   if(channel==='WEB_DIRECT'&&
     (evidence.orderId!==expected.orderId||
