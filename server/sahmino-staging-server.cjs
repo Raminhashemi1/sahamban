@@ -4,6 +4,7 @@
 const http=require('node:http');
 const {CHANNELS,PLAN_DAYS}=require('../billing/staging/sahmino-channel-policy-v1.cjs');
 const {createOfflineReceiptBoundary}=require('../billing/staging/sahmino-offline-auth-boundary-v1.cjs');
+const {createStagingSnapshotReader}=require('./sahmino-staging-snapshot-reader.cjs');
 const MAX_BYTES=8192;
 const defaultVerifySession=async()=>null; // Unconfigured authentication always rejects.
 function reply(res,status,body){
@@ -11,10 +12,13 @@ function reply(res,status,body){
   'cache-control':'no-store','x-content-type-options':'nosniff'});
  res.end(JSON.stringify({...body,realEntitlement:false}));
 }
-function createStagingServer({verifySession=defaultVerifySession,buildChannel='WEB_DIRECT'}={}){
+function createStagingServer({verifySession=defaultVerifySession,buildChannel='WEB_DIRECT',databaseQuery=null}={}){
  if(typeof verifySession!=='function'||!CHANNELS.includes(buildChannel))
   throw new TypeError('INVALID_STAGING_SERVER_CONFIGURATION');
+ if(databaseQuery!==null&&typeof databaseQuery!=='function')
+  throw new TypeError('INVALID_STAGING_DATABASE_QUERY');
  const boundary=createOfflineReceiptBoundary({verifySession,buildChannel});
+ const snapshotReader=databaseQuery===null?null:createStagingSnapshotReader({query:databaseQuery});
  const server=http.createServer(async(req,res)=>{
   const path=req.url?.split('?')[0];
   if(req.method==='GET'&&path==='/healthz'){
@@ -23,6 +27,22 @@ function createStagingServer({verifySession=defaultVerifySession,buildChannel='W
   if(req.method==='GET'&&path==='/api/v1/plans'){
    return reply(res,200,{simulationOnly:true,channels:CHANNELS,planDays:PLAN_DAYS,
     checkoutEnabled:false,verificationEnabled:false});
+  }
+  if(path==='/api/v1/me/staging-entitlement'&&req.method==='GET'){
+   // The session principal is created exclusively by the injected verifier.
+   // No accountId/userId from URL, headers or response body is trusted.
+   const authorization=req.headers.authorization;
+   if(typeof authorization!=='string'||authorization.length<8||authorization.length>4096)
+    return reply(res,401,{status:'DENIED',reason:'AUTH_REQUIRED'});
+   let principal;
+   try{principal=await verifySession(authorization);}
+   catch{return reply(res,401,{status:'DENIED',reason:'SESSION_VERIFICATION_FAILED'});}
+   if(!principal||principal.authenticated!==true)
+    return reply(res,401,{status:'DENIED',reason:'SESSION_VERIFICATION_FAILED'});
+   if(!snapshotReader)return reply(res,503,{status:'DENIED',reason:'STAGING_DATABASE_DISABLED'});
+   const result=await snapshotReader.read(principal);
+   const status=result.reason==='STAGING_READ_ONLY'||result.reason==='NO_SYNTHETIC_SNAPSHOT'?200:503;
+   return reply(res,status,{status:'STAGING_ONLY',...result});
   }
   if(path==='/api/v1/billing/verify'&&req.method==='POST'){
    if(req.headers['content-type']?.split(';')[0]?.trim().toLowerCase()!=='application/json')
