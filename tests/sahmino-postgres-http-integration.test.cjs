@@ -52,7 +52,7 @@ function get(server,route,authorization=token){
 }
 test('real disposable PostgreSQL read reaches HTTP endpoint but never grants real access',async t=>{
  if(process.env.SAHMINO_RUN_PG_INTEGRATION!=='1'){t.skip('only disposable PostgreSQL GitHub Actions job');return;}
- const {Pool}=require('pg');
+ const {Pool}=require('../server/node_modules/pg');
  const adapter=createDisposablePostgresQuery({Pool,env:process.env});
  const server=createStagingServer({databaseQuery:adapter.query,
   verifySession:async key=>key===token?{authenticated:true,accountId:id,subject:'synthetic-user'}:null});
