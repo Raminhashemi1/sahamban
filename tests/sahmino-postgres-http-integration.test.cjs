@@ -11,7 +11,8 @@ const token='synthetic-test-session';
 function mockPool(){
  let instances=0,closed=0,calls=[];
  class Pool{
-  constructor(settings){instances++;assert.equal(settings.host,'127.0.0.1');}
+  constructor(settings){instances++;assert.equal(settings.host,'127.0.0.1');
+   assert.equal(settings.options,'-c default_transaction_read_only=on');}
   async query(sql,values){calls.push({sql,values});return {rows:[]};}
   async end(){closed++;}
  }
@@ -64,6 +65,9 @@ test('real disposable PostgreSQL read reaches HTTP endpoint but never grants rea
   assert.equal(r.body.revision,1);
   assert.equal(r.body.expiresAtUtc,'2026-12-15T00:00:00.000Z');
   assert.equal(r.body.realEntitlement,false);
+  // Prove PostgreSQL itself denies writes on the same read-only pool.
+  await assert.rejects(adapter.query('DELETE FROM sahmino_billing_staging.purchase',[id]),
+   /STAGING_SELECT_ONLY/);
   const bad=await get(server,'/api/v1/me/staging-entitlement','wrong-token');
   assert.equal(bad.status,401);
   assert.equal(bad.body.realEntitlement,false);
