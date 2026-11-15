@@ -205,3 +205,9 @@ The executable binds **127.0.0.1:8787 only** unless a local `SAHMINO_STAGING_POR
 - `POST /api/v1/billing/verify`: accepts bounded JSON for validation, but **always denies real payment and entitlement**. Default server-owned session verifier rejects everyone; even a test-injected verifier cannot enable store purchase verification. No checkout, refund or login route exists.
 
 No store SDKs, provider credentials, database or auth service are connected. The server does **not** prove ownership of purchases, grant features, connect to existing annual Pro flows, deploy, or change any phone app. Never bind it publicly or treat synthetic tests as financial authorization. The new five fixed-day terms do not modify old annual pilot code and require a separate reviewed migration plan before commercial use. CI only runs standalone tests; production merge/publication remain blocked.
+
+
+### Staging HTTP loopback enforcement
+The staging HTTP module now overrides its `server.listen(...)` entrypoint to **reject public, implicit and Unix-socket listening addresses** with `STAGING_LOOPBACK_ONLY`; only explicit `127.0.0.1` or `::1` are accepted. The default CLI still explicitly binds `127.0.0.1`. Coverage: `tests/sahmino-staging-loopback-guard.test.cjs`.
+
+This is an accidental-exposure guard on a development prototype, **not** a substitute for TLS, authentication, firewall rules, secure deployment or security review. The new tests were committed and wired to CI; no successful exact-head CI run has yet been confirmed.
