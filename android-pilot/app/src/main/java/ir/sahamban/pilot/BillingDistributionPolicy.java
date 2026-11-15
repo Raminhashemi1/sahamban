@@ -1,19 +1,30 @@
 package ir.sahamban.pilot;
 
 /**
- * Build-controlled payment routing. App never guesses installation source or
- * offers a provider selector; unsupported builds fail closed.
- * No receipt validation or payment activation occurs in this class.
+ * UI-only best-effort installer routing for ONE universal APK.
+ * Installer metadata is neither immutable nor authorization-grade proof.
+ * Unknown, ambiguous and sideloaded APKs MUST stay disabled.
  */
 public final class BillingDistributionPolicy {
     private final String channel;
     private BillingDistributionPolicy(String channel) { this.channel = channel; }
 
-    public static BillingDistributionPolicy from(String channel) {
-        if (!"CAFEBAZAAR".equals(channel) && !"MYKET".equals(channel)
-            && !"GOOGLE_PLAY".equals(channel) && !"WEB_DIRECT".equals(channel)) {
+    private static String channelForInstaller(String installer) {
+        if ("com.farsitel.bazaar".equals(installer)) return "CAFEBAZAAR";
+        if ("ir.mservices.market".equals(installer)) return "MYKET";
+        if ("com.android.vending".equals(installer)) return "GOOGLE_PLAY";
+        return "DISABLED";
+    }
+
+    /** May identify one trusted-looking store for UI only; no real checkout. */
+    public static BillingDistributionPolicy fromInstallers(String initiator, String installer) {
+        String primary = channelForInstaller(initiator);
+        String secondary = channelForInstaller(installer);
+        // If both are present and disagree, refuse to select any payment route.
+        if (initiator != null && installer != null && !initiator.equals(installer))
             return new BillingDistributionPolicy("DISABLED");
-        }
+        // Older Android versions may supply installer only; still a UI hint.
+        String channel = initiator != null ? primary : secondary;
         return new BillingDistributionPolicy(channel);
     }
 
@@ -24,22 +35,19 @@ public final class BillingDistributionPolicy {
             case "CAFEBAZAAR": return "کافه‌بازار";
             case "MYKET": return "مایکت";
             case "GOOGLE_PLAY": return "Google Play";
-            case "WEB_DIRECT": return "وب‌سایت";
-            default: return "غیرفعال";
+            default: return "نامشخص";
         }
     }
     public String statusText() {
         switch (channel) {
             case "CAFEBAZAAR":
-                return "فقط مسیر کافه‌بازار برای این نسخه تعیین شده؛ اتصال خرید واقعی هنوز غیرفعال است.";
+                return "مسیر پیشنهادی این نصب: کافه‌بازار؛ پرداخت واقعی هنوز غیرفعال است.";
             case "MYKET":
-                return "فقط مسیر مایکت برای این نسخه تعیین شده؛ اتصال خرید واقعی هنوز غیرفعال است.";
+                return "مسیر پیشنهادی این نصب: مایکت؛ پرداخت واقعی هنوز غیرفعال است.";
             case "GOOGLE_PLAY":
-                return "فقط مسیر Google Play برای این نسخه تعیین شده؛ اتصال خرید واقعی هنوز غیرفعال است.";
-            case "WEB_DIRECT":
-                return "فقط مسیر پرداخت وب‌سایت برای این نسخه تعیین شده؛ اتصال بانکی واقعی هنوز غیرفعال است.";
+                return "مسیر پیشنهادی این نصب: Google Play؛ پرداخت واقعی هنوز غیرفعال است.";
             default:
-                return "مسیر پرداخت معتبر نیست؛ خرید غیرفعال است.";
+                return "منبع نصب معتبر و قابل‌تشخیص نیست؛ پرداخت غیرفعال است. APK دانلودشده از وب‌سایت نیز خودکار به پرداخت وب متصل نمی‌شود.";
         }
     }
 }
