@@ -48,3 +48,13 @@ The screenshot of Myket's developer console proves that a Myket developer accoun
 
 ## Release status
 **NO-GO for all-four-live launch.** No production secrets, access, checkout or payment flags have been connected. Keep draft PR #184 unmerged pending legitimate merchant/account evidence, actual billing tests, and separately approved release.
+
+## 2026-11-15 continuation — synthetic four-channel settlement conflict gate
+
+- Continued exclusively in existing draft PR #184 on this billing branch; PR #164, Android branches, main, product UI, subscription production status and original five-day plan were untouched.
+- Before changes, PR #184 head was 2f8ed952ada695677b1bddda524963099f8f5b06. Existing four-channel synthetic evidence reconciler and its 7 tests were re-read, avoiding duplicate provider adapters.
+- Code commit 862e9b74caf427aab083e21fcfeedd92923b7ba9: synthetic provider reconciliation now fails closed when an injected mock claims SETTLED while marking any of refunded/revoked/chargeback/cancelled/pending true. This prevents a contradictory synthetic match, **not** a real receipt check.
+- Test commit ac6d328962f3301985a93804770d6b0cd8ee1e61: added a Node test covering all five contradictory flags for each of the four channels (20 negative cases), plus non-grant assertions and a false-flag control. Test file is included in the pre-existing isolated CI workflow. **Tests committed, execution not confirmed.**
+- Exact test-commit SHA ac6d328962f3301985a93804770d6b0cd8ee1e61: GitHub connector returned 0 PR-triggered workflow records and 0 combined status records. This does not prove failure or success; push-triggered workflow might not be enumerated. Local CLI could not reach github.com (DNS resolution failure), so no local exact-source test claim.
+- Next action is to inspect a completed **exact-SHA** synthetic-billing CI run (Node plus disposable PostgreSQL), if available; afterward obtain owner-authorized official console SKU/price/eligibility and provider-side sandbox credentials via an approved secret channel. Do not claim four real gateways activated or use synthetic verification to grant entitlements.
+- Four production checkout channels remain DISABLED, merchant/provider-verification and Google Play exact-day eligibility BLOCKED. No merge, deploy, market release, live payment, transaction, asset change or secret was performed.
