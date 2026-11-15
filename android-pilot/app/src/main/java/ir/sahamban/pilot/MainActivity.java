@@ -14,6 +14,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.LinearLayout;
 
 /**
  * Test-only HTTPS WebView shell for the existing public PWA.
@@ -28,8 +30,20 @@ public final class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        LinearLayout frame = new LinearLayout(this);
+        frame.setOrientation(LinearLayout.VERTICAL);
+        Button subscriptionPreview = new Button(this);
+        subscriptionPreview.setText("اشتراک آزمایشی · ۴ مسیر پرداخت");
+        subscriptionPreview.setAllCaps(false);
+        subscriptionPreview.setOnClickListener(v ->
+            startActivity(new Intent(this, SubscriptionPreviewActivity.class)));
+        frame.addView(subscriptionPreview,
+            new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         webView = new WebView(this);
-        setContentView(webView);
+        frame.addView(webView, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        setContentView(frame);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true); // Required by the existing PWA.
         settings.setDomStorageEnabled(true); // Separate from Chrome's local storage.
