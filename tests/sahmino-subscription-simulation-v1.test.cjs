@@ -55,3 +55,10 @@ test('never issues provider receipt, real grant, or payment authorization',()=>{
  assert.equal(Object.hasOwn(r,'entryEligible'),false);
  assert.equal(Object.hasOwn(r,'tradingSignalsEnabled'),false);
 });
+
+test('rejects unsafe account identifiers and invalid calendar timestamps',()=>{
+ for(const unsafe of ['__proto__','constructor','prototype']){
+  assert.throws(()=>pay(newSyntheticState(),unsafe),/INVALID_SYNTHETIC_PURCHASE/);
+ }
+ assert.throws(()=>pay(newSyntheticState(),'alice','CAFEBAZAAR',30,'p1','2026-02-30T00:00:00.000Z'),/INVALID_UTC/);
+});
