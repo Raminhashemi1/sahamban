@@ -1,0 +1,94 @@
+-- SYNTHETIC-ONLY atomic transaction demonstration, isolated CI database.
+-- Not a production grant API, not a provider receipt verification service.
+\set ON_ERROR_STOP on
+DO $guard$
+BEGIN
+ IF current_database()<>'sahmino_synthetic_ci' THEN
+  RAISE EXCEPTION 'STAGING_ONLY_DATABASE_REQUIRED';
+ END IF;
+END
+$guard$;
+INSERT INTO sahmino_billing_staging.account_lock(account_id)
+VALUES ('00000000-0000-4000-8000-000000000077')
+ON CONFLICT DO NOTHING;
+
+-- First fixture transaction: lock account, insert fake purchase exactly once,
+-- append audit and outbox, and update snapshot in the same DB transaction.
+BEGIN;
+DO $grant$
+DECLARE added uuid;
+BEGIN
+ PERFORM 1 FROM sahmino_billing_staging.account_lock
+  WHERE account_id='00000000-0000-4000-8000-000000000077' FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FAKE_ACCOUNT_NOT_FOUND'; END IF;
+ INSERT INTO sahmino_billing_staging.purchase
+ (id,channel,provider_purchase_id,account_id,plan_days,state,verified_at,effective_at,evidence_reference)
+ VALUES ('10000000-0000-4000-8000-000000000077','MYKET','fake-atomic-77',
+  '00000000-0000-4000-8000-000000000077',30,'VERIFIED',
+  '2026-11-15T00:00:00Z','2026-11-15T00:00:00Z','SYNTHETIC_ONLY_NOT_A_RECEIPT')
+ ON CONFLICT (channel,provider_purchase_id) DO NOTHING RETURNING id INTO added;
+ IF added IS NULL THEN RAISE EXCEPTION 'EXPECTED_FIRST_FIXTURE_INSERT'; END IF;
+ INSERT INTO sahmino_billing_staging.audit_event
+ (id,purchase_id,event_type,evidence_reference)
+ VALUES ('20000000-0000-4000-8000-000000000077',added,'VERIFIED','SYNTHETIC_ONLY');
+ INSERT INTO sahmino_billing_staging.outbox (id,purchase_id,action)
+ VALUES ('30000000-0000-4000-8000-000000000077',added,'CONSUME');
+ INSERT INTO sahmino_billing_staging.entitlement_snapshot
+ (account_id,expiry_at,revision)
+ VALUES ('00000000-0000-4000-8000-000000000077',
+  '2026-12-15T00:00:00Z',1)
+ ON CONFLICT (account_id) DO UPDATE
+ SET expiry_at=EXCLUDED.expiry_at,revision=sahmino_billing_staging.entitlement_snapshot.revision+1,
+ updated_at=now();
+END
+$grant$;
+COMMIT;
+
+-- Second transaction simulates a repeated fake provider callback.
+-- Same transaction key: no second purchase, audit, outbox or expiry extension.
+BEGIN;
+DO $duplicate$
+DECLARE p record;
+DECLARE inserted uuid;
+BEGIN
+ PERFORM 1 FROM sahmino_billing_staging.account_lock
+  WHERE account_id='00000000-0000-4000-8000-000000000077' FOR UPDATE;
+ SELECT account_id,plan_days,state INTO p FROM sahmino_billing_staging.purchase
+  WHERE channel='MYKET' AND provider_purchase_id='fake-atomic-77';
+ IF p.account_id IS DISTINCT FROM '00000000-0000-4000-8000-000000000077'::uuid
+    OR p.plan_days<>30 OR p.state<>'VERIFIED' THEN
+   RAISE EXCEPTION 'DUPLICATE_PURCHASE_CONFLICT';
+ END IF;
+ INSERT INTO sahmino_billing_staging.purchase
+ (id,channel,provider_purchase_id,account_id,plan_days,state,verified_at,effective_at,evidence_reference)
+ VALUES ('10000000-0000-4000-8000-000000000078','MYKET','fake-atomic-77',
+  '00000000-0000-4000-8000-000000000077',30,'VERIFIED',
+  '2026-11-15T00:00:00Z','2026-11-15T00:00:00Z','SYNTHETIC_ONLY_NOT_A_RECEIPT')
+ ON CONFLICT (channel,provider_purchase_id) DO NOTHING RETURNING id INTO inserted;
+ IF inserted IS NOT NULL THEN RAISE EXCEPTION 'DUPLICATE_ADDED_CREDIT'; END IF;
+END
+$duplicate$;
+COMMIT;
+
+DO $assert$
+BEGIN
+ IF (SELECT count(*) FROM sahmino_billing_staging.purchase
+     WHERE channel='MYKET' AND provider_purchase_id='fake-atomic-77')<>1 THEN
+  RAISE EXCEPTION 'PURCHASE_REPLAY_FAILED';
+ END IF;
+ IF (SELECT count(*) FROM sahmino_billing_staging.audit_event
+     WHERE purchase_id='10000000-0000-4000-8000-000000000077')<>1 THEN
+  RAISE EXCEPTION 'AUDIT_REPLAY_FAILED';
+ END IF;
+ IF (SELECT count(*) FROM sahmino_billing_staging.outbox
+     WHERE purchase_id='10000000-0000-4000-8000-000000000077')<>1 THEN
+  RAISE EXCEPTION 'OUTBOX_REPLAY_FAILED';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM sahmino_billing_staging.entitlement_snapshot
+   WHERE account_id='00000000-0000-4000-8000-000000000077'
+     AND expiry_at='2026-12-15T00:00:00Z'::timestamptz AND revision=1) THEN
+  RAISE EXCEPTION 'ENTITLEMENT_REPLAY_FAILED';
+ END IF;
+END
+$assert$;
+SELECT 'STAGING_FAKE_ATOMIC_TRANSACTION_PASS' AS test_result;
