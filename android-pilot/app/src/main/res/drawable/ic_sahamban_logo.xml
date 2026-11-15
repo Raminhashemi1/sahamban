@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <!-- Exact brand geometry and palette traced from repository icon.svg. -->
+    <path android:fillColor="#0B1830"
+        android:pathData="M108,0 L404,0 Q512,0 512,108 L512,404 Q512,512 404,512 L108,512 Q0,512 0,404 L0,108 Q0,0 108,0 Z"/>
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#64DEC4" android:strokeWidth="22"
+        android:strokeLineCap="round"
+        android:pathData="M88,357 L424,357"/>
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#64DEC4" android:strokeWidth="33"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M106,309 L200,228 L274,274 L399,135"/>
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#F8C86A" android:strokeWidth="32"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M326,134 L399,134 L399,209"/>
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#F8C86A" android:strokeWidth="21"
+        android:strokeLineCap="round"
+        android:pathData="M176,383 L176,323 M257,383 L257,299 M339,383 L339,256"/>
+</vector>
