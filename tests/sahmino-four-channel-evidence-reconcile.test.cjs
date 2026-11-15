@@ -131,3 +131,19 @@ test('invalid tokens are denied before an injected provider query is invoked',as
   assert.equal(calls,0);
  }
 });
+
+test('nonboolean lifecycle flags are rejected for every channel',async()=>{
+ for(const channel of channels){
+  const {expected,evidence}=fixture(channel);
+  for(const flag of ['refunded','revoked','chargeback','cancelled','pending']){
+   for(const value of ['false','true',0,1,null]){
+    const result=await evaluate(channel,expected,{...evidence,[flag]:value});
+    assert.equal(result.reason,'NOT_SETTLED',channel+'/'+flag+'/'+String(value));
+    assert.equal(result.syntheticMatch,false);
+    assert.equal(result.providerVerified,false);
+    assert.equal(result.entitlementGranted,false);
+    assert.equal(result.realEntitlement,false);
+   }
+  }
+ }
+});
