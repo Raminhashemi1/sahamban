@@ -33,7 +33,7 @@ public final class MainActivity extends Activity {
         LinearLayout frame = new LinearLayout(this);
         frame.setOrientation(LinearLayout.VERTICAL);
         Button subscriptionPreview = new Button(this);
-        subscriptionPreview.setText("اشتراک آزمایشی · ۴ مسیر پرداخت");
+        subscriptionPreview.setText("اشتراک من · مشاهده طرح‌ها");
         subscriptionPreview.setAllCaps(false);
         subscriptionPreview.setOnClickListener(v ->
             startActivity(new Intent(this, SubscriptionPreviewActivity.class)));
