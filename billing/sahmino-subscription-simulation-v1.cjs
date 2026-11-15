@@ -4,7 +4,8 @@
 const PLAN_DAYS=Object.freeze([30,60,90,180,365]);
 const CHANNELS=Object.freeze(['CAFEBAZAAR','MYKET','GOOGLE_PLAY','WEB_DIRECT']);
 const DAY_MS=86400000;
-const id=x=>typeof x==='string'&&/^[a-zA-Z0-9:_-]{1,128}$/.test(x);
+const id=x=>typeof x==='string'&&/^[a-zA-Z0-9:_-]{1,128}$/.test(x)
+ && !['__proto__','constructor','prototype'].includes(x);
 function cleanUtc(x){
  if(typeof x!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{3})?Z$/.test(x))throw new TypeError('INVALID_UTC');
  const n=Date.parse(x);
