@@ -11,6 +11,10 @@ jobs:
   debug-apk:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [Bazaar, Myket, Play, Web]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -23,6 +27,13 @@ jobs:
           mkdir -p /tmp/sahamban-java-check
           javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
+      - name: Verify build-locked single-provider payment routing
+        shell: bash
+        run: |
+          javac -d /tmp/sahamban-java-check \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BillingDistributionPolicy.java \
+            android-pilot/tests/BillingDistributionPolicyTest.java
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BillingDistributionPolicyTest
       - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
         shell: bash
         run: |
@@ -39,12 +50,12 @@ jobs:
         with:
           gradle-version: '8.11.1'
       - name: Build TEST-ONLY debug APK without owner signing credentials
-        run: gradle -p android-pilot --no-daemon :app:assembleDebug
+        run: gradle -p android-pilot --no-daemon :app:assemble${{ matrix.flavor }}Debug
       - name: Print reproducibility digest (never a private certificate)
-        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
+        run: sha256sum android-pilot/app/build/outputs/apk/${{ matrix.flavor == 'Bazaar' && 'bazaar' || matrix.flavor == 'Myket' && 'myket' || matrix.flavor == 'Play' && 'play' || 'web' }}/debug/*.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: sahamban-android-pilot-debug-UNSIGNED-FOR-STORE
-          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          name: sahamban-${{ matrix.flavor }}-debug-NOT-FOR-STORE
+          path: android-pilot/app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
           retention-days: 7
