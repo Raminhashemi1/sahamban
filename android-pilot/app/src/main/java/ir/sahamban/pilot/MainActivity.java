@@ -14,8 +14,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
-import android.widget.LinearLayout;
+import java.io.InputStream;
+import java.util.Scanner;
 
 /**
  * Test-only HTTPS WebView shell for the existing public PWA.
@@ -24,26 +24,16 @@ import android.widget.LinearLayout;
 public final class MainActivity extends Activity {
     private static final String START_URL = "https://raminhashemi1.github.io/sahamban/";
     private static final int PICK_FILE = 3040;
+    private static final String NATIVE_SUBSCRIPTION_URL =
+        "https://raminhashemi1.github.io/sahamban/__native_subscription_preview";
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
 
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
-        LinearLayout frame = new LinearLayout(this);
-        frame.setOrientation(LinearLayout.VERTICAL);
-        Button subscriptionPreview = new Button(this);
-        subscriptionPreview.setText("اشتراک سهمینو · مشاهده طرح‌ها");
-        subscriptionPreview.setAllCaps(false);
-        subscriptionPreview.setOnClickListener(v ->
-            startActivity(new Intent(this, SubscriptionPreviewActivity.class)));
-        frame.addView(subscriptionPreview,
-            new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
         webView = new WebView(this);
-        frame.addView(webView, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        setContentView(frame);
+        setContentView(webView);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true); // Required by the existing PWA.
         settings.setDomStorageEnabled(true); // Separate from Chrome's local storage.
@@ -59,6 +49,10 @@ public final class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (!request.isForMainFrame()) return false;
                 Uri target = request.getUrl();
+                if (NATIVE_SUBSCRIPTION_URL.equals(target.toString())) {
+                    startActivity(new Intent(MainActivity.this, SubscriptionPreviewActivity.class));
+                    return true;
+                }
                 if (TrustedNavigation.isInternal(target.toString())) return false;
                 // Never execute intent:, javascript:, file:, data:, or cleartext links.
                 if ("https".equalsIgnoreCase(target.getScheme())) {
@@ -71,6 +65,19 @@ public final class MainActivity extends Activity {
                     }
                 }
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (!TrustedNavigation.isInternal(url)) return;
+                // Safe UI-only decoration of the existing page; no native JS bridge.
+                try (InputStream stream = getAssets().open("sahmino-webview-ui.js");
+                     Scanner scanner = new Scanner(stream, "UTF-8").useDelimiter("\\A")) {
+                    if (scanner.hasNext()) view.evaluateJavascript(scanner.next(), null);
+                } catch (java.io.IOException ignored) {
+                    // If the asset is unavailable, never attempt a remote script.
+                }
             }
 
             @Override
