@@ -211,3 +211,11 @@ No store SDKs, provider credentials, database or auth service are connected. The
 The staging HTTP module now overrides its `server.listen(...)` entrypoint to **reject public, implicit and Unix-socket listening addresses** with `STAGING_LOOPBACK_ONLY`; only explicit `127.0.0.1` or `::1` are accepted. The default CLI still explicitly binds `127.0.0.1`. Coverage: `tests/sahmino-staging-loopback-guard.test.cjs`.
 
 This is an accidental-exposure guard on a development prototype, **not** a substitute for TLS, authentication, firewall rules, secure deployment or security review. The new tests were committed and wired to CI; no successful exact-head CI run has yet been confirmed.
+
+
+### Read-only PostgreSQL staging integration boundary (added)
+- `server/sahmino-staging-snapshot-reader.cjs` provides a parameterized `SELECT` against `sahmino_billing_staging.entitlement_snapshot`, with authenticated account UUID bound to `$1`; this reader does not create connections or change rows.
+- `GET /api/v1/me/staging-entitlement` uses the **injected server-side session verifier**, never an account ID supplied in a query string or body. It is disabled by default because `databaseQuery` is not configured by the command-line prototype.
+- Unit tests inject a fake `databaseQuery(sql, params)` and fake session verifier. **No actual PostgreSQL driver is wired to this HTTP server**. Tests verify no cross-account parameter substitution, denial of unauthenticated queries and fail-closed DB errors.
+- The response may show a `syntheticActive` marker when fed synthetic snapshot rows; it **always** returns `realEntitlement:false`, even if a synthetic expiry is in the future. Never use that marker to unlock features.
+- The old Worker/D1 pilot is unchanged. Exact-head GitHub Actions and live PostgreSQL integration remain unverified. Real auth, DB credentials, driver integration and an approved operator-run staging environment are separate blocked tasks.
