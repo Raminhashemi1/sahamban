@@ -24,7 +24,7 @@
  };
  const finder=document.createElement('section');
  finder.className='sb94-finder';
- finder.setAttribute('aria-label','پیدا کردن ابزار سهام‌بان');
+ finder.setAttribute('aria-label','پیدا کردن ابزار سهمینو');
  const label=document.createElement('label');
  label.htmlFor='sb94ModuleSearch';
  label.textContent='کدام ابزار را لازم دارید؟';
