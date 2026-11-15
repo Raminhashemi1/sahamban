@@ -77,7 +77,7 @@ public final class SubscriptionPreviewActivity extends Activity {
 
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.ic_sahamban_logo);
-        logo.setContentDescription("لوگوی برنامه سهام‌بان");
+        logo.setContentDescription("لوگوی برنامه سهمینو");
         LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(94, 94);
         logoParams.gravity = Gravity.CENTER_HORIZONTAL;
         content.addView(logo, logoParams);
@@ -92,12 +92,12 @@ public final class SubscriptionPreviewActivity extends Activity {
         content.addView(text("۲. مسیر متناسب با محل نصب: " + distribution.displayName(),
             18f, Color.rgb(12, 37, 64)));
         details = text("", 15f, Color.rgb(12, 37, 64));
-        details.setContentDescription("وضعیت اتصال پرداخت انتخابی");
+        details.setContentDescription("وضعیت اتصال خودکار پرداخت");
         content.addView(details);
         Button payment = choice("پرداخت واقعی — غیرفعال");
         payment.setEnabled(false);
         content.addView(payment);
-        Button back = choice("بازگشت به سهام‌بان");
+        Button back = choice("بازگشت به سهمینو");
         back.setOnClickListener(v -> finish());
         content.addView(back);
         scroll.addView(content);
