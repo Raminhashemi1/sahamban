@@ -11,8 +11,7 @@ function dbFor({changes=1,row=null,error=null}={}){
  };}};}};
 }
 test('creates a pending order with server catalog price for each of five plans',async()=>{
- const plans=[['SAHMINO_PRO_30D',1500000],['SAHMINO_PRO_60D',2850000],['SAHMINO_PRO_90D',4050000],['SAHMINO_PRO_180D',7650000],['SAHMINO_PRO_365D',14600000],
- ['SAHMINO_PRO_90D',4050000],['SAHMINO_PRO_365D',14600000]];
+ const plans=[['SAHMINO_PRO_30D',1500000],['SAHMINO_PRO_60D',2850000],['SAHMINO_PRO_90D',4050000],['SAHMINO_PRO_180D',7650000],['SAHMINO_PRO_365D',14600000]];
  for(const [planId,amountRial] of plans){
   const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedSubject:subject,planId,now,makeOrderId:()=>orderId});
   assert.equal(out.status,201);assert.equal(out.order.amountRial,amountRial);
