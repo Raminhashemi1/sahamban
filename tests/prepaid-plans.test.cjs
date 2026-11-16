@@ -2,35 +2,35 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {
- LAUNCH_PLANS,plan,addCalendarMonths,emptyPrepaidAccess,
+ LAUNCH_PLANS,plan,addDays,emptyPrepaidAccess,
  grantVerifiedPrepaid,prepaidAccessDecision
 }=require('../server/prepaid-plans.cjs');
 const now='2026-11-12T10:00:00.000Z';
 const userId='user-1';
-const purchase=(planId='SAHAMBAN_PRO_3M',paymentId='pay-1')=>({
+const purchase=(planId='SAHMINO_PRO_30D',paymentId='pay-1')=>({
  userId,provider:'directpsp',paymentId,planId,
  amountRial:plan(planId).priceRial,currency:'IRR',paidAt:now
 });
 const opts={now,verifyAtProvider:()=>true};
-test('approved four plans have exact IRR prices and fixed discount values',()=>{
- assert.deepEqual(Object.keys(LAUNCH_PLANS),['SAHAMBAN_PRO_3M','SAHAMBAN_PRO_6M','SAHAMBAN_PRO_9M','SAHAMBAN_PRO_12M']);
- assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.months),[3,6,9,12]);
- assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.priceRial),[4500000,8550000,12150000,15300000]);
- assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.discountPercent),[0,5,10,15]);
+test('approved five Sahmino plans have exact IRR prices and fixed-day periods',()=>{
+ assert.deepEqual(Object.keys(LAUNCH_PLANS),['SAHAMBAN_PRO_3M','SAHMINO_PRO_60D','SAHMINO_PRO_90D','SAHMINO_PRO_365D']);
+ assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.days),[30,60,90,180,365]);
+ assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.priceRial),[1500000,2850000,4050000,7650000,14600000]);
+ 
  assert.throws(()=>plan('BROWSER_PRO'),/پلن/);
 });
-test('calendar months clamp end of month, preserve UTC time and leap dates',()=>{
- assert.equal(addCalendarMonths('2026-01-31T23:59:00.000Z',3),'2026-04-30T23:59:00.000Z');
- assert.equal(addCalendarMonths('2024-02-29T00:01:00.000Z',12),'2025-02-28T00:01:00.000Z');
- assert.equal(addCalendarMonths('2026-11-12T10:00:00.000Z',9),'2027-08-12T10:00:00.000Z');
- assert.throws(()=>addCalendarMonths(now,0),/ماه/);
+test('fixed day periods preserve UTC time and cross month/leap boundaries exactly',()=>{
+ assert.equal(addDays('2026-01-31T23:59:00.000Z',30),'2026-03-02T23:59:00.000Z');
+ assert.equal(addDays('2024-02-29T00:01:00.000Z',365),'2025-02-28T00:01:00.000Z');
+ assert.equal(addDays('2026-11-12T10:00:00.000Z',90),'2027-02-10T10:00:00.000Z');
+ assert.throws(()=>addDays(now,0),/روز/);
 });
-test('four periods grant exact lengths only after server verification',()=>{
+test('all five fixed-day plans grant exact lengths only after server verification',()=>{
  for(const id of Object.keys(LAUNCH_PLANS)){
   assert.equal(prepaidAccessDecision(emptyPrepaidAccess(userId),{now}).proEnabled,false);
   assert.throws(()=>grantVerifiedPrepaid(emptyPrepaidAccess(userId),purchase(id),{now}),/سمت سرور/);
   const {state}=grantVerifiedPrepaid(emptyPrepaidAccess(userId),purchase(id),opts);
-  assert.equal(state.paidUntil,addCalendarMonths(now,plan(id).months));
+  assert.equal(state.paidUntil,addDays(now,plan(id).days));
   assert.equal(prepaidAccessDecision(state,{now}).proEnabled,true);
   assert.equal(prepaidAccessDecision(state,{now:state.paidUntil}).proEnabled,false);
  }
@@ -39,8 +39,8 @@ test('an early voluntary repurchase extends remaining time, without auto-renewal
  const first=grantVerifiedPrepaid(emptyPrepaidAccess(userId),purchase(),opts).state;
  const second=grantVerifiedPrepaid(first,purchase('SAHAMBAN_PRO_6M','pay-2'),
   {...opts,now:'2026-12-12T10:00:00.000Z'}).state;
- assert.equal(first.paidUntil,'2027-02-12T10:00:00.000Z');
- assert.equal(second.paidUntil,'2027-08-12T10:00:00.000Z');
+ assert.equal(first.paidUntil,'2026-12-12T10:00:00.000Z');
+ assert.equal(second.paidUntil,'2027-02-10T10:00:00.000Z');
 });
 test('provider verification, account, amount, currency and future time fail closed',()=>{
  const s=emptyPrepaidAccess(userId);
