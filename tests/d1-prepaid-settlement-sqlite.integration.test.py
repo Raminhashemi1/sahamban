@@ -33,31 +33,31 @@ def make_db():
                ('u1', 'integration:subject', NOW, 'ACTIVE'))
     return db
 
-def pending(db, oid=ORDER_ID, plan='SAHAMBAN_PRO_3M', amount=4500000):
+def pending(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000):
     db.execute('INSERT INTO prepaid_subscription_orders(id,user_id,plan_id,amount_rial,currency,state,created_at) VALUES(?,?,?,?,?,?,?)',
                (oid, 'u1', plan, amount, 'IRR', 'PENDING', NOW))
     db.commit()
 
-def settle(db, oid=ORDER_ID, plan='SAHAMBAN_PRO_3M', amount=4500000, months=3,
+def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, days=30,
            now=NOW, event='evt_1', payment='pay_1'):
     # Emulate D1 batch's all-or-nothing transaction on stock SQLite.
     with db:
         event_result = db.execute(EVENT, ('provider', event, payment, now, oid, plan, amount))
         order_result = db.execute(ORDER, (now, 'provider', payment, oid, plan, amount,
                                           'provider', event, payment))
-        db.execute(ENTITLEMENT, (now, now, oid, 'provider', payment, months, months, now))
+        db.execute(ENTITLEMENT, (now, now, oid, 'provider', payment, days, now))
         if event_result.rowcount != 1 or order_result.rowcount != 1:
             raise AssertionError('Settlement did not update exact ledger and order')
     return db.execute('SELECT paid_until FROM prepaid_subscription_entitlements WHERE user_id=?',
                       ('u1',)).fetchone()[0]
 
 class PrepaidSQLiteIntegration(unittest.TestCase):
-    def test_calendar_clamp_from_january_31(self):
+    def test_fixed_30_days_from_january_31(self):
         db = make_db()
         try:
             pending(db)
             self.assertEqual(settle(db, now='2026-01-31T10:00:00.000Z'),
-                             '2026-04-30T10:00:00.000Z')
+                             '2026-03-02T10:00:00.000Z')
             self.assertEqual(db.execute('SELECT state FROM prepaid_subscription_orders').fetchone()[0],
                              'SETTLED')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM prepaid_payment_events').fetchone()[0], 1)
@@ -68,12 +68,12 @@ class PrepaidSQLiteIntegration(unittest.TestCase):
         db = make_db()
         try:
             pending(db)
-            self.assertEqual(settle(db), '2027-02-12T10:00:00.000Z')
+            self.assertEqual(settle(db), '2026-12-12T10:00:00.000Z')
             second = 'ord_' + 'b' * 32
-            pending(db, second, 'SAHAMBAN_PRO_6M', 8550000)
+            pending(db, second, 'SAHMINO_PRO_60D', 2850000)
             self.assertEqual(settle(db, oid=second, plan='SAHAMBAN_PRO_6M',
-                                    amount=8550000, months=6, event='evt_2',
-                                    payment='pay_2'), '2027-08-12T10:00:00.000Z')
+                                    amount=8550000, days=60, event='evt_2',
+                                    payment='pay_2'), '2027-02-10T10:00:00.000Z')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM prepaid_payment_events').fetchone()[0], 2)
         finally:
             db.close()
