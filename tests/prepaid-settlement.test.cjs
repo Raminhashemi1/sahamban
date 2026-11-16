@@ -5,7 +5,7 @@ const {settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL}=
  require('../server/prepaid-settlement.cjs');
 const now='2026-11-12T10:00:00.000Z',orderId='ord_'+'a'.repeat(32);
 const payment={verified:true,providerName:'directpsp',providerEventId:'evt-1',
- providerPaymentId:'pay-1',orderId,planId:'SAHAMBAN_PRO_3M',amountRial:4500000,currency:'IRR'};
+ providerPaymentId:'pay-1',orderId,planId:'SAHMINO_PRO_30D',amountRial:1500000,currency:'IRR'};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',state:'PENDING',paid_until:null},results}={}){
  const calls=[];
  return {
