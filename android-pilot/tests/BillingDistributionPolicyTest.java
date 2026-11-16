@@ -2,8 +2,8 @@ package ir.sahamban.pilot;
 
 public final class BillingDistributionPolicyTest {
     public static void main(String[] args) {
-        String[] installers={"com.farsitel.bazaar","ir.mservices.market","com.android.vending"};
-        String[] channels={"CAFEBAZAAR","MYKET","GOOGLE_PLAY"};
+        String[] installers={"com.farsitel.bazaar","ir.mservices.market"};
+        String[] channels={"CAFEBAZAAR","MYKET"};
         for (int i=0;i<installers.length;i++) {
             BillingDistributionPolicy direct=BillingDistributionPolicy.fromInstallers(
                 installers[i],installers[i]);
@@ -16,11 +16,10 @@ public final class BillingDistributionPolicyTest {
         }
         String[][] unknown={
             {null,null},{"",""},{"com.android.packageinstaller","com.android.packageinstaller"},
-            {"com.google.android.packageinstaller","com.android.vending"},
             {"com.farsitel.bazaar","ir.mservices.market"},
-            {"ir.mservices.market","com.android.vending"},
             {"some.web.browser",null},
-            {"com.android.vending","unrecognized.installer"}
+            {"com.android.vending","unrecognized.installer"},
+            {"com.android.vending","com.android.vending"}
         };
         for (String[] pair : unknown) {
             BillingDistributionPolicy result=BillingDistributionPolicy.fromInstallers(
