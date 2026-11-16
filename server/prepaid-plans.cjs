@@ -16,7 +16,7 @@ function id(value,label){
  return value;
 }
 function timestamp(value){
- if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(value))throw new TypeError('زمان UTC معتبر لازم است.');
+ if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value))throw new TypeError('زمان UTC معتبر لازم است.');
  const ms=Date.parse(value);
  if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,19)!==value.slice(0,19))
   throw new TypeError('زمان تقویمی معتبر لازم است.');
