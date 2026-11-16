@@ -37,7 +37,9 @@ jobs:
           tests/prepaid-account-overview.test.cjs
           tests/worker-api.test.cjs
           tests/android-pilot-wrapper.test.cjs
-      - name: Run repository smoke checks\n        run: node tests/smoke.cjs\n      - name: Run D1 migration constraints
+      - name: Run repository smoke checks
+        run: node tests/smoke.cjs
+      - name: Run D1 migration constraints
         run: python tests/d1-prepaid-migration.test.py
       - name: Run D1 settlement SQL integration tests
         run: python tests/d1-prepaid-settlement-sqlite.integration.test.py
