@@ -37,5 +37,5 @@ test('Sahmino subscription preview displays all five approved periods and exact 
  assert.match(activity,/PRICES_TOMAN = \{150000, 285000, 405000, 765000, 1460000\}/);
  assert.match(activity,/حالت تمدید پیش‌فرض: دستی/);
  assert.match(activity,/تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است/);
- assert.match(activity,/پرداخت واقعی در این نسخه آزمایشی غیرفعال است/);
+ assert.match(activity,/پرداخت واقعی در این نسخه آزمایشی غیرفعال است/);\n assert.match(activity,/ریال/);\n assert.doesNotMatch(activity,/تومان|TOMAN/);\n const web=read('index.html');\n for(const amount of ['۱٬۵۰۰٬۰۰۰ ریال','۲٬۸۵۰٬۰۰۰ ریال','۴٬۰۵۰٬۰۰۰ ریال','۷٬۶۵۰٬۰۰۰ ریال','۱۴٬۶۰۰٬۰۰۰ ریال']) assert.ok(web.includes(amount),amount);\n assert.doesNotMatch(web.match(/id=\"subscriptionSectionSahmino\"[\\s\\S]*?<\\/section>/)?.[0]||'',/تومان/);
 });
