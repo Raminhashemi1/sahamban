@@ -41,7 +41,9 @@ test('Sahmino subscription preview displays all five approved periods and exact 
  assert.doesNotMatch(activity,/تومان|TOMAN/);
  const web=read('index.html');
  for(const amount of ['۱٬۵۰۰٬۰۰۰ ریال','۲٬۸۵۰٬۰۰۰ ریال','۴٬۰۵۰٬۰۰۰ ریال','۷٬۶۵۰٬۰۰۰ ریال','۱۴٬۶۰۰٬۰۰۰ ریال']) assert.ok(web.includes(amount),amount);
- const section=web.match(/<section class="card" id="subscriptionSectionSahmino"[\s\S]*?<\/section>/)?.[0]||'';
+ const sectionStart=web.indexOf('<section class="card" id="subscriptionSectionSahmino"');
+ const sectionEnd=web.indexOf('</section>',sectionStart);
+ const section=sectionStart>=0&&sectionEnd>sectionStart?web.slice(sectionStart,sectionEnd):'';
  assert.ok(section);
  assert.doesNotMatch(section,/تومان/);
 });
