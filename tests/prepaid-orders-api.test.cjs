@@ -10,9 +10,9 @@ function dbFor({changes=1,row=null,error=null}={}){
   async first(){if(error)throw error;return row;}
  };}};}};
 }
-test('creates a pending order with server catalog price for each of four plans',async()=>{
- const plans=[['SAHAMBAN_PRO_3M',4500000],['SAHAMBAN_PRO_6M',8550000],
- ['SAHAMBAN_PRO_9M',12150000],['SAHAMBAN_PRO_12M',15300000]];
+test('creates a pending order with server catalog price for each of five plans',async()=>{
+ const plans=[['SAHMINO_PRO_30D',1500000],['SAHMINO_PRO_60D',2850000],['SAHMINO_PRO_90D',4050000],['SAHMINO_PRO_180D',7650000],['SAHMINO_PRO_365D',14600000],
+ ['SAHMINO_PRO_90D',4050000],['SAHMINO_PRO_365D',14600000]];
  for(const [planId,amountRial] of plans){
   const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedSubject:subject,planId,now,makeOrderId:()=>orderId});
   assert.equal(out.status,201);assert.equal(out.order.amountRial,amountRial);
@@ -22,20 +22,20 @@ test('creates a pending order with server catalog price for each of four plans',
  }
 });
 test('rejects unauthenticated, invalid plan, invalid time, bad order ID and missing DB',async()=>{
- assert.equal((await createPrepaidOrder(dbFor(),{planId:'SAHAMBAN_PRO_3M',now})).reason,'NOT_AUTHENTICATED');
+ assert.equal((await createPrepaidOrder(dbFor(),{planId:'SAHMINO_PRO_30D',now})).reason,'NOT_AUTHENTICATED');
  assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'ANNUAL',now,makeOrderId:()=>orderId})).reason,'INVALID_PLAN');
- assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_3M',now:'bad',makeOrderId:()=>orderId})).reason,'SERVER_TIME_UNAVAILABLE');
- assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_3M',now,makeOrderId:()=>'bad'})).reason,'ORDER_ID_UNAVAILABLE');
- assert.equal((await createPrepaidOrder(null,{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_3M',now,makeOrderId:()=>orderId})).reason,'DATABASE_UNAVAILABLE');
+ assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now:'bad',makeOrderId:()=>orderId})).reason,'SERVER_TIME_UNAVAILABLE');
+ assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>'bad'})).reason,'ORDER_ID_UNAVAILABLE');
+ assert.equal((await createPrepaidOrder(null,{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId})).reason,'DATABASE_UNAVAILABLE');
 });
 test('inactive account and pending-order uniqueness fail closed',async()=>{
- const inactive=await createPrepaidOrder(dbFor({changes:0}),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_3M',now,makeOrderId:()=>orderId});
+ const inactive=await createPrepaidOrder(dbFor({changes:0}),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
  assert.equal(inactive.reason,'ACCOUNT_NOT_ELIGIBLE');
- const duplicate=await createPrepaidOrder(dbFor({error:new Error('unique index')}),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_3M',now,makeOrderId:()=>orderId});
+ const duplicate=await createPrepaidOrder(dbFor({error:new Error('unique index')}),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
  assert.equal(duplicate.reason,'ORDER_UNAVAILABLE');
 });
 test('retrieves only a matching pending order and never enables checkout',async()=>{
- const row={id:orderId,plan_id:'SAHAMBAN_PRO_9M',amount_rial:12150000,currency:'IRR',created_at:now};
+ const row={id:orderId,plan_id:'SAHMINO_PRO_90D',amount_rial:4050000,currency:'IRR',created_at:now};
  const db=dbFor({row}),out=await findPrepaidPendingOrder(db,subject);
  assert.equal(out.pending,true);assert.equal(out.order.planId,row.plan_id);
  assert.equal(out.checkoutEnabled,false);assert.equal(out.proEnabled,false);
@@ -44,7 +44,7 @@ test('retrieves only a matching pending order and never enables checkout',async(
 test('no order and malformed order state fail closed',async()=>{
  const none=await findPrepaidPendingOrder(dbFor({row:null}),subject);
  assert.equal(none.pending,false);assert.equal(none.proEnabled,false);
- const bad=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHAMBAN_PRO_3M',amount_rial:1,currency:'IRR',created_at:now}}),subject);
+ const bad=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHMINO_PRO_30D',amount_rial:1,currency:'IRR',created_at:now}}),subject);
  assert.equal(bad.reason,'INVALID_ORDER_STATE');
  assert.equal(await findPrepaidPendingOrder(null,subject).then(x=>x.reason),'DATABASE_UNAVAILABLE');
  assert.match(INSERT_SQL,/u\.auth_subject=\?/);
