@@ -12,7 +12,6 @@ public final class BillingDistributionPolicy {
     private static String channelForInstaller(String installer) {
         if ("com.farsitel.bazaar".equals(installer)) return "CAFEBAZAAR";
         if ("ir.mservices.market".equals(installer)) return "MYKET";
-        if ("com.android.vending".equals(installer)) return "GOOGLE_PLAY";
         return "DISABLED";
     }
 
@@ -34,7 +33,6 @@ public final class BillingDistributionPolicy {
         switch (channel) {
             case "CAFEBAZAAR": return "کافه‌بازار";
             case "MYKET": return "مایکت";
-            case "GOOGLE_PLAY": return "Google Play";
             default: return "نامشخص";
         }
     }
@@ -44,8 +42,6 @@ public final class BillingDistributionPolicy {
                 return "مسیر پیشنهادی این نصب: کافه‌بازار؛ پرداخت واقعی هنوز غیرفعال است.";
             case "MYKET":
                 return "مسیر پیشنهادی این نصب: مایکت؛ پرداخت واقعی هنوز غیرفعال است.";
-            case "GOOGLE_PLAY":
-                return "مسیر پیشنهادی این نصب: Google Play؛ پرداخت واقعی هنوز غیرفعال است.";
             default:
                 return "منبع نصب معتبر و قابل‌تشخیص نیست؛ پرداخت غیرفعال است. APK دانلودشده از وب‌سایت نیز خودکار به پرداخت وب متصل نمی‌شود.";
         }
