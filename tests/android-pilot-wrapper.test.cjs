@@ -30,11 +30,10 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
 });
 
-
 test('Sahmino subscription preview displays all five approved periods and exact rial prices',()=>{
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
- assert.match(activity,/DAYS = \\{30, 60, 90, 180, 365\\}/);
- assert.match(activity,/PRICES_RIAL = \\{1500000, 2850000, 4050000, 7650000, 14600000\\}/);
+ assert.match(activity,/DAYS = \{30, 60, 90, 180, 365\}/);
+ assert.match(activity,/PRICES_RIAL = \{1500000, 2850000, 4050000, 7650000, 14600000\}/);
  assert.match(activity,/حالت تمدید پیش‌فرض: دستی/);
  assert.match(activity,/تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است/);
  assert.match(activity,/پرداخت واقعی در این نسخه آزمایشی غیرفعال است/);
@@ -42,7 +41,7 @@ test('Sahmino subscription preview displays all five approved periods and exact 
  assert.doesNotMatch(activity,/تومان|TOMAN/);
  const web=read('index.html');
  for(const amount of ['۱٬۵۰۰٬۰۰۰ ریال','۲٬۸۵۰٬۰۰۰ ریال','۴٬۰۵۰٬۰۰۰ ریال','۷٬۶۵۰٬۰۰۰ ریال','۱۴٬۶۰۰٬۰۰۰ ریال']) assert.ok(web.includes(amount),amount);
- const section=web.match(/<section class="card" id="subscriptionSectionSahmino"[\\s\\S]*?<\\/section>/)?.[0]||'';
+ const section=web.match(/<section class="card" id="subscriptionSectionSahmino"[\s\S]*?<\/section>/)?.[0]||'';
  assert.ok(section);
  assert.doesNotMatch(section,/تومان/);
 });
