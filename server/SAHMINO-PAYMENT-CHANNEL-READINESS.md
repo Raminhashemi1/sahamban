@@ -75,16 +75,13 @@
 - رابط وب و پیش‌نمایش Android اکنون قیمت‌ها را به ریال نشان می‌دهند.
 - ساخت سفارش، ثبت تسویه و کنترل ضد-replay provider-neutral وجود دارد.
 - Worker هنوز هیچ مسیر checkout یا verify ندارد؛ پرداخت خاموش است.
-- adapter زنده برای هیچ‌یک از چهار کانال وجود ندارد. این کار عمدی است تا قبل از داشتن API/credentials واقعی، integration فرضی یا ناامن وارد مخزن نشود.
+- adapter زنده برای هیچ‌یک از سه کانال مصوب وجود ندارد. این کار عمدی است تا قبل از داشتن API/credentials واقعی، integration فرضی یا ناامن وارد مخزن نشود.
 
 ## اطلاعات تماس/ثبت درخواست به‌پرداخت ملت\n\n- سامانه جامع پذیرندگان «به‌پرداخت من» برای ثبت درخواست درگاه اینترنتی: https://my.behpardakht.com (نشانی گزارش‌شده در اطلاع‌رسانی عمومی شرکت؛ ورود و شرایط جاری را در خود سامانه بررسی کنید).\n- وب‌سایت شرکت: https://www.behpardakht.com\n- کانال اعلام‌شده برای پشتیبانی پایانه پرداخت اینترنتی: ۰۲۱-۲۷۳۱۲۷۳۴؛ پشتیبانی آنلاین: https://www.bpmsupport.ir؛ ایمیل اعلام‌شده: crm@behpardakht.com. پیش از ارسال مدارک/اطلاعات حساس، اعتبار کانال را از وب‌سایت رسمی شرکت تطبیق دهید.\n\n## منابع فنی بررسی‌شده
 
 - Myket Billing نمونه رسمی: https://github.com/myketstore/billing-sample-android
 - پورتال رسمی توسعه‌دهندگان بازار: https://developers.cafebazaar.ir/fa/
 - مرجع عمومی فنی Bazaar Billing و فیلدهای purchase: https://pub.dev/documentation/cafebazaar_billing/latest/
-- Google Play one-time purchase backend lifecycle: https://developer.android.com/google/play/billing/lifecycle/one-time
-- Google Play billing security: https://developer.android.com/google/play/billing/security
-- Google Play supported developer/merchant registration locations: https://support.google.com/googleplay/android-developer/answer/9306917
 - Google Play payments policy: https://support.google.com/googleplay/android-developer/answer/9858738\n- اطلاع‌رسانی عمومی درباره سامانه پذیرندگان به‌پرداخت من: https://tejaratgardan.ir/ارائه-خدمات-غیرحضوری-به-پذیرندگان-کارتخوان-های-بانک-ملت-از-طریق-سامانه-به-پرداخت-من/ (برای تأیید نهایی به سامانه رسمی مراجعه شود).
 
 ## تصمیم اجرایی بعدی
