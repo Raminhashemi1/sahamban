@@ -13,7 +13,7 @@ const purchase=(planId='SAHMINO_PRO_30D',paymentId='pay-1')=>({
 });
 const opts={now,verifyAtProvider:()=>true};
 test('approved five Sahmino plans have exact IRR prices and fixed-day periods',()=>{
- assert.deepEqual(Object.keys(LAUNCH_PLANS),['SAHAMBAN_PRO_3M','SAHMINO_PRO_60D','SAHMINO_PRO_90D','SAHMINO_PRO_365D']);
+ assert.deepEqual(Object.keys(LAUNCH_PLANS),['SAHMINO_PRO_30D','SAHMINO_PRO_60D','SAHMINO_PRO_90D','SAHMINO_PRO_180D','SAHMINO_PRO_365D']);
  assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.days),[30,60,90,180,365]);
  assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.priceRial),[1500000,2850000,4050000,7650000,14600000]);
  
@@ -37,7 +37,7 @@ test('all five fixed-day plans grant exact lengths only after server verificatio
 });
 test('an early voluntary repurchase extends remaining time, without auto-renewal',()=>{
  const first=grantVerifiedPrepaid(emptyPrepaidAccess(userId),purchase(),opts).state;
- const second=grantVerifiedPrepaid(first,purchase('SAHAMBAN_PRO_6M','pay-2'),
+ const second=grantVerifiedPrepaid(first,purchase('SAHMINO_PRO_60D','pay-2'),
   {...opts,now:'2026-12-12T10:00:00.000Z'}).state;
  assert.equal(first.paidUntil,'2026-12-12T10:00:00.000Z');
  assert.equal(second.paidUntil,'2027-02-10T10:00:00.000Z');
@@ -60,7 +60,7 @@ test('replay cannot extend prepaid access again, and other providers use indepen
  const replay=grantVerifiedPrepaid(first,purchase(),opts);
  assert.equal(replay.applied,false);
  assert.equal(replay.state.paidUntil,first.paidUntil);
- const second=grantVerifiedPrepaid(first,{...purchase('SAHAMBAN_PRO_3M','pay-1'),provider:'myket'},opts);
+ const second=grantVerifiedPrepaid(first,{...purchase('SAHMINO_PRO_30D','pay-1'),provider:'myket'},opts);
  assert.equal(second.applied,true);
  assert.equal(second.state.processedReceipts.length,2);
  assert.throws(()=>prepaidAccessDecision({...second.state,processedReceipts:['directpsp:pay-1','directpsp:pay-1']},{now}),/تکراری/);
