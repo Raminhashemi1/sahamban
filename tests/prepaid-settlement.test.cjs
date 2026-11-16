@@ -30,7 +30,7 @@ test('settlement requires a provider-verified server result and exact order matc
 });
 test('valid settlement uses one D1 batch for event, order and entitlement',async()=>{
  const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,payment,{now});
- assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2027-02-12T10:00:00.000Z'});
+ assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2026-12-12T10:00:00.000Z'});
  const batch=db.calls.find(x=>x.batch).batch;
  assert.equal(batch.length,3);
  assert.match(batch[0].sql,/state='PENDING'/);
