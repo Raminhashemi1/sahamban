@@ -77,13 +77,13 @@ test('prepaid order route is disabled by default and requires pilot-authenticate
  const worker=(await api()).default,token=await signedToken();
  const disabled=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
   method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
-  body:JSON.stringify({planId:'SAHAMBAN_PRO_3M'})
+  body:JSON.stringify({planId:'SAHMINO_PRO_30D'})
  }),env());
  assert.equal(disabled.status,404);
  assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
  const unauth=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
   method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},
-  body:JSON.stringify({planId:'SAHAMBAN_PRO_3M'})
+  body:JSON.stringify({planId:'SAHMINO_PRO_30D'})
  }),{...env(),PREPAID_ORDERS_ENABLED:'true'});
  assert.equal(unauth.status,401);
 });
@@ -96,15 +96,15 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
  };}};}};
  const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
   method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
-  body:JSON.stringify({planId:'SAHAMBAN_PRO_6M'})
+  body:JSON.stringify({planId:'SAHMINO_PRO_60D'})
  }),{...env(storage),PREPAID_ORDERS_ENABLED:'true'});
  assert.equal(response.status,201);
  const body=await response.json();
- assert.equal(body.order.amountRial,8550000);
+ assert.equal(body.order.amountRial,2850000);
  assert.equal(body.checkoutEnabled,false);
  assert.equal(body.proEnabled,false);
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
- assert.deepEqual(calls[0].values.slice(1,3),['SAHAMBAN_PRO_6M',8550000]);
+ assert.deepEqual(calls[0].values.slice(1,3),['SAHMINO_PRO_60D',2850000]);
  assert.match(calls[0].values[3],/^\d{4}-\d{2}-\d{2}T/);
  assert.equal(calls[0].values[4],subject);
  assert.match(calls[0].sql,/u\.auth_subject=\?/);
@@ -113,8 +113,8 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
 test('prepaid order route rejects unknown fields, client prices and unsupported media types',async()=>{
  const worker=(await api()).default,token=await signedToken();
  for(const [body,type,status] of [
-  [JSON.stringify({planId:'SAHAMBAN_PRO_3M',amountRial:1}),'application/json',400],
-  [JSON.stringify({planId:'SAHAMBAN_PRO_3M'}),'text/plain',415],
+  [JSON.stringify({planId:'SAHMINO_PRO_30D',amountRial:1}),'application/json',400],
+  [JSON.stringify({planId:'SAHMINO_PRO_30D'}),'text/plain',415],
   ['not-json','application/json',400]
  ]){
   const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
@@ -136,8 +136,8 @@ test('prepaid overview route is disabled by default, private and read only',asyn
  assert.equal(method.status,405);
  const accountDB={prepare(sql){return {bind(value){return {
   async first(){return {user_id:'u1',account_status:'ACTIVE',payment_suspended:0,paid_until:'2099-01-12T10:00:00.000Z'};},
-  async all(){return {success:true,results:[{id:'order1',plan_id:'SAHAMBAN_PRO_3M',
-   amount_rial:4500000,currency:'IRR',state:'SETTLED',created_at:'2026-11-12T10:00:00.000Z',
+  async all(){return {success:true,results:[{id:'order1',plan_id:'SAHMINO_PRO_30D',
+   amount_rial:1500000,currency:'IRR',state:'SETTLED',created_at:'2026-11-12T10:00:00.000Z',
    settled_at:'2026-11-12T10:05:00.000Z'}]};}
  };}};}};
  const active=await worker.fetch(req(token,'/api/v1/me/prepaid-overview'),{...env(accountDB),PREPAID_ORDERS_ENABLED:'true'});
@@ -147,5 +147,5 @@ test('prepaid overview route is disabled by default, private and read only',asyn
  assert.equal(info.checkoutEnabled,false);
  assert.equal(info.autoRenew,false);
  assert.equal(info.orders.length,1);
- assert.equal(info.orders[0].amountRial,4500000);
+ assert.equal(info.orders[0].amountRial,1500000);
 });
