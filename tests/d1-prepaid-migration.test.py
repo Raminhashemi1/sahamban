@@ -44,7 +44,9 @@ class PrepaidD1MigrationTests(unittest.TestCase):
             ("SAHMINO_PRO_365D",14600000),
         ]
         for index, (plan, price) in enumerate(plans):
-            self.insert_order("valid"+str(index), plan, price)
+            order_id = "valid" + str(index)
+            self.insert_order(order_id, plan, price)
+            self.db.execute("UPDATE prepaid_subscription_orders SET state='CANCELLED' WHERE id=?", (order_id,))
         self.assertEqual(self.db.execute("SELECT count(*) FROM prepaid_subscription_orders").fetchone()[0],5)
 
     def test_wrong_plan_price_pairs_are_rejected(self):
