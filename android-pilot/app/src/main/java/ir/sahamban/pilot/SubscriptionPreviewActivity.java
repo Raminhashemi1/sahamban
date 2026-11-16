@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 /**
  * Design-time billing navigation preview ONLY. No billing SDK or payment URLs.
@@ -17,6 +19,7 @@ import android.widget.TextView;
  */
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
+    private static final int[] PRICES_TOMAN = {150000, 285000, 405000, 765000, 1460000};
     // Detected only from Android installer metadata; no user selector.
     private BillingDistributionPolicy distribution;
     private int selectedDays = DAYS[0];
@@ -43,10 +46,19 @@ public final class SubscriptionPreviewActivity extends Activity {
         return button;
     }
 
+    private String toman(int amount) {
+        return NumberFormat.getIntegerInstance(new Locale("fa", "IR")).format(amount);
+    }
+
+    private int priceForDays(int days) {
+        for (int i = 0; i < DAYS.length; i++) if (DAYS[i] == days) return PRICES_TOMAN[i];
+        throw new IllegalArgumentException("Unknown subscription duration");
+    }
+
     private void renderChoices() {
         planList.removeAllViews();
         for (int days : DAYS) {
-            Button button = choice((days == selectedDays ? "✓  " : "") + days + " روز");
+            Button button = choice((days == selectedDays ? "✓  " : "") + days + " روز — " + toman(priceForDays(days)) + " تومان");
             button.setOnClickListener(v -> {
                 selectedDays = days;
                 renderChoices();
@@ -57,9 +69,10 @@ public final class SubscriptionPreviewActivity extends Activity {
             ? distribution.statusText()
             : "منبع نصب شناسایی نشد؛ پرداخت غیرفعال است.";
         details.setText("دوره انتخابی: " + selectedDays + " روز\\n"
+            + "مبلغ نهایی: " + toman(priceForDays(selectedDays)) + " تومان\\n"
             + "مسیر تشخیص‌داده‌شده این نصب: " + distribution.displayName()
             + "\\n" + status
-            + "\\n\\nپرداخت واقعی غیرفعال است. شناسه محصول و قیمت رسمی هنوز تنظیم نشده‌اند."
+            + "\\n\\nحالت تمدید پیش‌فرض: دستی؛ تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است."\n            + "\\nپرداخت واقعی در این نسخه آزمایشی غیرفعال است."
             + "\\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
     }
 
