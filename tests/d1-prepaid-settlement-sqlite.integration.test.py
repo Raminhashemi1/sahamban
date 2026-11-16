@@ -71,8 +71,8 @@ class PrepaidSQLiteIntegration(unittest.TestCase):
             self.assertEqual(settle(db), '2026-12-12T10:00:00.000Z')
             second = 'ord_' + 'b' * 32
             pending(db, second, 'SAHMINO_PRO_60D', 2850000)
-            self.assertEqual(settle(db, oid=second, plan='SAHAMBAN_PRO_6M',
-                                    amount=8550000, days=60, event='evt_2',
+            self.assertEqual(settle(db, oid=second, plan='SAHMINO_PRO_60D',
+                                    amount=2850000, days=60, event='evt_2',
                                     payment='pay_2'), '2027-02-10T10:00:00.000Z')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM prepaid_payment_events').fetchone()[0], 2)
         finally:
@@ -91,7 +91,7 @@ class PrepaidSQLiteIntegration(unittest.TestCase):
                                         (second,)).fetchone()[0], 'PENDING')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM prepaid_payment_events').fetchone()[0], 1)
             self.assertEqual(db.execute('SELECT paid_until FROM prepaid_subscription_entitlements').fetchone()[0],
-                             '2027-02-12T10:00:00.000Z')
+                             '2026-12-12T10:00:00.000Z')
         finally:
             db.close()
 
