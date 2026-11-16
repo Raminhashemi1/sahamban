@@ -29,3 +29,13 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(wf,/upload-artifact/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
 });
+
+
+test('Sahmino subscription preview displays all five approved periods and exact final prices',()=>{
+ const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
+ assert.match(activity,/DAYS = \{30, 60, 90, 180, 365\}/);
+ assert.match(activity,/PRICES_TOMAN = \{150000, 285000, 405000, 765000, 1460000\}/);
+ assert.match(activity,/حالت تمدید پیش‌فرض: دستی/);
+ assert.match(activity,/تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است/);
+ assert.match(activity,/پرداخت واقعی در این نسخه آزمایشی غیرفعال است/);
+});
