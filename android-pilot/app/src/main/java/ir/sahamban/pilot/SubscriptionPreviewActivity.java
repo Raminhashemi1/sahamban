@@ -68,12 +68,13 @@ public final class SubscriptionPreviewActivity extends Activity {
         String status = distribution.isConfiguredBuild()
             ? distribution.statusText()
             : "منبع نصب شناسایی نشد؛ پرداخت غیرفعال است.";
-        details.setText("دوره انتخابی: " + selectedDays + " روز\\n"
-            + "مبلغ نهایی: " + toman(priceForDays(selectedDays)) + " تومان\\n"
+        details.setText("دوره انتخابی: " + selectedDays + " روز\n"
+            + "مبلغ نهایی: " + toman(priceForDays(selectedDays)) + " تومان\n"
             + "مسیر تشخیص‌داده‌شده این نصب: " + distribution.displayName()
-            + "\\n" + status
-            + "\\n\\nحالت تمدید پیش‌فرض: دستی؛ تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است."\n            + "\\nپرداخت واقعی در این نسخه آزمایشی غیرفعال است."
-            + "\\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
+            + "\n" + status
+            + "\n\nحالت تمدید پیش‌فرض: دستی؛ تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است."
+            + "\nپرداخت واقعی در این نسخه آزمایشی غیرفعال است."
+            + "\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
     }
 
     @Override
