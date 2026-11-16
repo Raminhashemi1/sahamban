@@ -2,7 +2,7 @@
 // Provider-independent prepaid Pro domain rules. NOT a checkout endpoint.
 // All purchase confirmations MUST be verified directly with a payment provider
 // on a trusted server and persisted atomically with unique provider/payment IDs.
-// Catalogue amounts are stored in IRR; UI-facing prices are in toman.
+// All catalogue, API, UI and provider-boundary amounts use integer IRR. Never send toman.
 const LAUNCH_PLANS=Object.freeze({
  SAHMINO_PRO_30D:Object.freeze({days:30,priceRial:1500000}),
  SAHMINO_PRO_60D:Object.freeze({days:60,priceRial:2850000}),
