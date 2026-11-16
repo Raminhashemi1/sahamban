@@ -18,8 +18,8 @@ public final class BillingDistributionPolicyTest {
             {null,null},{"",""},{"com.android.packageinstaller","com.android.packageinstaller"},
             {"com.farsitel.bazaar","ir.mservices.market"},
             {"some.web.browser",null},
-            {"com.android.vending","unrecognized.installer"},
-            {"com.android.vending","com.android.vending"}
+            {"unknown.store.installer","unrecognized.installer"},
+            {"unknown.store.installer","unknown.store.installer"}
         };
         for (String[] pair : unknown) {
             BillingDistributionPolicy result=BillingDistributionPolicy.fromInstallers(
