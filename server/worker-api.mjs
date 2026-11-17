@@ -18,7 +18,7 @@ function parseCookie(request,name){
 }
 function otpJson(request,body,status,origin,extraHeaders={}){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin',...extraHeaders};
- if(origin)headers['Access-Control-Allow-Origin']=origin;
+ if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
  return new Response(JSON.stringify(body),{status,headers});
 }
 async function readSmallJson(request,maxBytes=1024){
@@ -199,7 +199,7 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Sahmino-CSRF','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Credentials':'true','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Sahmino-CSRF','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
   const otpResponse=await handleOtpRoutes(request,env,url,nowMs);
   if(otpResponse)return otpResponse;
