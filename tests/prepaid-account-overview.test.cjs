@@ -10,7 +10,7 @@ test('overview reports paid access, manual renewal default and merged private or
  assert.equal(result.status,200);assert.equal(result.proEnabled,true);assert.equal(result.paidUntil,account.paid_until);
  assert.equal(result.remainingSeconds,92*86400);assert.equal(result.autoRenew,false);assert.equal(result.checkoutEnabled,false);
  assert.equal(result.orders[0].planId,item.plan_id);assert.deepEqual(db.calls.map(x=>x.args),[[subject],['u1','u1']]);
- assert.match(LOOKUP,/WHERE u.auth_subject=\?/);assert.match(LOOKUP,/sahmino_prepaid_subscription_entitlements/);assert.match(LOOKUP,/CASE[\\s\\S]*v2\\.paid_until[\\s\\S]*e\\.paid_until[\\s\\S]*le\\.paid_until/);assert.match(HISTORY,/UNION ALL/);assert.match(HISTORY,/sahmino_prepaid_subscription_orders/);
+ assert.match(LOOKUP,/WHERE u.auth_subject=\?/);assert.match(LOOKUP,/sahmino_prepaid_subscription_entitlements/);assert.match(LOOKUP,/CASE[\s\S]*v2\.paid_until[\s\S]*e\.paid_until[\s\S]*le\.paid_until/);assert.match(HISTORY,/UNION ALL/);assert.match(HISTORY,/sahmino_prepaid_subscription_orders/);
 });
 test('expiry boundary, absent purchase and blocked account',async()=>{
  assert.equal((await prepaidAccountOverview(dbFor({user:{...account,paid_until:now}}),{authenticatedSubject:subject,now})).reason,'EXPIRED');
@@ -39,7 +39,7 @@ test('OTP internal user ID resolves account and history without auth_subject',as
 });
 
 test('entitlement overview selects the furthest paid-through date across v2, v1 and legacy ledgers',()=>{
- assert.match(LOOKUP,/v2\\.paid_until>=e\\.paid_until/);
- assert.match(LOOKUP,/v2\\.paid_until>=le\\.paid_until/);
- assert.match(LOOKUP,/e\\.paid_until>=le\\.paid_until/);
+ assert.match(LOOKUP,/v2\.paid_until>=e\.paid_until/);
+ assert.match(LOOKUP,/v2\.paid_until>=le\.paid_until/);
+ assert.match(LOOKUP,/e\.paid_until>=le\.paid_until/);
 });
