@@ -44,6 +44,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
             return;
         }
         try {
+            // These are non-renewing prepaid in-app products, not store subscriptions.
             helper.launchPurchaseFlow(activity, productId, (IabResult result, Purchase purchase) -> {
                 if (result == null || !result.isSuccess() || purchase == null) {
                     if (result != null && result.getResponse() == IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED) {
@@ -56,11 +57,32 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
                 listener.onPurchased(new PurchaseReceipt(
                     "MYKET", purchase.getSku(), purchase.getToken(),
                     purchase.getOriginalJson(), purchase.getSignature(),
-                    purchase.getDeveloperPayload(), 0L));
+                    purchase.getDeveloperPayload(), 0L, purchase));
             }, serverOrderPayload);
         } catch (RuntimeException error) {
             listener.onFailure("MYKET_PURCHASE_FLOW_NOT_STARTED");
         }
+    }
+
+    @Override
+    public void consume(PurchaseReceipt receipt, ConsumptionListener listener) {
+        if (helper == null) {
+            listener.onFailure("MYKET_NOT_CONNECTED");
+            return;
+        }
+        if (receipt == null || !"MYKET".equals(receipt.provider) ||
+            !(receipt.storePurchase instanceof Purchase)) {
+            listener.onFailure("INVALID_MYKET_RECEIPT");
+            return;
+        }
+        // Invoke only after backend settlement; subscriptions must never be consumed.
+        helper.consumeAsync((Purchase) receipt.storePurchase, (purchase, result) -> {
+            if (result != null && result.isSuccess()) {
+                listener.onConsumed();
+            } else {
+                listener.onFailure("MYKET_CONSUME_FAILED");
+            }
+        });
     }
 
     @Override
