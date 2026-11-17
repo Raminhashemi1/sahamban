@@ -1,6 +1,9 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
+import settlementModule from './prepaid-settlement.cjs';
+import {verifyMarketplaceReceipt} from './marketplace-receipt-verifier.mjs';
+const {settleVerifiedPrepaidPayment}=settlementModule;
 import otpServiceModule from './sms-otp-service.cjs';
 import otpRepositoryModule from './d1-sms-otp-repository.cjs';
 const {createSmsOtpService}=otpServiceModule;
