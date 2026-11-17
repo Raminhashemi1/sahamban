@@ -238,8 +238,8 @@ The read-only prepaid overview now checks the legacy account-level payment suspe
 The current approved catalogue is day-based and has final prices (no additional
 discounts): 30 days / 1,500,000 IRR; 60 days / 2,850,000 IRR; 90 days /
 4,050,000 IRR; 180 days / 7,650,000 IRR; 365 days / 14,600,000 IRR.
-The corresponding server IDs are `SAHAMBAN_PRO_30D`, `SAHAMBAN_PRO_60D`,
-`SAHAMBAN_PRO_90D`, `SAHAMBAN_PRO_180D`, and `SAHAMBAN_PRO_365D`.
+The corresponding server IDs are `SAHMINO_PRO_30D`, `SAHMINO_PRO_60D`,
+`SAHMINO_PRO_90D`, `SAHMINO_PRO_180D`, and `SAHMINO_PRO_365D`.
 Amounts are displayed in toman in the product and converted explicitly to IRR
 for server-side order and ledger records.
 
