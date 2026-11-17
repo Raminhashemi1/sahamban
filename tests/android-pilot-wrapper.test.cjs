@@ -24,11 +24,11 @@ test('market variants use separate store flavors, approved Sahmino identity and 
  assert.match(build,/applicationId 'ir\.manahesab\.sahmino'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
- assert.match(wf,/assembleBazaarDebug/);
- assert.match(wf,/assembleMyketDebug/);
- assert.match(wf,/sahmino-market-debug-apks-NOT-FOR-STORE/);
+ assert.match(wf,/compileBazaarDebugJavaWithJavac/);
+ assert.match(wf,/compileMyketDebugJavaWithJavac/);
+ assert.match(wf,/Compile-check both store variants/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
- assert.match(wf,/upload-artifact/);
+ assert.doesNotMatch(wf,/upload-artifact|assembleBazaarDebug|assembleMyketDebug/);
  assert.match(read('android-pilot/README.md'),/not release builds/i);
  assert.match(build,/bazaar\s*\{/);
  assert.match(build,/myket\s*\{/);
