@@ -8,6 +8,7 @@ FROM sahamban_users u
 LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=u.id
 LEFT JOIN subscription_entitlements le ON le.user_id=u.id
 WHERE u.auth_subject=? LIMIT 1`;
+const LOOKUP_USER=LOOKUP.replace('WHERE u.auth_subject=?','WHERE u.id=?');
 const HISTORY=`SELECT id,plan_id,amount_rial,currency,state,created_at,settled_at FROM (
  SELECT id,plan_id,amount_rial,currency,state,created_at,settled_at
  FROM sahmino_prepaid_subscription_orders WHERE user_id=?
@@ -25,7 +26,7 @@ async function prepaidAccountOverview(db,{authenticatedSubject,now}={}){
  const current=utc(now);if(current===null)return fail('INVALID_SERVER_TIME',503);
  if(!db||typeof db.prepare!=='function')return fail('DATABASE_UNAVAILABLE',503);
  try{
-  const account=await db.prepare(LOOKUP).bind(authenticatedSubject).first();
+  const account=await db.prepare(byUser?LOOKUP_USER:LOOKUP).bind(byUser?authenticatedUserId:authenticatedSubject).first();
   if(!account||typeof account.user_id!=='string'||account.account_status!=='ACTIVE')return fail('ACCOUNT_NOT_ELIGIBLE',403);
   if(account.payment_suspended!==0&&account.payment_suspended!==1)return fail('INVALID_PAYMENT_REVIEW_STATE',503);
   if(account.payment_suspended===1)return fail('PAYMENT_REVIEW_REQUIRED',403);
@@ -49,4 +50,4 @@ async function prepaidAccountOverview(db,{authenticatedSubject,now}={}){
    autoRenew:false,checkoutEnabled:false,orders:items};
  }catch(_){return fail('OVERVIEW_UNAVAILABLE',503);}
 }
-module.exports=Object.freeze({prepaidAccountOverview,LOOKUP,HISTORY});
+module.exports=Object.freeze({prepaidAccountOverview,LOOKUP,LOOKUP_USER,HISTORY});
