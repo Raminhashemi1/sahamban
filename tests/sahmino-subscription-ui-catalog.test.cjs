@@ -14,18 +14,18 @@ const expected=[
  {days:365,rial:14600000,id:'SAHMINO_PRO_365D'}
 ];
 test('PWA, Bazaar and Myket use the five approved server prices in rial only',()=>{
- const server=plansSource.match(/const LAUNCH_PLANS=Object\\.freeze\\(\\{([\\s\\S]*?)\\n\\}\\);/);
+ const server=plansSource.match(/const LAUNCH_PLANS=Object\.freeze\(\{([\s\S]*?)\n\}\);/);
  assert.ok(server,'server launch catalogue exists');
- const inputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\\d+)" data-price-rial="(\\d+)"/g)];
+ const inputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\d+)" data-price-rial="(\d+)"/g)];
  assert.equal(inputs.length,5);
  assert.deepEqual(inputs.map(m=>[Number(m[1]),Number(m[2])]),expected.map(p=>[p.days,p.rial]));
  for(const [channel,source] of [['Bazaar',bazaar],['Myket',myket]]){
-  const native=source.match(/(?:PRICE_RIAL|PRICES)\\s*=\\s*\\{([^}]+)\\}/);
+  const native=source.match(/(?:PRICE_RIAL|PRICES)\s*=\s*\{([^}]+)\}/);
   assert.ok(native,channel+' rial price table exists');
   assert.deepEqual(native[1].split(',').map(x=>Number(x.trim().replace(/L$/,''))),expected.map(p=>p.rial));
   assert.doesNotMatch(source,/PRICE_TOMAN|priceToman|تومان|formatToman/);
  }
- for(const p of expected) assert.match(server[1],new RegExp(p.id+'\\\\s*:\\\\s*Object\\\\.freeze\\\\(\\\\{days:'+p.days+',priceRial:'+p.rial+'\\\\}\\\\)'));
+ for(const p of expected) assert.ok(server[1].includes(p.id+':Object.freeze({days:'+p.days+',priceRial:'+p.rial+'})'));
  const section=html.slice(html.indexOf('<section class="card" id="subscriptionSectionSahmino"'),html.indexOf('<div id="sahminoAccountPanel"'));
  assert.ok(section.includes('مبلغ نهایی: ۱٬۵۰۰٬۰۰۰ ریال'));
  assert.doesNotMatch(section,/تومان|data-price-toman/);
@@ -33,7 +33,7 @@ test('PWA, Bazaar and Myket use the five approved server prices in rial only',()
 test('PWA keeps checkout disabled and renewal manual by default',()=>{
  assert.match(html,/تمدید دستی حالت پیش‌فرض است/);
  assert.match(html,/تمدید خودکار در این نسخه ارائه نمی‌شود/);
- const section=html.match(/<section class="card" id="subscriptionSectionSahmino"[\\s\\S]*?<div id="sahminoAccountPanel"/);
+ const section=html.match(/<section class="card" id="subscriptionSectionSahmino"[\s\S]*?<div id="sahminoAccountPanel"/);
  assert.ok(section);
  assert.match(section[0],/<button type="button" disabled[^>]*>خرید اشتراک/);
  assert.match(section[0],/تخفیف اضافه ندارند/);
@@ -43,6 +43,6 @@ test('Bazaar Android checkout remains disabled pending Poolakey and server verif
  assert.match(bazaar,/اعتبارسنجی رسید سمت سرور هنوز تکمیل نشده است/);
 });
 test('Myket Android checkout remains disabled pending trusted server verification',()=>{
- assert.match(myket,/setEnabled\\(false\\)/);
+ assert.match(myket,/setEnabled\(false\)/);
  assert.match(myket,/پرداخت واقعی و فعال‌سازی اشتراک تا اتصال اعتبارسنجی سرور غیرفعال است/);
 });
