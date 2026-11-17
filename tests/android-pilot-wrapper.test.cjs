@@ -2,9 +2,9 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const read=(p)=>fs.readFileSync(p,'utf8');
+const read=p=>fs.readFileSync(p,'utf8');
 
-test('Android pilot allows internet only; forbids local-file, HTTP and automatic backup',()=>{
+test('Android wrapper keeps HTTPS navigation and sensitive local resources restricted',()=>{
  const m=read('android-pilot/app/src/main/AndroidManifest.xml');
  assert.match(m,/android\.permission\.INTERNET/);
  assert.doesNotMatch(m,/android\.permission\.(READ_|WRITE_|CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION)/);
@@ -24,15 +24,17 @@ test('market variants use separate store flavors, temporary identity and no prod
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
- assert.match(wf,/assembleBazaarDebug/);\n assert.match(wf,/assembleMyketDebug/);\n assert.match(wf,/sahmino-market-debug-apks-NOT-FOR-STORE/);
+ assert.match(wf,/assembleBazaarDebug/);
+ assert.match(wf,/assembleMyketDebug/);
+ assert.match(wf,/sahmino-market-debug-apks-NOT-FOR-STORE/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.match(wf,/upload-artifact/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
- assert.match(build,/bazaar\\s*\\{/);
- assert.match(build,/myket\\s*\\{/);
- assert.match(build,/ir\\.myket:billing:2\\.2/);
+ assert.match(build,/bazaar\s*\{/);
+ assert.match(build,/myket\s*\{/);
+ assert.match(build,/ir\.myket:billing:2\.2/);
  assert.match(build,/sahmino_pro_365d/);
  assert.match(build,/BAZAAR_IAB_PUBLIC_KEY/);
  assert.match(build,/MYKET_IAB_PUBLIC_KEY/);
- assert.doesNotMatch(build,/com\\.android\\.vending/);
+ assert.doesNotMatch(build,/com\.android\.vending/);
 });
