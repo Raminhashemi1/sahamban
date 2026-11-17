@@ -1,5 +1,13 @@
 # Server-only subscriptions — Pro 1.0 integration boundary
 
+> **Update (2026-11-17, feature branch only):** The Worker now contains a
+> feature-flagged `POST /api/v1/me/prepaid-receipts` route and server-side
+> Myket/CafeBazaar receipt adapters. This does **not** supersede the deployment
+> and release gates below: no Worker/D1 deployment, store credentials, Android
+> receipt submission flow, or real-store acceptance test has been completed.
+> The route remains disabled unless both OTP and prepaid-order flags are enabled.
+> See [the marketplace integration change log](MARKETPLACE-RECEIPT-INTEGRATION-2026-11-17.md).
+
 This folder is **not a deployed payment service**. It contains the pure,
 testable, vendor-neutral entitlement core only. The public GitHub Pages PWA
 cannot securely issue its own paid entitlements, protect provider secrets,
