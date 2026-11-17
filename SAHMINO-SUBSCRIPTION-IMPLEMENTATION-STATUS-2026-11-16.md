@@ -29,7 +29,7 @@
 ## شواهد CI
 - ساخت Debug هر دو flavor در workflow اندروید برای commitهای `ca8bcf695a3a0785bff88409b09ccb33d03d27ad` و `f2fca7ca147c8baa76a33cb6308ef9daf647ea66` موفق بوده است.
 - آزمون‌های سرور برای commit `1e3e58217fa493d493143dab89bfff8104ab93db` و `ca8bcf695a3a0785bff88409b09ccb33d03d27ad` موفق بوده‌اند.
-- یک اجرای بعدی آزمون‌ها به‌علت assertion قدیمی UI درباره تمدید دستی شکست خورد؛ assertion با سیاست تمدید خودکار اصلاح شد و اجرای تازه برای commit `207389c86e28e33405ae6a10c3427b038cbee727` در صف CI قرار گرفت.
+- دو assertion قدیمی UI که هنوز متن تمدید دستی را انتظار داشتند، اصلاح شدند. اجرای نهایی workflow اختصاصی برای commit `961d7ee8bce622c06636de1a962b1dbe324f130e` با نتیجه `success` تمام شد؛ syntax، تست‌های ماژول و Worker، smoke، قیود migration و تست یکپارچگی settlement SQL همگی موفق‌اند.
 - ساخت Debug موفق به معنی تکمیل خرید یا آماده‌بودن برای انتشار نیست.
 
 ## موانع واقعی باقی‌مانده
@@ -52,3 +52,14 @@
 - migration روی D1 خصوصی/production یا انتشار عمومی بدون تأیید مالک انجام نشود.
 - secret، access token، private key یا اطلاعات بانکی در مخزن ثبت نشود.
 - هر تغییر با commit مستقل و آزمون مربوط ثبت شود.
+
+
+## تکمیل ممیزی CI و منابع فروشگاه — ۱۷ نوامبر ۲۰۲۶
+
+- workflow اختصاصی `Sahmino subscription module tests` برای commit `961d7ee8bce622c06636de1a962b1dbe324f130e` موفق شد؛ تمام stepهای job از جمله smoke و آزمون‌های D1 موفق بودند.
+- ساخت Debug هر دو flavor پیش‌تر روی commit `f2fca7ca147c8baa76a33cb6308ef9daf647ea66` موفق بوده است؛ این build هنوز خرید end-to-end را ثابت نمی‌کند.
+- PR #186 همچنان Draft و باز است و هنوز به شاخه اصلی ادغام نشده است.
+- مستندات عمومی Cafe Bazaar، عملیات server-side برای اعتبارسنجی خرید/اشتراک با package، product/subscription ID و purchase token و نیز لغو اشتراک را نشان می‌دهند؛ اما دسترسی و اعتبارنامه توسعه‌دهنده باید از پنل ناشر فراهم شود. مرجع فنی بررسی‌شده: https://github.com/Geeksltd/CafeBazaar.DeveloperApi
+- نمونه رسمی Myket، ارسال original JSON و signature به backend امن و بررسی امضای RSA را برای تراکنش حساس توصیه می‌کند؛ payload نیز باید با سفارش سرور تطبیق داده شود. مرجع نمونه: https://github.com/myketstore/billing-sample-android و https://github.com/myketstore/myket-billing-flutter
+- هنوز endpoint رسمی Myket و جزئیات پاسخ اعتبارسنجی که با نسخه SDK/حساب ناشر این پروژه منطبق باشد، در مخزن مستند نشده؛ تا دریافت مستندات/دسترسی معتبر، adapter واقعی سمت سرور نوشته یا فعال نمی‌شود.
+- اطلاعات SKU واقعی پنج پلن، package نهایی و دسترسی‌های محرمانه پنل بازار و مایکت در مخزن موجود نیستند. این موارد را نباید با شناسه‌های حدسی جایگزین کرد.
