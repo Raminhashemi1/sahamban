@@ -24,6 +24,7 @@ async function post(fetchImpl,url,body){
 }
 async function requestPayment({env,order,callbackUrl,description,fetchImpl=fetch}={}){
  const merchant=config(env);
+ const urls=endpoints(env);
  if(!order||typeof order.id!=='string'||!ID.test(order.id)||!Number.isSafeInteger(order.amountRial)||order.amountRial<1000||order.currency!=='IRR')
   throw new Error('INVALID_ORDER');
  let callback;try{callback=new URL(callbackUrl);}catch(_){throw new Error('INVALID_CALLBACK_URL');}
@@ -40,6 +41,7 @@ async function requestPayment({env,order,callbackUrl,description,fetchImpl=fetch
 }
 async function verifyPayment({env,authority,amountRial,fetchImpl=fetch}={}){
  const merchant=config(env);
+ const urls=endpoints(env);
  if(typeof authority!=='string'||!/^[A-Za-z0-9]{20,64}$/.test(authority)||!Number.isSafeInteger(amountRial)||amountRial<1000)
   throw new Error('INVALID_VERIFICATION_INPUT');
  const data=await post(fetchImpl,urls.api+'/verify.json',{merchant_id:merchant,amount:amountRial,authority});
