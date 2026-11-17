@@ -83,3 +83,20 @@ Next safe gate: provision a private test Worker and test D1 with the owner, conf
 - The existing Worker deployment workflow is manual-only, restricted to `main`, requires the exact approval phrase `DEPLOY_PILOT_NO_PAYMENTS`, and uses owner-controlled Cloudflare environment credentials. This work did not invoke it.
 - The OTP service binding, D1 OTP/session migration on an approved test database, real SMS sandbox delivery, same-site cookie strategy, and physical Android WebView acceptance remain unverified.
 - No deployment, D1 migration, feature-flag enablement, payment activation, automatic renewal, merge or release was performed.
+
+## Progress update — 2026-11-17 — deployment schema preflight fix
+
+- Audited the manual Cloudflare pilot deployment workflow against the actual five-plan schema file `server/d1-sahmino-subscription-v2.sql`.
+- Found a deployment gap: the preflight recognized the eleven legacy/base application tables as a complete existing installation and skipped all migrations, without checking whether the four Sahmino v2 tables existed.
+- Updated `.github/workflows/cloudflare-pilot-deploy.yml` to inspect the four v2 tables separately:
+  - if none exist, run the additive five-plan v2 schema migration;
+  - if all exist, skip the migration;
+  - if only some exist, stop for operator review and refuse deployment.
+- The migration remains guarded by the existing manual-only `main` deployment workflow, exact `DEPLOY_PILOT_NO_PAYMENTS` approval phrase, and owner-controlled Cloudflare environment. The v2 migration creates tables/indexes only and does not enable checkout or payments.
+- Extended `tests/generate-pilot-deploy-config.test.cjs` to assert the v2 table inventory, additive migration step, and partial-schema refusal.
+- GitHub Actions run `44130522758` on commit `4706bcefa8baf7b2bea57e66111632e7f2f26689` completed successfully. Syntax, unit/API tests, OTP migration/runtime tests, v1/v2 migration constraints, five-plan schema regression tests, and SQLite settlement integration all passed.
+- The offline Worker build/local D1 validation is still running separately. No remote D1 inspection, migration, Worker deployment, SMS delivery, phone test, payment activation, merge or release was performed by this change.
+
+### Current acceptance boundary
+
+The source workflow is now prepared to add the five-plan D1 schema safely on the next owner-authorized pilot deployment. This code change is not evidence that the remote D1 was migrated. The existing pilot endpoint remains a no-payment prototype until an approved deployment and real device/SMS acceptance are completed.
