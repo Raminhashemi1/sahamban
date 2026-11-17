@@ -161,7 +161,11 @@ async function handleZarinpal(request,env,url,nowMs){
    FROM sahmino_payment_intents i JOIN sahmino_prepaid_subscription_orders o ON o.id=i.order_id
    WHERE i.authority=? AND i.provider_name='ZARINPAL' AND i.state='REQUESTED' AND o.state='PENDING' LIMIT 1`).bind(authority).first();
   const target=new URL('/?sahmino_payment=',env?.PWA_ORIGIN||'https://invalid.local');
-  if(!intent||status!=='OK'){target.searchParams.set('sahmino_payment','failed');return redirect(target.toString());}
+  if(!intent||status!=='OK'){
+   if(intent)await env.SAHAMBAN_DB.prepare("UPDATE sahmino_payment_intents SET state='FAILED' WHERE authority=? AND state='REQUESTED'").bind(authority).run();
+   if(intent)await env.SAHAMBAN_DB.prepare("UPDATE sahmino_prepaid_subscription_orders SET state='CANCELLED' WHERE id=? AND state='PENDING'").bind(intent.order_id).run();
+   target.searchParams.set('sahmino_payment','failed');return redirect(target.toString());
+  }
   try{
    const verified=await verifyPayment({env,authority,amountRial:intent.amount_rial});
    const result=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,{...verified,orderId:intent.order_id,planId:intent.plan_id},{now:new Date(nowMs).toISOString()});
@@ -191,7 +195,10 @@ async function handleZarinpal(request,env,url,nowMs){
   const inserted=await env.SAHAMBAN_DB.prepare("INSERT INTO sahmino_payment_intents(authority,order_id,provider_name,created_at,state) VALUES(?,?,'ZARINPAL',?,'REQUESTED')").bind(payment.authority,order.order.id,new Date(nowMs).toISOString()).run();
   if(inserted?.meta?.changes!==1)throw Error('INTENT_NOT_STORED');
   return send({status:200,checkoutUrl:payment.paymentUrl,orderId:order.order.id},200,origin);
- }catch(_){return send({error:'PAYMENT_REQUEST_FAILED',orderId:order.order.id},502,origin);}
+ }catch(_){
+  await env.SAHAMBAN_DB.prepare("UPDATE sahmino_prepaid_subscription_orders SET state='CANCELLED' WHERE id=? AND state='PENDING'").bind(order.order.id).run().catch(()=>{});
+  return send({error:'PAYMENT_REQUEST_FAILED',orderId:order.order.id},502,origin);
+ }
 }
 
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
