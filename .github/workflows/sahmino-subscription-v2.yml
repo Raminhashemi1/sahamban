@@ -30,6 +30,7 @@ jobs:
           node --check server/prepaid-settlement.cjs
           node --check server/prepaid-account-overview.cjs
           node --check server/sms-otp-core.cjs
+          node --check server/sms-otp-service.cjs
       - name: Run subscription unit and authenticated Worker API tests
         run: >
           node --test
@@ -40,6 +41,7 @@ jobs:
           tests/worker-api.test.cjs
           tests/sahmino-subscription-ui-catalog.test.cjs
           tests/sahmino-sms-otp-core.test.cjs
+          tests/sahmino-sms-otp-service.test.cjs
       - name: Run provider-neutral SMS OTP migration constraints
         run: python tests/d1-sahmino-sms-otp-migration.test.py
       - name: Run legacy and additive v2 D1 migration constraints
