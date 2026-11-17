@@ -20,7 +20,7 @@ const SELECT_PENDING_SQL=[
  'LIMIT 1'
 ].join(' ');
 function validNow(now){
- if(typeof now!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(now))return false;
+ if(typeof now!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(now))return false;
  const n=Date.parse(now);return Number.isFinite(n)&&new Date(n).toISOString()===now;
 }
 const fail=(reason,status)=>({reason,status,checkoutEnabled:false,proEnabled:false});
