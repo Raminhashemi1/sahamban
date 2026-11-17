@@ -29,7 +29,7 @@ test('market variants use separate store flavors, approved Sahmino identity and 
  assert.match(wf,/Compile-check both store variants/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.doesNotMatch(wf,/upload-artifact|assembleBazaarDebug|assembleMyketDebug/);
- assert.match(read('android-pilot/README.md'),/does NOT assemble, upload or publish APKs/i);
+ assert.match(read('android-pilot/README.md'),/does NOT assemble, upload or\s+publish APKs/i);
  assert.match(build,/bazaar\s*\{/);
  assert.match(build,/myket\s*\{/);
  assert.match(build,/ir\.myket:billing:2\.2/);
