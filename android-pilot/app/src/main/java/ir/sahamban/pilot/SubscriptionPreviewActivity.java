@@ -75,7 +75,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             + "مبلغ نهایی: " + rial(priceForDays(selectedDays)) + " ریال\n"
             + "مسیر تشخیص‌داده‌شده این نصب: " + distribution.displayName()
             + "\n" + status
-            + "\n\nحالت تمدید پیش‌فرض: دستی؛ تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است."
+            + "\n\nحالت تمدید: خودکار؛ کاربر می‌تواند هر زمان از تنظیمات اشتراک فروشگاه آن را لغو کند. لغو، دسترسی تا پایان دوره پرداخت‌شده را قطع نمی‌کند."
             + "\nپرداخت واقعی در این نسخه آزمایشی غیرفعال است."
             + "\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
     }
@@ -113,7 +113,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         content.addView(details);
         storeStatus = text("در حال اتصال به سرویس پرداخت فروشگاه…", 14f, Color.rgb(12, 37, 64));
         content.addView(storeStatus);
-        Button payment = choice("پرداخت تا اتصال تأیید سرور غیرفعال است");
+        Button payment = choice("پرداخت پس از تکمیل اتصال سرور فعال می‌شود");
         payment.setEnabled(false);
         content.addView(payment);
         Button back = choice("بازگشت به سهمینو");
@@ -127,7 +127,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             @Override public void onConnected() {
                 runOnUiThread(() -> {
                     storeConnected = true;
-                    storeStatus.setText("اتصال سرویس فروشگاه برقرار شد؛ تأیید سرور و شناسه محصولات هنوز تنظیم نشده است.");
+                    storeStatus.setText("اتصال SDK فروشگاه برقرار شد؛ شناسه محصولات و تأیید سروری هنوز تکمیل نشده‌اند.");
                 });
             }
             @Override public void onFailure(String reason) {
