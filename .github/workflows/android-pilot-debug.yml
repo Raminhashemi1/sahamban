@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MANAGER=android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoStoreBillingManager.java
+          MANAGER=android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoStoreBillingManager.java
           grep -q 'helper.launchPurchaseFlow(activity, plan.productId' "$MANAGER"
           ! grep -q 'launchSubscriptionPurchaseFlow' "$MANAGER"
           grep -q 'SahminoPurchaseEvidence.from(purchase)' "$MANAGER"
@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/sahmino-evidence-check
-          javac -d /tmp/sahmino-evidence-check android-pilot/tests/fakes/ir/myket/billingclient/util/Purchase.java android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoPurchaseEvidence.java android-pilot/tests/SahminoPurchaseEvidenceTest.java
+          javac -d /tmp/sahmino-evidence-check android-pilot/tests/fakes/ir/myket/billingclient/util/Purchase.java android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoPurchaseEvidence.java android-pilot/tests/SahminoPurchaseEvidenceTest.java
           java -cp /tmp/sahmino-evidence-check ir.sahamban.pilot.SahminoPurchaseEvidenceTest
       - name: Verify IRR-only store price matching
         shell: bash

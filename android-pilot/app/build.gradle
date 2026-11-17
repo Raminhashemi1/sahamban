@@ -81,6 +81,6 @@ android {
 
 dependencies {
     // Each store SDK is isolated to its own install flavor.
-    myketImplementation 'ir.myket:billing:2.2'
+    myketImplementation 'com.github.myketstore:myket-billing-client:1.0.0'
     bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
 }
