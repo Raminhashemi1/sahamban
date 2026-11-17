@@ -157,7 +157,7 @@ function createD1SmsOtpRepository(db, { sessionTtlSeconds = 30 * 24 * 60 * 60, c
   }
 
   function clearSessionCookie() {
-    return 'sahmino_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
+    return 'sahmino_session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0';
   }
 
   async function createSharedSession({ userId, authenticatedAt }) {
@@ -170,7 +170,7 @@ function createD1SmsOtpRepository(db, { sessionTtlSeconds = 30 * 24 * 60 * 60, c
       SELECT ?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM sahamban_users WHERE id=? AND status='ACTIVE')
     `).bind(sessionId, userId, tokenHash, authenticatedAt, expiresAt, authenticatedAt, userId).run();
     if (result.meta?.changes !== 1) return null;
-    return { cookie: 'sahmino_session=' + bearer + '; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=' + sessionTtlSeconds };
+    return { cookie: 'sahmino_session=' + bearer + '; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=' + sessionTtlSeconds };
   }
 
   return Object.freeze({
