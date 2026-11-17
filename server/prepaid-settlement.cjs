@@ -34,7 +34,7 @@ ON CONFLICT(user_id) DO UPDATE SET paid_until=excluded.paid_until,updated_at=exc
 async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}){
  if(!receipt||typeof receipt!=='object'||typeof verifyAtProvider!=='function')return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  let verified=false;try{verified=await verifyAtProvider(receipt);}catch(_){verified=false;}
- if(verified!==true)return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
+ if(!verified||typeof verified!=='object'||Array.isArray(verified))return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency}=verified;
  if(![providerName,providerEventId,providerPaymentId].every(x=>typeof x==='string'&&ID.test(x))||
   typeof orderId!=='string'||!ORDER.test(orderId)||currency!=='IRR'||!Number.isSafeInteger(amountRial)||!validUTC(now))
