@@ -96,7 +96,7 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
  };}};}};
  const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
   method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
-  body:JSON.stringify({planId:'SAHAMBAN_PRO_60D'})
+  body:JSON.stringify({planId:'SAHMINO_PRO_60D'})
  }),{...env(storage),PREPAID_ORDERS_ENABLED:'true'});
  assert.equal(response.status,201);
  const body=await response.json();
@@ -104,7 +104,7 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
  assert.equal(body.checkoutEnabled,false);
  assert.equal(body.proEnabled,false);
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
- assert.deepEqual(calls[0].values.slice(1,3),['SAHAMBAN_PRO_60D',2850000]);
+ assert.deepEqual(calls[0].values.slice(1,3),['SAHMINO_PRO_60D',2850000]);
  assert.match(calls[0].values[3],/^\d{4}-\d{2}-\d{2}T/);
  assert.equal(calls[0].values[4],subject);
  assert.match(calls[0].sql,/u\.auth_subject=\?/);
