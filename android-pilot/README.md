@@ -1,104 +1,58 @@
-# Sahamban Android pilot wrapper — install test only
+# سهمینو — Android pre-release billing integration
 
-This module creates a **debug APK** containing a minimal Android WebView shell
-for the existing public GitHub Pages PWA:
-https://raminhashemi1.github.io/sahamban/
+This module is a development wrapper for the Sahmino Android app. It is NOT a public release and must not be uploaded as a production APK.
 
-## Strict scope
+## Current verified scope
+- Separate Android flavors: `bazaar` and `myket`.
+- Cafe Bazaar adapter uses Poolakey 2.2.0 `subscribeProduct`.
+- Myket adapter uses Billing 2.2 `launchSubscriptionPurchaseFlow`.
+- The adapters return raw purchase evidence only. The app must send it to an authenticated backend; an SDK success callback must never grant Pro access.
+- The subscription preview displays the five approved plans and IRR prices:
+  - 30 days: 1,500,000 IRR
+  - 60 days: 2,850,000 IRR
+  - 90 days: 4,050,000 IRR
+  - 180 days: 7,650,000 IRR
+  - 365 days: 14,600,000 IRR
+- Auto-renewal is intended to be enabled by default; the user must be able to cancel renewal through the marketplace while retaining access through the paid period.
+- Android Debug builds for both flavors succeeded in workflow run 44034290249 at commit `f2fca7ca147c8baa76a33cb6308ef9daf647ea66`.
 
-- This is **not** a signed production release for Myket or Cafe Bazaar.
-  The temporary `ir.sahamban.pilot` package ID and build-generated debug
-  certificate must **not** become the final app identity/signing key.
-- A **test-only subscription navigation preview** is available from the top of the debug Android shell. It displays the five approved Sahmino plans (30/60/90/180/365 days) and their final rial prices (1,500,000 / 2,850,000 / 4,050,000 / 7,650,000 / 14,600,000), with **one universal APK and no customer payment gateway selector**. Manual renewal is the default; automatic renewal is not shown as available until the selected provider is integrated and verified. Android installer metadata is consulted to choose at most one market-specific UI path (CafeBazaar or Myket). When installed by direct download, an unknown installer or conflicting installer data, the payment path is disabled. The website channel cannot be automatically established from a sideloaded APK; browser/PWA web checkout will require its own origin-bound implementation. The payment action remains disabled in ALL installs. It does NOT ship payment SDKs or enable checkout, Pro subscriptions, account registration, or payment verification.
-- This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
-  to WebView. Existing users MUST export their backup in the original PWA first,
-  and carefully test an import with synthetic data. Do not uninstall the old
-  PWA or wipe its data.
-- WebView file imports use Android's system file picker. **Backup export
-  and downloads are NOT yet verified in WebView** (blob: download links may
-  not work). Test both directions before considering any real user's portfolio.
-- It relies on HTTPS to load the current public web app, not an embedded offline
-  bundle. Service-worker/offline handling and slow networks require physical
-  device validation. No injected native JavaScript interface is used.
-- Only HTTPS `raminhashemi1.github.io/sahamban/` navigation remains inside
-  the app. Other HTTPS links go to an external browser; non-HTTPS and
-  special-scheme navigation is blocked.
-- Internet is the only declared Android permission; WebView file/content
-  access and cleartext HTTP are explicitly disabled; automatic Android backup
-  of app data is disabled.
-- A user-approved package ID, actual release signing key handled only in a
-  secure owner-controlled build environment, genuine asset/icon and screenshots,
-  store policy compliance, private data handling, and physical Android
-  acceptance are still prerequisites for release.
+## Explicitly NOT complete
+- The purchase button is disabled. `SubscriptionPreviewActivity` does not call `MarketplaceBillingClient.subscribe`.
+- No end-to-end authenticated Android-to-Worker account/session handoff exists.
+- Worker has no provider receipt-verification endpoint. Its health response states payments and checkout are disabled.
+- Prepaid order creation returns `checkoutEnabled:false`; it only creates a pending record and is not a checkout.
+- The D1 settlement primitive is not a provider verifier. Never pass client-supplied verification flags to it.
+- No provider-specific renewal, cancellation, refund, expiry, restore or subscription-status reconciliation endpoint exists.
+- No confirmed SKU mapping exists for the five plans in either publisher account.
+- No confirmed draft listing/package ID exists in either publisher account.
+- No publisher-authorized sandbox account or end-to-end test evidence is recorded.
+- Current `applicationId` is temporary `ir.sahamban.pilot`; it is not approved for release.
+- No production release signing configuration, production deployment, migration, or marketplace submission has been performed.
 
-## How to build a test APK
+## Before any release
+1. Owner creates/opens a **draft, unpublished** app record in both publisher consoles and confirms the package ID. Public release is not required for development.
+2. Confirm both stores support the requested five auto-renewing subscription durations and create their draft/test subscription SKUs.
+3. Supply Bazaar developer API credentials and Myket verification public key/API contract via secure Worker secrets (never Git).
+4. Implement provider-specific server verification, binding provider token/SKU/package/order to the authenticated user and exact plan.
+5. Persist authoritative provider subscription ID, current period expiry, auto-renew status and cancellation state. Reconcile renewals, cancellation, refunds and chargebacks idempotently.
+6. Implement a real commercial authentication/session handoff between app and Worker; the current pilot HMAC identity is not sufficient for launch.
+7. Wire purchase, restore, manage/cancel subscription and entitlement refresh to the authenticated API. Fail closed when provider verification is unavailable.
+8. Add tests for replay, wrong user, wrong SKU/package, invalid signature, expired/cancelled/refunded subscription, renewals and concurrent callbacks.
+9. Run physical-device sandbox purchases, renewals, cancellations and restore tests separately for Bazaar and Myket.
+10. Configure final application ID, release signing, privacy disclosures and marketplace compliance; only then prepare public release.
 
-GitHub Actions workflow `Sahamban Android pilot debug APK` builds **one universal debug APK**. One build may be uploaded to supported stores after package identity, signing and policy eligibility review, but real payment is not automatically enabled by the installer string. `PackageManager.getInstallSourceInfo` exposes mutable/nullable installation metadata (Android 11+), so the routing is strictly a UI diagnostic. Trusted provider verification, account binding, durable purchases and merchant approval are separate release gates. No real store SDK or checkout exists in this pilot. The workflow uses Java 17,
-Android SDK 35, Gradle 8.11.1 and Android Gradle Plugin 8.9.2 to build
-`app-debug.apk` in CI. It uploads a **debug artifact**, not a marketplace
-release. No key files or signing passwords are stored in the repository.
-
-For local development with an installed Android SDK:
-
-```sh
-gradle -p android-pilot :app:assembleDebug
-```
-
-Run pure Java navigation checks:
-
-```sh
-mkdir -p /tmp/sahamban-java-tests
-javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java   android-pilot/tests/TrustedNavigationTest.java
-java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
-```
-
-## Acceptance still required
-
-Physical Android device: PWA loading, RTL, basic navigation, browser
-handoff, permissions, synthetic 20/100-holding portfolio import and export,
-offline/slow network, cold/warm start, font scaling, TalkBack, and secure
-update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach.
-Trusted Web Activity (TWA) additionally requires domain-root
-`/.well-known/assetlinks.json` associated with the final **real** APK
-signing certificate; a Project Pages path alone cannot satisfy it.
-
-## Separate Cafe Bazaar and Myket build variants
-
-The Android pilot now defines two store-specific debug variants:
-
-- `bazaarDebug`: includes Cafe Bazaar Poolakey SDK 2.3.0 only.
-- `myketDebug`: includes Myket Billing SDK 2.2 only.
-
-The unflavoured `debug` APK is not a store deliverable. Do not upload either debug APK to a marketplace.
-
-Build both diagnostic variants locally:
+## Build diagnostic APKs
+Use GitHub Actions workflow `Sahamban Android pilot debug APK`, or locally:
 
 ```bash
 gradle -p android-pilot :app:assembleBazaarDebug :app:assembleMyketDebug
 ```
 
-The build accepts optional local Gradle properties `BAZAAR_PUBLIC_KEY` and
-`MYKET_PUBLIC_KEY`. Do not commit publisher keys or put them in source control.
-An empty key intentionally leaves the payment SDK unconfigured; the current
-subscription UI remains preview-only and no purchase is started.
+Optional local properties/environment variables:
+- `BAZAAR_PUBLIC_KEY`
+- `MYKET_PUBLIC_KEY`
 
-**Release blockers still open:**
+Do not commit keys, tokens, credentials or signing files. Debug artifacts are for development only and are not release candidates.
 
-1. The current `applicationId` is the temporary `ir.sahamban.pilot`. Obtain
-   the exact package ID already registered for the published Sahmino app from
-   the owner's Bazaar and Myket publisher panels before changing it.
-2. Confirm the same package ID is accepted by both store listings and confirm
-   each store's five product IDs in its own publisher panel.
-3. Obtain each store's public RSA verification key. Keep keys in local Gradle
-   properties or CI secrets; do not commit them.
-4. Implement the native purchase adapters and authenticated account handoff.
-   The current WebView deliberately has no JavaScript bridge, and the Worker
-   pilot token is not a commercial login system.
-5. Add provider-specific server verification, refund/revocation reconciliation,
-   and consume only after a successful atomic entitlement grant.
-6. Test with each store installed and a publisher-authorized test account.
-
-No payment flow is enabled by this build setup alone. The server-side order
-feature remains disabled and all real purchase buttons remain unavailable until
-the above gates and sandbox tests pass.
+## Current project gates
+PR #186 remains open and Draft. Do not merge it, deploy production, enable checkout, or publish Sahmino until both store integrations pass all release gates above.
