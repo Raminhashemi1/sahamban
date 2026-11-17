@@ -40,7 +40,14 @@ async function createPrepaidOrder(db,{authenticatedSubject,authenticatedUserId,p
   if(result?.meta?.changes!==1)return fail('ACCOUNT_NOT_ELIGIBLE',403);
   return {status:201,reason:'PENDING_ORDER_CREATED',order:{id,planId,
    amountRial:selected.priceRial,currency:'IRR',createdAt:now},checkoutEnabled:false,proEnabled:false};
- }catch(_){return fail('ORDER_UNAVAILABLE',503);}
+ }catch(_){
+  // A concurrent request may have won the one-pending-order-per-user index.
+  // Return that server-owned order instead of surfacing a false failure or creating a second one.
+  const existing=await findPrepaidPendingOrder(db,authenticatedSubject,byUser?authenticatedUserId:undefined);
+  if(existing.pending===true)return {status:200,reason:'EXISTING_PENDING_ORDER',order:existing.order,
+   checkoutEnabled:false,proEnabled:false};
+  return fail('ORDER_UNAVAILABLE',503);
+ }
 }
 async function findPrepaidPendingOrder(db,authenticatedSubject,authenticatedUserId){
  const byUser=typeof authenticatedUserId==='string'&&/^usr_[a-f0-9]{32}$/.test(authenticatedUserId);
