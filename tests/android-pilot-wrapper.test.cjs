@@ -30,7 +30,7 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(wf,/upload-artifact/);
  assert.ok(build.includes("bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'"));
  assert.ok(build.includes("myketImplementation 'ir.myket:billing:2.2'"));
- assert.match(build,/applicationId 'ir\\.sahamban\\.pilot'/);
+ assert.ok(build.includes("applicationId 'ir.sahamban.pilot'"));
  assert.match(build,/BAZAAR_PUBLIC_KEY/);
  assert.match(build,/MYKET_PUBLIC_KEY/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
