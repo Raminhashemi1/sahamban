@@ -28,8 +28,8 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(wf,/assembleMyketDebug/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease/);
  assert.match(wf,/upload-artifact/);
- assert.match(build,/bazaarImplementation 'com\\.github\\.cafebazaar\\.Poolakey:poolakey:2\\.3\\.0'/);
- assert.match(build,/myketImplementation 'ir\\.myket:billing:2\\.2'/);
+ assert.ok(build.includes("bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'"));
+ assert.ok(build.includes("myketImplementation 'ir.myket:billing:2.2'"));
  assert.match(build,/applicationId 'ir\\.sahamban\\.pilot'/);
  assert.match(build,/BAZAAR_PUBLIC_KEY/);
  assert.match(build,/MYKET_PUBLIC_KEY/);
