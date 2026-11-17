@@ -48,7 +48,7 @@ async function otpVerifier({ phoneE164, challengeId, code, secret }) {
   const key = await crypto.subtle.importKey(
     'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
-  const payload = encoder.encode(phoneE164 + '\\n' + challengeId + '\\n' + code);
+  const payload = encoder.encode(phoneE164 + '\n' + challengeId + '\n' + code);
   const signature = await crypto.subtle.sign('HMAC', key, payload);
   return Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, '0')).join('');
 }
