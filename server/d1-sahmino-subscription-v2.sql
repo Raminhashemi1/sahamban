@@ -27,7 +27,13 @@ CREATE TABLE IF NOT EXISTS sahmino_prepaid_subscription_orders (
   UNIQUE(id,user_id,plan_id,amount_rial,currency)
 );
 
-CREATE TABLE IF NOT EXISTS sahmino_prepaid_payment_events (
+
+CREATE TABLE IF NOT EXISTS sahmino_prepaid_subscription_entitlements (
+  user_id TEXT PRIMARY KEY REFERENCES sahamban_users(id),
+  paid_until TEXT,
+  updated_at TEXT NOT NULL
+);
+\nCREATE TABLE IF NOT EXISTS sahmino_prepaid_payment_events (
   provider_name TEXT NOT NULL,
   provider_event_id TEXT NOT NULL,
   provider_payment_id TEXT NOT NULL,
