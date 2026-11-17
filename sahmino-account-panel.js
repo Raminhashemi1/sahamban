@@ -53,9 +53,15 @@ $('sahminoCreatePendingOrder').addEventListener('click',async()=>{
  try{
   const selected=document.querySelector('input[name="sahminoPlanDays"]:checked');
   if(!selected||!planIds[selected.value])throw Error('یک طرح معتبر انتخاب کنید.');
-  const payment=await call('/api/v1/me/prepaid-checkout',{method:'POST',headers:{'X-Sahmino-CSRF':'1'},body:JSON.stringify({planId:planIds[selected.value]})});
-  if(typeof payment.checkoutUrl!=='string'||!payment.checkoutUrl.startsWith('https://'))throw Error('نشانی پرداخت معتبر نیست.');
-  message('در حال انتقال امن به درگاه زرین‌پال…');window.location.assign(payment.checkoutUrl);
+  const existing=await call('/api/v1/me/prepaid-orders');
+  if(existing.pending&&existing.order){
+   message('برای شما یک سفارش در انتظار وجود دارد: '+toman(existing.order.amountRial)+' — شناسه: '+existing.order.id+'. هنوز پرداختی انجام نشده است.');
+   return;
+  }
+  const created=await call('/api/v1/me/prepaid-orders',{method:'POST',headers:{'X-Sahmino-CSRF':'1'},body:JSON.stringify({planId:planIds[selected.value]})});
+  if(created.reason!=='PENDING_ORDER_CREATED'||!created.order||typeof created.order.id!=='string')throw Error('سفارش معلق از سرور تأیید نشد.');
+  await refresh();
+  message('درخواست سفارش '+toman(created.order.amountRial)+' با شناسه '+created.order.id+' ثبت شد. این سفارش پرداخت نیست و تا تأیید پرداخت، اشتراکی فعال نمی‌شود.');
  }catch(e){message(e.message);}
 });
 refresh();
