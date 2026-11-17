@@ -61,7 +61,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
             listener.onFailure("PRODUCT_OR_SERVER_ORDER_MISSING");
             return;
         }
-        // These are non-renewing prepaid in-app products, not store subscriptions.
+        // Store-managed recurring subscription. The store owns renewal and cancellation.
         payment.subscribeProduct(activity.getActivityResultRegistry(),
             new PurchaseRequest(productId, serverOrderPayload, null), callback -> {
                 callback.purchaseSucceed(info -> {
