@@ -12,7 +12,7 @@ android {
     defaultConfig {
         // Temporary pilot identity; final package ID must be owner-approved
         // and registered in BOTH store consoles before release signing.
-        applicationId 'ir.sahamban.pilot'
+        applicationId 'ir.manahesab.sahmino'
         minSdk 26
         targetSdk 35
         versionCode 4
