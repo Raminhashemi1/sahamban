@@ -25,5 +25,31 @@
 3. اعلام اینکه حساب زرین‌پال و دامنه/سایت معرفی‌شده برای فعالیت سهمینو تأیید شده‌اند.
 4. پس از آماده‌شدن Worker خصوصی، Merchant ID را فقط با secret binding امن در محیط sandbox ثبت کنید.
 
-## گام بعدی توسعه
-اتصال مسیر احراز هویت‌شده ایجاد checkout، callback سروری، بازیابی نتیجه verify، settlement اتمیک، و سپس تست sandbox. تا قبل از آن نه پول واقعی دریافت می‌شود و نه اشتراک فعال می‌گردد.
+## اتصال ثبت‌شده در شاخه توسعه
+- `POST /api/v1/me/prepaid-checkout`: فقط با نشست OTP معتبر، Origin مجاز و CSRF token سفارش را با مبلغ سرور می‌سازد و درخواست زرین‌پال می‌فرستد.
+- `GET /api/v1/payments/zarinpal/callback`: authority را فقط از جدول intent می‌خواند، مبلغ و پلن را از سفارش D1 می‌گیرد، verify سرور به سرور را انجام می‌دهد و فقط کد 100 را به settlement می‌دهد.
+- Settlement به جدول‌های v2 سهمینو متصل است و اعتبار را با اضافه‌کردن روزهای پلن به بیشینه تاریخ فعلی/امروز به‌روزرسانی می‌کند.
+- callback صرفاً redirect کاربر نیست؛ redirect بدون verify هرگز اشتراک را فعال نمی‌کند.
+- خطای ایجاد درخواست یا انصراف از پرداخت، سفارش معلق را لغو می‌کند.
+- رابط پنل اکنون دکمه سفارش را به مسیر checkout متصل می‌کند.
+
+## متغیرهای محیطی لازم در Worker خصوصی
+- `ZARINPAL_ENABLED=false` تا پایان تست Sandbox
+- `ZARINPAL_SANDBOX=true` برای endpointهای sandbox؛ در محیط production فقط پس از تأیید پذیرنده false شود
+- `ZARINPAL_MERCHANT_ID` فقط با secret binding
+- `ZARINPAL_CALLBACK_URL` نشانی HTTPS دقیق Worker برای callback
+- `PREPAID_ORDERS_ENABLED=false` تا اجرای migration و تست D1
+- `SAHMINO_OTP_ENABLED=true` و bindingهای OTP فقط در محیط تست خصوصی
+- `PWA_ORIGIN` دقیقاً `https://raminhashemi1.github.io`
+
+نمونه تنظیم secret (پس از ساخت Worker و فقط در محیط خصوصی):
+`npx wrangler secret put ZARINPAL_MERCHANT_ID`
+
+## گام‌های باقی‌مانده برای تست Sandbox
+1. Provision کردن Worker خصوصی و D1 آزمایشی و اعمال `server/d1-sahmino-subscription-v2.sql`.
+2. افزودن Merchant ID آزمایشی با secret binding و تنظیم callback URL.
+3. اجرای CI و رفع هر خطا.
+4. ورود OTP، ایجاد سفارش پنج پلن، انتقال به Sandbox، callback، verify و کنترل افزایش دقیق روزهای اعتبار.
+5. تست callback تکراری، callback جعلی، مبلغ نامنطبق، پرداخت لغوشده و اختلال شبکه.
+
+تا پایان این مراحل checkout باید خاموش بماند؛ در حال حاضر هیچ پذیرنده یا Merchant ID به مخزن متصل نشده است.
