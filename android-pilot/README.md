@@ -9,7 +9,7 @@ separate debug APK for each store:
 The two artifacts are for integration testing only. They are not release builds
 and do not process purchases or grant Pro access yet.
 
-## Existing work preserved
+## Application identity\n\nThe owner approved the permanent Android application ID `ir.manahesab.sahmino`.\nThe Gradle `applicationId` is set to this value. The Android source namespace\nremains `ir.sahamban.pilot` intentionally; it is an internal Java/BuildConfig\nnamespace and does not change the installed package ID. Register this exact\napplication ID in both CafeBazaar and Myket before uploading any APK. Do not\ncreate separate package IDs per store.\n\n## Existing work preserved
 
 - Existing PWA and five-plan preview remain in place.
 - Approved prices remain 150,000 / 285,000 / 405,000 / 765,000 /
