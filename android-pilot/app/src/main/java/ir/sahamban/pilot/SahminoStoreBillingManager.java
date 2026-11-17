@@ -136,15 +136,12 @@ public final class SahminoStoreBillingManager {
             refreshInventory();
             return;
         }
-        if (!helper.subscriptionsSupported()) {
-            status("این فروشگاه در دستگاه فعلی از خرید اشتراک پشتیبانی نمی‌کند.");
-            return;
-        }
+        // Sahmino sells a one-time consumable access pass, not a recurring store subscription.
         busy = true;
         String payload = newPayload();
         status("در حال بازکردن صفحه خرید اشتراک فروشگاه…");
         try {
-            helper.launchSubscriptionPurchaseFlow(activity, plan.productId, (result, purchase) -> onMain(() -> {
+            helper.launchPurchaseFlow(activity, plan.productId, (result, purchase) -> onMain(() -> {
                 if (destroyed) return;
                 busy = false;
                 if (result != null && result.isSuccess() && purchase != null
