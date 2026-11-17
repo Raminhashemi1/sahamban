@@ -13,7 +13,7 @@ if(configuredApi){
 }
 let challengeId=null;
 const planIds={'30':'SAHMINO_PRO_30D','60':'SAHMINO_PRO_60D','90':'SAHMINO_PRO_90D','180':'SAHMINO_PRO_180D','365':'SAHMINO_PRO_365D'};
-const rial=n=>new Intl.NumberFormat('fa-IR').format(n)+' ریال';
+const toman=n=>new Intl.NumberFormat('fa-IR').format(Math.round(n/10))+' تومان';
 const date=s=>{if(!s)return '—';const d=new Date(s);return Number.isNaN(d.getTime())?'نامشخص':d.toLocaleString('fa-IR');};
 function message(s){$('sahminoAccountMessage').textContent=s;}
 async function call(path,options={}){
@@ -37,7 +37,7 @@ async function refresh(){
   const list=$('sahminoOrderHistory');list.replaceChildren();
   for(const order of (Array.isArray(data.orders)?data.orders:[])){
    const li=document.createElement('li');
-   li.textContent=order.planId+' | '+rial(order.amountRial)+' | '+({PENDING:'در انتظار پرداخت',SETTLED:'پرداخت تأییدشده',CANCELLED:'لغوشده',EXPIRED:'منقضی',REVIEW_REQUIRED:'نیازمند بررسی'}[order.state]||order.state)+' | '+date(order.createdAt)+' | شناسه: '+order.orderId;
+   li.textContent=order.planId+' | '+toman(order.amountRial)+' | '+({PENDING:'در انتظار پرداخت',SETTLED:'پرداخت تأییدشده',CANCELLED:'لغوشده',EXPIRED:'منقضی',REVIEW_REQUIRED:'نیازمند بررسی'}[order.state]||order.state)+' | '+date(order.createdAt)+' | شناسه: '+order.orderId;
    list.appendChild(li);
   }
   if(!list.children.length){const li=document.createElement('li');li.textContent='هنوز سفارشی ثبت نشده است.';list.appendChild(li);}
@@ -63,13 +63,13 @@ $('sahminoCreatePendingOrder').addEventListener('click',async()=>{
   if(!selected||!planIds[selected.value])throw Error('یک طرح معتبر انتخاب کنید.');
   const existing=await call('/api/v1/me/prepaid-orders');
   if(existing.pending&&existing.order){
-   message('برای شما یک سفارش در انتظار وجود دارد: '+rial(existing.order.amountRial)+' — شناسه: '+existing.order.id+'. هنوز پرداختی انجام نشده است.');
+   message('برای شما یک سفارش در انتظار وجود دارد: '+toman(existing.order.amountRial)+' — شناسه: '+existing.order.id+'. هنوز پرداختی انجام نشده است.');
    return;
   }
   const created=await call('/api/v1/me/prepaid-orders',{method:'POST',headers:{'X-Sahmino-CSRF':'1'},body:JSON.stringify({planId:planIds[selected.value]})});
   if(created.reason!=='PENDING_ORDER_CREATED'||!created.order||typeof created.order.id!=='string')throw Error('سفارش معلق از سرور تأیید نشد.');
   await refresh();
-  message('درخواست سفارش '+rial(created.order.amountRial)+' با شناسه '+created.order.id+' ثبت شد. این سفارش پرداخت نیست و تا تأیید پرداخت، اشتراکی فعال نمی‌شود.');
+  message('درخواست سفارش '+toman(created.order.amountRial)+' با شناسه '+created.order.id+' ثبت شد. این سفارش پرداخت نیست و تا تأیید پرداخت، اشتراکی فعال نمی‌شود.');
  }catch(e){message(e.message);}
 });
 refresh();

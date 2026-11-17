@@ -125,3 +125,12 @@ The source workflow is now prepared to add the five-plan D1 schema safely on the
 5. Explicitly authorize promotion of PR #185 from Draft and merge to `main` only when ready. The pilot deploy workflow is main-only and manual; no merge or deploy is implied by this report.
 
 Until these approvals and acceptance checks are complete, keep public OTP/order flags off, payments off, auto-renew off, and do not claim production readiness.
+
+
+## Progress update — rial consistency in account panel
+
+- A direct source review found that the account panel history/status messages divided server-owned IRR amounts by 10 and displayed toman, contrary to the owner's explicit all-layers-rial decision.
+- Replaced the account-panel formatter with direct rial formatting; no conversion is performed.
+- Added regression assertions covering order history, existing pending-order notices, newly created order notices, and absence of toman conversion.
+- Commit: `34d2567c64acee6e8a1b395288167d03ff9a1b03`.
+- CI for this commit must pass before treating this correction as verified.
