@@ -19,7 +19,8 @@ const SELECT_PENDING_SQL=[
  'JOIN sahamban_users u ON u.id=o.user_id',
  "WHERE u.auth_subject=? AND u.status='ACTIVE' AND o.state='PENDING'",
  'LIMIT 1'
-].join(' ');
+] .join(' ');
+const SELECT_PENDING_USER_SQL=SELECT_PENDING_SQL.replace('u.auth_subject=?','u.id=?');
 function validNow(now){
  if(typeof now!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(now))return false;
  const n=Date.parse(now);return Number.isFinite(n)&&new Date(n).toISOString()===now;
