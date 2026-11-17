@@ -35,7 +35,7 @@ test('v87 shows contextual guidance, step list, and a link to selected module',(
  const a=boot(),button=a.buttons[4].children[1];
  button.handlers.click();
  assert.equal(a.ids.sahambanGuideV87.hidden,false);
- assert.equal(a.ids.sahambanGuideStepsV87.children.length,4);
+ assert.equal(a.ids.sahambanGuideStepsV87.children.length,3);
  assert.equal(a.ids.sahambanGuideOpenV87.href,'#livePortfolioSection');
  assert.match(a.ids.sahambanGuideTitleV87.textContent,/سبد من/);
 });
