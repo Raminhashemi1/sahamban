@@ -30,7 +30,9 @@ jobs:
           node-version: '22'
       - name: Test private pilot security rules
         run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs
-      - name: Verify Myket and CafeBazaar receipt adapters (synthetic keys and mocked API only)\n        run: node --test tests/marketplace-receipt-verifier.test.mjs\n      - name: Install pinned Wrangler CLI for offline build
+      - name: Verify Myket and CafeBazaar receipt adapters (synthetic keys and mocked API only)
+        run: node --test tests/marketplace-receipt-verifier.test.mjs
+      - name: Install pinned Wrangler CLI for offline build
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
         run: npx wrangler deploy --dry-run --config server/wrangler.local.toml --outdir /tmp/sahamban-worker-bundle
