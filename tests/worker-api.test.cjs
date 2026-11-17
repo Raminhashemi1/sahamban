@@ -149,3 +149,40 @@ test('prepaid overview route is disabled by default, private and read only',asyn
  assert.equal(info.orders.length,1);
  assert.equal(info.orders[0].amountRial,4500000);
 });
+
+test('OTP Worker routes remain disabled by default and reject untrusted origins',async()=>{
+ const worker=(await api()).default;
+ const request=new Request('https://worker.example/api/v1/auth/otp/request',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ });
+ const disabled=await worker.fetch(request,env());
+ assert.equal(disabled.status,404);
+ assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
+ const hostile=await worker.fetch(new Request('https://worker.example/api/v1/auth/otp/request',{
+  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ }),{...env(),SAHMINO_OTP_ENABLED:'true'});
+ assert.equal(hostile.status,403);
+});
+
+test('OTP route preflight permits only configured origin and required JSON/CSRF headers',async()=>{
+ const worker=(await api()).default;
+ const response=await worker.fetch(new Request('https://worker.example/api/v1/auth/logout',{
+  method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Headers':'content-type,x-sahmino-csrf'}
+ }),env());
+ assert.equal(response.status,204);
+ assert.match(response.headers.get('Access-Control-Allow-Headers'),/Content-Type/);
+ assert.match(response.headers.get('Access-Control-Allow-Headers'),/X-Sahmino-CSRF/);
+ const hostile=await worker.fetch(new Request('https://worker.example/api/v1/auth/logout',{
+  method:'OPTIONS',headers:{Origin:'https://evil.example'}
+ }),env());
+ assert.equal(hostile.status,403);
+});
+
+test('OTP routes fail closed when enabled without D1 or dedicated secrets',async()=>{
+ const worker=(await api()).default;
+ const response=await worker.fetch(new Request('https://worker.example/api/v1/auth/session',{
+  headers:{Origin:origin}
+ }),{...env(),SAHMINO_OTP_ENABLED:'true',SAHAMBAN_DB:undefined});
+ assert.equal(response.status,503);
+ assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
+});
