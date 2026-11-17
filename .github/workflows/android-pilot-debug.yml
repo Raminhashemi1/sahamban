@@ -1,10 +1,11 @@
-name: Sahmino CafeBazaar and Myket debug variants
-# Build separate store-specific debug APKs; never publish debug artifacts.
+name: Sahmino Bazaar and Myket integration validation
+# Compile-check store variants only. Do not assemble or upload APKs before release readiness.
 on:
   workflow_dispatch:
   push:
     paths:
       - 'android-pilot/**'
+      - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
 permissions:
   contents: read
@@ -44,15 +45,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Build TEST-ONLY debug APK without owner signing credentials
-        run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug :app:assembleMyketDebug
-      - name: Print reproducibility digest (never a private certificate)
-        run: sha256sum android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sahmino-market-debug-apks-NOT-FOR-STORE
-          path: |
-            android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
-            android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
-          if-no-files-found: error
-          retention-days: 7
+      - name: Compile-check both store variants (no APKs or artifacts)
+        run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac :app:compileMyketDebugJavaWithJavac
