@@ -10,6 +10,7 @@ def myketPublicKey = providers.gradleProperty('MYKET_PUBLIC_KEY')
 android {
     namespace 'ir.sahamban.pilot'
     compileSdk 35
+    buildFeatures { buildConfig true }
 
     defaultConfig {
         // Temporary test-only identifier. Owner must approve final package ID.
