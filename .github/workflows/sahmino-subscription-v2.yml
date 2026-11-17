@@ -31,6 +31,7 @@ jobs:
           node --check server/prepaid-account-overview.cjs
           node --check server/sms-otp-core.cjs
           node --check server/sms-otp-service.cjs
+          node --check server/d1-sms-otp-repository.cjs
       - name: Run subscription unit and authenticated Worker API tests
         run: >
           node --test
@@ -44,6 +45,8 @@ jobs:
           tests/sahmino-sms-otp-service.test.cjs
       - name: Run provider-neutral SMS OTP migration constraints
         run: python tests/d1-sahmino-sms-otp-migration.test.py
+      - name: Run D1 SMS OTP runtime repository schema and atomicity tests
+        run: python tests/d1-sahmino-sms-otp-runtime.test.py
       - name: Run legacy and additive v2 D1 migration constraints
         run: python tests/d1-prepaid-migration.test.py
       - name: Run standalone five-plan v2 schema regression tests
