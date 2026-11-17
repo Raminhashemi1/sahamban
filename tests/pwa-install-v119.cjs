@@ -119,7 +119,7 @@ async function main(){
    const keys=await caches.keys();
    const cache=await caches.match('./install.html');
    return {controlled:!!navigator.serviceWorker.controller,cached:!!cache,
-    cacheKeys:keys.filter(k=>k.startsWith('sahmino-static-'))};
+    cacheKeys:keys.filter(k=>k.startsWith('sahamban-static-'))};
   });
   assert.equal(installed.controlled,true);
   assert.equal(installed.cached,true);
