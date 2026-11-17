@@ -1,6 +1,6 @@
 package ir.sahamban.pilot;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
@@ -17,7 +17,7 @@ import java.util.Locale;
  * Design-time billing navigation preview ONLY. No billing SDK or payment URLs.
  * Do not infer account status, charge a user, or grant entitlement from this view.
  */
-public final class SubscriptionPreviewActivity extends Activity {
+public final class SubscriptionPreviewActivity extends ComponentActivity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
     private static final int[] PRICES_RIAL = {1500000, 2850000, 4050000, 7650000, 14600000};
     // Detected only from Android installer metadata; no user selector.
@@ -25,6 +25,9 @@ public final class SubscriptionPreviewActivity extends Activity {
     private int selectedDays = DAYS[0];
     private TextView details;
     private LinearLayout planList;
+    private TextView storeStatus;
+    private MarketplaceBillingClient billingClient;
+    private boolean storeConnected = false;
 
     private TextView text(String value, float size, int color) {
         TextView view = new TextView(this);
@@ -108,7 +111,9 @@ public final class SubscriptionPreviewActivity extends Activity {
         details = text("", 15f, Color.rgb(12, 37, 64));
         details.setContentDescription("وضعیت اتصال خودکار پرداخت");
         content.addView(details);
-        Button payment = choice("پرداخت واقعی — غیرفعال");
+        storeStatus = text("در حال اتصال به سرویس پرداخت فروشگاه…", 14f, Color.rgb(12, 37, 64));
+        content.addView(storeStatus);
+        Button payment = choice("پرداخت تا اتصال تأیید سرور غیرفعال است");
         payment.setEnabled(false);
         content.addView(payment);
         Button back = choice("بازگشت به سهمینو");
@@ -117,5 +122,23 @@ public final class SubscriptionPreviewActivity extends Activity {
         scroll.addView(content);
         setContentView(scroll);
         renderChoices();
+        billingClient = new StoreBillingClient();
+        billingClient.connect(this, new MarketplaceBillingClient.ConnectionListener() {
+            @Override public void onConnected() {
+                runOnUiThread(() -> {
+                    storeConnected = true;
+                    storeStatus.setText("اتصال سرویس فروشگاه برقرار شد؛ تأیید سرور و شناسه محصولات هنوز تنظیم نشده است.");
+                });
+            }
+            @Override public void onFailure(String reason) {
+                runOnUiThread(() -> storeStatus.setText("سرویس پرداخت آماده نیست: " + reason));
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (billingClient != null) billingClient.close();
+        super.onDestroy();
     }
 }
