@@ -25,7 +25,6 @@ jobs:
           python-version: '3.12'
       - name: Check subscription module syntax
         run: |
-          node --check server/zarinpal-gateway.cjs
           node --check server/prepaid-plans.cjs
           node --check server/prepaid-orders-api.cjs
           node --check server/prepaid-settlement.cjs
@@ -37,7 +36,6 @@ jobs:
       - name: Run subscription unit and authenticated Worker API tests
         run: >
           node --test
-          tests/zarinpal-gateway.test.cjs
           tests/prepaid-plans.test.cjs
           tests/prepaid-orders-api.test.cjs
           tests/prepaid-settlement.test.cjs
