@@ -24,10 +24,10 @@ const ENTITLEMENT_UPSERT_SQL=`WITH base AS (
  SELECT o.user_id,
   CASE WHEN e.paid_until>? THEN e.paid_until ELSE ? END AS base_date
  FROM sahmino_prepaid_subscription_orders o
- LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=o.user_id
+ LEFT JOIN sahmino_prepaid_subscription_entitlements e ON e.user_id=o.user_id
  WHERE o.id=? AND o.state='SETTLED' AND o.provider_name=? AND o.provider_payment_id=?
 )
-INSERT INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at)
+INSERT INTO sahmino_prepaid_subscription_entitlements(user_id,paid_until,updated_at)
 SELECT user_id,strftime('%Y-%m-%dT%H:%M:%fZ',base_date,'+'||?||' days'),?
 FROM base WHERE 1
 ON CONFLICT(user_id) DO UPDATE SET paid_until=excluded.paid_until,updated_at=excluded.updated_at`;
@@ -43,7 +43,7 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
  try{
   const lookup=await db.prepare(`SELECT o.user_id,o.plan_id,o.amount_rial,o.currency,o.state,e.paid_until
    FROM sahmino_prepaid_subscription_orders o
-   LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=o.user_id WHERE o.id=? LIMIT 1`).bind(orderId).first();
+   LEFT JOIN sahmino_prepaid_subscription_entitlements e ON e.user_id=o.user_id WHERE o.id=? LIMIT 1`).bind(orderId).first();
   if(!lookup)return {ok:false,reason:'ORDER_NOT_FOUND'};
   if(lookup.state!=='PENDING')return {ok:false,reason:'ORDER_NOT_PENDING'};
   if(lookup.plan_id!==planId||lookup.amount_rial!==amountRial||lookup.currency!=='IRR')return {ok:false,reason:'ORDER_MISMATCH'};
