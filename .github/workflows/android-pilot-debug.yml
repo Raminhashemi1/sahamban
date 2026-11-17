@@ -29,9 +29,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/sahmino-billing-check
-          javac -d /tmp/sahmino-billing-check \\
-            android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java \\
-            android-pilot/tests/SahminoBillingCatalogTest.java
+          javac -d /tmp/sahmino-billing-check android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java android-pilot/tests/SahminoBillingCatalogTest.java
           java -cp /tmp/sahmino-billing-check ir.sahamban.pilot.SahminoBillingCatalogTest
       - name: Verify store-specific flavor configuration
         run: node --test tests/android-pilot-wrapper.test.cjs
