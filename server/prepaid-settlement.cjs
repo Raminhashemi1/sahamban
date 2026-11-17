@@ -48,7 +48,8 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}
    LEFT JOIN sahmino_prepaid_subscription_entitlements e ON e.user_id=o.user_id WHERE o.id=? LIMIT 1`).bind(orderId).first();
   if(!lookup)return {ok:false,reason:'ORDER_NOT_FOUND'};
   if(lookup.state==='SETTLED'){
-   if(lookup.provider_name===providerName&&lookup.provider_payment_id===providerPaymentId&&validUTC(lookup.paid_until))
+   if(lookup.plan_id===planId&&lookup.amount_rial===amountRial&&lookup.currency===currency&&
+      lookup.provider_name===providerName&&lookup.provider_payment_id===providerPaymentId&&validUTC(lookup.paid_until))
     return {ok:true,reason:'ALREADY_SETTLED',orderId,planId,paidUntil:lookup.paid_until};
    return {ok:false,reason:'ORDER_NOT_PENDING'};
   }
