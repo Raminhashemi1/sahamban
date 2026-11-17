@@ -1,6 +1,6 @@
 # Sahmino SMS OTP identity — provider-neutral implementation contract
 
-Status: approved direction is mobile-number sign-in with SMS one-time codes. The SMS gateway/vendor is intentionally not selected. This document is a design and implementation gate, not a live authentication service.
+Status: approved direction is Iran-only mobile-number sign-in with SMS one-time codes. Approved OTP lifetime is 120 seconds and maximum attempts are 5. Web and Android share one account/session authority. The SMS gateway/vendor is intentionally not selected. This document remains an implementation contract, not a live authentication service.
 
 ## Scope of the accepted decision
 
@@ -40,8 +40,8 @@ Define a narrow server-only interface, conceptually:
 - HTTPS only; strict request body size and content-type checks.
 - Numeric OTP generated with a cryptographically secure RNG; no Math.random.
 - Store HMAC verifier, not plaintext OTP. Use constant-time comparison.
-- Proposed OTP lifetime: 120 seconds; this is a product default proposal, not yet confirmed.
-- Proposed maximum verification attempts: 5 per challenge; not yet confirmed.
+- Approved OTP lifetime: 120 seconds.
+- Approved maximum verification attempts: 5 per challenge.
 - Enforce resend cooldown and rolling per-number, per-IP, and global quotas; thresholds must be configurable and tested.
 - A resend invalidates or supersedes prior outstanding challenges for that number.
 - Consume a challenge atomically once; concurrent correct submissions must not create multiple sessions or identities.
@@ -73,11 +73,11 @@ The verified phone number is an identity credential, not a display-only profile 
 
 ## Decisions still open
 
-1. Confirm supported phone-number country scope and canonical format (Iran-only or international).
-2. Confirm OTP expiry, attempt limit, resend cooldown, and quota thresholds. Suggested starting values above are proposals only.
+1. Approved phone-number scope: Iran only; normalize to E.164 (+98) and accept supported local/international input forms.
+2. Approved OTP expiry is 120 seconds and maximum attempts are 5. Resend cooldown and rolling quota thresholds remain to be set.
 3. Confirm account recovery and phone-number-change policy, including lost SIM and recycled-number cases.
 4. Select a provider only after comparing delivery coverage, sender/template requirements, data processing terms, reliability, and cost.
-5. Decide whether web and Android share a server-managed session flow or Android receives a separate short-lived session/token exchange.
+5. Approved direction: shared account/session authority for web and Android. Exact cookie/token transport must be designed around the deployed origins and native secure storage before implementation.
 
 ## Release gate
 
