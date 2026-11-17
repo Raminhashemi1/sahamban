@@ -186,3 +186,16 @@ test('OTP routes fail closed when enabled without D1 or dedicated secrets',async
  assert.equal(response.status,503);
  assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
 });
+
+test('OTP request and verify routes reject oversized JSON bodies before provider or D1 work',async()=>{
+ const worker=(await api()).default;
+ const base={...env(),SAHMINO_OTP_ENABLED:'true',SAHMINO_OTP_VERIFIER_SECRET:'v'.repeat(48),SAHMINO_OTP_RATE_LIMIT_SECRET:'r'.repeat(48)};
+ for(const route of ['/api/v1/auth/otp/request','/api/v1/auth/otp/verify']){
+  const response=await worker.fetch(new Request('https://worker.example'+route,{
+   method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Content-Length':'257'},
+   body:' '.repeat(257)
+  }),base);
+  assert.equal(response.status,413);
+  assert.deepEqual(await response.json(),{error:'BODY_TOO_LARGE'});
+ }
+});
