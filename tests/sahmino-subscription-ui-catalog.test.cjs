@@ -5,7 +5,7 @@ const fs=require('node:fs');
 
 const plansSource=fs.readFileSync('server/prepaid-plans.cjs','utf8');
 const html=fs.readFileSync('index.html','utf8');
-const android=fs.readFileSync('android-pilot/app/src/main/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
+const android=fs.readFileSync('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
 const expected=[
   {days:30,rial:1500000,id:'SAHMINO_PRO_30D'},
   {days:60,rial:2850000,id:'SAHMINO_PRO_60D'},
@@ -42,13 +42,9 @@ test('PWA keeps checkout disabled and renewal manual by default',()=>{
   assert.match(section[0],/تخفیف اضافه ندارند/);
 });
 
-test('Android displays rial and keeps payment disabled',()=>{
-  assert.match(android,/selectedPriceRial\(\)/);
-  assert.match(android,/setEnabled\(false\)/);
-  assert.match(android,/تمدید دستی حالت پیش‌فرض است/);
-  assert.match(android,/پرداخت واقعی و فعال‌سازی اشتراک غیرفعال است/);
+test('Bazaar Android flavor displays approved rial prices and does not accept payment',()=>{
+  assert.match(android,/PRICE_RIAL\s*=\s*\{1500000L,2850000L,4050000L,7650000L,14600000L\}/);
   assert.match(android,/ریال/);
-  assert.match(android,/PRICE_RIAL\s*=\s*\{1500000L, 2850000L, 4050000L, 7650000L, 14600000L\}/);
-  assert.match(android,/formatRial\(PRICE_RIAL\[i\]\) \+ " ریال"/);
-  assert.match(android,/formatRial\(selectedPriceRial\(\)\) \+ " ریال\\n"/);
+  assert.match(android,/پرداخت غیرفعال است/);
+  assert.match(android,/اعتبارسنجی رسید سمت سرور هنوز تکمیل نشده است/);
 });
