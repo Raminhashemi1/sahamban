@@ -18,18 +18,9 @@ public interface MarketplaceBillingClient {
         void onCancelled();
         void onFailure(String reason);
     }
-    interface ConsumptionListener {
-        void onConsumed();
-        void onFailure(String reason);
-    }
     void connect(Activity activity, ConnectionListener listener);
-    void purchase(ComponentActivity activity, String productId, String serverOrderPayload,
+    /** Starts a recurring store subscription; cancellation is managed by the store. */
+    void subscribe(ComponentActivity activity, String productId, String serverOrderPayload,
                    PurchaseListener listener);
-
-    /**
-     * Call only after the trusted backend confirms settlement and entitlement.
-     * The five Sahmino plans are prepaid, manually renewed one-time products.
-     */
-    void consume(PurchaseReceipt receipt, ConsumptionListener listener);
     void close();
 }
