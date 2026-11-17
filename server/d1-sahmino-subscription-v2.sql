@@ -46,3 +46,17 @@ CREATE INDEX IF NOT EXISTS idx_sahmino_orders_state_created
   ON sahmino_prepaid_subscription_orders(state,created_at);
 CREATE INDEX IF NOT EXISTS idx_sahmino_events_order
   ON sahmino_prepaid_payment_events(order_id);
+
+-- ZarinPal authority binding: callback authority is opaque and unique.
+-- Payment redirects alone never settle an order; callback must call provider verify.
+CREATE TABLE IF NOT EXISTS sahmino_payment_intents (
+  authority TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL UNIQUE REFERENCES sahmino_prepaid_subscription_orders(id),
+  provider_name TEXT NOT NULL CHECK(provider_name='ZARINPAL'),
+  created_at TEXT NOT NULL,
+  state TEXT NOT NULL CHECK(state IN ('REQUESTED','SETTLED','FAILED','EXPIRED')),
+  provider_payment_id TEXT,
+  verified_at TEXT,
+  CHECK((state='SETTLED' AND provider_payment_id IS NOT NULL AND verified_at IS NOT NULL) OR state<>'SETTLED'),
+  UNIQUE(provider_name,provider_payment_id)
+);
