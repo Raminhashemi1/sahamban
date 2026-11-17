@@ -1,5 +1,5 @@
-name: Sahamban Android pilot debug APK
-# Build one diagnostic universal APK whenever the Android wrapper changes.
+name: Sahmino CafeBazaar and Myket debug variants
+# Build separate store-specific debug APKs; never publish debug artifacts.
 on:
   workflow_dispatch:
   push:
@@ -24,7 +24,7 @@ jobs:
           mkdir -p /tmp/sahamban-java-check
           javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
-      - name: Verify single-APK installer-to-provider UI routing
+      - name: Verify legacy installer diagnostics (not used to authorize billing)
         shell: bash
         run: |
           javac -d /tmp/sahamban-java-check \
@@ -50,12 +50,14 @@ jobs:
         with:
           gradle-version: '8.11.1'
       - name: Build TEST-ONLY debug APK without owner signing credentials
-        run: gradle -p android-pilot --no-daemon :app:assembleDebug
+        run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug :app:assembleMyketDebug
       - name: Print reproducibility digest (never a private certificate)
-        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
+        run: sha256sum android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: sahamban-universal-installer-diagnostic-debug-NOT-FOR-STORE
-          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          name: sahmino-market-debug-apks-NOT-FOR-STORE
+          path: |
+            android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
+            android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
           if-no-files-found: error
           retention-days: 7
