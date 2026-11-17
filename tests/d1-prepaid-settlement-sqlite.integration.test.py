@@ -44,8 +44,9 @@ def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, days=30,
         event_result = db.execute(EVENT, ('provider', event, payment, now, oid, plan, amount))
         order_result = db.execute(ORDER, (now, 'provider', payment, oid, plan, amount,
                                           'provider', event, payment))
-        grant_result = db.execute(ENTITLEMENT, (now, now, oid, 'provider', payment, days, now))
-        if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_result.rowcount != 1:
+        db.execute(ENTITLEMENT, (now, now, oid, 'provider', payment, days, now))
+        grant_changes = db.execute('SELECT changes()').fetchone()[0]
+        if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1:
             raise AssertionError('Settlement did not update event, order and entitlement atomically')
     return db.execute('SELECT paid_until FROM prepaid_subscription_entitlements WHERE user_id=?',
                       ('u1',)).fetchone()[0]
