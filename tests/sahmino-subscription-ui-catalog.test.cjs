@@ -48,3 +48,14 @@ test('Android updates selected amount and keeps all payment actions disabled',()
   assert.match(android,/تمدید خودکار در این نسخه ارائه نمی‌شود/);
   assert.match(android,/پرداخت واقعی و فعال‌سازی اشتراک غیرفعال است/);
 });
+
+
+test('Android preview labels every approved duration and display amount in toman without payment',()=>{
+  const preview=fs.readFileSync(
+    'android-pilot/app/src/main/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
+  assert.match(preview,/PRICE_TOMAN\s*=\s*\{150000, 285000, 405000, 765000, 1460000\}/);
+  assert.match(preview,/days \+ " روز — "\s*\+\s*formatToman\(PRICE_TOMAN\[i\]\) \+ " تومان"/);
+  assert.match(preview,/" دوره انتخابی: "|"دوره انتخابی: "/);
+  assert.match(preview,/" تومان\\n"/);
+  assert.match(preview,/Button payment = choice\("پرداخت واقعی — غیرفعال"\);[\s\S]*?payment\.setEnabled\(false\)/);
+});
