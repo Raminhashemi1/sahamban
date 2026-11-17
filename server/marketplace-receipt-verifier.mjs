@@ -90,7 +90,7 @@ async function verifyBazaar(env,body,order){
 async function verifyMarketplaceReceipt(env,body,order){
  if(!body||typeof body!=='object'||Array.isArray(body)||!order||
     typeof order.id!=='string'||typeof order.plan_id!=='string'||
-    !Number.isSafeInteger(order.amount_rial)||order.currency!=='IRR'||order.state!=='PENDING')
+    !Number.isSafeInteger(order.amount_rial)||order.currency!=='IRR'||!['PENDING','SETTLED'].includes(order.state))
   throw new Error('INVALID_ORDER');
  const selected=plan(order.plan_id);
  if(selected.priceRial!==order.amount_rial)throw new Error('ORDER_PRICE_MISMATCH');
