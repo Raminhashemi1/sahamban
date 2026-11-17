@@ -1,7 +1,6 @@
 # Sahmino Android — CafeBazaar and Myket distribution
 
-The Android wrapper now defines two separate store flavors and CI builds a
-separate debug APK for each store:
+The Android wrapper now defines two separate store flavors. CI compile-checks both variants without assembling or uploading APKs:
 
 - `bazaarDebug` — CafeBazaar Billing binding.
 - `myketDebug` — Myket Billing binding.
