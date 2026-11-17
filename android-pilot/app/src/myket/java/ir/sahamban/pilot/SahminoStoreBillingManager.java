@@ -2,7 +2,6 @@ package ir.sahamban.pilot;
 
 import android.app.Activity;
 import android.util.Log;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import ir.myket.billingclient.IabHelper;
 import ir.myket.billingclient.util.Inventory;
@@ -31,7 +30,6 @@ public final class SahminoStoreBillingManager {
     private static final String TAG = "SahminoBilling";
     private final Activity activity;
     private final Listener listener;
-    private final SecureRandom random = new SecureRandom();
     private IabHelper helper;
     private boolean ready, connecting, busy, destroyed;
     private final boolean[] priceMatches = new boolean[SahminoBillingCatalog.size()];
@@ -80,6 +78,10 @@ public final class SahminoStoreBillingManager {
 
     public void refreshInventory() {
         if (destroyed) return;
+        if (serverOrderId == null || !serverOrderId.matches("ord_[a-f0-9]{32}")) {
+            status("شناسه سفارش معتبر از سرور دریافت نشده؛ خرید شروع نمی‌شود.");
+            return;
+        }
         if (!ready || helper == null) { connect(); return; }
         if (busy) { status("یک عملیات فروشگاهی در حال اجراست."); return; }
         busy = true;
@@ -120,7 +122,7 @@ public final class SahminoStoreBillingManager {
         }
     }
 
-    public void purchase(String planId) {
+    public void purchase(String planId, String serverOrderId) {
         SahminoBillingCatalog.Plan plan = SahminoBillingCatalog.byPlanId(planId);
         if (plan == null) { status("پلن اشتراک معتبر نیست."); return; }
         if (destroyed) return;
@@ -138,7 +140,9 @@ public final class SahminoStoreBillingManager {
         }
         // Sahmino sells a one-time consumable access pass, not a recurring store subscription.
         busy = true;
-        String payload = newPayload();
+        // Bind the store receipt to the authenticated, server-created pending order.
+        // Never mint a device-local payload: it cannot be safely restored on another device.
+        String payload = serverOrderId;
         status("در حال بازکردن صفحه خرید اشتراک فروشگاه…");
         try {
             helper.launchPurchaseFlow(activity, plan.productId, (result, purchase) -> onMain(() -> {
@@ -170,14 +174,6 @@ public final class SahminoStoreBillingManager {
         for (int i = 0; i < SahminoBillingCatalog.size(); i++)
             if (SahminoBillingCatalog.at(i) == plan) return i;
         return -1;
-    }
-
-    private String newPayload() {
-        byte[] bytes = new byte[24];
-        random.nextBytes(bytes);
-        StringBuilder out = new StringBuilder("sahmino-");
-        for (byte b : bytes) out.append(String.format(java.util.Locale.ROOT, "%02x", b & 0xff));
-        return out.toString();
     }
 
     private void onMain(Runnable task) { activity.runOnUiThread(task); }
