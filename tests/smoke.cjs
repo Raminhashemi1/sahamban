@@ -151,7 +151,7 @@ test('Saved status rejects corrupted local portfolio',()=>{
  context.refreshPortfolioSaveState();
  assert.match(status.textContent,/ذخیره شده‌اند/);
 });
-test('Own cache cleanup never targets other apps',()=>assert.ok(sw.includes("k.startsWith('sahamban-static-')&&k!==CACHE")));
+test('Own cache cleanup retires legacy and current-brand generations without targeting other apps',()=>{assert.ok(sw.includes("k.startsWith('sahamban-static-')||k.startsWith('sahmino-static-')"));assert.ok(sw.includes('k!==CACHE'));});
 console.log('SUCCESS: '+count+' smoke checks');
 
 // Execute v53 weekend quote regression tests in the existing smoke CI workflow.
