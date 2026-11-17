@@ -15,6 +15,22 @@ test('valid settlement atomically writes event, order and exact day entitlement'
  assert.match(batch[0].sql,/state='PENDING'/);assert.match(batch[1].sql,/state='PENDING'/);
  assert.match(batch[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);assert.ok(batch[2].sql.includes("base_date,'+'||?||' days'"));
 });
+test('same verified receipt retry is idempotent after the original D1 commit',async()=>{
+ const paidUntil='2026-12-12T10:00:00.000Z';
+ const row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',
+  state:'SETTLED',provider_name:payment.providerName,provider_payment_id:payment.providerPaymentId,paid_until:paidUntil};
+ const db=dbFor({row});
+ const out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider});
+ assert.deepEqual(out,{ok:true,reason:'ALREADY_SETTLED',orderId,planId:payment.planId,paidUntil});
+ assert.equal(db.calls.some(x=>x.batch),false);
+});
+test('a different payment cannot be attached to an already-settled order',async()=>{
+ const row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',
+  state:'SETTLED',provider_name:payment.providerName,provider_payment_id:'different-payment',paid_until:'2026-12-12T10:00:00.000Z'};
+ const out=await settleVerifiedPrepaidPayment(dbFor({row}),payment,{now,verifyAtProvider});
+ assert.deepEqual(out,{ok:false,reason:'ORDER_NOT_PENDING'});
+});
+
 test('settlement fails closed on malformed data, DB errors and partial results',async()=>{
  for(const bad of [{...payment,currency:'USD'},{...payment,amountRial:1},{...payment,orderId:'bad'}])assert.equal((await settleVerifiedPrepaidPayment(dbFor(),bad,{now,verifyAtProvider})).ok,false);
  const failed=dbFor({results:[{success:true,meta:{changes:1}},{success:true,meta:{changes:0}},{success:true,meta:{changes:0}}]});
