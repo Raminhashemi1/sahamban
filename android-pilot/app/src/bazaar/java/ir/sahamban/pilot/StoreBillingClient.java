@@ -29,7 +29,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
         try {
             PaymentConfiguration config = new PaymentConfiguration(
                 new SecurityCheck.Enable(BuildConfig.BAZAAR_PUBLIC_KEY));
-            payment = new Payment(activity.getApplicationContext(), config);
+            payment = new Payment(activity, config);
             connection = payment.connect(callback -> {
                 callback.connectionSucceed(() -> {
                     listener.onConnected();
