@@ -47,12 +47,12 @@ test('Sahmino subscription preview displays all five approved periods and exact 
  assert.match(billing,/void subscribe\(ComponentActivity activity, String productId, String serverOrderPayload/);
  const bazaar=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/StoreBillingClient.java');
  const myket=read('android-pilot/app/src/myket/java/ir/sahamban/pilot/StoreBillingClient.java');
- assert.match(bazaar,/payment\.consumeProduct\(receipt\.purchaseToken/);
- assert.match(myket,/helper\.consumeAsync\(\(Purchase\) receipt\.storePurchase/);
+ assert.match(bazaar,/payment\.subscribeProduct\(activity\.getActivityResultRegistry/);
+ assert.match(myket,/helper\.launchSubscriptionPurchaseFlow\(activity, productId/);
  assert.match(bazaar,/Poolakey adapter/);
  assert.match(myket,/Myket Billing adapter/);
- assert.match(bazaar,/payment\.purchaseProduct/);
- assert.match(myket,/helper\.launchPurchaseFlow/);
+ assert.match(bazaar,/payment\.subscribeProduct/);
+ assert.match(myket,/helper\.launchSubscriptionPurchaseFlow/);
  assert.doesNotMatch(bazaar,/consumeProduct/);
  assert.doesNotMatch(myket,/consumeAsync/);
  assert.match(activity,/ریال/);
