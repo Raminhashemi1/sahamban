@@ -50,6 +50,7 @@ test('cross-origin CORS and query spoofing blocked before entitlement lookup',as
  const preflight=await worker.fetch(new Request('https://worker.example/api/v1/me/entitlement',{method:'OPTIONS',headers:{Origin:origin}}),env());
  assert.equal(preflight.status,204);
  assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),origin);
+ assert.equal(preflight.headers.get('Access-Control-Allow-Credentials'),'true');
 });
 test('no DB, suspended, expired, bad status, invalid expiration or DB failures deny paid access',async()=>{
  const worker=(await api()).default,token=await signedToken();
