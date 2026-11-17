@@ -29,7 +29,7 @@ test('market variants use separate store flavors, temporary identity and no prod
  assert.match(wf,/sahmino-market-debug-apks-NOT-FOR-STORE/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.match(wf,/upload-artifact/);
- assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
+ assert.match(read('android-pilot/README.md'),/not release builds/i);
  assert.match(build,/bazaar\s*\{/);
  assert.match(build,/myket\s*\{/);
  assert.match(build,/ir\.myket:billing:2\.2/);
