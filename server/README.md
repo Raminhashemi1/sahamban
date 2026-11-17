@@ -231,3 +231,30 @@ The Worker entitlement lookup now compares the legacy annual entitlement with `p
 ## Prepaid overview payment-review safety (2026-11-12)
 
 The read-only prepaid overview now checks the legacy account-level payment suspension flag as well as ACTIVE account status before returning a Pro-enabled response. A suspended or malformed payment-review state fails closed, rather than advertising a usable subscription. This does **not** implement refunds or chargebacks; there is no production gateway or live subscription route. The full suite and Worker dry-run should pass on the relevant commit before release.
+
+
+## Sahmino five-plan catalogue (v2, not deployed)
+
+The current approved catalogue is day-based and has final prices (no additional
+discounts): 30 days / 1,500,000 IRR; 60 days / 2,850,000 IRR; 90 days /
+4,050,000 IRR; 180 days / 7,650,000 IRR; 365 days / 14,600,000 IRR.
+The corresponding server IDs are `SAHAMBAN_PRO_30D`, `SAHAMBAN_PRO_60D`,
+`SAHAMBAN_PRO_90D`, `SAHAMBAN_PRO_180D`, and `SAHAMBAN_PRO_365D`.
+Amounts are displayed in toman in the product and converted explicitly to IRR
+for server-side order and ledger records.
+
+`prepaid-plans.cjs` is the source of truth for the active five-plan catalogue.
+Validity is counted as exact UTC days, not calendar months. A manual repurchase
+extends from `max(now, paid_until)`. No extra discount is applied.
+
+`d1-sahmino-subscription-v2.sql` is an additive migration. It creates
+`sahmino_prepaid_subscription_orders` and
+`sahmino_prepaid_payment_events` with exact plan/price checks, unique provider
+events and one pending order per account. The prior four-plan v1 tables are
+retained unchanged as historical records; new order and settlement code uses
+only the v2 tables. The v2 migration has **not** been applied to a production
+D1 database.
+
+This is still a non-commercial prototype: checkout, real payments, provider
+adapters and automatic renewal remain disabled. Manual renewal is the product
+default. No automatic-renewal consent or recurring charge is implemented.
