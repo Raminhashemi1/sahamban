@@ -21,7 +21,7 @@ test('Android wrapper keeps HTTPS navigation and sensitive local resources restr
 
 test('market variants use separate store flavors, approved Sahmino identity and no production signing',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/applicationId 'ir\\.manahesab\\.sahmino'/);
+ assert.match(build,/applicationId 'ir\.manahesab\.sahmino'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/assembleBazaarDebug/);
