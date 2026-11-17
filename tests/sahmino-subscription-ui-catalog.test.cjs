@@ -5,7 +5,8 @@ const fs=require('node:fs');
 
 const plansSource=fs.readFileSync('server/prepaid-plans.cjs','utf8');
 const html=fs.readFileSync('index.html','utf8');
-const bazaarAndroid=fs.readFileSync('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');\nconst myketAndroid=fs.readFileSync('android-pilot/app/src/myket/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
+const bazaarAndroid=fs.readFileSync('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
+const myketAndroid=fs.readFileSync('android-pilot/app/src/myket/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
 const expected=[
   {days:30,rial:1500000,id:'SAHMINO_PRO_30D'},
   {days:60,rial:2850000,id:'SAHMINO_PRO_60D'},
