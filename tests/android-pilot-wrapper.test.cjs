@@ -40,7 +40,7 @@ test('Sahmino subscription preview displays all five approved periods and exact 
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  assert.match(activity,/DAYS = \{30, 60, 90, 180, 365\}/);
  assert.match(activity,/PRICES_RIAL = \{1500000, 2850000, 4050000, 7650000, 14600000\}/);
- assert.match(activity,/حالت تمدید پیش‌فرض: دستی/);
+ assert.match(activity,/حالت تمدید: خودکار/);
  assert.match(activity,/تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است/);
  assert.match(activity,/پرداخت واقعی در این نسخه آزمایشی غیرفعال است/);
  const billing=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MarketplaceBillingClient.java');
