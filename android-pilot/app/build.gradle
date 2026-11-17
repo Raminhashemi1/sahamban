@@ -57,6 +57,6 @@ android {
 }
 
 dependencies {
-    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
+    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'
     myketImplementation 'ir.myket:billing:2.2'
 }
