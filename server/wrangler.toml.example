@@ -8,6 +8,20 @@ workers_dev = true
 
 [vars]
 PWA_ORIGIN = "https://raminhashemi1.github.io"
+# Both flags remain false until OTP cookies, D1 migrations and store sandbox tests pass.
+SAHMINO_OTP_ENABLED = "false"
+PREPAID_ORDERS_ENABLED = "false"
+# Replace each SKU with the exact product ID created in the corresponding publisher console.
+MYKET_SKU_30D = "REPLACE_WITH_MYKET_SKU_30D"
+MYKET_SKU_60D = "REPLACE_WITH_MYKET_SKU_60D"
+MYKET_SKU_90D = "REPLACE_WITH_MYKET_SKU_90D"
+MYKET_SKU_180D = "REPLACE_WITH_MYKET_SKU_180D"
+MYKET_SKU_365D = "REPLACE_WITH_MYKET_SKU_365D"
+BAZAAR_SKU_30D = "REPLACE_WITH_BAZAAR_SKU_30D"
+BAZAAR_SKU_60D = "REPLACE_WITH_BAZAAR_SKU_60D"
+BAZAAR_SKU_90D = "REPLACE_WITH_BAZAAR_SKU_90D"
+BAZAAR_SKU_180D = "REPLACE_WITH_BAZAAR_SKU_180D"
+BAZAAR_SKU_365D = "REPLACE_WITH_BAZAAR_SKU_365D"
 
 [[d1_databases]]
 binding = "SAHAMBAN_DB"
