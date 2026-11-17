@@ -6,6 +6,7 @@ on:
     paths:
       - 'android-pilot/**'
       - 'tests/android-pilot-wrapper.test.cjs'
+      - 'tests/android-marketplace-flow.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
 permissions:
   contents: read
@@ -54,6 +55,8 @@ jobs:
           java -cp /tmp/sahmino-price-check ir.sahamban.pilot.SahminoStorePriceMatcherTest
       - name: Verify store-specific flavor configuration
         run: node --test tests/android-pilot-wrapper.test.cjs
+      - name: Verify native marketplace order and receipt flow contracts
+        run: node --test tests/android-marketplace-flow.test.cjs
       - name: Validate embedded dashboard subscription JavaScript
         shell: bash
         run: node --check android-pilot/app/src/main/assets/sahmino-webview-ui.js
