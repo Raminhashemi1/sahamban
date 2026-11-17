@@ -1,199 +1,72 @@
-# طرح اتصال کانال‌های پرداخت سهمینو — سند معماری و سوابق
+# Sahmino — Bazaar & Myket billing completion plan
+Last reconciled: 17 November 2026
 
-تاریخ: ۲۰۲۶-۱۱-۱۲  
-وضعیت: تصمیم معماری پیشنهادی؛ هنوز پیاده‌سازی/اتصال فروشگاه نشده است.
+## Product decisions currently confirmed by the owner
+- The app is not publicly released. All current work is pre-release development/testing; do not ask for published-app product IDs.
+- Five plans, all prices in IRR:
+  - `SAHMINO_PRO_30D`: 30 days, 1,500,000 IRR
+  - `SAHMINO_PRO_60D`: 60 days, 2,850,000 IRR
+  - `SAHMINO_PRO_90D`: 90 days, 4,050,000 IRR
+  - `SAHMINO_PRO_180D`: 180 days, 7,650,000 IRR
+  - `SAHMINO_PRO_365D`: 365 days, 14,600,000 IRR
+- Store-managed auto-renewal is enabled by default. The subscriber may cancel auto-renewal; cancellation must not remove already-paid access before the current billing period ends.
+- No Google Play work. Current channel priority is Cafe Bazaar and Myket only.
+- Public release comes after both billing integrations are verified and tested.
 
-## تعرفه فعال پنج‌پلنی سهمینو — واحد یگانه ریال (IRR)
+## Verified repository state
+- Separate Android product flavors exist for Bazaar and Myket.
+- Bazaar adapter calls Poolakey `subscribeProduct`; Myket adapter calls `launchSubscriptionPurchaseFlow`.
+- Both adapters return purchase evidence to the app layer; neither adapter may independently grant Pro.
+- Server-side plan catalogue and D1 order/entitlement/payment-event schema exist.
+- Worker currently exposes health, entitlement, pilot-order and prepaid-order/overview routes only. It has NO public receipt-verification route and no provider-specific subscription reconciliation/cancellation route.
+- The prepaid order API explicitly returns `checkoutEnabled:false`; creating a pending order is not a completed checkout.
+- Existing settlement module is a low-level atomic settlement primitive for already-verified provider events. It is NOT a provider verifier and must never be called with client-asserted `verified:true`.
+- The current settlement schema extends access by fixed days. For store-managed recurring subscriptions, provider-confirmed expiry/renewal state and cancellation state must be persisted; do not infer recurring renewals from local timers or client callbacks.
+- The UI is still a preview and purchase is not end-to-end wired.
+- The Android debug workflow previously succeeded for both flavors (run 44034290249, commit f2fca7ca147c8baa76a33cb6308ef9daf647ea66).
+- Subscription module workflow succeeded (run 44035614260, commit 6a19af0d95375c76d0a8e000dfac0959aa8f684e).
+- These CI results prove compilation/tests only, not live provider billing.
+- PR #186 remains open and Draft. No merge or public release has occurred.
 
-| شناسه سرور | مدت | مبلغ نهایی |
-|---|---:|---:|
-| SAHMINO_PRO_30D | ۳۰ روز | ۱٬۵۰۰٬۰۰۰ ریال |
-| SAHMINO_PRO_60D | ۶۰ روز | ۲٬۸۵۰٬۰۰۰ ریال |
-| SAHMINO_PRO_90D | ۹۰ روز | ۴٬۰۵۰٬۰۰۰ ریال |
-| SAHMINO_PRO_180D | ۱۸۰ روز | ۷٬۶۵۰٬۰۰۰ ریال |
-| SAHMINO_PRO_365D | ۳۶۵ روز | ۱۴٬۶۰۰٬۰۰۰ ریال |
+## Provider-specific implementation requirements
 
-این جدول جایگزین تعرفه چهارپلنی تاریخی در ادامه سند است. مبالغ فعال در کاتالوگ، UI، API، سفارش، D1 و مرز PSP همگی عدد صحیح ریال‌اند؛ تبدیل تومان در مسیر فعال مجاز نیست.
+### Cafe Bazaar
+- SDK client flow: Poolakey recurring subscription API.
+- Server must validate the subscription token using Cafe Bazaar Developer API with the exact package name and subscription SKU.
+- Server must store provider-confirmed subscription state and expiry, and support cancellation through the provider API when the user requests it.
+- Bazaar developer API uses OAuth client credentials/refresh token; all credentials are server secrets. Never commit them.
+- Provider API reference used for the endpoint shape: https://github.com/Geeksltd/CafeBazaar.DeveloperApi (third-party client implementation referencing Bazaar Developer API). Official publisher portal: https://developers.cafebazaar.ir/fa/
 
-## تصمیم مسیر پرداخت
+### Myket
+- SDK client flow: Myket Billing recurring subscription API.
+- Client receipt signature/original JSON is untrusted input until cryptographically verified using the publisher public key and/or official server verification API.
+- Server must verify package, SKU, developer payload/order association, purchase state, token uniqueness, active subscription and provider expiry.
+- Server must support cancellation/status reconciliation according to the actual Myket publisher API available to this app.
+- Official SDK sample: https://github.com/myketstore/billing-sample-android
 
-اولویت محصول، فروش اشتراک درون‌برنامه‌ای از خود مایکت و کافه‌بازار است؛ نه اتصال درگاه بانکی مستقیم به PWA. هر مارکت SDK و رسید/اعتبارسنجی مخصوص خود را دارد. سرور سهام‌بان باید منبع نهایی حق دسترسی Pro باشد و رسید هر فروشگاه را با روش رسمی همان فروشگاه اعتبارسنجی کند.
+## Why this cannot honestly be marked complete yet
+The following provider-specific configuration/evidence is not in this repository:
+1. Exact package/application ID registered as a draft for each marketplace.
+2. Five actual subscription SKU IDs per marketplace (or confirmation from the publisher console that the selected plan durations/SKUs are supported).
+3. Bazaar developer API OAuth client ID, client secret and refresh token, stored only as Worker secrets.
+4. Myket publisher public key and confirmed server-verification/status/cancel API contract for this publisher account.
+5. Sandbox/test account and test purchase configuration for each marketplace.
 
-- Myket: نمونه رسمی SDK اندروید و پشتیبانی Subscription و بررسی وضعیت خرید: https://github.com/myketstore/billing-sample-android
-- Cafe Bazaar: درگاه رسمی توسعه‌دهندگان: https://developers.cafebazaar.ir/fa/ ؛ اطلاعیه توسعه‌دهندگان درباره تمدید خودکار اشتراک: https://newsblog.cafebazaar.ir/autosubs-wiyjjdfkxulb
-- شواهد عمومی فعلی اصل پشتیبانی از خرید/اشتراک را نشان می‌دهند؛ اما پشتیبانی دقیق هر چهار بازه ثابت ۳، ۶، ۹ و ۱۲ ماهه، شیوه تمدید، نوع محصول قابل تعریف، API اعتبارسنجی رسید و شرایط پنل باید با حساب ناشر و مستندات جاری هر مارکت تأیید شود. هیچ قابلیت یا endpoint فرضی پیاده‌سازی نشود.
+These are pre-release publisher-console settings; they do not require public release. Do not invent SKU IDs, package IDs, credentials, API response fields or subscription expiry timestamps.
 
-## وضعیت اجرایی جاری — ۱۷ نوامبر ۲۰۲۶
+## Remaining implementation sequence
+1. Confirm the package ID already registered as the draft app in each publisher console (do not change it during this billing task).
+2. Create/configure the five subscription products in each console, in test/draft mode where supported, and record their exact SKU IDs.
+3. Add Bazaar OAuth credentials and Myket verification key/API credentials as encrypted Worker secrets.
+4. Implement provider-specific server verification modules and authenticated receipt endpoints. Verify package, SKU, purchase token, order payload, user association, payment state, expiry, amount/currency where returned, and idempotency.
+5. Extend D1 with provider subscription ID/token, current period start/end, auto-renew state, cancellation timestamp, last provider sync and event ledger; process renewals, cancellation, expiry, refunds and chargebacks idempotently.
+6. Connect Android purchase, restore/query status, and manage/cancel subscription actions to the authenticated Worker APIs. Do not grant access from SDK callback alone.
+7. Build both flavors, run unit/integration tests, then perform sandbox/device purchases and cancellation/renewal tests for both stores.
+8. Only after both pass, prepare the public release.
 
-این بخش مرجع وضعیت فعلی است؛ بخش‌های پایین‌تر که از چهار پلن/قیمت تومان یا اولویت قدیمی وب‌سایت حرف می‌زنند، صرفاً سابقه تاریخی‌اند و نباید به‌عنوان وضعیت فعلی اجرا شوند.
-
-### اولویت مورد تأیید مالک
-1. ابتدا تکمیل کافه‌بازار و مایکت، هرکدام با مسیر خرید و اعتبارسنجی مستقل.
-2. پس از تکمیل و آزمون هر دو مارکت، اتصال پرداخت وب‌سایت بررسی و اجرا شود.
-3. Google Play برای انتشار ایران از محدوده خارج است.
-
-### کاتالوگ فعال سهمینو — ریال
-| شناسه داخلی سرور | مدت دقیق | مبلغ |
-|---|---:|---:|
-| SAHMINO_PRO_30D | ۳۰ روز | ۱٬۵۰۰٬۰۰۰ ریال |
-| SAHMINO_PRO_60D | ۶۰ روز | ۲٬۸۵۰٬۰۰۰ ریال |
-| SAHMINO_PRO_90D | ۹۰ روز | ۴٬۰۵۰٬۰۰۰ ریال |
-| SAHMINO_PRO_180D | ۱۸۰ روز | ۷٬۶۵۰٬۰۰۰ ریال |
-| SAHMINO_PRO_365D | ۳۶۵ روز | ۱۴٬۶۰۰٬۰۰۰ ریال |
-
-این شناسه‌ها شناسه داخلی کاتالوگ سرورند؛ هنوز SKU واقعی پنل بازار یا مایکت محسوب نمی‌شوند. SKU واقعی هر فروشگاه باید پس از ایجاد در پنل، جداگانه و بدون حدس به این شناسه داخلی نگاشت شود. مبلغ هر سفارش فقط از کاتالوگ سرور تعیین می‌شود.
-
-### ممیزی کد و وضعیت واقعی — بازبینی ۱۷ نوامبر ۲۰۲۶
-
-- کاتالوگ پنج‌پلنی، سفارش pending و primitive تسویه اتمیک D1 موجودند؛ اما primitive تسویه فقط پس از اعتبارسنجی مستقل تراکنش توسط adapter سمت سرور باید فراخوانی شود.
-- Worker فعلی هنوز endpoint عمومی دریافت رسید، اعتبارسنجی رسمی Bazaar/Myket یا اتصال به APIهای هر دو مارکت ندارد. احراز هویت موجود pilot-only است و برای فروش عمومی کافی نیست.
-- دو flavor مستقل Android در Gradle تعریف شده‌اند: Bazaar با Poolakey 2.2.0 و Myket با SDK رسمی Billing 2.2. کلیدهای عمومی از Gradle property/environment خوانده می‌شوند و در Git قرار ندارند.
-- adapter بومی هر دو فروشگاه اکنون از API مخصوص اشتراک دوره‌ای استفاده می‌کند: Poolakey `subscribeProduct` برای بازار و Myket `launchSubscriptionPurchaseFlow` برای مایکت. callback فقط شواهد خام خرید را تحویل می‌دهد؛ خودش Pro را فعال نمی‌کند.
-- صفحه اشتراک در flavor انتخاب‌شده به سرویس همان مارکت متصل می‌شود. دکمه پرداخت عمداً غیرفعال مانده است، چون شناسه‌های واقعی SKU، ایجاد سفارش/توکن سمت سرور، اعتبارسنجی رسید و ثبت entitlement هنوز به هم متصل نشده‌اند.
-- اصلاح مهم ۱۷ نوامبر: سیاست موردنظر مالک تمدید خودکار پیش‌فرض با امکان لغو توسط کاربر است؛ بنابراین مدل یک‌باره/مصرفی و consume اشتباه بود و با subscription SDK جایگزین شد. هنوز باید لغو/وضعیت اشتراک از هر فروشگاه به سرور همگام شود.
-- اجرای آزمون‌های ماژول اشتراک، Worker و D1 در commit `0e79706` موفق بوده است. ساخت هر دو APK Debug بازار و مایکت نیز در workflow شماره `44021610775` موفق شده است.
-- SHA-256 نسخه Bazaar: `4352e0e73b4850a13437d42046d78f329da26e3ad5edf1194e6db52e01b98d31`.
-- SHA-256 نسخه Myket: `f6bdf12ca26c72160f6bf653b058ed2fffe33fbbba67811bbe0eb124dcedef77`.
-- Artifact آزمایشی: `https://github.com/Raminhashemi1/sahamban/actions/runs/44021610775/artifacts/14300189924`؛ مهلت نگهداری تا ۲۴ نوامبر ۲۰۲۶. این فایل‌ها Debug و NOT FOR STORE هستند.
-- یک خطای کامپایل Poolakey (نیاز به سه آرگومان در PurchaseRequest) از روی log واقعی پیدا و اصلاح شد؛ اجرای بعدی هر دو flavor موفق بود.
-- applicationId فعلی `ir.sahamban.pilot` موقت است. شناسه نهایی package و هویت امضای release باید پیش از ایجاد SKU واقعی مشخص شوند.
-- APKهای workflow از نوع Debug و صرفاً برای آزمون فنی‌اند؛ قابل انتشار در فروشگاه نیستند.
-### دروازه‌های لازم برای هر مارکت — پیش از فعال‌سازی
-1. مالک در پنل ناشر، وضعیت حساب و شناسه نهایی package/application را تأیید کند.
-2. پشتیبانی/پنل مارکت به‌صورت قابل استناد تأیید کند فروش دسترسی دیجیتال مدت‌دار ۳۰/۶۰/۹۰/۱۸۰/۳۶۵ روزه با یک پرداخت و بدون تمدید خودکار در قالب محصول یک‌باره مصرفی مجاز است؛ اگر نیست، از مدل مصوب عدول نکنیم و فروش آن کانال را متوقف نگه داریم.
-3. مالک پنج SKU واقعی را در پنل بسازد یا تأیید کند؛ شناسه‌ها، وضعیت فعال و قیمت/واحد قابل تنظیم باید مستند شوند. هیچ SKU فرضی در کد production نوشته نشود.
-4. مستندات رسمی نسخه جاری SDK و اعتبارسنجی server-to-server/رسید برای همان مارکت دریافت شود. کلید عمومی/شناسه‌های غیرمحرمانه فقط در تنظیم امن build یا تنظیمات مجاز قرار گیرند؛ کلید خصوصی/رمز/توکن محرمانه وارد Git نشود.
-5. adapter native همان مارکت خرید را آغاز کند و رسید/توکن را به Worker بفرستد. سرور باید package، SKU، order/payload، حساب، مبلغ/ارز در صورت ارائه، وضعیت پرداخت و عدم استفاده قبلی از رسید را با API/امضای رسمی همان فروشگاه بررسی کند.
-6. سرور entitlement را در D1 به‌صورت اتمیک ثبت کند؛ فقط پس از ثبت موفق entitlement، محصول consumable در SDK مصرف شود. اگر سرور یا شبکه شکست خورد، رسید نباید گم یا زودهنگام consume شود و reconciliation لازم است.
-7. خرید موفق، لغو کاربر، پرداخت ناموفق، رسید جعلی، SKU اشتباه، مبلغ/حساب اشتباه، replay، قطع شبکه پیش از ثبت، قطع شبکه پس از ثبت و consume ناموفق روی دستگاه واقعی آزموده شوند.
-8. بازیابی دسترسی از حساب سهمینو و ledger سرور انجام شود؛ inventory فروشگاه به‌تنهایی منبع حقیقت entitlement نیست.
-
-### شواهد و محدودیت‌های رسمی موجود
-- مایکت: مخزن نمونه رسمی Android قابلیت محصول یک‌باره مصرفی و غیرمصرفی و Subscription را جدا می‌کند و برای محصول مصرفی consume را مستند کرده است: https://github.com/myketstore/billing-sample-android . این مدرک وجود API فنی IAP را نشان می‌دهد؛ اما به‌تنهایی مجازبودن فروش دسترسی نرم‌افزاری مدت‌دار ما را از نظر سیاست/پنل اثبات نمی‌کند.
-- کافه‌بازار: پورتال رسمی توسعه‌دهندگان و راهنمای پرداخت درون‌برنامه‌ای مرجع دریافت SDK و API جاری است: https://developers.cafebazaar.ir/fa/ . مستندات فنی ثالث تفاوت purchase، subscribe و consume را نشان می‌دهند، اما جای تأیید رسمی سیاست محصول را نمی‌گیرند: https://pub.dev/documentation/cafebazaar_billing/latest/ .
-- بنابراین هیچ‌یک از دو مارکت هنوز از نظر مجازبودن دقیق مدل «خرید یک‌باره برای دسترسی دیجیتال مدت‌دار» تأیید نهایی نشده‌اند. پیش از توسعه اتصال production، پاسخ رسمی هر دو لازم است.
-
-### سیاست تمدید — اصلاح نهایی مالک، ۱۷ نوامبر ۲۰۲۶\n\n- اشتراک‌های خریداری‌شده از بازار و مایکت به‌صورت subscription دوره‌ای و با تمدید خودکار پیش‌فرض تعریف می‌شوند؛ کاربر باید بتواند هر زمان تمدید خودکار را از مسیر فروشگاه لغو کند.\n- لغو تمدید خودکار، دسترسی را تا پایان بازه‌ای که قبلاً پرداخت شده حفظ می‌کند.\n- پنج دوره و قیمت مصوب سرور همچنان مبنا هستند؛ امکان عرضه هر پنج دوره با بازه دقیق در هر فروشگاه باید با SKUهای subscription و محدودیت‌های پنل همان مارکت تأیید شود.\n- تمدید خودکار نباید با زمان‌بندی محلی اپ شبیه‌سازی شود؛ مرجع تمدید، لغو و پرداخت دوره‌ای خود فروشگاه است و سرور باید وضعیت رسمی آن را بررسی کند.\n\n### ترتیب صحیح توسعه پیش از انتشار — اصلاح ۱۷ نوامبر ۲۰۲۶
-
-سهمینو هنوز منتشر نشده است و تکمیل درگاه‌ها باید پیش از انتشار عمومی انجام شود. هیچ مرحله‌ای در این برنامه نیازمند انتشار عمومی قبلی اپ نیست.
-
-1. ساخت/تکمیل رکورد برنامه به‌صورت پیش‌نویس در پنل توسعه‌دهندگان هر مارکت، با شناسه بسته‌ای که برای build آزمایشی استفاده می‌شود؛ این کار به معنی انتشار عمومی نیست.
-2. تعریف محصولات آزمایشی/غیرعمومی متناظر با پنج پلن در پنل هر مارکت، در صورت پشتیبانی پنل، و ثبت شناسه‌های واقعی همان محیط.
-3. تکمیل اتصال SDK بومی هر مارکت در flavor مستقل و اتصال به ایجاد سفارش سمت سرور.
-4. پیاده‌سازی تأیید رسید سمت سرور با روش رسمی هر مارکت و ثبت اتمیک entitlement؛ سپس consume محصول مصرفی، فقط در صورت الزام SDK/نوع محصول و پس از commit سرور.
-5. اجرای آزمون end-to-end با حساب‌های تست و نصب نسخه آزمایشی از مسیر مورد تأیید مارکت؛ بررسی خرید، لغو، خطا، replay، بازیابی، انقضا و خرید مجدد.
-6. رفع اشکالات و تأیید نهایی فنی/مالی هر دو کانال.
-7. فقط پس از تکمیل و تأیید هر دو درگاه، آماده‌سازی امضای Release، مدارک و انتشار عمومی در بازار و مایکت.
-
-درخواست از مالک برای تصاویر پنل، فقط برای دیدن وضعیت رکورد پیش‌نویس برنامه و ساخت/پیکربندی محصولات آزمایشی است؛ نه برای اثبات انتشار. هیچ‌گاه انتشار عمومی را پیش‌شرط توسعه درگاه قرار ندهیم.
-
-### اقدام لازم از مالک برای ادامه امروز
-- دسترسی به پنل ناشران کافه‌بازار و مایکت را باز کند و از صفحه وضعیت برنامه/شناسه برنامه و صفحه محصولات یا پرداخت درون‌برنامه‌ای تصویر بفرستد؛ اطلاعات محرمانه، رمز، کلید خصوصی، توکن یا اطلاعات بانکی را در تصویر نگذارد.
-- اگر برنامه در پنل هنوز شناسه نهایی ندارد، ابتدا شناسه نهایی package و امضای انتشار باید تعیین شوند؛ SKU ساختن با package موقت ir.sahamban.pilot باعث دوباره‌کاری می‌شود.
-- اگر هر مارکت برای پاسخ سیاستی نیاز به تیکت پشتیبانی دارد، متن پرسش باید صریحاً درباره «فروش دسترسی دیجیتال Pro با مدت ثابت و پرداخت یک‌باره، بدون تمدید خودکار، در قالب SKU مصرفی و خرید مجدد پس از مصرف» باشد.
-
-## تعرفه تاریخی چهارپلنی (تومان) — منسوخ و صرفاً برای سابقه
-
-| SKU پیشنهادی | دوره دسترسی | قیمت |
-|---|---:|---:|
-| sahamban_pro_3m | ۳ ماه | ۴۵۰٬۰۰۰ |
-| sahamban_pro_6m | ۶ ماه | ۸۵۵٬۰۰۰ |
-| sahamban_pro_9m | ۹ ماه | ۱٬۲۱۵٬۰۰۰ |
-| sahamban_pro_12m | ۱۲ ماه | ۱٬۵۳۰٬۰۰۰ |
-
-SKUها صرفاً نام پیشنهادی‌اند؛ تا زمانی که در پنل هر فروشگاه ایجاد و تأیید نشده‌اند شناسه واقعی محسوب نمی‌شوند. هر فروشگاه ممکن است شناسه/قیمت/نوع محصول مستقل داشته باشد.
-
-## معماری موردنیاز
-
-1. اپ اندروید wrapper باید adapter مستقل برای Myket Billing و Bazaar Billing داشته باشد؛ PWA خالص روی GitHub Pages به‌تنهایی نمی‌تواند SDKهای native را اجرا کند.
-2. هر adapter خرید را آغاز و داده رسید/توکن خرید را به API امن ارسال کند؛ کلاینت به‌تنهایی حق فعال‌سازی Pro ندارد.
-3. API سرور با API رسمی فروشگاه یا امضای معتبر رسید، شناسه برنامه/محصول، کاربر، مبلغ/واحد، وضعیت پرداخت، شناسه تراکنش و عدم replay را بررسی کند.
-4. فعال‌سازی دوره در DB اتمیک باشد: تاریخ پایان فعلی، دوره جدید، تمدید/خرید مجدد، refund/chargeback، لغو و idempotency ثبت شود.
-5. entitlement سرور به حساب کاربر متصل باشد تا بازیابی روی نصب مجدد/دستگاه جدید ممکن شود. سبد و پشتیبان محلی حتی بعد از انقضای Pro برای کاربر قابل دسترسی بماند.
-6. قیمت‌ها و شناسه محصولات در catalog امن سمت سرور versioned باشند؛ مبلغ از مرورگر پذیرفته نشود. تغییر قیمت فقط خریدهای آینده را تحت تأثیر قرار دهد.
-7. آزمون واقعی روی گوشی با نسخه‌های آزمایشی مارکت، خرید موفق/لغو/شکست، بازیابی، انقضا، بازپرداخت و رسید تکراری انجام شود.
-
-## وضعیت موجود در مخزن
-
-- هسته entitlement فعلی در `subscription-entitlements.cjs` فقط تمدید سالانه دارد؛ باید به چهار مدت مصوب تبدیل و آزموده شود.
-- `subscription-orders.cjs` فقط `SAHAMBAN_PRO_ANNUAL` را می‌شناسد؛ هنوز SKUهای چهارگانه ندارد.
-- `d1-schema.sql` فقط پلن سالانه را در CHECK محدود کرده است.
-- `worker-api.mjs` نمونه Worker آزمایشی است؛ فقط entitlement read و pending order pilot دارد، پرداخت و checkout خاموش‌اند.
-- `server/README.md` صریحاً می‌گوید هیچ حساب تجاری، پرداخت یا سرویس production مستقر نیست.
-- `BANK-PSP-INTEGRATION-PLAN.md` مسیر PSP مستقیم را توصیف می‌کند؛ برای اولویت فعلی مارکت‌ها، این مسیر جایگزین IAP مایکت/بازار نیست و فعلاً نباید اجرا شود مگر مالک بعداً فروش خارج از مارکت را تصویب کند.
-
-
-
-## تصمیم قطعی مالک — خرید مدت‌دار بدون تمدید خودکار
-
-مالک در ۱۲ نوامبر ۲۰۲۶ روش **خرید یک‌باره با اعتبار مدت‌دار و بدون تمدید خودکار** را انتخاب کرد.
-
-- کاربر یک‌بار برای یکی از پلن‌های ۳، ۶، ۹ یا ۱۲ ماهه پرداخت می‌کند؛ هیچ برداشت خودکار دوره‌ای انجام نمی‌شود.
-- پس از پایان اعتبار، دسترسی Pro منقضی می‌شود و کاربر در صورت تمایل خودش خرید جدید انجام می‌دهد.
-- خرید مجدد پیش از انقضا باید مدت جدید را به‌صورت شفاف به انتهای اعتبار فعال اضافه کند (نه اینکه روزهای باقی‌مانده را از بین ببرد)، مگر سیاست نهایی فروشگاه الزام دیگری داشته باشد.
-- بازیابی خرید/اشتراک باید از رسید معتبر فروشگاه و حساب کاربر انجام شود؛ حذف و نصب مجدد برنامه نباید باعث از دست رفتن روزهای خریداری‌شده شود.
-- در محصول/پنل هر مارکت باید از نوع محصول one-time/non-renewing مناسب استفاده شود؛ قابلیت تمدید خودکار یا برداشت دوره‌ای فعال نشود. اگر یکی از مارکت‌ها دوره مدت‌دار را به این شکل پشتیبانی نکند، پیش از عرضه باید راهکار سازگار و منطبق با سیاست همان مارکت تعیین شود.
-- این تصمیم جایگزین بخش «نیاز به تصمیم مالک درباره روش فروش» در این سند است؛ پیاده‌سازی و اتصال فروشگاه هنوز انجام نشده است.
-
-## وابستگی‌ها / نیاز به مالک
-
-- دسترسی مالک به پنل توسعه‌دهندگان مایکت و کافه‌بازار برای ساخت/تکمیل رکورد پیش‌نویس برنامه و پیکربندی محصولات تست؛ انتشار عمومی پیش‌نیاز این کار نیست.
-- شناسه برنامه و Product IDهای واقعی که در هر دو پنل ایجاد شده‌اند؛ اطلاعات محرمانه یا کلید خصوصی در GitHub/چت ثبت نشود.
-- تأیید اینکه هر مارکت خرید یک‌باره با اعتبار مدت‌دار ۳/۶/۹/۱۲ ماهه را مطابق سیاست جاری می‌پذیرد.
-- دامنه/سرور خصوصی و هویت کاربر تجاری؛ Worker فعلی صرفاً نمونه پایلوت و توکن دستی است.
-- مدارک حقوقی/حریم خصوصی/شرایط استفاده و الزامات فروشگاه.
-
-## ممنوعیت اعلام وضعیت
-
-تا زمانی که پرداخت واقعی هر دو فروشگاه، اعتبارسنجی سمت سرور، بازیابی، انقضا و refund با شواهد روی دستگاه تأیید نشده‌اند، «اشتراک فعال»، «فروش آماده» یا «روز پنجم تمام» اعلام نشود.
-
-
-## نتیجه بررسی فنی روش خرید مدت‌دار بدون تمدید خودکار (۱۲ نوامبر ۲۰۲۶)
-
-### یافته قابل اتکا
-- **مایکت:** SDK رسمی نمونه، هر دو نوع محصول یک‌باره مصرفی و غیرمصرفی را مستند می‌کند؛ محصول مصرفی پس از ثبت موفق باید consume شود تا دوباره قابل خرید باشد. محصول اشتراک recurring نیز جداگانه وجود دارد. منبع: https://github.com/myketstore/billing-sample-android
-- **کافه‌بازار:** API/SDK پرداخت درون‌برنامه‌ای، مسیر `purchase` برای SKU محصول و `subscribe` جداگانه برای SKU اشتراک را تفکیک می‌کند؛ مستندات کتابخانه یکپارچه‌ساز موجود، `consume(purchaseToken)` را برای محصولات مصرفی و نه اشتراک‌ها تعریف کرده و امکان اعتبارسنجی سمت سرور با orderId/purchaseToken/originalJson را ذکر می‌کند. منبع فنی ثانویه: https://pub.dev/documentation/cafebazaar_billing/latest/ . پورتال رسمی توسعه‌دهندگان: https://developers.cafebazaar.ir/fa/
-- بنابراین الگوی فنی سازگار با خواست مالک، **چهار محصول یک‌باره مصرفی (Consumable IAP) در هر مارکت + ثبت دوره دسترسی روی سرور پس از تأیید رسید + consume فقط پس از ثبت اتمیک سرور** است؛ از محصول Subscription/تمدید خودکار استفاده نشود. این الگو برای مایکت مستقیماً با نمونه رسمی یک‌باره سازگار است؛ برای بازار باید در پنل/تأیید پشتیبانی بازار، مجاز بودن عرضه دسترسی مدت‌دار دیجیتال با SKU مصرفی صریحاً تأیید شود. در صورت عدم تأیید کتبی/پنلی، محصول را منتشر نکنیم.
-- **محدودیت مهم:** هیچ مدرک عمومی رسمیِ قابل دسترسی در این بررسی پیدا نشد که صریحاً تضمین کند هر دو مارکت دقیقاً SKUهای ثابت ۳/۶/۹/۱۲ ماهه را به‌عنوان «اشتراک غیرتمدیدشونده» پشتیبانی می‌کنند. پس نباید ادعا کنیم چنین نوع اشتراکی در پنل وجود دارد. پیشنهاد بالا اصلاً از نوع اشتراک فروشگاه نیست؛ خرید یک‌باره است که سرور برای آن حق دسترسی مدت‌دار صادر می‌کند.
-- **هویت/بازیابی:** خرید مصرفی پس از consume ممکن است دیگر در inventory فروشگاه به‌عنوان خرید مالکیت‌یافته نمایش داده نشود؛ بنابراین قبل از consume باید رسید سمت سرور اعتبارسنجی و به حساب کاربری متصل شود. بازیابی دسترسی بعدی از حساب سهام‌بان و ledger سرور است، نه صرفاً inventory فروشگاه.
-- **توالی الزامی:** ایجاد سفارش با SKU/قیمت سروری → آغاز خرید در SDK همان مارکت → ارسال token/receipt → اعتبارسنجی server-to-server/امضای رسمی و تطبیق package/product/amount/order/user → ثبت تراکنش و تمدید entitlement در تراکنش DB و idempotency → پاسخ موفق به اپ → consume محصول مصرفی در فروشگاه. اگر ثبت سرور شکست خورد، consume نکنیم و امکان reconcile مجدد داشته باشیم.
-- خرید مجدد پیش از انقضا: افزودن مدت خریداری‌شده به `max(now, paid_until)` با تقویم UTC و محاسبه ماه تقویمی، نه ثابت‌گرفتن هر ماه ۳۰ روز. مرز ماه و انتهای ماه (مثلاً ۳۱ ژانویه + یک ماه) باید سیاست مشخص و تست شود.
-- **وضعیت فعلی مخزن:** entitlement فقط یک سال تقویمی دارد؛ order contract فقط `SAHAMBAN_PRO_ANNUAL` را می‌پذیرد؛ D1 CHECK نیز annual-only است؛ Worker آزمایشی checkout/verification ندارد. پس هیچ‌یک از چهار محصول یا پرداخت هنوز پیاده‌سازی نشده‌اند.
-- **نیاز پیش از توسعه/انتشار:** مالک باید در پنل هر دو مارکت حساب ناشر و محصول‌های آزمایشی ایجاد کند یا دسترسی پنل را فراهم کند؛ سپس نوع محصول و اجازه فروش دوره دسترسی را بررسی/تأیید کند. شناسه واقعی محصول و کلید عمومی از پنل گرفته شود؛ رمزها/کلید خصوصی هرگز در GitHub یا چت قرار نگیرند.
-
-
-## مقایسه مقررات/نوع محصول دو مارکت با مدل خرید مدت‌دار بدون تمدید خودکار (۱۲ نوامبر ۲۰۲۶)
-
-### تصمیم بررسی
-- نیاز محصول: فروش دسترسی دیجیتال Pro برای مدت ثابت ۳/۶/۹/۱۲ ماه، پرداخت یک‌باره، بدون تمدید خودکار، با اعتبارسنجی سمت سرور.
-- مایکت: SDK رسمی به‌طور مستند محصولات مصرفی و غیرمصرفی و اشتراک recurring را جدا می‌کند. منبع: https://github.com/myketstore/billing-sample-android . از این مستند می‌توان وجود مسیر IAP یک‌باره را نتیجه گرفت؛ اما سند عمومی بررسی‌شده صریحاً نمی‌گوید فروش «مجوز دسترسی نرم‌افزاری مدت‌دار» در قالب SKU مصرفی از نظر مقررات/پنل مجاز است. پس **سازگاری مفهومی/فنی محتمل، تأیید مقرراتی برای سناریوی ما هنوز نامشخص** است.
-- کافه‌بازار: API فنی موجود `purchase` محصول و `subscribe` اشتراک را تفکیک می‌کند؛ `consume` فقط برای کالای مصرفی است و برای subscription نباید اجرا شود. منبع فنی ثالث: https://pub.dev/documentation/cafebazaar_billing/latest/ ؛ پورتال رسمی: https://developers.cafebazaar.ir/fa/ . اعلام رسمی بازار درباره «تمدید خودکار اشتراک» نیز وجود دارد: https://newsblog.cafebazaar.ir/autosubs-wiyjjdfkxulb . در منابع عمومی قابل دسترس، نوع رسمی «اشتراک مدت‌دار غیرقابل تمدید» برای دوره‌های ثابت ما احراز نشد. SKU مصرفی برای اعطای دسترسی دیجیتال دوره‌ای نیز از حیث مقررات نیازمند تأیید بازار است. پس **تطبیق مقرراتی احراز نشده**.
-- نتیجه سخت‌گیرانه: در حال حاضر نمی‌توان مستند و قطعی اعلام کرد که هرکدام از دو مارکت با طرح دقیق ما منطبق است؛ همچنین نباید یکی را صرفاً بر اساس وجود API خرید مصرفی تأییدشده فرض کرد. **هیچ‌کدام هنوز تأیید نهایی نمی‌شود.** گزینه اول برای استعلام رسمی، مایکت است چون نمونه رسمی آن هم‌زمان محصول مصرفی و اشتراک را روشن می‌کند؛ اما تا دریافت پاسخ صریح پنل/پشتیبانی درباره فروش دسترسی ۳/۶/۹/۱۲ ماهه با پرداخت یک‌باره، پیاده‌سازی adapter و انتشار قفل بماند. بازار فقط اگر رسماً روش خرید یک‌باره مدت‌دار را مجاز بداند، در دامنه قرار گیرد.
-- پاسخ لازم از هر مارکت باید صریحاً این موارد را تأیید کند: (۱) مجاز بودن فروش دسترسی Pro به نرم‌افزار برای مدت ثابت با یک پرداخت؛ (۲) تعریف SKU به‌صورت IAP یک‌باره مصرفی یا نوع محصول مورد تأیید خودشان؛ (۳) امکان خرید مجدد همان SKU پس از پایان/مصرف؛ (۴) اجازه افزودن مدت خرید جدید به انتهای اعتبار قبلی؛ (۵) الزام consume و زمان درست آن؛ (۶) روش رسمی اعتبارسنجی server-to-server و رسید/توکن؛ (۷) سیاست refund و ابطال دسترسی.
-- تا دریافت تأیید کتبی/قابل استناد، **فقط مارکتی انتخاب نشود و هیچ‌یک حذف/رد قطعی اعلام نشود**. تصمیم نهایی: proceed with Myket inquiry first; Bazaar remains conditional. No code changes.
-
-
-## تصمیم نهایی مالک درباره تقدم محصول بر کانال فروش (۱۲ نوامبر ۲۰۲۶)
-
-- **مدل درآمدی سهام‌بان ثابت و مستقل از مارکت است.** چهار دسترسی حرفه‌ای مدت‌دار ۳، ۶، ۹ و ۱۲ ماهه با خرید یک‌باره، بدون تمدید/برداشت خودکار؛ قیمت آغاز عرضه به‌ترتیب ۴۵۰٬۰۰۰، ۸۵۵٬۰۰۰، ۱٬۲۱۵٬۰۰۰ و ۱٬۵۳۰٬۰۰۰ تومان و تخفیف‌های ۰، ۵، ۱۰ و ۱۵ درصد.
-- نسخه رایگان محدود حفظ می‌شود؛ تمام چهار دوره Pro امکانات حرفه‌ای یکسان دارند. تمدید خریداری‌شده به انتهای اعتبار فعال اضافه می‌شود، بدون کاهش اعتبار باقیمانده؛ اطلاعات و پشتیبان کاربر پس از انقضا همچنان قابل دسترس می‌ماند.
-- **مرحله فعلی:** هسته مستقل از فروشگاه شامل فهرست پلن‌ها/قیمت نسخه‌دار، سفارش امن، اعتبارسنجی رویداد تأییدشده، انقضا، جلوگیری از ثبت مجدد پرداخت و آزمون‌های خودکار توسعه یابد. اتصال به SDK، انتخاب مرچنت/PSP، فعال‌سازی فروش و انتشار در هر مارکت تا زمان احراز سازگاری آن با مدل مصوب معلق بماند.
-- **قاعده انتخاب کانال:** فقط کانال‌هایی که به‌شکل قابل استناد شرایط خرید یک‌باره مدت‌دار را طبق مدل سهام‌بان می‌پذیرند انتخاب شوند؛ کانال ناسازگار کنار گذاشته شود، نه اینکه محصول به تمدید خودکار یا روش خلاف مصوب تغییر کند. نه مایکت و نه بازار در حال حاضر تأیید نهایی انطباق ندارند؛ پاسخ رسمی هر دو در انتظار است.
-- مدل پیاده‌سازی باید پذیرای adapterهای جداگانه برای کانال‌های سازگار بعدی باشد. این تصمیم مجوز پرداخت مستقیمِ بدون انطباق حقوقی یا ادعای آماده‌بودن فروش نیست.
-
-
-## تصمیم مالک — وب‌سایت اختصاصی کانال اصلی، مایکت و بازار مکمل مشروط (۱۲ نوامبر ۲۰۲۶)
-
-- مالک وب‌سایت اختصاصی سهام‌بان را **کانال اصلی فروش و اشتراک** انتخاب کرد؛ مایکت و کافه‌بازار **حذف نمی‌شوند** و در صورت تأیید سازگاری فنی/مقرراتی با مدل خرید یک‌باره مدت‌دار بدون تمدید خودکار، به کانال‌های مکمل اضافه خواهند شد.
-- مدل مصوب تغییر نکرده است: Free محدود + Pro با دسترسی یکسان در چهار دوره ۳/۶/۹/۱۲ ماهه و مبالغ ۴۵۰٬۰۰۰ / ۸۵۵٬۰۰۰ / ۱٬۲۱۵٬۰۰۰ / ۱٬۵۳۰٬۰۰۰ تومان؛ تخفیف‌های ۰/۵/۱۰/۱۵ درصد.
-- یک حساب کاربر و یک ledger/entitlement معتبر مرکزی باید خریدهای کانال‌های سازگار را به‌صورت امن جمع کند. هیچ کلاینت، رسید یا callback به‌تنهایی حق فعال‌سازی Pro ندارد. شناسه خرید هر ارائه‌دهنده باید جدا و در DB ضد-replay ثبت شود.
-- پیش‌نیازهای آغاز دریافت وجه از وب‌سایت: پذیرنده و کشور/حساب تسویه مشخص، دامنه و HTTPS، PSP/پرداخت‌یار دارای قرارداد و روش اعتبارسنجی رسمی، احراز هویت کاربر، سیاست مالیات/استرداد و بررسی احتمال الزام مجوز خدمات مالی. درگاه یا قانون مالیاتی تا احراز صلاحیت واقعی قطعی فرض نشود.
-- نتیجه این تصمیم **فقط تأیید راهبرد و مستندسازی** است، نه استقرار وب‌سایت تجاری یا فعال‌شدن فروش. کد و پرداخت هنوز تغییر نکرده‌اند؛ دروازه C و روز پنجم بازند.
-
-
-## ادامه کار — لایه طرح پایگاه داده چهار اشتراک (۱۲ نوامبر ۲۰۲۶)
-
-- اجرای CI قبلی برای هسته چهار پلن با commit `0c324e72` تکمیل و موفق شد: https://github.com/Raminhashemi1/sahamban/actions/runs/43246085836 .
-- migration افزایشی `server/d1-prepaid-migration.sql` اضافه شد: جدول سفارش‌های چهار پلن، entitlement مدت‌دار، ledger رخدادهای پرداخت، قیود تطبیق پلن/قیمت، شناسه‌های یکتای ارائه‌دهنده و حداکثر یک سفارش pending برای هر حساب. جداول سالانه قدیمی عمداً تغییر نکردند.
-- آزمون SQLite مستقل `tests/d1-prepaid-migration.test.py` اضافه و به CI وصل شد. اجرای CI برای commit `657bc6e9` در زمان ثبت هنوز queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43247870307 . تا پایان اجرا نتیجه اعلام نشود.
-- migration هنوز روی D1 واقعی اعمال نشده؛ repository/Worker تجاری، ورود امن کاربران، endpoint ساخت سفارش، adapter درگاه، اعتبارسنجی server-to-server، refund و ادغام entitlement با برنامه هنوز پیاده‌سازی/استقرار نشده‌اند. فروش خاموش می‌ماند.
+## Security / release gates
+- Fail closed: if provider verification/status cannot be obtained, do not grant or extend entitlement.
+- Never trust client-supplied amount, package, SKU mapping, expiry or `verified` flag.
+- Never log receipt tokens, OAuth secrets, public/private key material or account credentials.
+- Never deploy D1 migrations or enable payments on production without owner approval.
+- Do not merge PR #186 or publish the app before both stores pass end-to-end tests.
