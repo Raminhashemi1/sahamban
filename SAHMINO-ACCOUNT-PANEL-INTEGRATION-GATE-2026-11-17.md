@@ -100,3 +100,10 @@ Next safe gate: provision a private test Worker and test D1 with the owner, conf
 ### Current acceptance boundary
 
 The source workflow is now prepared to add the five-plan D1 schema safely on the next owner-authorized pilot deployment. This code change is not evidence that the remote D1 was migrated. The existing pilot endpoint remains a no-payment prototype until an approved deployment and real device/SMS acceptance are completed.
+
+## Follow-up correction — GitHub Actions output delimiter
+
+- A review of the new D1 preflight found that the output writer had an escaped backslash sequence rather than a newline delimiter. That would prevent GitHub Actions from reliably exposing the `mode` and `v2_mode` step outputs.
+- Corrected both output writes to use actual newline delimiters and added regression assertions to the deployment workflow test.
+- Commits: `4ba15a7b` (workflow correction), `77682037` (regression assertions).
+- The corrected workflow is still manual-only, main-only, and payments-disabled. No deployment or remote D1 mutation was run.
