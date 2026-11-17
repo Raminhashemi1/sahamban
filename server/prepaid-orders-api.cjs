@@ -12,6 +12,7 @@ const INSERT_SQL=[
  'FROM sahamban_users u',
  "WHERE u.auth_subject=? AND u.status='ACTIVE'"
 ].join(' ');
+const INSERT_USER_SQL=INSERT_SQL.replace('u.auth_subject=?','u.id=?');
 const SELECT_PENDING_SQL=[
  'SELECT o.id,o.plan_id,o.amount_rial,o.currency,o.created_at',
  'FROM sahmino_prepaid_subscription_orders o',
@@ -32,7 +33,7 @@ async function createPrepaidOrder(db,{authenticatedSubject,planId,now,makeOrderI
  const id=typeof makeOrderId==='function'?makeOrderId():null;
  if(typeof id!=='string'||!ORDER.test(id))return fail('ORDER_ID_UNAVAILABLE',503);
  try{
-  const result=await db.prepare(INSERT_SQL).bind(id,planId,selected.priceRial,now,authenticatedSubject).run();
+  const result=await db.prepare(byUser?INSERT_USER_SQL:INSERT_SQL).bind(id,planId,selected.priceRial,now,byUser?authenticatedUserId:authenticatedSubject).run();
   if(result?.success!==true)return fail('ORDER_UNAVAILABLE',503);
   if(result?.meta?.changes!==1)return fail('ACCOUNT_NOT_ELIGIBLE',403);
   return {status:201,reason:'PENDING_ORDER_CREATED',order:{id,planId,
@@ -43,7 +44,7 @@ async function findPrepaidPendingOrder(db,authenticatedSubject){
  if(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject))return fail('NOT_AUTHENTICATED',401);
  if(!db||typeof db.prepare!=='function')return fail('DATABASE_UNAVAILABLE',503);
  try{
-  const row=await db.prepare(SELECT_PENDING_SQL).bind(authenticatedSubject).first();
+  const row=await db.prepare(byUser?SELECT_PENDING_USER_SQL:SELECT_PENDING_SQL).bind(byUser?authenticatedUserId:authenticatedSubject).first();
   if(!row)return {status:200,reason:'NO_PENDING_ORDER',pending:false,checkoutEnabled:false,proEnabled:false};
   const p=plan(row.plan_id);
   if(typeof row.id!=='string'||!ORDER.test(row.id)||row.amount_rial!==p.priceRial||
@@ -53,4 +54,4 @@ async function findPrepaidPendingOrder(db,authenticatedSubject){
   },checkoutEnabled:false,proEnabled:false};
  }catch(_){return fail('ORDER_UNAVAILABLE',503);}
 }
-module.exports=Object.freeze({createPrepaidOrder,findPrepaidPendingOrder,INSERT_SQL,SELECT_PENDING_SQL});
+module.exports=Object.freeze({createPrepaidOrder,findPrepaidPendingOrder,INSERT_SQL,INSERT_USER_SQL,SELECT_PENDING_SQL,SELECT_PENDING_USER_SQL});
