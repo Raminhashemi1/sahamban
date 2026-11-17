@@ -102,6 +102,7 @@ class SahminoV2MigrationTests(unittest.TestCase):
                 (id,user_id,plan_id,amount_rial,currency,state,created_at)
                 VALUES(?,?,?,?,?,'PENDING','2026-11-12T10:00:00Z')""",
                 (f"new{i}", "u1", plan, amount, "IRR"))
+            self.db.execute("UPDATE sahmino_prepaid_subscription_orders SET state='CANCELLED' WHERE id=?", (f"new{i}",))
         self.assertEqual(self.db.execute(
             "SELECT count(*) FROM sahmino_prepaid_subscription_orders").fetchone()[0], 5)
 
