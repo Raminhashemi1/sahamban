@@ -20,7 +20,7 @@ test('D1 repository stores only a SHA-256 session digest and returns hardened co
  const {db,calls}=mockD1();
  const repo=createD1SmsOtpRepository(db,{clock:()=>Date.parse('2026-11-17T12:00:00Z')});
  const session=await repo.createSharedSession({userId:'usr_'+'a'.repeat(32),authenticatedAt:'2026-11-17T12:00:00.000Z'});
- assert.match(session.cookie,/^sahmino_session=[a-f0-9]{64}; Path=\/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000$/);
+ assert.match(session.cookie,/^sahmino_session=[a-f0-9]{64}; Path=\/; HttpOnly; Secure; SameSite=None; Max-Age=2592000$/);
  const call=calls.find(x=>x.kind==='run');
  assert.match(call.sql,/INSERT INTO sahmino_shared_sessions/);
  assert.match(call.args[2],/^[a-f0-9]{64}$/);
@@ -45,7 +45,7 @@ test('logout revokes one session by digest and clears cookie safely',async()=>{
  assert.equal(await repo.revokeSession('c'.repeat(64),'2026-11-17T12:01:00.000Z'),true);
  assert.match(calls[0].sql,/UPDATE sahmino_shared_sessions SET revoked_at=/);
  assert.equal(calls[0].args[1].length,64);
- assert.match(repo.clearSessionCookie(),/HttpOnly; Secure; SameSite=Lax; Max-Age=0$/);
+ assert.match(repo.clearSessionCookie(),/HttpOnly; Secure; SameSite=None; Max-Age=0$/);
 });
 
 test('account-wide revocation requires internal user identifier and is conditional',async()=>{
