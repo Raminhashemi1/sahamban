@@ -24,6 +24,8 @@ public final class SahminoStoreBillingManager {
         void onPurchaseNeedsServerVerification(SahminoBillingCatalog.Plan plan, Purchase purchase);
         void onOwnedInventoryItem(SahminoBillingCatalog.Plan plan, Purchase purchase);
         void onNoOwnedPurchase();
+        default void onSignedPurchaseEvidence(SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence) { }
+        default void onOwnedPurchaseEvidence(SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence) { }
     }
 
     private static final String TAG = "SahminoBilling";
@@ -103,7 +105,9 @@ public final class SahminoStoreBillingManager {
                         if (owned != null && owned.getPurchaseState() == 0) {
                             foundOwned = true;
                             // Existing purchase is reported, never locally activated.
-                            listener.onOwnedInventoryItem(plan, owned);
+                            SahminoPurchaseEvidence evidence = SahminoPurchaseEvidence.from(owned);
+                            if (evidence != null) listener.onOwnedPurchaseEvidence(plan, evidence);
+                            else status("خرید قبلی پیدا شد، اما اطلاعات رسید برای تأیید امن کامل نیست.");
                         }
                     }
                     if (!foundOwned) listener.onNoOwnedPurchase();
@@ -143,8 +147,13 @@ public final class SahminoStoreBillingManager {
                     && plan.productId.equals(purchase.getSku())
                     && purchase.getPurchaseState() == 0
                     && payload.equals(purchase.getDeveloperPayload())) {
-                    status("خرید در SDK فروشگاه تأیید اولیه شد؛ در انتظار تأیید امن سرور هستیم.");
-                    listener.onPurchaseNeedsServerVerification(plan, purchase);
+                    SahminoPurchaseEvidence evidence = SahminoPurchaseEvidence.from(purchase);
+                    if (evidence == null) {
+                        status("فروشگاه خرید را برگرداند، اما رسید امضاشده قابل استخراج نیست؛ اشتراک فعال نشد.");
+                        return;
+                    }
+                    status("رسید امضاشده دریافت شد؛ برای تأیید سمت سرور آماده است.");
+                    listener.onSignedPurchaseEvidence(plan, evidence);
                 } else {
                     status("خرید تکمیل یا تأیید نشد؛ اگر وجهی کسر شده، پس از اتصال دوباره بازیابی را انجام دهید.");
                 }
