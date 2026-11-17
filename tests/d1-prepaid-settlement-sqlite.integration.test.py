@@ -33,12 +33,12 @@ def make_db():
                ('u1', 'integration:subject', NOW, 'ACTIVE'))
     return db
 
-def pending(db, oid=ORDER_ID, plan='SAHAMBAN_PRO_30D', amount=1500000):
+def pending(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000):
     db.execute('INSERT INTO sahmino_prepaid_subscription_orders(id,user_id,plan_id,amount_rial,currency,state,created_at) VALUES(?,?,?,?,?,?,?)',
                (oid, 'u1', plan, amount, 'IRR', 'PENDING', NOW))
     db.commit()
 
-def settle(db, oid=ORDER_ID, plan='SAHAMBAN_PRO_30D', amount=1500000, days=30,
+def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, days=30,
            now=NOW, event='evt_1', payment='pay_1'):
     with db:
         event_result = db.execute(EVENT, ('provider', event, payment, now, oid, plan, amount))
@@ -68,8 +68,8 @@ class SahminoSQLiteIntegration(unittest.TestCase):
             pending(db)
             self.assertEqual(settle(db), '2026-12-12T10:00:00.000Z')
             second = 'ord_' + 'b' * 32
-            pending(db, second, 'SAHAMBAN_PRO_60D', 2850000)
-            self.assertEqual(settle(db, oid=second, plan='SAHAMBAN_PRO_60D',
+            pending(db, second, 'SAHMINO_PRO_60D', 2850000)
+            self.assertEqual(settle(db, oid=second, plan='SAHMINO_PRO_60D',
                                     amount=2850000, days=60, event='evt_2',
                                     payment='pay_2'), '2027-02-10T10:00:00.000Z')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 2)
