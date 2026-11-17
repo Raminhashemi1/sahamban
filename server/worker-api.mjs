@@ -71,9 +71,7 @@ async function handleOtpRoutes(request,env,url,nowMs){
  if(url.search)return otpJson(request,{error:'QUERY_NOT_ALLOWED'},400,origin);
  if(!env?.SAHAMBAN_DB||!env?.SAHMINO_OTP_VERIFIER_SECRET||!env?.SAHMINO_OTP_RATE_LIMIT_SECRET)
   return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
- const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
  const cookie=parseCookie(request,'sahmino_session');
- const clearCookie=repo.clearSessionCookie();
  if(route==='/api/v1/auth/otp/request'){
   if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
@@ -81,6 +79,7 @@ async function handleOtpRoutes(request,env,url,nowMs){
   if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
   const body=parsed.body;
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||typeof body.phone!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
   const adapter=createSmsBindingAdapter(env.SAHMINO_SMS_PROVIDER);
   if(!adapter)return otpJson(request,{error:'SMS_PROVIDER_UNAVAILABLE'},503,origin);
   const ipKey=await keyedIpPseudonym(request,env.SAHMINO_OTP_RATE_LIMIT_SECRET);
@@ -96,6 +95,7 @@ async function handleOtpRoutes(request,env,url,nowMs){
   if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
   const body=parsed.body;
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||typeof body.challengeId!=='string'||typeof body.code!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
   const adapter={async sendOtp(){return {accepted:false};}};
   const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
   const result=await service.verifyCode({challengeId:body.challengeId,code:body.code});
@@ -103,12 +103,16 @@ async function handleOtpRoutes(request,env,url,nowMs){
   return otpJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie});
  }
  if(route==='/api/v1/auth/session'){
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const clearCookie=repo.clearSessionCookie();
   if(request.method!=='GET')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(!cookie)return otpJson(request,{authenticated:false},401,origin);
   const active=await repo.findActiveSession(cookie,nowMs);
   return active?otpJson(request,{authenticated:true,expiresAt:active.expiresAt},200,origin):otpJson(request,{authenticated:false},401,origin,{'Set-Cookie':clearCookie});
  }
  if(route==='/api/v1/auth/logout'){
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const clearCookie=repo.clearSessionCookie();
   if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(request.headers.get('X-Sahmino-CSRF')!=='1')return otpJson(request,{error:'CSRF_REJECTED'},403,origin,{'Set-Cookie':clearCookie});
   if(cookie)await repo.revokeSession(cookie,new Date(nowMs).toISOString());
