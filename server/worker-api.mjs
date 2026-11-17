@@ -21,6 +21,24 @@ function otpJson(request,body,status,origin,extraHeaders={}){
  if(origin)headers['Access-Control-Allow-Origin']=origin;
  return new Response(JSON.stringify(body),{status,headers});
 }
+async function readSmallJson(request,maxBytes=1024){
+ const declared=request.headers.get('Content-Length');
+ if(declared!==null&&(!/^[0-9]+$/.test(declared)||Number(declared)>maxBytes))return {error:'BODY_TOO_LARGE',status:413};
+ if(!request.body)return {error:'INVALID_JSON',status:400};
+ const reader=request.body.getReader(),chunks=[];let size=0;
+ try{
+  while(true){
+   const {done,value}=await reader.read();if(done)break;
+   size+=value.byteLength;
+   if(size>maxBytes){await reader.cancel();return {error:'BODY_TOO_LARGE',status:413};}
+   chunks.push(value);
+  }
+ }catch(_){return {error:'INVALID_JSON',status:400};}
+ const bytes=new Uint8Array(size);let offset=0;
+ for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ try{return {body:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))};}
+ catch(_){return {error:'INVALID_JSON',status:400};}
+}
 function requestOriginAllowed(request,env){
  const origin=request.headers.get('Origin');
  return typeof env?.PWA_ORIGIN==='string'&&origin===env.PWA_ORIGIN&&/^https:\/\/[a-z0-9.-]+(?::[0-9]+)?$/i.test(env.PWA_ORIGIN);
@@ -56,11 +74,12 @@ async function handleOtpRoutes(request,env,url,nowMs){
  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
  const cookie=parseCookie(request,'sahmino_session');
  const clearCookie=repo.clearSessionCookie();
- const sessionCookie=(value)=>value;
  if(route==='/api/v1/auth/otp/request'){
   if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
-  let body;try{body=await request.json();}catch(_){return otpJson(request,{error:'INVALID_JSON'},400,origin);}
+  const parsed=await readSmallJson(request,256);
+  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||typeof body.phone!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
   const adapter=createSmsBindingAdapter(env.SAHMINO_SMS_PROVIDER);
   if(!adapter)return otpJson(request,{error:'SMS_PROVIDER_UNAVAILABLE'},503,origin);
@@ -73,7 +92,9 @@ async function handleOtpRoutes(request,env,url,nowMs){
  if(route==='/api/v1/auth/otp/verify'){
   if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
-  let body;try{body=await request.json();}catch(_){return otpJson(request,{error:'INVALID_JSON'},400,origin);}
+  const parsed=await readSmallJson(request,256);
+  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||typeof body.challengeId!=='string'||typeof body.code!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
   const adapter={async sendOtp(){return {accepted:false};}};
   const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
