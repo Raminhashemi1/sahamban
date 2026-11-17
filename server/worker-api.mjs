@@ -231,6 +231,7 @@ export default {
   // derived only from a validated, unrevoked OTP session in D1; never from input.
   if(isPrepaidOrders||isPrepaidOverview||isPrepaidReceipts){
    const sessionCookie=parseCookie(request,'sahmino_session');
+   if(isPrepaidReceipts&&!sessionCookie)return send({error:'NOT_AUTHENTICATED'},401,cors);
    if(sessionCookie){
     if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
      return send({error:'FEATURE_DISABLED'},404,cors);
