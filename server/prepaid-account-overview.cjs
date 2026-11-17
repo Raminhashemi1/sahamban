@@ -16,7 +16,7 @@ const HISTORY=`SELECT id,plan_id,amount_rial,currency,state,created_at,settled_a
  FROM prepaid_subscription_orders WHERE user_id=?
 ) ORDER BY created_at DESC,id DESC LIMIT 20`;
 function utc(v){
- if(typeof v!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(v))return null;
+ if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(v))return null;
  const n=Date.parse(v);return Number.isFinite(n)&&new Date(n).toISOString().slice(0,19)===v.slice(0,19)?n:null;
 }
 const fail=(reason,status)=>({status,reason,proEnabled:false,checkoutEnabled:false});
