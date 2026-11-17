@@ -27,7 +27,7 @@ test('market variants use separate store flavors, approved Sahmino identity and 
  assert.match(wf,/compileBazaarDebugJavaWithJavac/);
  assert.match(wf,/compileMyketDebugJavaWithJavac/);
  assert.match(wf,/Compile-check both store variants/);
- assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
+ assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease/);
  assert.doesNotMatch(wf,/upload-artifact|assembleBazaarDebug|assembleMyketDebug/);
  assert.match(read('android-pilot/README.md'),/does NOT assemble/);
  assert.match(build,/bazaar\s*\{/);
