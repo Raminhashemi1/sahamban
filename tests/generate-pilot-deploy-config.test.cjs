@@ -20,6 +20,8 @@ test('manual release never triggers from push, requires approval and locked vari
  const s=fs.readFileSync('.github/workflows/cloudflare-pilot-deploy.yml','utf8');
  assert.match(s,/workflow_dispatch:/);
  assert.doesNotMatch(s,/\n  push:|\n  pull_request:/);
+ assert.ok(s.includes('appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\\n")'));
+ assert.ok(s.includes('appendFileSync(process.env.GITHUB_OUTPUT,"v2_mode="+v2Mode+"\\n")'));
  for(const required of ['DEPLOY_PILOT_NO_PAYMENTS','environment: cloudflare-pilot',
   'secrets.CLOUDFLARE_API_TOKEN','vars.CLOUDFLARE_ACCOUNT_ID',
   'vars.SAHAMBAN_D1_DATABASE_ID','wrangler d1 execute','--remote',
