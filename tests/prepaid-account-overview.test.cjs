@@ -34,6 +34,6 @@ test('malformed order history fails without leaking partial history',async()=>{
 test('OTP internal user ID resolves account and history without auth_subject',async()=>{
  const userId='usr_'+'a'.repeat(32),db=dbFor(),result=await prepaidAccountOverview(db,{authenticatedUserId:userId,now});
  assert.equal(result.status,200);assert.equal(result.proEnabled,true);
- assert.deepEqual(db.calls.map(x=>x.args),[[userId],[userId,userId]]);
- assert.match(db.calls[0].sql,/WHERE u.id=\\?/);
+ assert.deepEqual(db.calls.map(x=>x.args),[[userId],['u1','u1']]);
+ assert.match(db.calls[0].sql,/WHERE u\.id=\?/);
 });
