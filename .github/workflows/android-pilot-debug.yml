@@ -31,6 +31,15 @@ jobs:
           mkdir -p /tmp/sahmino-billing-check
           javac -d /tmp/sahmino-billing-check android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java android-pilot/tests/SahminoBillingCatalogTest.java
           java -cp /tmp/sahmino-billing-check ir.sahamban.pilot.SahminoBillingCatalogTest
+      - name: Enforce one-time purchase policy for manual renewal
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANAGER=android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoStoreBillingManager.java
+          grep -q 'helper.launchPurchaseFlow(activity, plan.productId' "$MANAGER"
+          ! grep -q 'launchSubscriptionPurchaseFlow' "$MANAGER"
+          grep -q 'SahminoPurchaseEvidence.from(purchase)' "$MANAGER"
+          echo "Manual-renewal IAP policy: PASS"
       - name: Verify signed purchase evidence extraction
         shell: bash
         run: |
