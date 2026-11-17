@@ -50,7 +50,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
     }
 
     @Override
-    public void purchase(ComponentActivity activity, String productId, String serverOrderPayload,
+    public void subscribe(ComponentActivity activity, String productId, String serverOrderPayload,
                          PurchaseListener listener) {
         if (payment == null || connection == null) {
             listener.onFailure("BAZAAR_NOT_CONNECTED");
@@ -62,7 +62,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
             return;
         }
         // These are non-renewing prepaid in-app products, not store subscriptions.
-        payment.purchaseProduct(activity.getActivityResultRegistry(),
+        payment.subscribeProduct(activity.getActivityResultRegistry(),
             new PurchaseRequest(productId, serverOrderPayload, null), callback -> {
                 callback.purchaseSucceed(info -> {
                     listener.onPurchased(new PurchaseReceipt(
@@ -85,31 +85,6 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
                 });
                 return Unit.INSTANCE;
             });
-    }
-
-    @Override
-    public void consume(PurchaseReceipt receipt, ConsumptionListener listener) {
-        if (payment == null || connection == null) {
-            listener.onFailure("BAZAAR_NOT_CONNECTED");
-            return;
-        }
-        if (receipt == null || !"CAFEBAZAAR".equals(receipt.provider) ||
-            receipt.purchaseToken == null || receipt.purchaseToken.trim().isEmpty()) {
-            listener.onFailure("INVALID_BAZAAR_RECEIPT");
-            return;
-        }
-        // Invoke only after backend settlement; subscriptions must never be consumed.
-        payment.consumeProduct(receipt.purchaseToken, callback -> {
-            callback.consumeSucceed(() -> {
-                listener.onConsumed();
-                return Unit.INSTANCE;
-            });
-            callback.consumeFailed(error -> {
-                listener.onFailure("BAZAAR_CONSUME_FAILED");
-                return Unit.INSTANCE;
-            });
-            return Unit.INSTANCE;
-        });
     }
 
     @Override
