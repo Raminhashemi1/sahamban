@@ -3,7 +3,12 @@
 // Reads new Sahmino orders and retained legacy order history; never initiates checkout.
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const LOOKUP=`SELECT u.id AS user_id,u.status AS account_status,
- COALESCE(v2.paid_until,e.paid_until) AS paid_until,
+ CASE
+  WHEN v2.paid_until IS NOT NULL AND (e.paid_until IS NULL OR v2.paid_until>=e.paid_until)
+       AND (le.paid_until IS NULL OR v2.paid_until>=le.paid_until) THEN v2.paid_until
+  WHEN e.paid_until IS NOT NULL AND (le.paid_until IS NULL OR e.paid_until>=le.paid_until) THEN e.paid_until
+  ELSE le.paid_until
+ END AS paid_until,
  COALESCE(le.suspended,0) AS payment_suspended
 FROM sahamban_users u
 LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id
