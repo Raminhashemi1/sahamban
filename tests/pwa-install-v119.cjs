@@ -81,11 +81,11 @@ async function main(){
   });
   const response=await page.goto(origin+'/install.html',{waitUntil:'load'});
   assert.equal(response?.status(),200);
-  assert.match(await page.title(),/نصب سهام‌بان/);
-  assert.equal(await page.getByRole('heading',{name:'نصب سهام‌بان',level:1}).count(),1);
+  assert.match(await page.title(),/نصب سهمینو/);
+  assert.equal(await page.getByRole('heading',{name:'نصب سهمینو',level:1}).count(),1);
   assert.equal(await page.getByRole('heading',{name:/نصب روی اندروید/}).count(),1);
   assert.equal(await page.getByRole('heading',{name:/نصب روی آیفون/}).count(),1);
-  assert.equal(await page.getByRole('link',{name:'باز کردن سهام‌بان'}).getAttribute('href'),'./index.html');
+  assert.equal(await page.getByRole('link',{name:'باز کردن سهمینو'}).getAttribute('href'),'./index.html');
   assert.equal(await page.locator('#installStatus').getAttribute('aria-live'),'polite');
   report.checks.push('Persian Android-iPhone installation instructions');
   // This is a synthetic browser event, not a real beforeinstallprompt event.
@@ -119,7 +119,7 @@ async function main(){
    const keys=await caches.keys();
    const cache=await caches.match('./install.html');
    return {controlled:!!navigator.serviceWorker.controller,cached:!!cache,
-    cacheKeys:keys.filter(k=>k.startsWith('sahamban-static-'))};
+    cacheKeys:keys.filter(k=>k.startsWith('sahmino-static-'))};
   });
   assert.equal(installed.controlled,true);
   assert.equal(installed.cached,true);
@@ -131,11 +131,11 @@ async function main(){
    // Chromium proxy can verify full offline navigations through the SW.
    const offlineInstall=await page.goto(origin+'/install.html',{waitUntil:'domcontentloaded'});
    assert.equal(offlineInstall?.status(),200);
-   assert.match(await page.title(),/نصب سهام‌بان/);
+   assert.match(await page.title(),/نصب سهمینو/);
    report.checks.push('real offline install page navigation in Chromium');
    const offlineApp=await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
    assert.equal(offlineApp?.status(),200);
-   assert.match(await page.title(),/سهام‌بان/);
+   assert.match(await page.title(),/سهمینو/);
    report.checks.push('real offline application shell navigation in Chromium');
   }else{
    // Playwright Linux WebKit currently fails offline page.goto with an internal
@@ -146,8 +146,8 @@ async function main(){
     const app=await caches.match('./index.html');
     return {install:install?await install.text():null,app:app?await app.text():null};
    });
-   assert.match(entries.install||'',/نصب سهام‌بان/);
-   assert.match(entries.app||'',/سهام‌بان/);
+   assert.match(entries.install||'',/نصب سهمینو/);
+   assert.match(entries.app||'',/سهمینو/);
    report.checks.push('offline WebKit cached install/app documents (navigation unverified)');
    report.webkit_offline_navigation_verified=false;
   }
