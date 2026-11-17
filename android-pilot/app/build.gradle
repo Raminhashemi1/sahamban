@@ -2,30 +2,64 @@ plugins {
     id 'com.android.application'
 }
 
+def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('').get()
+def myketPublicKey = providers.gradleProperty('MYKET_IAB_PUBLIC_KEY').orElse('').get()
+
 android {
     namespace 'ir.sahamban.pilot'
     compileSdk 35
 
     defaultConfig {
-        // Temporary test-only identifier. Owner must approve final package ID.
+        // Temporary pilot identity; final package ID must be owner-approved
+        // and registered in BOTH store consoles before release signing.
         applicationId 'ir.sahamban.pilot'
         minSdk 26
         targetSdk 35
-        versionCode 3
-        versionName '0.2.3-sahmino-branding-preview'
+        versionCode 4
+        versionName '0.3.0-market-flavors-preview'
     }
 
-    // One identical APK for all stores. Installer provenance is assessed at
-    // runtime as a best-effort UI hint, NEVER as payment authorization.
+    buildFeatures { buildConfig true }
+
+    flavorDimensions 'store'
+    productFlavors {
+        bazaar {
+            dimension 'store'
+            manifestPlaceholders = [
+                marketApplicationId: 'com.farsitel.bazaar',
+                marketBindAddress: 'ir.cafebazaar.pardakht.InAppBillingService.BIND',
+                marketPermission: 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
+            ]
+            buildConfigField 'String', 'STORE_CHANNEL', '"CAFEBAZAAR"'
+            buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + bazaarPublicKey + '"'
+        }
+        myket {
+            dimension 'store'
+            manifestPlaceholders = [
+                marketApplicationId: 'ir.mservices.market',
+                marketBindAddress: 'ir.mservices.market.InAppBillingService.BIND',
+                marketPermission: 'ir.mservices.market.BILLING'
+            ]
+            buildConfigField 'String', 'STORE_CHANNEL', '"MYKET"'
+            buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
     buildTypes {
+        debug { }
         release {
-            // Never publish an unsigned/automatically debug-signed release.
+            // No release signing is configured until the owner supplies and
+            // securely stores the permanent upload key. Never publish unsigned.
             minifyEnabled false
         }
     }
+}
+
+dependencies {
+    implementation 'ir.myket:billing:2.2'
 }
