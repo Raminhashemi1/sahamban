@@ -216,6 +216,44 @@ export default {
   if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
+  // Cookie-authenticated Sahmino account routes. The internal user ID is
+  // derived only from a validated, unrevoked OTP session in D1; never from input.
+  if(isPrepaidOrders||isPrepaidOverview){
+   const sessionCookie=parseCookie(request,'sahmino_session');
+   if(sessionCookie){
+    if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
+     return send({error:'FEATURE_DISABLED'},404,cors);
+    if(!cors||origin!==allowed)return send({error:'ORIGIN_NOT_ALLOWED'},403);
+    const sessionRepo=createD1SmsOtpRepository(env?.SAHAMBAN_DB);
+    const activeSession=await sessionRepo.findActiveSession(sessionCookie,new Date(nowMs).toISOString());
+    if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+    if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
+     return send({error:'CSRF_REJECTED'},403,cors);
+    if(isPrepaidOverview){
+     const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
+      authenticatedUserId:activeSession.userId,now:new Date(nowMs).toISOString()
+     });
+     return send(result,result.status||503,cors);
+    }
+    if(request.method==='GET'){
+     const pending=await findPrepaidPendingOrder(env?.SAHAMBAN_DB,null,activeSession.userId);
+     return send(pending,pending.status||200,cors);
+    }
+    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+     return send({error:'JSON_REQUIRED'},415,cors);
+    const parsed=await readSmallJson(request,1024);
+    if(parsed.error)return send({error:parsed.error},parsed.status,cors);
+    const body=parsed.body;
+    if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||typeof body.planId!=='string')
+     return send({error:'INVALID_REQUEST'},400,cors);
+    const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
+     authenticatedUserId:activeSession.userId,planId:body.planId,now:new Date(nowMs).toISOString(),
+     makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
+      b=>b.toString(16).padStart(2,'0')).join(''))
+    });
+    return send(order,order.status||503,cors);
+   }
+  }
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
   if(isPrepaidOverview){
