@@ -62,10 +62,15 @@ function createSmsOtpService({ repository, adapter, verifierSecret, clock = () =
       await repository.markChallengeFailed(challengeId, new Date(clock()).toISOString());
       return { ok: false, status: 503, error: 'OTP_DELIVERY_UNAVAILABLE' };
     }
-    await repository.markChallengeAccepted(challengeId, {
+    const markedAccepted = await repository.markChallengeAccepted(challengeId, {
       providerMessageId: typeof delivery.providerMessageId === 'string' ? delivery.providerMessageId.slice(0, 128) : null,
       acceptedAt: new Date(clock()).toISOString()
     });
+    if (markedAccepted !== true) {
+      // Delivery may have raced with a superseding challenge or a storage fault.
+      // Never tell the client the challenge is usable unless D1 accepted the transition.
+      return { ok: false, status: 503, error: 'OTP_CHALLENGE_UNAVAILABLE' };
+    }
     return { ok: true, status: 202, challengeId, expiresInSeconds: OTP_TTL_SECONDS, resendAfterSeconds: RESEND_COOLDOWN_SECONDS };
   }
 
