@@ -9,25 +9,23 @@ public final class SahminoBillingCatalog {
     public static final class Plan {
         public final String planId;
         public final int days;
-        public final long priceToman;
         public final long priceRial;
         public final String productId;
 
-        private Plan(String planId, int days, long priceToman, String productId) {
+        private Plan(String planId, int days, long priceRial, String productId) {
             this.planId = planId;
             this.days = days;
-            this.priceToman = priceToman;
-            this.priceRial = Math.multiplyExact(priceToman, 10L);
+            this.priceRial = priceRial;
             this.productId = productId;
         }
     }
 
     private static final Plan[] PLANS = {
-        new Plan("SAHMINO_PRO_30D", 30, 150_000L, "sahmino_pro_30d"),
-        new Plan("SAHMINO_PRO_60D", 60, 285_000L, "sahmino_pro_60d"),
-        new Plan("SAHMINO_PRO_90D", 90, 405_000L, "sahmino_pro_90d"),
-        new Plan("SAHMINO_PRO_180D", 180, 765_000L, "sahmino_pro_180d"),
-        new Plan("SAHMINO_PRO_365D", 365, 1_460_000L, "sahmino_pro_365d")
+        new Plan("SAHMINO_PRO_30D", 30, 1_500_000L, "sahmino_pro_30d"),
+        new Plan("SAHMINO_PRO_60D", 60, 2_850_000L, "sahmino_pro_60d"),
+        new Plan("SAHMINO_PRO_90D", 90, 4_050_000L, "sahmino_pro_90d"),
+        new Plan("SAHMINO_PRO_180D", 180, 7_650_000L, "sahmino_pro_180d"),
+        new Plan("SAHMINO_PRO_365D", 365, 14_600_000L, "sahmino_pro_365d")
     };
 
     private SahminoBillingCatalog() { }
