@@ -31,6 +31,15 @@ jobs:
           mkdir -p /tmp/sahmino-billing-check
           javac -d /tmp/sahmino-billing-check android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java android-pilot/tests/SahminoBillingCatalogTest.java
           java -cp /tmp/sahmino-billing-check ir.sahamban.pilot.SahminoBillingCatalogTest
+      - name: Verify signed purchase evidence extraction
+        shell: bash
+        run: |
+          mkdir -p /tmp/sahmino-evidence-check
+          javac -d /tmp/sahmino-evidence-check \\
+            android-pilot/tests/fakes/ir/myket/billingclient/util/Purchase.java \\
+            android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoPurchaseEvidence.java \\
+            android-pilot/tests/SahminoPurchaseEvidenceTest.java
+          java -cp /tmp/sahmino-evidence-check ir.sahamban.pilot.SahminoPurchaseEvidenceTest
       - name: Verify store-specific flavor configuration
         run: node --test tests/android-pilot-wrapper.test.cjs
       - name: Validate embedded dashboard subscription JavaScript
