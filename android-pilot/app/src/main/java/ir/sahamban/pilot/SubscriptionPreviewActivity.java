@@ -21,8 +21,8 @@ public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
     // Display-only mirror of the approved server catalogue; no client-side charging.
     private static final int[] PRICE_TOMAN = {150000, 285000, 405000, 765000, 1460000};
-    // Detected only from Android installer metadata; no user selector.
-    private BillingDistributionPolicy distribution;
+    // Build flavor is the authoritative distribution channel; installer metadata is not trusted.
+    private final String distribution = BuildConfig.STORE_CHANNEL;
     private int selectedDays = DAYS[0];
     private TextView details;
     private LinearLayout planList;
@@ -70,13 +70,14 @@ public final class SubscriptionPreviewActivity extends Activity {
             });
             planList.addView(button);
         }
-        String status = distribution.isConfiguredBuild()
-            ? distribution.statusText()
-            : "منبع نصب شناسایی نشد؛ پرداخت غیرفعال است.";
+        String storeName = "CAFEBAZAAR".equals(distribution) ? "کافه‌بازار" : "مایکت";
+        String status = BuildConfig.IAB_PUBLIC_KEY.isEmpty()
+            ? "کلید عمومی فروشگاه هنوز از پنل توسعه‌دهنده تنظیم نشده است؛ پرداخت غیرفعال است."
+            : "کانال انتشار از Flavor اختصاصی برنامه تعیین شده است؛ تأیید رسید سرور هنوز متصل نشده است.";
         details.setText("دوره انتخابی: " + selectedDays + " روز — مبلغ نهایی: "
             + formatToman(selectedPriceToman()) + " تومان\n"
             + "تمدید دستی حالت پیش‌فرض است؛ تمدید خودکار در این نسخه ارائه نمی‌شود.\n"
-            + "مسیر تشخیص‌داده‌شده این نصب: " + distribution.displayName()
+            + "کانال نسخه نصب‌شده: " + storeName
             + "\n" + status
             + "\n\nقیمت‌ها مطابق کاتالوگ مصوب‌اند؛ پرداخت واقعی و فعال‌سازی اشتراک غیرفعال است."
             + "\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
@@ -85,7 +86,6 @@ public final class SubscriptionPreviewActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        distribution = BillingInstallSource.detect(this);
         setTitle("اشتراک آزمایشی");
         ScrollView scroll = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
@@ -108,7 +108,7 @@ public final class SubscriptionPreviewActivity extends Activity {
         planList = new LinearLayout(this);
         planList.setOrientation(LinearLayout.VERTICAL);
         content.addView(planList);
-        content.addView(text("۲. مسیر متناسب با محل نصب: " + distribution.displayName(),
+        content.addView(text("۲. کانال انتشار: " + ("CAFEBAZAAR".equals(distribution) ? "کافه‌بازار" : "مایکت"),
             18f, Color.rgb(12, 37, 64)));
         details = text("", 15f, Color.rgb(12, 37, 64));
         details.setContentDescription("وضعیت اتصال خودکار پرداخت");
