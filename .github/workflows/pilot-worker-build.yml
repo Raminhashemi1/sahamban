@@ -32,6 +32,8 @@ jobs:
         run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs
       - name: Verify Myket and CafeBazaar receipt adapters (synthetic keys and mocked API only)
         run: node --test tests/marketplace-receipt-verifier.test.mjs
+      - name: Verify atomic prepaid settlement and idempotent retries
+        run: node --test tests/prepaid-settlement.test.cjs
       - name: Install pinned Wrangler CLI for offline build
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
