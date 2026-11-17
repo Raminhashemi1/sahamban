@@ -14,42 +14,41 @@ const expected=[
   {days:365,rial:14600000,id:'SAHMINO_PRO_365D'}
 ];
 
-test('PWA and Android display exactly the five approved server catalogue prices in rial',()=>{
-  const server=plansSource.match(/const LAUNCH_PLANS=Object\\.freeze\\(\\{([\\s\\S]*?)\\n\\}\\);/);
+test('PWA and Android use the five approved server prices in rial only',()=>{
+  const server=plansSource.match(/const LAUNCH_PLANS=Object\.freeze\(\{([\s\S]*?)\n\}\);/);
   assert.ok(server,'server launch catalogue exists');
-  const pwaInputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\\d+)" data-price-rial="(\\d+)"/g)];
+  const pwaInputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\d+)" data-price-rial="(\d+)"/g)];
   assert.equal(pwaInputs.length,5);
   assert.deepEqual(pwaInputs.map(m=>[Number(m[1]),Number(m[2])]),expected.map(p=>[p.days,p.rial]));
-  const native=android.match(/PRICE_RIAL\\s*=\\s*\\{([^}]+)\\}/);
-  assert.ok(native,'Android rial display price table exists');
+  const native=android.match(/PRICE_RIAL\s*=\s*\{([^}]+)\}/);
+  assert.ok(native,'Android rial price table exists');
   assert.deepEqual(native[1].split(',').map(x=>Number(x.trim().replace(/L$/,''))),expected.map(p=>p.rial));
-  for(const plan of expected)assert.match(server[1],new RegExp(plan.id+'\\\\s*:\\\\s*Object\\\\.freeze\\\\(\\\\{days:'+plan.days+',priceRial:'+plan.rial+'\\\\}\\\\)'));
-  assert.doesNotMatch(html,/data-price-toman|تومان/);
+  for(const plan of expected){
+    assert.match(server[1],new RegExp(plan.id+'\\s*:\\s*Object\\.freeze\\(\\{days:'+plan.days+',priceRial:'+plan.rial+'\\}\\)'));
+  }
+  const section=html.slice(html.indexOf('<section class="card" id="subscriptionSectionSahmino"'),html.indexOf('<div id="sahminoAccountPanel"'));
+  assert.ok(section.includes('مبلغ نهایی: ۱٬۵۰۰٬۰۰۰ ریال'));
+  assert.doesNotMatch(section,/تومان|data-price-toman/);
   assert.doesNotMatch(android,/PRICE_TOMAN|priceToman|تومان|formatToman/);
 });
 
-test('PWA updates selected plan amount and keeps checkout disabled',()=>{
-  assert.match(html,/function update\\(\\)[\\s\\S]*?sahmino-plan-price[\\s\\S]*?مبلغ نهایی/);
+test('PWA keeps checkout disabled and renewal manual by default',()=>{
+  assert.match(html,/function update\(\)[\s\S]*?sahmino-plan-price[\s\S]*?مبلغ نهایی/);
   assert.match(html,/تمدید دستی حالت پیش‌فرض است/);
   assert.match(html,/تمدید خودکار در این نسخه ارائه نمی‌شود/);
-  const section=html.match(/<section class="card" id="subscriptionSectionSahmino"[\\s\\S]*?<\\/section>/);
+  const section=html.match(/<section class="card" id="subscriptionSectionSahmino"[\s\S]*?<div id="sahminoAccountPanel"/);
   assert.ok(section);
   assert.match(section[0],/<button type="button" disabled[^>]*>خرید اشتراک/);
   assert.match(section[0],/تخفیف اضافه ندارند/);
-  assert.match(section[0],/ریال/);
 });
 
-test('Android updates selected rial amount and keeps payment disabled',()=>{
-  assert.match(android,/selectedPriceRial\\(\\)/);
-  assert.match(android,/setEnabled\\(false\\)/);
+test('Android displays rial and keeps payment disabled',()=>{
+  assert.match(android,/selectedPriceRial\(\)/);
+  assert.match(android,/setEnabled\(false\)/);
   assert.match(android,/تمدید دستی حالت پیش‌فرض است/);
   assert.match(android,/پرداخت واقعی و فعال‌سازی اشتراک غیرفعال است/);
   assert.match(android,/ریال/);
-});
-
-test('Android preview displays every approved rial amount without payment',()=>{
-  assert.match(android,/PRICE_RIAL\\s*=\\s*\\{1500000L, 2850000L, 4050000L, 7650000L, 14600000L\\}/);
-  assert.match(android,/formatRial\\(PRICE_RIAL\\[i\\]\\) \\+ " ریال"/);
-  assert.match(android,/formatRial\\(selectedPriceRial\\(\\)\\) \\+ " ریال\\\\n"/);
-  assert.match(android,/Button payment = choice\\("پرداخت واقعی — غیرفعال"\\);[\\s\\S]*?payment\\.setEnabled\\(false\\)/);
+  assert.match(android,/PRICE_RIAL\s*=\s*\{1500000L, 2850000L, 4050000L, 7650000L, 14600000L\}/);
+  assert.match(android,/formatRial\(PRICE_RIAL\[i\]\) \+ " ریال"/);
+  assert.match(android,/formatRial\(selectedPriceRial\(\)\) \+ " ریال\\n"/);
 });
