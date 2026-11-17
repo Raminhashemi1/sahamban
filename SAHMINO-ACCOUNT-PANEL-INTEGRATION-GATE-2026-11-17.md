@@ -2,7 +2,7 @@
 
 Date: 2026-11-17
 Branch: `feat/android-subscription-preview-20261115`
-Reviewed HEAD: `f6849bdfb9a71e1bb88809c54937bf54bf674de7`
+Reviewed HEAD: `b03406e06fed2e58240e56b71d558595afea3613`
 
 ## Verified implementation
 
@@ -67,3 +67,19 @@ Reviewed the current Worker routes, order API, account overview, PWA panel, and 
 - Pull request #185 remains open and draft. No merge to `main`, public feature-flag enablement, or production deployment was performed.
 
 Next safe gate: provision a private test Worker and test D1 with the owner, configure the exact PWA origin, then verify OTP session persistence and order creation on a real Android WebView before considering any public rollout.
+
+
+## Progress update — API-origin safety hardening
+
+- Re-read the current branch files and confirmed that the PWA has no deployment value for `window.SAHMINO_API_BASE`; no API hostname was invented or added.
+- Hardened `sahmino-account-panel.js`: OTP/account requests now proceed only when the configured API base parses as an HTTPS origin with no path, query, fragment, username or password. Missing or malformed configuration fails closed before any fetch.
+- Added VM-based regression coverage for missing configuration, plain HTTP, path-bearing URLs, embedded credentials, query strings and fragments; a valid HTTPS origin is verified to receive credentialed requests.
+- Existing CI already includes `tests/sahmino-account-panel.test.cjs`; no duplicate workflow change was needed.
+- GitHub Actions run `44129495111` completed successfully on branch commit `b03406e06fed2e58240e56b71d558595afea3613`. The subscription job reports 59 Node tests passing (0 failed), plus successful syntax, OTP migration/runtime, subscription migration and SQLite settlement integration steps.
+
+### Remaining environment gates
+
+- The exact Worker API origin still must be provided/configured by the owner. The PWA intentionally remains disconnected while that value is absent.
+- The existing Worker deployment workflow is manual-only, restricted to `main`, requires the exact approval phrase `DEPLOY_PILOT_NO_PAYMENTS`, and uses owner-controlled Cloudflare environment credentials. This work did not invoke it.
+- The OTP service binding, D1 OTP/session migration on an approved test database, real SMS sandbox delivery, same-site cookie strategy, and physical Android WebView acceptance remain unverified.
+- No deployment, D1 migration, feature-flag enablement, payment activation, automatic renewal, merge or release was performed.
