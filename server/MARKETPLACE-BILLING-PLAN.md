@@ -116,3 +116,8 @@ SKUها صرفاً نام پیشنهادی‌اند؛ تا زمانی که در 
 - migration افزایشی `server/d1-prepaid-migration.sql` اضافه شد: جدول سفارش‌های چهار پلن، entitlement مدت‌دار، ledger رخدادهای پرداخت، قیود تطبیق پلن/قیمت، شناسه‌های یکتای ارائه‌دهنده و حداکثر یک سفارش pending برای هر حساب. جداول سالانه قدیمی عمداً تغییر نکردند.
 - آزمون SQLite مستقل `tests/d1-prepaid-migration.test.py` اضافه و به CI وصل شد. اجرای CI برای commit `657bc6e9` در زمان ثبت هنوز queued است: https://github.com/Raminhashemi1/sahamban/actions/runs/43247870307 . تا پایان اجرا نتیجه اعلام نشود.
 - migration هنوز روی D1 واقعی اعمال نشده؛ repository/Worker تجاری، ورود امن کاربران، endpoint ساخت سفارش، adapter درگاه، اعتبارسنجی server-to-server، refund و ادغام entitlement با برنامه هنوز پیاده‌سازی/استقرار نشده‌اند. فروش خاموش می‌ماند.
+
+
+## Owner clarification — store product identifiers (2026-11-17)
+
+Product identifiers are generated/configured during the store upload or publisher-console product setup. They are not a prerequisite for implementing or compile-testing the store billing adapters. The app-side catalog values are provisional mappings and must be reconciled with each store's generated identifiers at upload time. Do not block adapter development on final identifiers.

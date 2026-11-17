@@ -19,7 +19,8 @@ android {
         versionName '0.3.0-market-flavors-preview'
     }
 
-    // Store flavors are compile-checked only. Purchase adapters remain disabled until both stores approve SKUs and receipt verification is complete.
+    // Store flavors are isolated per distribution channel. Product IDs are replaceable mappings;
+    // store-generated IDs are reconciled during publisher-console upload/configuration.
     buildFeatures { buildConfig true }
 
     flavorDimensions 'store'
