@@ -20,7 +20,7 @@ import java.util.Locale;
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
     // Display-only mirror of the approved server catalogue; no client-side charging.
-    private static final int[] PRICE_TOMAN = {150000, 285000, 405000, 765000, 1460000};
+    private static final long[] PRICE_RIAL = {1500000L, 2850000L, 4050000L, 7650000L, 14600000L};
     // Build flavor is the authoritative distribution channel; installer metadata is not trusted.
     private final String distribution = BuildConfig.STORE_CHANNEL;
     private int selectedDays = DAYS[0];
@@ -47,13 +47,13 @@ public final class SubscriptionPreviewActivity extends Activity {
         return button;
     }
 
-    private String formatToman(int amount) {
+    private String formatRial(long amount) {
         return NumberFormat.getIntegerInstance(new Locale("fa", "IR")).format(amount);
     }
 
-    private int selectedPriceToman() {
+    private long selectedPriceRial() {
         for (int i = 0; i < DAYS.length; i++) {
-            if (DAYS[i] == selectedDays) return PRICE_TOMAN[i];
+            if (DAYS[i] == selectedDays) return PRICE_RIAL[i];
         }
         throw new IllegalStateException("Unknown subscription duration");
     }
@@ -63,7 +63,7 @@ public final class SubscriptionPreviewActivity extends Activity {
         for (int i = 0; i < DAYS.length; i++) {
             final int days = DAYS[i];
             Button button = choice((days == selectedDays ? "✓  " : "") + days + " روز — "
-                + formatToman(PRICE_TOMAN[i]) + " تومان");
+                + formatRial(PRICE_RIAL[i]) + " ریال");
             button.setOnClickListener(v -> {
                 selectedDays = days;
                 renderChoices();
@@ -75,7 +75,7 @@ public final class SubscriptionPreviewActivity extends Activity {
             ? "کلید عمومی فروشگاه هنوز از پنل توسعه‌دهنده تنظیم نشده است؛ پرداخت غیرفعال است."
             : "کانال انتشار از Flavor اختصاصی برنامه تعیین شده است؛ تأیید رسید سرور هنوز متصل نشده است.";
         details.setText("دوره انتخابی: " + selectedDays + " روز — مبلغ نهایی: "
-            + formatToman(selectedPriceToman()) + " تومان\n"
+            + formatRial(selectedPriceRial()) + " ریال\n"
             + "تمدید دستی حالت پیش‌فرض است؛ تمدید خودکار در این نسخه ارائه نمی‌شود.\n"
             + "کانال نسخه نصب‌شده: " + storeName
             + "\n" + status
