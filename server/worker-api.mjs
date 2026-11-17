@@ -1,10 +1,6 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
-import zarinpalModule from './zarinpal-gateway.cjs';
-import settlementModule from './prepaid-settlement.cjs';
-const {requestPayment,verifyPayment}=zarinpalModule;
-const {settleVerifiedPrepaidPayment}=settlementModule;
 import otpServiceModule from './sms-otp-service.cjs';
 import otpRepositoryModule from './d1-sms-otp-repository.cjs';
 const {createSmsOtpService}=otpServiceModule;
@@ -146,59 +142,8 @@ const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
-function redirect(url){return new Response(null,{status:303,headers:{Location:url,'Cache-Control':'no-store'} });}
-async function handleZarinpal(request,env,url,nowMs){
- const route=url.pathname;
- if(route==='/api/v1/payments/zarinpal/callback'){
-  if(request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405);
-  const authority=url.searchParams.get('Authority'),status=url.searchParams.get('Status');
-  if(url.searchParams.size!==2||!authority||!status)return send({error:'INVALID_CALLBACK'},400);
-  const intent=await env?.SAHAMBAN_DB?.prepare(`SELECT i.order_id,o.plan_id,o.amount_rial,o.currency
-   FROM sahmino_payment_intents i JOIN sahmino_prepaid_subscription_orders o ON o.id=i.order_id
-   WHERE i.authority=? AND i.provider_name='ZARINPAL' AND i.state='REQUESTED' AND o.state='PENDING' LIMIT 1`).bind(authority).first();
-  const target=new URL('/?sahmino_payment=',env?.PWA_ORIGIN||'https://invalid.local');
-  if(!intent||status!=='OK'){
-   if(intent)await env.SAHAMBAN_DB.prepare("UPDATE sahmino_payment_intents SET state='FAILED' WHERE authority=? AND state='REQUESTED'").bind(authority).run();
-   if(intent)await env.SAHAMBAN_DB.prepare("UPDATE sahmino_prepaid_subscription_orders SET state='CANCELLED' WHERE id=? AND state='PENDING'").bind(intent.order_id).run();
-   target.searchParams.set('sahmino_payment','failed');return redirect(target.toString());
-  }
-  try{
-   const verified=await verifyPayment({env,authority,amountRial:intent.amount_rial});
-   const result=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,{...verified,orderId:intent.order_id,planId:intent.plan_id},{now:new Date(nowMs).toISOString()});
-   if(!result.ok)throw Error(result.reason);
-   await env.SAHAMBAN_DB.prepare("UPDATE sahmino_payment_intents SET state='SETTLED',provider_payment_id=?,verified_at=? WHERE authority=? AND state='REQUESTED'").bind(verified.providerPaymentId,new Date(nowMs).toISOString(),authority).run();
-   target.searchParams.set('sahmino_payment','success');
-  }catch(_){target.searchParams.set('sahmino_payment','pending_review');}
-  return redirect(target.toString());
- }
- if(route!=='/api/v1/me/prepaid-checkout')return null;
- if(request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405);
- if(env?.ZARINPAL_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true'||env?.ZARINPAL_MERCHANT_ID==null)
-  return send({error:'PAYMENT_UNAVAILABLE'},503);
- const origin=request.headers.get('Origin');
- if(!requestOriginAllowed(request,env))return send({error:'ORIGIN_NOT_ALLOWED'},403);
- if(request.headers.get('X-Sahmino-CSRF')!=='1'||request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
-  return send({error:'CSRF_OR_CONTENT_TYPE_REJECTED'},403,origin);
- const cookie=parseCookie(request,'sahmino_session');if(!cookie)return send({error:'NOT_AUTHENTICATED'},401,origin);
- const session=await createD1SmsOtpRepository(env?.SAHAMBAN_DB).findActiveSession(cookie,nowMs);
- if(!session?.userId)return send({error:'NOT_AUTHENTICATED'},401,origin);
- const parsed=await readSmallJson(request,1024);if(parsed.error)return send({error:parsed.error},parsed.status,origin);
- const body=parsed.body;if(!body||Object.keys(body).length!==1||typeof body.planId!=='string')return send({error:'INVALID_REQUEST'},400,origin);
- const order=await createPrepaidOrder(env.SAHAMBAN_DB,{authenticatedUserId:session.userId,planId:body.planId,now:new Date(nowMs).toISOString(),makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join(''))});
- if(order.status!==201)return send(order,order.status||503,origin);
- try{
-  const payment=await requestPayment({env,order:order.order,callbackUrl:env.ZARINPAL_CALLBACK_URL,description:'Sahmino subscription '+order.order.planId});
-  const inserted=await env.SAHAMBAN_DB.prepare("INSERT INTO sahmino_payment_intents(authority,order_id,provider_name,created_at,state) VALUES(?,?,'ZARINPAL',?,'REQUESTED')").bind(payment.authority,order.order.id,new Date(nowMs).toISOString()).run();
-  if(inserted?.meta?.changes!==1)throw Error('INTENT_NOT_STORED');
-  return send({status:200,checkoutUrl:payment.paymentUrl,orderId:order.order.id},200,origin);
- }catch(_){
-  await env.SAHAMBAN_DB.prepare("UPDATE sahmino_prepaid_subscription_orders SET state='CANCELLED' WHERE id=? AND state='PENDING'").bind(order.order.id).run().catch(()=>{});
-  return send({error:'PAYMENT_REQUEST_FAILED',orderId:order.order.id},502,origin);
- }
-}
-
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
- if(origin)headers['Access-Control-Allow-Origin']=origin;
+ if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
  return new Response(JSON.stringify(body),{status,headers});
 }
 function fromBase64url(value){
@@ -258,8 +203,6 @@ export default {
   }
   const otpResponse=await handleOtpRoutes(request,env,url,nowMs);
   if(otpResponse)return otpResponse;
-  const paymentResponse=await handleZarinpal(request,env,url,nowMs);
-  if(paymentResponse)return paymentResponse;
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
