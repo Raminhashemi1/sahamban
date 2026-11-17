@@ -134,11 +134,17 @@ const TOKEN_ISSUER='sahamban-pilot',TOKEN_AUDIENCE='sahamban-api';
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const TOKEN_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
- CASE WHEN pe.paid_until IS NOT NULL AND (le.paid_until IS NULL OR pe.paid_until>le.paid_until) THEN pe.paid_until ELSE le.paid_until END AS paid_until,
+ CASE
+  WHEN v2.paid_until IS NOT NULL AND (pe.paid_until IS NULL OR v2.paid_until>pe.paid_until)
+       AND (le.paid_until IS NULL OR v2.paid_until>le.paid_until) THEN v2.paid_until
+  WHEN pe.paid_until IS NOT NULL AND (le.paid_until IS NULL OR pe.paid_until>le.paid_until) THEN pe.paid_until
+  ELSE le.paid_until
+ END AS paid_until,
  COALESCE(le.suspended,0) AS suspended,COALESCE(le.auto_renew_cancelled,0) AS auto_renew_cancelled
  FROM sahamban_users u
  LEFT JOIN subscription_entitlements le ON le.user_id=u.id
  LEFT JOIN prepaid_subscription_entitlements pe ON pe.user_id=u.id
+ LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
