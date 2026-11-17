@@ -131,6 +131,10 @@ a real remote D1 database, prove live network connectivity or enable paid
 subscriptions. The local config contains no bank or payment secrets and
 pilot order issuance remains off by default.
 
+## Commercial identity gate (not implemented)
+
+See [SAHMINO-IDENTITY-READINESS.md](../SAHMINO-IDENTITY-READINESS.md) for the verified current boundary, OIDC/session/account-linking requirements, acceptance tests, and decisions still required from the product owner. The existing HMAC token is private-pilot authentication only; it is not public login. No provider has been selected, no production identity migration has been applied, and public registration remains out of scope until the provider and recovery policy are approved. Keep checkout and paid access disabled.
+
 ## Required provider adapter / production controls
 
 1. A trusted backend authenticates the subscriber and uses the **server-side**
