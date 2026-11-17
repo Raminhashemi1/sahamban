@@ -153,6 +153,27 @@ test('prepaid overview route is disabled by default, private and read only',asyn
  assert.equal(info.orders[0].amountRial,4500000);
 });
 
+test('marketplace receipt settlement route is private, cookie-authenticated and disabled by default',async()=>{
+ const worker=(await api()).default;
+ const path='/api/v1/me/prepaid-receipts';
+ const make=(cookie,method='POST',requestOrigin=origin)=>new Request('https://worker.example'+path,{
+  method,headers:{Origin:requestOrigin,...(cookie?{Cookie:'sahmino_session='+cookie}:{}),
+   'Content-Type':'application/json','X-Sahmino-CSRF':'1'},body:method==='POST'?'{}':undefined
+ });
+ const noCookie=await worker.fetch(make(null),{...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(noCookie.status,401);
+ const cookie='a'.repeat(64);
+ const disabled=await worker.fetch(make(cookie),env());
+ assert.equal(disabled.status,404);
+ assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
+ const wrongMethod=await worker.fetch(make(cookie,'GET'),{...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(wrongMethod.status,405);
+ const wrongOrigin=await worker.fetch(make(cookie,'POST','https://evil.example'),{
+  ...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'
+ });
+ assert.equal(wrongOrigin.status,403);
+});
+
 test('OTP Worker routes remain disabled by default and reject untrusted origins',async()=>{
  const worker=(await api()).default;
  const request=new Request('https://worker.example/api/v1/auth/otp/request',{
