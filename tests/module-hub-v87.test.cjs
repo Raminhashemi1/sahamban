@@ -18,7 +18,7 @@ function boot(initialHash=''){
  return {ids,sections,location,change:hash=>{location.hash=hash;listeners.hashchange()},buttons:ids.sahambanModulesV87.children};
 }
 test('v87 creates an at-a-glance 16 module home and guides with no extra traffic',()=>{
- const a=boot();assert.equal(a.buttons.length,16);assert.equal(a.ids.sahambanHubV87.hidden,false);
+ const a=boot();assert.equal(a.buttons.length,17);assert.equal(a.ids.sahambanHubV87.hidden,false);
  assert.ok(a.sections.every(x=>x.hidden));assert.equal(a.ids.sahambanHomeControlV87.hidden,true);
  assert.doesNotMatch(src,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|navigator\.sendBeacon/);
 });
@@ -35,7 +35,7 @@ test('v87 shows contextual guidance, step list, and a link to selected module',(
  const a=boot(),button=a.buttons[3].children[1];
  button.handlers.click();
  assert.equal(a.ids.sahambanGuideV87.hidden,false);
- assert.equal(a.ids.sahambanGuideStepsV87.children.length,3);
+ assert.equal(a.ids.sahambanGuideStepsV87.children.length,4);
  assert.equal(a.ids.sahambanGuideOpenV87.href,'#livePortfolioSection');
  assert.match(a.ids.sahambanGuideTitleV87.textContent,/سبد من/);
 });
