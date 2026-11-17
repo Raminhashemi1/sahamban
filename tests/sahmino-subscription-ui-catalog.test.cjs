@@ -5,7 +5,7 @@ const fs=require('node:fs');
 
 const plansSource=fs.readFileSync('server/prepaid-plans.cjs','utf8');
 const html=fs.readFileSync('index.html','utf8');
-const android=fs.readFileSync('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
+const bazaarAndroid=fs.readFileSync('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');\nconst myketAndroid=fs.readFileSync('android-pilot/app/src/myket/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java','utf8');
 const expected=[
   {days:30,rial:1500000,id:'SAHMINO_PRO_30D'},
   {days:60,rial:2850000,id:'SAHMINO_PRO_60D'},
@@ -29,7 +29,7 @@ test('PWA and Android use the five approved server prices in rial only',()=>{
   const section=html.slice(html.indexOf('<section class="card" id="subscriptionSectionSahmino"'),html.indexOf('<div id="sahminoAccountPanel"'));
   assert.ok(section.includes('مبلغ نهایی: ۱٬۵۰۰٬۰۰۰ ریال'));
   assert.doesNotMatch(section,/تومان|data-price-toman/);
-  assert.doesNotMatch(android,/PRICE_TOMAN|priceToman|تومان|formatToman/);
+  assert.doesNotMatch(bazaarAndroid,/PRICE_TOMAN|priceToman|تومان|formatToman/);\n  assert.doesNotMatch(myketAndroid,/PRICE_TOMAN|priceToman|تومان|formatToman/);
 });
 
 test('PWA keeps checkout disabled and renewal manual by default',()=>{
