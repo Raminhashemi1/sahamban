@@ -21,8 +21,9 @@ function utc(v){
  const n=Date.parse(v);return Number.isFinite(n)&&new Date(n).toISOString().slice(0,19)===v.slice(0,19)?n:null;
 }
 const fail=(reason,status)=>({status,reason,proEnabled:false,checkoutEnabled:false});
-async function prepaidAccountOverview(db,{authenticatedSubject,now}={}){
- if(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject))return fail('NOT_AUTHENTICATED',401);
+async function prepaidAccountOverview(db,{authenticatedSubject,authenticatedUserId,now}={}){
+ const byUser=typeof authenticatedUserId==='string'&&/^usr_[a-f0-9]{32}$/.test(authenticatedUserId);
+ if(!byUser&&(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject)))return fail('NOT_AUTHENTICATED',401);
  const current=utc(now);if(current===null)return fail('INVALID_SERVER_TIME',503);
  if(!db||typeof db.prepare!=='function')return fail('DATABASE_UNAVAILABLE',503);
  try{
