@@ -6,7 +6,7 @@ def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('
 def myketPublicKey = providers.gradleProperty('MYKET_IAB_PUBLIC_KEY').orElse('').get()
 
 android {
-    namespace 'ir.sahamban.pilot'
+    // Source namespace stays stable; applicationId below is the publisher-approved store identity.\n    namespace 'ir.sahamban.pilot'
     compileSdk 35
 
     defaultConfig {
