@@ -2,10 +2,10 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {LAUNCH_PLANS,plan,addDays,emptyPrepaidAccess,grantVerifiedPrepaid,prepaidAccessDecision}=require('../server/prepaid-plans.cjs');
 const now='2026-11-12T10:00:00.000Z',userId='user-1';
-const purchase=(planId='SAHAMBAN_PRO_30D',paymentId='pay-1')=>({userId,provider:'directpsp',paymentId,planId,amountRial:plan(planId).priceRial,currency:'IRR',paidAt:now});
+const purchase=(planId='SAHMINO_PRO_30D',paymentId='pay-1')=>({userId,provider:'directpsp',paymentId,planId,amountRial:plan(planId).priceRial,currency:'IRR',paidAt:now});
 const opts={now,verifyAtProvider:()=>true};
 test('five approved day plans have exact final IRR prices and no discount field',()=>{
- assert.deepEqual(Object.keys(LAUNCH_PLANS),['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D','SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D']);
+ assert.deepEqual(Object.keys(LAUNCH_PLANS),['SAHMINO_PRO_30D','SAHMINO_PRO_60D','SAHMINO_PRO_90D','SAHMINO_PRO_180D','SAHMINO_PRO_365D']);
  assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.days),[30,60,90,180,365]);
  assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.priceRial),[1500000,2850000,4050000,7650000,14600000]);
  assert.ok(Object.values(LAUNCH_PLANS).every(x=>!Object.hasOwn(x,'discountPercent')));
@@ -29,7 +29,7 @@ test('all five plans grant their exact number of days only after server verifica
 });
 test('early manual repurchase extends from remaining paid time without auto-renewal',()=>{
  const first=grantVerifiedPrepaid(emptyPrepaidAccess(userId),purchase(),opts).state;
- const second=grantVerifiedPrepaid(first,purchase('SAHAMBAN_PRO_60D','pay-2'),{...opts,now:'2026-11-22T10:00:00.000Z'}).state;
+ const second=grantVerifiedPrepaid(first,purchase('SAHMINO_PRO_60D','pay-2'),{...opts,now:'2026-11-22T10:00:00.000Z'}).state;
  assert.equal(first.paidUntil,'2026-12-12T10:00:00.000Z');
  assert.equal(second.paidUntil,'2027-02-10T10:00:00.000Z');
 });
