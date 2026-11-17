@@ -24,7 +24,9 @@ jobs:
           mkdir -p /tmp/sahamban-java-check
           javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
-      - name: Verify store-specific flavor configuration\n        run: node --test tests/android-pilot-wrapper.test.cjs\n      - name: Validate embedded dashboard subscription JavaScript
+      - name: Verify store-specific flavor configuration
+        run: node --test tests/android-pilot-wrapper.test.cjs
+      - name: Validate embedded dashboard subscription JavaScript
         shell: bash
         run: node --check android-pilot/app/src/main/assets/sahmino-webview-ui.js
       - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
