@@ -98,7 +98,7 @@ public final class SahminoStoreBillingManager {
                         SahminoBillingCatalog.Plan plan = SahminoBillingCatalog.at(i);
                         SkuDetails details = inventory.getSkuDetails(plan.productId);
                         String price = details == null ? null : details.getPrice();
-                        boolean match = priceMatches(price, plan.priceToman);
+                        boolean match = SahminoStorePriceMatcher.matches(price, plan.priceRial);
                         priceMatches[i] = match;
                         listener.onCatalogPrice(plan, price, match);
                         Purchase owned = inventory.getPurchase(plan.productId);
@@ -163,28 +163,6 @@ public final class SahminoStoreBillingManager {
             Log.e(TAG, "Purchase flow failed", ex);
             busy = false;
             status("شروع خرید ممکن نشد؛ دوباره تلاش کنید.");
-        }
-    }
-
-    private boolean priceMatches(String formatted, long expectedToman) {
-        if (formatted == null || formatted.trim().isEmpty() || formatted.length() > 120) return false;
-        String value = formatted.trim();
-        boolean toman = value.contains("تومان");
-        boolean rial = value.contains("ریال") || value.contains("ريال");
-        if (toman == rial) return false;
-        StringBuilder digits = new StringBuilder();
-        for (int i = 0; i < value.length(); i++) {
-            int digit = Character.digit(value.charAt(i), 10);
-            char ch = value.charAt(i);
-            if (digit >= 0) digits.append((char)('0' + digit));
-            else if (ch == '-' || ch == '+' || ch == '%' || ch == '٪' || ch == '.' || ch == '٫') return false;
-        }
-        if (digits.length() == 0 || digits.length() > 15) return false;
-        try {
-            long actual = Long.parseLong(digits.toString());
-            return actual == (toman ? expectedToman : Math.multiplyExact(expectedToman, 10L));
-        } catch (NumberFormatException | ArithmeticException ex) {
-            return false;
         }
     }
 

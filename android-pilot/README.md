@@ -17,13 +17,13 @@ is manual renewal.
 
 The existing five-plan preview is preserved. Approved prices:
 
-| Plan | Duration | Price (Toman) |
+| Plan | Duration | Final price (IRR) |
 |---|---:|---:|
-| SAHMINO_PRO_30D | 30 days | 150,000 |
-| SAHMINO_PRO_60D | 60 days | 285,000 |
-| SAHMINO_PRO_90D | 90 days | 405,000 |
-| SAHMINO_PRO_180D | 180 days | 765,000 |
-| SAHMINO_PRO_365D | 365 days | 1,460,000 |
+| SAHMINO_PRO_30D | 30 days | 1,500,000 |
+| SAHMINO_PRO_60D | 60 days | 2,850,000 |
+| SAHMINO_PRO_90D | 90 days | 4,050,000 |
+| SAHMINO_PRO_180D | 180 days | 7,650,000 |
+| SAHMINO_PRO_365D | 365 days | 14,600,000 |
 
 ## Android store variants
 
