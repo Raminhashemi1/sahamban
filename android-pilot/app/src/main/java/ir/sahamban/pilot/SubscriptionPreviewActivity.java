@@ -14,8 +14,8 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 /**
- * Design-time billing navigation preview ONLY. No billing SDK or payment URLs.
- * Do not infer account status, charge a user, or grant entitlement from this view.
+ * Store inventory and price-check preview. No checkout or local entitlement grant.
+ * Payment remains disabled until a trusted server verifier is integrated.
  */
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
@@ -26,6 +26,9 @@ public final class SubscriptionPreviewActivity extends Activity {
     private int selectedDays = DAYS[0];
     private TextView details;
     private LinearLayout planList;
+    private SahminoStoreBillingManager billing;
+    private String storeStatus = "اتصال فروشگاه هنوز بررسی نشده است.";
+    private final boolean[] verifiedPrices = new boolean[DAYS.length];
 
     private TextView text(String value, float size, int color) {
         TextView view = new TextView(this);
@@ -71,16 +74,26 @@ public final class SubscriptionPreviewActivity extends Activity {
             planList.addView(button);
         }
         String storeName = "CAFEBAZAAR".equals(distribution) ? "کافه‌بازار" : "مایکت";
-        String status = BuildConfig.IAB_PUBLIC_KEY.isEmpty()
-            ? "کلید عمومی فروشگاه هنوز از پنل توسعه‌دهنده تنظیم نشده است؛ پرداخت غیرفعال است."
-            : "کانال انتشار از Flavor اختصاصی برنامه تعیین شده است؛ تأیید رسید سرور هنوز متصل نشده است.";
+        String status = storeStatus;
         details.setText("دوره انتخابی: " + selectedDays + " روز — مبلغ نهایی: "
             + formatRial(selectedPriceRial()) + " ریال\n"
             + "تمدید دستی حالت پیش‌فرض است؛ تمدید خودکار در این نسخه ارائه نمی‌شود.\n"
             + "کانال نسخه نصب‌شده: " + storeName
             + "\n" + status
-            + "\n\nقیمت‌ها مطابق کاتالوگ مصوب‌اند؛ پرداخت واقعی و فعال‌سازی اشتراک غیرفعال است."
+            + "\n\nقیمت فروشگاه برای پلن انتخابی: " + (verifiedPrices[indexForDays(selectedDays)] ? "مطابقت دارد" : "هنوز تأیید نشده")
+            + "\nپرداخت واقعی و فعال‌سازی اشتراک تا اتصال اعتبارسنجی سرور غیرفعال است."
             + "\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
+    }
+
+    private int indexForDays(int days) {
+        for (int i = 0; i < DAYS.length; i++) if (DAYS[i] == days) return i;
+        throw new IllegalArgumentException("Unknown plan duration");
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (billing != null) billing.close();
+        super.onDestroy();
     }
 
     @Override
@@ -116,11 +129,40 @@ public final class SubscriptionPreviewActivity extends Activity {
         Button payment = choice("پرداخت واقعی — غیرفعال");
         payment.setEnabled(false);
         content.addView(payment);
+        Button refresh = choice("بررسی قیمت و بازیابی خریدهای فروشگاه");
+        refresh.setOnClickListener(v -> { if (billing != null) billing.refreshInventory(); });
+        content.addView(refresh);
         Button back = choice("بازگشت به سهمینو");
         back.setOnClickListener(v -> finish());
         content.addView(back);
         scroll.addView(content);
         setContentView(scroll);
         renderChoices();
+        billing = new SahminoStoreBillingManager(this, new SahminoStoreBillingManager.Listener() {
+            @Override public void onStatus(String message) {
+                storeStatus = message;
+                renderChoices();
+            }
+            @Override public void onCatalogPrice(SahminoBillingCatalog.Plan plan,
+                    String price, boolean matches) {
+                for (int i = 0; i < DAYS.length; i++) {
+                    if (DAYS[i] == plan.days) verifiedPrices[i] = matches;
+                }
+                renderChoices();
+            }
+            @Override public void onPurchaseNeedsServerVerification(
+                    SahminoBillingCatalog.Plan plan,
+                    ir.myket.billingclient.util.Purchase purchase) { }
+            @Override public void onOwnedInventoryItem(
+                    SahminoBillingCatalog.Plan plan,
+                    ir.myket.billingclient.util.Purchase purchase) { }
+            @Override public void onNoOwnedPurchase() { }
+            @Override public void onOwnedPurchaseEvidence(
+                    SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence) {
+                storeStatus = "خرید قبلی پیدا شد؛ فعال‌سازی فقط پس از تأیید سرور ممکن است.";
+                renderChoices();
+            }
+        });
+        billing.connect();
     }
 }
