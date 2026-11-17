@@ -94,9 +94,10 @@ async function verifyMarketplaceReceipt(env,body,order){
   throw new Error('INVALID_ORDER');
  const selected=plan(order.plan_id);
  if(selected.priceRial!==order.amount_rial)throw new Error('ORDER_PRICE_MISMATCH');
- if(body.provider===PROVIDERS.MYKET&&Object.keys(body).sort().join(',')==='originalJson,provider,signature')
+ if(body.orderId!==order.id)throw new Error('ORDER_ID_MISMATCH');
+ if(body.provider===PROVIDERS.MYKET&&Object.keys(body).sort().join(',')==='orderId,originalJson,provider,signature')
   return verifyMyket(env,body,order);
- if(body.provider===PROVIDERS.CAFEBAZAAR&&Object.keys(body).sort().join(',')==='provider,purchaseToken')
+ if(body.provider===PROVIDERS.CAFEBAZAAR&&Object.keys(body).sort().join(',')==='orderId,provider,purchaseToken')
   return verifyBazaar(env,body,order);
  throw new Error('INVALID_RECEIPT_REQUEST');
 }
