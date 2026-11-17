@@ -34,3 +34,16 @@ test('no order and malformed pending order fail closed',async()=>{
  assert.equal((await findPrepaidPendingOrder(null,subject)).reason,'DATABASE_UNAVAILABLE');
  assert.match(INSERT_SQL,/u\.auth_subject=\?/);
 });
+
+test('OTP internal user ID creates and retrieves orders using only the internal account key',async()=>{
+ const userId='usr_'+'b'.repeat(32),db=dbFor(),created=await createPrepaidOrder(db,{authenticatedUserId:userId,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
+ assert.equal(created.status,201);
+ assert.deepEqual(db.calls[1],['bind',orderId,'SAHMINO_PRO_30D',1500000,now,userId]);
+ assert.match(db.calls[0][1],/u\\.id=\\?/);
+ const pending=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHMINO_PRO_30D',amount_rial:1500000,currency:'IRR',created_at:now}}),null,userId);
+ assert.equal(pending.pending,true);
+});
+test('invalid client-supplied internal account IDs are never accepted',async()=>{
+ const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedUserId:'usr_client_supplied',planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
+ assert.equal(out.status,401);assert.equal(db.calls.length,0);
+});
