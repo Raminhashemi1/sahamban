@@ -25,8 +25,9 @@ function validNow(now){
  const n=Date.parse(now);return Number.isFinite(n)&&new Date(n).toISOString()===now;
 }
 const fail=(reason,status)=>({reason,status,checkoutEnabled:false,proEnabled:false});
-async function createPrepaidOrder(db,{authenticatedSubject,planId,now,makeOrderId}={}){
- if(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject))return fail('NOT_AUTHENTICATED',401);
+async function createPrepaidOrder(db,{authenticatedSubject,authenticatedUserId,planId,now,makeOrderId}={}){
+ const byUser=typeof authenticatedUserId==='string'&&/^usr_[a-f0-9]{32}$/.test(authenticatedUserId);
+ if(!byUser&&(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject)))return fail('NOT_AUTHENTICATED',401);
  let selected;try{selected=plan(planId);}catch(_){return fail('INVALID_PLAN',400);}
  if(!validNow(now))return fail('SERVER_TIME_UNAVAILABLE',503);
  if(!db||typeof db.prepare!=='function')return fail('DATABASE_UNAVAILABLE',503);
@@ -40,8 +41,9 @@ async function createPrepaidOrder(db,{authenticatedSubject,planId,now,makeOrderI
    amountRial:selected.priceRial,currency:'IRR',createdAt:now},checkoutEnabled:false,proEnabled:false};
  }catch(_){return fail('ORDER_UNAVAILABLE',503);}
 }
-async function findPrepaidPendingOrder(db,authenticatedSubject){
- if(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject))return fail('NOT_AUTHENTICATED',401);
+async function findPrepaidPendingOrder(db,authenticatedSubject,authenticatedUserId){
+ const byUser=typeof authenticatedUserId==='string'&&/^usr_[a-f0-9]{32}$/.test(authenticatedUserId);
+ if(!byUser&&(typeof authenticatedSubject!=='string'||!SUBJECT.test(authenticatedSubject)))return fail('NOT_AUTHENTICATED',401);
  if(!db||typeof db.prepare!=='function')return fail('DATABASE_UNAVAILABLE',503);
  try{
   const row=await db.prepare(byUser?SELECT_PENDING_USER_SQL:SELECT_PENDING_SQL).bind(byUser?authenticatedUserId:authenticatedSubject).first();
