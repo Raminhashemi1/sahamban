@@ -266,7 +266,7 @@ export default {
       now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>verified
      });
      if(!settled.ok)return send({error:settled.reason,proEnabled:false},settled.reason==='ORDER_NOT_FOUND'?404:409,cors);
-     return send({status:'SETTLED',proEnabled:true,orderId:settled.orderId,paidUntil:settled.paidUntil},200,cors);
+     return send({status:'SETTLED',proEnabled:Date.parse(settled.paidUntil)>nowMs,orderId:settled.orderId,paidUntil:settled.paidUntil},200,cors);
     }
     if(isPrepaidOverview){
      const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
