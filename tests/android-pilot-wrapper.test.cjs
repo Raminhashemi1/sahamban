@@ -19,13 +19,20 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
  assert.ok(!java.includes('addJavascriptInterface'));
 });
 
-test('debug APK has a temporary identity, no production signing and no checkout',()=>{
+test('market variants use separate store flavors, temporary identity and no production signing',()=>{
  const build=read('android-pilot/app/build.gradle');
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
- assert.match(wf,/assembleDebug/);
+ assert.match(wf,/assembleBazaarDebug/);\n assert.match(wf,/assembleMyketDebug/);\n assert.match(wf,/sahmino-market-debug-apks-NOT-FOR-STORE/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.match(wf,/upload-artifact/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
+ assert.match(build,/create\\('bazaar'\\)/);
+ assert.match(build,/create\\('myket'\\)/);
+ assert.match(build,/ir\\.myket:billing:2\\.2/);
+ assert.match(build,/sahmino_pro_365d/);
+ assert.match(build,/BAZAAR_IAB_PUBLIC_KEY/);
+ assert.match(build,/MYKET_IAB_PUBLIC_KEY/);
+ assert.doesNotMatch(build,/com\\.android\\.vending/);
 });
