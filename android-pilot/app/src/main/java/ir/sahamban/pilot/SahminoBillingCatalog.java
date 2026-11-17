@@ -22,11 +22,11 @@ public final class SahminoBillingCatalog {
     }
 
     private static final Plan[] PLANS = {
-        new Plan("SAHMINO_PRO_30D", 30, 1_500_000L, "sahmino_pro_30d"),
-        new Plan("SAHMINO_PRO_60D", 60, 2_850_000L, "sahmino_pro_60d"),
-        new Plan("SAHMINO_PRO_90D", 90, 4_050_000L, "sahmino_pro_90d"),
-        new Plan("SAHMINO_PRO_180D", 180, 7_650_000L, "sahmino_pro_180d"),
-        new Plan("SAHMINO_PRO_365D", 365, 14_600_000L, "sahmino_pro_365d")
+        new Plan("SAHMINO_PRO_30D", 30, 1_500_000L, BuildConfig.SKU_30D),
+        new Plan("SAHMINO_PRO_60D", 60, 2_850_000L, BuildConfig.SKU_60D),
+        new Plan("SAHMINO_PRO_90D", 90, 4_050_000L, BuildConfig.SKU_90D),
+        new Plan("SAHMINO_PRO_180D", 180, 7_650_000L, BuildConfig.SKU_180D),
+        new Plan("SAHMINO_PRO_365D", 365, 14_600_000L, BuildConfig.SKU_365D)
     };
 
     private SahminoBillingCatalog() { }
