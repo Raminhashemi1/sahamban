@@ -23,6 +23,13 @@ android {
     // store-generated IDs are reconciled during publisher-console upload/configuration.
     buildFeatures { buildConfig true }
 
+    // Keep store SDK implementations out of the shared source set.
+    sourceSets {
+        main.java.exclude 'ir/sahamban/pilot/SubscriptionPreviewActivity.java'
+        main.java.exclude 'ir/sahamban/pilot/SahminoStoreBillingManager.java'
+        main.java.exclude 'ir/sahamban/pilot/SahminoPurchaseEvidence.java'
+    }
+
     flavorDimensions 'store'
     productFlavors {
         bazaar {
