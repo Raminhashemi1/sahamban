@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS sahmino_prepaid_subscription_entitlements (
   paid_until TEXT,
   updated_at TEXT NOT NULL
 );
-\nCREATE TABLE IF NOT EXISTS sahmino_prepaid_payment_events (
+
+CREATE TABLE IF NOT EXISTS sahmino_prepaid_payment_events (
   provider_name TEXT NOT NULL,
   provider_event_id TEXT NOT NULL,
   provider_payment_id TEXT NOT NULL,
