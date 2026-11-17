@@ -53,9 +53,9 @@ $('sahminoCreatePendingOrder').addEventListener('click',async()=>{
  try{
   const selected=document.querySelector('input[name="sahminoPlanDays"]:checked');
   if(!selected||!planIds[selected.value])throw Error('یک طرح معتبر انتخاب کنید.');
-  const order=await call('/api/v1/me/prepaid-orders',{method:'POST',headers:{'X-Sahmino-CSRF':'1'},body:JSON.stringify({planId:planIds[selected.value]})});
-  message('سفارش '+order.order.id+' با وضعیت در انتظار پرداخت ثبت شد. پرداخت و فعال‌سازی انجام نشده است.');
-  await refresh();
+  const payment=await call('/api/v1/me/prepaid-checkout',{method:'POST',headers:{'X-Sahmino-CSRF':'1'},body:JSON.stringify({planId:planIds[selected.value]})});
+  if(typeof payment.checkoutUrl!=='string'||!payment.checkoutUrl.startsWith('https://'))throw Error('نشانی پرداخت معتبر نیست.');
+  message('در حال انتقال امن به درگاه زرین‌پال…');window.location.assign(payment.checkoutUrl);
  }catch(e){message(e.message);}
 });
 refresh();
