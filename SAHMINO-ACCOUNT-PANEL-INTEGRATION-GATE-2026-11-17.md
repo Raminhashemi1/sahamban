@@ -107,3 +107,21 @@ The source workflow is now prepared to add the five-plan D1 schema safely on the
 - Corrected both output writes to use actual newline delimiters and added regression assertions to the deployment workflow test.
 - Commits: `4ba15a7b` (workflow correction), `77682037` (regression assertions).
 - The corrected workflow is still manual-only, main-only, and payments-disabled. No deployment or remote D1 mutation was run.
+
+## Latest verification — 2026-11-17
+
+- Latest branch HEAD at this review: `d17e9ddc845b24356cd61671dea15d96ced83c21`.
+- Subscription v2 workflow run `44131033397` completed successfully.
+- Its Node test suite reports **60 passed, 0 failed, 0 skipped**.
+- Successful steps include subscription module syntax, authenticated Worker API tests, provider-neutral OTP migration constraints, OTP runtime repository schema/atomicity tests, legacy and additive v2 D1 migration constraints, five-plan schema regression tests, and exact-day SQLite settlement integration.
+- The run does not provision or inspect the owner's remote Cloudflare D1, deliver a real SMS, deploy the Worker, or test a physical Android device.
+
+## Owner intervention required before live pilot
+
+1. Provision/approve the Cloudflare `cloudflare-pilot` GitHub environment with restricted `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `SAHAMBAN_D1_DATABASE_ID`. Do not send secrets in chat.
+2. Confirm the private pilot Worker/API origin and approve the exact PWA origin/cookie strategy. The PWA remains fail-closed while `SAHMINO_API_BASE` is absent.
+3. Provide an approved SMS provider sandbox, sender identity and Worker secret/binding through the provider's secure dashboard; then authorize a real delivery test.
+4. Provide a physical Android device and authorize installation/OTP/session/order acceptance.
+5. Explicitly authorize promotion of PR #185 from Draft and merge to `main` only when ready. The pilot deploy workflow is main-only and manual; no merge or deploy is implied by this report.
+
+Until these approvals and acceptance checks are complete, keep public OTP/order flags off, payments off, auto-renew off, and do not claim production readiness.
