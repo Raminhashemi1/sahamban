@@ -2,14 +2,22 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const panel=$('sahminoAccountPanel');if(!panel)return;
-const api=String(window.SAHMINO_API_BASE||'').replace(/\/$/,'');
+const configuredApi=String(window.SAHMINO_API_BASE||'').trim();
+let api='';
+if(configuredApi){
+ try{
+  const parsed=new URL(configuredApi);
+  if(parsed.protocol==='https:'&&parsed.username===''&&parsed.password===''&&
+     parsed.pathname==='/'&&parsed.search===''&&parsed.hash==='')api=parsed.origin;
+ }catch(_){}
+}
 let challengeId=null;
 const planIds={'30':'SAHMINO_PRO_30D','60':'SAHMINO_PRO_60D','90':'SAHMINO_PRO_90D','180':'SAHMINO_PRO_180D','365':'SAHMINO_PRO_365D'};
 const toman=n=>new Intl.NumberFormat('fa-IR').format(Math.round(n/10))+' تومان';
 const date=s=>{if(!s)return '—';const d=new Date(s);return Number.isNaN(d.getTime())?'نامشخص':d.toLocaleString('fa-IR');};
 function message(s){$('sahminoAccountMessage').textContent=s;}
 async function call(path,options={}){
- if(!api)throw Error('نشانی API سهمینو هنوز در پیکربندی انتشار ثبت نشده است.');
+ if(!api)throw Error(configuredApi?'نشانی API سهمینو نامعتبر است؛ فقط مبدأ HTTPS بدون مسیر، پرس‌وجو یا اطلاعات ورود مجاز است.':'نشانی API سهمینو هنوز در پیکربندی انتشار ثبت نشده است.');
  const response=await fetch(api+path,{...options,credentials:'include',cache:'no-store',headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});
  let data;try{data=await response.json();}catch(_){throw Error('پاسخ نامعتبر از سرور دریافت شد.');}
  if(!response.ok)throw Error(data.error||data.reason||('خطای سرور: '+response.status));
