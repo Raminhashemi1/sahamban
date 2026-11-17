@@ -6,12 +6,12 @@ def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('
 def myketPublicKey = providers.gradleProperty('MYKET_IAB_PUBLIC_KEY').orElse('').get()
 
 android {
-    // Source namespace stays stable; applicationId below is the publisher-approved store identity.\n    namespace 'ir.sahamban.pilot'
+    // Source namespace stays stable; applicationId below is the publisher-approved store identity.
+    namespace 'ir.sahamban.pilot'
     compileSdk 35
 
     defaultConfig {
-        // Temporary pilot identity; final package ID must be owner-approved
-        // and registered in BOTH store consoles before release signing.
+        // Permanent package ID approved by the app owner; both stores must register this exact ID.
         applicationId 'ir.manahesab.sahmino'
         minSdk 26
         targetSdk 35
