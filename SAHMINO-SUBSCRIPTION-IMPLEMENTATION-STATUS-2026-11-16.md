@@ -63,3 +63,14 @@
 - نمونه رسمی Myket، ارسال original JSON و signature به backend امن و بررسی امضای RSA را برای تراکنش حساس توصیه می‌کند؛ payload نیز باید با سفارش سرور تطبیق داده شود. مرجع نمونه: https://github.com/myketstore/billing-sample-android و https://github.com/myketstore/myket-billing-flutter
 - هنوز endpoint رسمی Myket و جزئیات پاسخ اعتبارسنجی که با نسخه SDK/حساب ناشر این پروژه منطبق باشد، در مخزن مستند نشده؛ تا دریافت مستندات/دسترسی معتبر، adapter واقعی سمت سرور نوشته یا فعال نمی‌شود.
 - اطلاعات SKU واقعی پنج پلن، package نهایی و دسترسی‌های محرمانه پنل بازار و مایکت در مخزن موجود نیستند. این موارد را نباید با شناسه‌های حدسی جایگزین کرد.
+
+
+## بازبینی اجرای CI — ۱۷ نوامبر ۲۰۲۶، commit `6f4e463447159fd8dc2200a1cf851a96fb760223`
+
+- workflow `Sahmino subscription module tests` با run ID `44037601531` با نتیجه success تمام شد.
+- workflow `Sahmino Android marketplace debug builds` با run ID `44037601523` با نتیجه success تمام شد.
+- این دو نتیجه فقط صحت تست‌های مخزن و ساخت APKهای Debug flavorها را تأیید می‌کند؛ خرید واقعی، اعتبارسنجی فروشگاه، تمدید خودکار، لغو یا آماده‌بودن Release را تأیید نمی‌کند.
+- ممیزی مجدد Worker و UI نشان داد Worker فقط entitlement read و سفارش pending آزمایشی را ارائه می‌کند؛ health صراحتاً `paymentsEnabled:false` و `checkoutEnabled:false` برمی‌گرداند.
+- `SubscriptionPreviewActivity` هنوز دکمه پرداخت غیرفعال دارد و هیچ فراخوانی `MarketplaceBillingClient.subscribe` انجام نمی‌دهد.
+- PR #186 باز و Draft باقی است. انتشار عمومی، deploy تولید و ادغام انجام نشده‌اند.
+- بنابراین کار درست بعدی اتصال هویت تجاری واقعی، SKUهای تعریف‌شده در draft consoles، API تأیید رسید رسمی هر مارکت، همگام‌سازی تمدید/لغو و آزمون دستگاه است؛ ساخت Debug موفق را نباید «تکمیل درگاه» نامید.
