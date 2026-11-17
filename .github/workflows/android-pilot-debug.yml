@@ -25,6 +25,14 @@ jobs:
           mkdir -p /tmp/sahamban-java-check
           javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
+      - name: Verify five-plan billing catalog with Java
+        shell: bash
+        run: |
+          mkdir -p /tmp/sahmino-billing-check
+          javac -d /tmp/sahmino-billing-check \\
+            android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java \\
+            android-pilot/tests/SahminoBillingCatalogTest.java
+          java -cp /tmp/sahmino-billing-check ir.sahamban.pilot.SahminoBillingCatalogTest
       - name: Verify store-specific flavor configuration
         run: node --test tests/android-pilot-wrapper.test.cjs
       - name: Validate embedded dashboard subscription JavaScript
