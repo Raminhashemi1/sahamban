@@ -1,4 +1,5 @@
 name: Sahamban Android pilot debug APK
+# Build one diagnostic universal APK whenever the Android wrapper changes.
 on:
   workflow_dispatch:
   push:
