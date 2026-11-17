@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 /**
  * Design-time billing navigation preview ONLY. No billing SDK or payment URLs.
@@ -17,6 +19,8 @@ import android.widget.TextView;
  */
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
+    // Display-only mirror of the approved server catalogue; no client-side charging.
+    private static final int[] PRICE_TOMAN = {150000, 285000, 405000, 765000, 1460000};
     // Detected only from Android installer metadata; no user selector.
     private BillingDistributionPolicy distribution;
     private int selectedDays = DAYS[0];
@@ -43,10 +47,23 @@ public final class SubscriptionPreviewActivity extends Activity {
         return button;
     }
 
+    private String formatToman(int amount) {
+        return NumberFormat.getIntegerInstance(new Locale("fa", "IR")).format(amount);
+    }
+
+    private int selectedPriceToman() {
+        for (int i = 0; i < DAYS.length; i++) {
+            if (DAYS[i] == selectedDays) return PRICE_TOMAN[i];
+        }
+        throw new IllegalStateException("Unknown subscription duration");
+    }
+
     private void renderChoices() {
         planList.removeAllViews();
-        for (int days : DAYS) {
-            Button button = choice((days == selectedDays ? "✓  " : "") + days + " روز");
+        for (int i = 0; i < DAYS.length; i++) {
+            final int days = DAYS[i];
+            Button button = choice((days == selectedDays ? "✓  " : "") + days + " روز — "
+                + formatToman(PRICE_TOMAN[i]) + " تومان");
             button.setOnClickListener(v -> {
                 selectedDays = days;
                 renderChoices();
@@ -56,11 +73,13 @@ public final class SubscriptionPreviewActivity extends Activity {
         String status = distribution.isConfiguredBuild()
             ? distribution.statusText()
             : "منبع نصب شناسایی نشد؛ پرداخت غیرفعال است.";
-        details.setText("دوره انتخابی: " + selectedDays + " روز\\n"
+        details.setText("دوره انتخابی: " + selectedDays + " روز — مبلغ نهایی: "
+            + formatToman(selectedPriceToman()) + " تومان\n"
+            + "تمدید دستی حالت پیش‌فرض است؛ تمدید خودکار در این نسخه ارائه نمی‌شود.\n"
             + "مسیر تشخیص‌داده‌شده این نصب: " + distribution.displayName()
-            + "\\n" + status
-            + "\\n\\nپرداخت واقعی غیرفعال است. شناسه محصول و قیمت رسمی هنوز تنظیم نشده‌اند."
-            + "\\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
+            + "\n" + status
+            + "\n\nقیمت‌ها مطابق کاتالوگ مصوب‌اند؛ پرداخت واقعی و فعال‌سازی اشتراک غیرفعال است."
+            + "\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
     }
 
     @Override
