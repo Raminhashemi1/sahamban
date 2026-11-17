@@ -104,11 +104,25 @@ jobs:
             ];
             const mode=names.length===0?"first_install":
               required.every(name=>names.includes(name))?"existing":null;
-            if(mode===null)throw Error("Remote D1 has incomplete schema: refuse to migrate or deploy");
-            fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\n");
+            if(mode===null)throw Error("Remote D1 has incomplete base schema: refuse to migrate or deploy");
+            const v2Required=[
+              "sahmino_prepaid_subscription_orders",
+              "sahmino_prepaid_subscription_entitlements",
+              "sahmino_prepaid_payment_events",
+              "sahmino_payment_intents"
+            ];
+            const v2Present=v2Required.filter(name=>names.includes(name));
+            const v2Mode=v2Present.length===0?"install":
+              v2Present.length===v2Required.length?"existing":null;
+            if(v2Mode===null)throw Error("Remote D1 has a partial Sahmino v2 schema: operator review required");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\\n");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,"v2_mode="+v2Mode+"\\n");
             console.log(mode==="first_install"?
               "PASS: empty remote D1 ready for initial schema install":
-              "PASS: existing D1 contains all required application tables; migration skipped");
+              "PASS: existing D1 contains all required base application tables");
+            console.log(v2Mode==="install"?
+              "PASS: Sahmino v2 schema is absent; additive migration required":
+              "PASS: complete Sahmino v2 schema already exists; migration skipped");
           '
       - name: Install base D1 schema remotely only on first install
         if: steps.schema.outputs.mode == 'first_install'
@@ -116,6 +130,9 @@ jobs:
       - name: Install additive prepaid D1 schema only on first install
         if: steps.schema.outputs.mode == 'first_install'
         run: npx wrangler d1 execute sahamban-pilot --remote --config server/wrangler.deploy.toml --file server/d1-prepaid-migration.sql --yes
+      - name: Install five-plan Sahmino v2 schema when absent
+        if: steps.schema.outputs.v2_mode == 'install'
+        run: npx wrangler d1 execute sahamban-pilot --remote --config server/wrangler.deploy.toml --file server/d1-sahmino-subscription-v2.sql --yes
       - name: Deploy pilot only, orders and checkout disabled
         run: npx wrangler deploy --config server/wrangler.deploy.toml
       - name: Check deployed endpoint confirms payments disabled
