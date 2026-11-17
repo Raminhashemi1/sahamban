@@ -215,16 +215,18 @@ export default {
   const isOrders=url.pathname==='/api/v1/me/orders';
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
   const isPrepaidOverview=url.pathname==='/api/v1/me/prepaid-overview';
-  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview)return send({error:'NOT_FOUND'},404,cors);
+  const isPrepaidReceipts=url.pathname==='/api/v1/me/prepaid-receipts';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview&&!isPrepaidReceipts)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidReceipts&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   // Cookie-authenticated Sahmino account routes. The internal user ID is
   // derived only from a validated, unrevoked OTP session in D1; never from input.
-  if(isPrepaidOrders||isPrepaidOverview){
+  if(isPrepaidOrders||isPrepaidOverview||isPrepaidReceipts){
    const sessionCookie=parseCookie(request,'sahmino_session');
    if(sessionCookie){
     if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
@@ -235,6 +237,32 @@ export default {
     if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
     if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
      return send({error:'CSRF_REJECTED'},403,cors);
+    if(isPrepaidReceipts){
+     if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
+      return send({error:'FEATURE_DISABLED'},404,cors);
+     if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+      return send({error:'JSON_REQUIRED'},415,cors);
+     const parsed=await readSmallJson(request,32768);
+     if(parsed.error)return send({error:parsed.error},parsed.status,cors);
+     const body=parsed.body;
+     if(!body||typeof body!=='object'||Array.isArray(body)||typeof body.orderId!=='string')
+      return send({error:'INVALID_REQUEST'},400,cors);
+     const order=await env.SAHAMBAN_DB.prepare(
+      "SELECT id,plan_id,amount_rial,currency,state FROM sahmino_prepaid_subscription_orders WHERE id=? AND user_id=? LIMIT 1"
+     ).bind(body.orderId,activeSession.userId).first();
+     if(!order)return send({error:'ORDER_NOT_FOUND'},404,cors);
+     let verified;
+     try{verified=await verifyMarketplaceReceipt(env,body,order);}
+     catch(error){
+      const reason=typeof error?.message==='string'&&/^[A-Z0-9_]{1,80}$/.test(error.message)?error.message:'RECEIPT_VERIFICATION_FAILED';
+      return send({error:reason,proEnabled:false},422,cors);
+     }
+     const settled=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,body,{
+      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>verified
+     });
+     if(!settled.ok)return send({error:settled.reason,proEnabled:false},settled.reason==='ORDER_NOT_FOUND'?404:409,cors);
+     return send({status:'SETTLED',proEnabled:true,orderId:settled.orderId,paidUntil:settled.paidUntil},200,cors);
+    }
     if(isPrepaidOverview){
      const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
       authenticatedUserId:activeSession.userId,now:new Date(nowMs).toISOString()
