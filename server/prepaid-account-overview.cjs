@@ -2,9 +2,11 @@
 // Provider-independent, READ-ONLY subscription overview.
 // Reads new Sahmino orders and retained legacy order history; never initiates checkout.
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
-const LOOKUP=`SELECT u.id AS user_id,u.status AS account_status,e.paid_until,
+const LOOKUP=`SELECT u.id AS user_id,u.status AS account_status,
+ COALESCE(v2.paid_until,e.paid_until) AS paid_until,
  COALESCE(le.suspended,0) AS payment_suspended
 FROM sahamban_users u
+LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id
 LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=u.id
 LEFT JOIN subscription_entitlements le ON le.user_id=u.id
 WHERE u.auth_subject=? LIMIT 1`;
