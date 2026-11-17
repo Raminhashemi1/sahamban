@@ -31,8 +31,10 @@ INSERT INTO sahmino_prepaid_subscription_entitlements(user_id,paid_until,updated
 SELECT user_id,strftime('%Y-%m-%dT%H:%M:%fZ',base_date,'+'||?||' days'),?
 FROM base WHERE 1
 ON CONFLICT(user_id) DO UPDATE SET paid_until=excluded.paid_until,updated_at=excluded.updated_at`;
-async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
- if(!verified||typeof verified!=='object'||verified.verified!==true)return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
+async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}){
+ if(!receipt||typeof receipt!=='object'||typeof verifyAtProvider!=='function')return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
+ let verified=false;try{verified=await verifyAtProvider(receipt);}catch(_){verified=false;}
+ if(verified!==true)return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency}=verified;
  if(![providerName,providerEventId,providerPaymentId].every(x=>typeof x==='string'&&ID.test(x))||
   typeof orderId!=='string'||!ORDER.test(orderId)||currency!=='IRR'||!Number.isSafeInteger(amountRial)||!validUTC(now))
