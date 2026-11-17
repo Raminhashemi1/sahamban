@@ -19,7 +19,7 @@ test('Android wrapper keeps HTTPS navigation and sensitive local resources restr
  assert.ok(!java.includes('addJavascriptInterface'));
 });
 
-test('market variants use separate store flavors, temporary identity and no production signing',()=>{
+test('market variants use separate store flavors, approved Sahmino identity and no production signing',()=>{
  const build=read('android-pilot/app/build.gradle');
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
