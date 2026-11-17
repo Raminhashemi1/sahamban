@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL}=require('../server/prepaid-settlement.cjs');
-const now='2026-11-12T10:00:00.000Z',orderId='ord_'+'a'.repeat(32),verifyAtProvider=async receipt=>receipt.signatureValid===true;
+const now='2026-11-12T10:00:00.000Z',orderId='ord_'+'a'.repeat(32),verifyAtProvider=async receipt=>receipt.signatureValid===true?{providerName:receipt.providerName,providerEventId:receipt.providerEventId,providerPaymentId:receipt.providerPaymentId,orderId:receipt.orderId,planId:receipt.planId,amountRial:receipt.amountRial,currency:receipt.currency}:false;
 const payment={signatureValid:true,providerName:'directpsp',providerEventId:'evt-1',providerPaymentId:'pay-1',orderId,planId:'SAHMINO_PRO_30D',amountRial:1500000,currency:'IRR'};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',state:'PENDING',paid_until:null},results}={}){const calls=[];return {calls,prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {sql,async first(){return row;}};}};},async batch(stmts){calls.push({batch:stmts});return results||[0,1,2].map(()=>({success:true,meta:{changes:1}}));}};}
 test('settlement requires provider verification and exact order match',async()=>{
