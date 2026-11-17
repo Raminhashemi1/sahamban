@@ -87,6 +87,7 @@ disabled. Before enabling it, implement and test all of the following:
 
 ## CI
 
+The store-specific debug build is the registration-preview package only; it is not a public release artifact.\n
 GitHub Actions builds `app-bazaar-debug.apk` and `app-myket-debug.apk`
 under artifact `sahmino-market-debug-apks-NOT-FOR-STORE`. These are only for
 checking that both flavors compile. Physical-device store sandbox tests remain
