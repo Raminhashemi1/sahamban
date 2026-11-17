@@ -236,6 +236,7 @@ export default {
     if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
      return send({error:'FEATURE_DISABLED'},404,cors);
     if(!cors||origin!==allowed)return send({error:'ORIGIN_NOT_ALLOWED'},403);
+    if(!env?.SAHAMBAN_DB)return send({error:'DATABASE_UNAVAILABLE'},503,cors);
     const sessionRepo=createD1SmsOtpRepository(env?.SAHAMBAN_DB);
     const activeSession=await sessionRepo.findActiveSession(sessionCookie,nowMs);
     if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
