@@ -12,20 +12,19 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-/**
- * Store inventory and price-check preview. No checkout or local entitlement grant.
- * Payment remains disabled until a trusted server verifier is integrated.
- */
+/** Myket flow: server order -> Myket payment -> server receipt verification -> consume. */
 public final class SubscriptionPreviewActivity extends Activity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
-    // Display-only mirror of the approved server catalogue; no client-side charging.
     private static final long[] PRICE_RIAL = {1500000L, 2850000L, 4050000L, 7650000L, 14600000L};
-    // Build flavor is the authoritative distribution channel; installer metadata is not trusted.
     private final String distribution = BuildConfig.STORE_CHANNEL;
+    private final ExecutorService io = Executors.newSingleThreadExecutor();
     private int selectedDays = DAYS[0];
     private TextView details;
     private LinearLayout planList;
+    private Button paymentButton;
     private SahminoStoreBillingManager billing;
     private String storeStatus = "اتصال فروشگاه هنوز بررسی نشده است.";
     private final boolean[] verifiedPrices = new boolean[DAYS.length];
@@ -55,10 +54,13 @@ public final class SubscriptionPreviewActivity extends Activity {
     }
 
     private long selectedPriceRial() {
-        for (int i = 0; i < DAYS.length; i++) {
-            if (DAYS[i] == selectedDays) return PRICE_RIAL[i];
-        }
+        for (int i = 0; i < DAYS.length; i++) if (DAYS[i] == selectedDays) return PRICE_RIAL[i];
         throw new IllegalStateException("Unknown subscription duration");
+    }
+
+    private int indexForDays(int days) {
+        for (int i = 0; i < DAYS.length; i++) if (DAYS[i] == days) return i;
+        throw new IllegalArgumentException("Unknown plan duration");
     }
 
     private void renderChoices() {
@@ -74,32 +76,83 @@ public final class SubscriptionPreviewActivity extends Activity {
             planList.addView(button);
         }
         String storeName = "CAFEBAZAAR".equals(distribution) ? "کافه‌بازار" : "مایکت";
-        String status = storeStatus;
         details.setText("دوره انتخابی: " + selectedDays + " روز — مبلغ نهایی: "
             + formatRial(selectedPriceRial()) + " ریال\n"
             + "تمدید دستی حالت پیش‌فرض است؛ تمدید خودکار در این نسخه ارائه نمی‌شود.\n"
-            + "کانال نسخه نصب‌شده: " + storeName
-            + "\n" + status
-            + "\n\nقیمت فروشگاه برای پلن انتخابی: " + (verifiedPrices[indexForDays(selectedDays)] ? "مطابقت دارد" : "هنوز تأیید نشده")
-            + "\nپرداخت واقعی و فعال‌سازی اشتراک تا اتصال اعتبارسنجی سرور غیرفعال است."
-            + "\nانتخاب مسیر پرداخت توسط کاربر وجود ندارد.");
+            + "کانال نسخه نصب‌شده: " + storeName + "\n" + storeStatus
+            + "\nقیمت فروشگاه: " + (verifiedPrices[indexForDays(selectedDays)] ? "مطابقت دارد" : "هنوز تأیید نشده")
+            + "\nخرید فقط با سفارش سرور و تأیید رسید فروشگاه انجام می‌شود.");
+        if (paymentButton != null) {
+            paymentButton.setEnabled(verifiedPrices[indexForDays(selectedDays)]
+                && BuildConfig.API_BASE_URL != null && !BuildConfig.API_BASE_URL.isEmpty());
+        }
     }
 
-    private int indexForDays(int days) {
-        for (int i = 0; i < DAYS.length; i++) if (DAYS[i] == days) return i;
-        throw new IllegalArgumentException("Unknown plan duration");
+    private void beginPurchase() {
+        SahminoBillingCatalog.Plan plan = SahminoBillingCatalog.byPlanId("SAHMINO_PRO_" + selectedDays + "D");
+        if (plan == null) { storeStatus = "پلن انتخابی معتبر نیست."; renderChoices(); return; }
+        if (!verifiedPrices[indexForDays(selectedDays)]) {
+            storeStatus = "ابتدا قیمت واقعی این محصول باید از مایکت تأیید شود.";
+            renderChoices();
+            return;
+        }
+        paymentButton.setEnabled(false);
+        storeStatus = "در حال ایجاد سفارش امن در حساب سهمینو…";
+        renderChoices();
+        io.execute(() -> {
+            try {
+                String orderId = SahminoReceiptApiClient.createOrder(this, plan.planId);
+                runOnUiThread(() -> {
+                    if (billing == null) return;
+                    storeStatus = "سفارش سرور ساخته شد؛ در حال بازکردن خرید مایکت…";
+                    renderChoices();
+                    billing.purchase(plan.planId, orderId);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    storeStatus = ex.getMessage() == null ? "ساخت سفارش ناموفق بود." : ex.getMessage();
+                    renderChoices();
+                });
+            }
+        });
+    }
+
+    private void submitEvidence(SahminoBillingCatalog.Plan plan,
+            SahminoPurchaseEvidence evidence,
+            ir.myket.billingclient.util.Purchase purchase) {
+        if (evidence == null || evidence.developerPayload == null) return;
+        io.execute(() -> {
+            try {
+                boolean settled = SahminoReceiptApiClient.submitMyketReceipt(
+                    this, evidence.developerPayload, evidence);
+                if (!settled) throw new java.io.IOException("تسویه سمت سرور تأیید نشد.");
+                runOnUiThread(() -> {
+                    storeStatus = "رسید مایکت توسط سرور تأیید و اشتراک ثبت شد.";
+                    renderChoices();
+                    if (billing != null) billing.consumeAfterServerSettlement(purchase);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    storeStatus = ex.getMessage() == null
+                        ? "تأیید رسید انجام نشد؛ خرید در فروشگاه باقی می‌ماند تا بازیابی بعدی."
+                        : ex.getMessage();
+                    renderChoices();
+                });
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         if (billing != null) billing.close();
+        io.shutdownNow();
         super.onDestroy();
     }
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        setTitle("اشتراک آزمایشی");
+        setTitle("اشتراک سهمینو");
         ScrollView scroll = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -113,22 +166,19 @@ public final class SubscriptionPreviewActivity extends Activity {
         LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(94, 94);
         logoParams.gravity = Gravity.CENTER_HORIZONTAL;
         content.addView(logo, logoParams);
-        TextView title = text("انتخاب اشتراک سهمینو", 24f, Color.rgb(12, 37, 64));
-        content.addView(title);
-        content.addView(text("پیش‌نمایش اشتراک — درگاه بر اساس منبع نصب، بدون دریافت وجه", 14f,
-            Color.rgb(137, 63, 18)));
+        content.addView(text("انتخاب اشتراک سهمینو", 24f, Color.rgb(12, 37, 64)));
+        content.addView(text("پرداخت امن از طریق مایکت", 14f, Color.rgb(137, 63, 18)));
         content.addView(text("۱. مدت اشتراک را انتخاب کنید", 18f, Color.rgb(12, 37, 64)));
         planList = new LinearLayout(this);
         planList.setOrientation(LinearLayout.VERTICAL);
         content.addView(planList);
-        content.addView(text("۲. کانال انتشار: " + ("CAFEBAZAAR".equals(distribution) ? "کافه‌بازار" : "مایکت"),
-            18f, Color.rgb(12, 37, 64)));
+        content.addView(text("۲. کانال انتشار: مایکت", 18f, Color.rgb(12, 37, 64)));
         details = text("", 15f, Color.rgb(12, 37, 64));
-        details.setContentDescription("وضعیت اتصال خودکار پرداخت");
+        details.setContentDescription("وضعیت اتصال و تأیید خرید");
         content.addView(details);
-        Button payment = choice("پرداخت واقعی — غیرفعال");
-        payment.setEnabled(false);
-        content.addView(payment);
+        paymentButton = choice("خرید اشتراک از مایکت");
+        paymentButton.setOnClickListener(v -> beginPurchase());
+        content.addView(paymentButton);
         Button refresh = choice("بررسی قیمت و بازیابی خریدهای فروشگاه");
         refresh.setOnClickListener(v -> { if (billing != null) billing.refreshInventory(); });
         content.addView(refresh);
@@ -138,6 +188,7 @@ public final class SubscriptionPreviewActivity extends Activity {
         scroll.addView(content);
         setContentView(scroll);
         renderChoices();
+
         billing = new SahminoStoreBillingManager(this, new SahminoStoreBillingManager.Listener() {
             @Override public void onStatus(String message) {
                 storeStatus = message;
@@ -145,22 +196,27 @@ public final class SubscriptionPreviewActivity extends Activity {
             }
             @Override public void onCatalogPrice(SahminoBillingCatalog.Plan plan,
                     String price, boolean matches) {
-                for (int i = 0; i < DAYS.length; i++) {
-                    if (DAYS[i] == plan.days) verifiedPrices[i] = matches;
-                }
+                for (int i = 0; i < DAYS.length; i++) if (DAYS[i] == plan.days) verifiedPrices[i] = matches;
                 renderChoices();
             }
             @Override public void onPurchaseNeedsServerVerification(
-                    SahminoBillingCatalog.Plan plan,
-                    ir.myket.billingclient.util.Purchase purchase) { }
+                    SahminoBillingCatalog.Plan plan, ir.myket.billingclient.util.Purchase purchase) { }
             @Override public void onOwnedInventoryItem(
-                    SahminoBillingCatalog.Plan plan,
-                    ir.myket.billingclient.util.Purchase purchase) { }
+                    SahminoBillingCatalog.Plan plan, ir.myket.billingclient.util.Purchase purchase) { }
             @Override public void onNoOwnedPurchase() { }
-            @Override public void onOwnedPurchaseEvidence(
-                    SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence) {
-                storeStatus = "خرید قبلی پیدا شد؛ فعال‌سازی فقط پس از تأیید سرور ممکن است.";
+            @Override public void onSignedPurchaseEvidence(
+                    SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence,
+                    ir.myket.billingclient.util.Purchase purchase) {
+                storeStatus = "رسید دریافت شد؛ در حال تأیید مستقل سمت سرور…";
                 renderChoices();
+                submitEvidence(plan, evidence, purchase);
+            }
+            @Override public void onOwnedPurchaseEvidence(
+                    SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence,
+                    ir.myket.billingclient.util.Purchase purchase) {
+                storeStatus = "خرید قبلی پیدا شد؛ در حال بازیابی و تأیید سمت سرور…";
+                renderChoices();
+                submitEvidence(plan, evidence, purchase);
             }
         });
         billing.connect();
