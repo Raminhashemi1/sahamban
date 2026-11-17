@@ -24,14 +24,7 @@ jobs:
           mkdir -p /tmp/sahamban-java-check
           javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
-      - name: Verify legacy installer diagnostics (not used to authorize billing)
-        shell: bash
-        run: |
-          javac -d /tmp/sahamban-java-check \
-            android-pilot/app/src/main/java/ir/sahamban/pilot/BillingDistributionPolicy.java \
-            android-pilot/tests/BillingDistributionPolicyTest.java
-          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BillingDistributionPolicyTest
-      - name: Validate embedded dashboard subscription JavaScript
+      - name: Verify store-specific flavor configuration\n        run: node --test tests/android-pilot-wrapper.test.cjs\n      - name: Validate embedded dashboard subscription JavaScript
         shell: bash
         run: node --check android-pilot/app/src/main/assets/sahmino-webview-ui.js
       - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
