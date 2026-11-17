@@ -10,8 +10,6 @@ def myketPublicKey = providers.gradleProperty('MYKET_PUBLIC_KEY')
 android {
     namespace 'ir.sahamban.pilot'
     compileSdk 35
-    buildFeatures { buildConfig true }
-
     defaultConfig {
         // Temporary test-only identifier. Owner must approve final package ID.
         applicationId 'ir.sahamban.pilot'
@@ -40,7 +38,7 @@ android {
                 marketBindAddress: 'ir.mservices.market.InAppBillingService.BIND',
                 marketPermission: 'ir.mservices.market.BILLING'
             ]
-            buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + myketPublicKey + '"'
+            buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
         }
     }
 
