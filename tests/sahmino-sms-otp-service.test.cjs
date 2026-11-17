@@ -14,7 +14,7 @@ function fakeRepository(){
     async checkSendQuota(){return {allowed:quotaUsed<10,retryAfterSeconds:60};},
     async createChallengeAndReserveQuota(challenge){quotaUsed++;for(const old of challenges.values())if(old.phoneE164===challenge.phoneE164&&!old.consumedAt)old.supersededAt=challenge.createdAt;challenges.set(challenge.id,{...challenge});return true;},
     async markChallengeFailed(id,at){const c=challenges.get(id);c.sendState='FAILED';c.failedAt=at;},
-    async markChallengeAccepted(id,meta){const c=challenges.get(id);c.sendState='ACCEPTED';c.providerMessageId=meta.providerMessageId;},
+    async markChallengeAccepted(id,meta){const c=challenges.get(id);c.sendState='ACCEPTED';c.providerMessageId=meta.providerMessageId;return true;},
     async getChallenge(id){const c=challenges.get(id);return c?{...c}:null;},
     async recordFailedAttempt(id,{maxAttempts}){const c=challenges.get(id);if(c&&!c.consumedAt&&c.attempts<maxAttempts)c.attempts++;},
     async consumeChallengeOnce(id,{expectedVerifier,maxAttempts}){const c=challenges.get(id);if(!c||c.verifierHmac!==expectedVerifier||c.sendState!=='ACCEPTED'||c.consumedAt||c.supersededAt||c.attempts>=maxAttempts)return false;c.consumedAt=new Date(now).toISOString();return true;},
@@ -95,4 +95,13 @@ test('simultaneous valid submissions result in only one account/session',async()
  ]);
  assert.equal(results.filter(r=>r.ok).length,1);
  assert.equal(x.repository.sessions.length,1);
+});
+
+test('accepted provider delivery is not reported successful when challenge state persistence fails',async()=>{
+ const x=setup();
+ x.repository.markChallengeAccepted=async()=>false;
+ const result=await x.service.requestCode({phone:'09123456789',ipKey:'8'.repeat(64)});
+ assert.equal(result.ok,false);
+ assert.equal(result.status,503);
+ assert.equal(result.error,'OTP_CHALLENGE_UNAVAILABLE');
 });
