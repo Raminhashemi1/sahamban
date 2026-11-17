@@ -62,3 +62,43 @@ Only afterwards choose a market-specific release wrapper/signing approach.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
+
+## Separate Cafe Bazaar and Myket build variants
+
+The Android pilot now defines two store-specific debug variants:
+
+- `bazaarDebug`: includes Cafe Bazaar Poolakey SDK 2.3.0 only.
+- `myketDebug`: includes Myket Billing SDK 2.2 only.
+
+The unflavoured `debug` APK is not a store deliverable. Do not upload either debug APK to a marketplace.
+
+Build both diagnostic variants locally:
+
+```bash
+gradle -p android-pilot :app:assembleBazaarDebug :app:assembleMyketDebug
+```
+
+The build accepts optional local Gradle properties `BAZAAR_PUBLIC_KEY` and
+`MYKET_PUBLIC_KEY`. Do not commit publisher keys or put them in source control.
+An empty key intentionally leaves the payment SDK unconfigured; the current
+subscription UI remains preview-only and no purchase is started.
+
+**Release blockers still open:**
+
+1. The current `applicationId` is the temporary `ir.sahamban.pilot`. Obtain
+   the exact package ID already registered for the published Sahmino app from
+   the owner's Bazaar and Myket publisher panels before changing it.
+2. Confirm the same package ID is accepted by both store listings and confirm
+   each store's five product IDs in its own publisher panel.
+3. Obtain each store's public RSA verification key. Keep keys in local Gradle
+   properties or CI secrets; do not commit them.
+4. Implement the native purchase adapters and authenticated account handoff.
+   The current WebView deliberately has no JavaScript bridge, and the Worker
+   pilot token is not a commercial login system.
+5. Add provider-specific server verification, refund/revocation reconciliation,
+   and consume only after a successful atomic entitlement grant.
+6. Test with each store installed and a publisher-authorized test account.
+
+No payment flow is enabled by this build setup alone. The server-side order
+feature remains disabled and all real purchase buttons remain unavailable until
+the above gates and sandbox tests pass.
