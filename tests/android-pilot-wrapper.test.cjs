@@ -33,7 +33,7 @@ test('market variants use separate store flavors, approved Sahmino identity and 
  assert.match(build,/bazaar\s*\{/);
  assert.match(build,/myket\s*\{/);
  assert.match(build,/ir\.myket:billing:2\.2/);
- assert.match(build,/sahmino_pro_365d/);
+ assert.match(build,/sahmino_pro_.*suffix\\.toLowerCase\\(\\)/);
  assert.match(build,/BAZAAR_IAB_PUBLIC_KEY/);
  assert.match(build,/MYKET_IAB_PUBLIC_KEY/);
  assert.doesNotMatch(build,/com\.android\.vending/);
