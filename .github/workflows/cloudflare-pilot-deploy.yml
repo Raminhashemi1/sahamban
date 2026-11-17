@@ -115,8 +115,8 @@ jobs:
             const v2Mode=v2Present.length===0?"install":
               v2Present.length===v2Required.length?"existing":null;
             if(v2Mode===null)throw Error("Remote D1 has a partial Sahmino v2 schema: operator review required");
-            fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\\n");
-            fs.appendFileSync(process.env.GITHUB_OUTPUT,"v2_mode="+v2Mode+"\\n");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\n");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,"v2_mode="+v2Mode+"\n");
             console.log(mode==="first_install"?
               "PASS: empty remote D1 ready for initial schema install":
               "PASS: existing D1 contains all required base application tables");
