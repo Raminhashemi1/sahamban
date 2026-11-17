@@ -1,4 +1,4 @@
-name: Sahamban Android pilot debug APK
+name: Sahmino Android marketplace debug builds
 on:
   workflow_dispatch:
   push:
@@ -8,53 +8,51 @@ on:
 permissions:
   contents: read
 jobs:
-  debug-apk:
+  marketplace-debug:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Verify URL origin policy with a real Java runtime
-        shell: bash
+      - name: Verify URL origin policy
         run: |
-          mkdir -p /tmp/sahamban-java-check
-          javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
-          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
-      - name: Verify single-APK installer-to-provider UI routing
-        shell: bash
+          mkdir -p /tmp/sahmino-java-check
+          javac -d /tmp/sahmino-java-check android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java android-pilot/tests/TrustedNavigationTest.java
+          java -cp /tmp/sahmino-java-check ir.sahamban.pilot.TrustedNavigationTest
+      - name: Verify market routing is limited to Bazaar and Myket
         run: |
-          javac -d /tmp/sahamban-java-check \
-            android-pilot/app/src/main/java/ir/sahamban/pilot/BillingDistributionPolicy.java \
-            android-pilot/tests/BillingDistributionPolicyTest.java
-          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BillingDistributionPolicyTest
+          javac -d /tmp/sahmino-java-check android-pilot/app/src/main/java/ir/sahamban/pilot/BillingDistributionPolicy.java android-pilot/tests/BillingDistributionPolicyTest.java
+          java -cp /tmp/sahmino-java-check ir.sahamban.pilot.BillingDistributionPolicyTest
       - name: Validate embedded dashboard subscription JavaScript
-        shell: bash
         run: node --check android-pilot/app/src/main/assets/sahmino-webview-ui.js
-      - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
-        shell: bash
+      - name: Install Android SDK components
         run: |
           set -euo pipefail
           : "${ANDROID_HOME:?Hosted runner must provide Android SDK}"
           SDKMANAGER="$(command -v sdkmanager || true)"
-          if [[ -z "$SDKMANAGER" ]]; then
-            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
-          fi
+          if [[ -z "$SDKMANAGER" ]]; then SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"; fi
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Build TEST-ONLY debug APK without owner signing credentials
-        run: gradle -p android-pilot --no-daemon :app:assembleDebug
-      - name: Print reproducibility digest (never a private certificate)
-        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
+      - name: Build Cafe Bazaar debug APK (not for store release)
+        run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug
+      - name: Build Myket debug APK (not for store release)
+        run: gradle -p android-pilot --no-daemon :app:assembleMyketDebug
+      - name: Print APK digests
+        run: |
+          sha256sum android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
+          sha256sum android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: sahamban-universal-installer-diagnostic-debug-NOT-FOR-STORE
-          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          name: sahmino-marketplace-debug-apks-NOT-FOR-STORE
+          path: |
+            android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
+            android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
           if-no-files-found: error
           retention-days: 7
