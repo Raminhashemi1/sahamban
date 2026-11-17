@@ -78,10 +78,6 @@ public final class SahminoStoreBillingManager {
 
     public void refreshInventory() {
         if (destroyed) return;
-        if (serverOrderId == null || !serverOrderId.matches("ord_[a-f0-9]{32}")) {
-            status("شناسه سفارش معتبر از سرور دریافت نشده؛ خرید شروع نمی‌شود.");
-            return;
-        }
         if (!ready || helper == null) { connect(); return; }
         if (busy) { status("یک عملیات فروشگاهی در حال اجراست."); return; }
         busy = true;
@@ -126,6 +122,10 @@ public final class SahminoStoreBillingManager {
         SahminoBillingCatalog.Plan plan = SahminoBillingCatalog.byPlanId(planId);
         if (plan == null) { status("پلن اشتراک معتبر نیست."); return; }
         if (destroyed) return;
+        if (serverOrderId == null || !serverOrderId.matches("ord_[a-f0-9]{32}")) {
+            status("شناسه سفارش معتبر از سرور دریافت نشده؛ خرید شروع نمی‌شود.");
+            return;
+        }
         if (!ready || helper == null) {
             connect();
             status("اتصال به فروشگاه آماده نیست؛ پس از اتصال دوباره تلاش کنید.");
