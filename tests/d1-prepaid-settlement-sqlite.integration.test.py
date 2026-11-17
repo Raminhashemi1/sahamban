@@ -48,7 +48,7 @@ def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, days=30,
         grant_changes = db.execute('SELECT changes()').fetchone()[0]
         if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1:
             raise AssertionError('Settlement did not update event, order and entitlement atomically')
-    return db.execute('SELECT paid_until FROM prepaid_subscription_entitlements WHERE user_id=?',
+    return db.execute('SELECT paid_until FROM sahmino_prepaid_subscription_entitlements WHERE user_id=?',
                       ('u1',)).fetchone()[0]
 
 class SahminoSQLiteIntegration(unittest.TestCase):
@@ -88,7 +88,7 @@ class SahminoSQLiteIntegration(unittest.TestCase):
                 settle(db, oid=second, payment='pay_2')
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders WHERE id=?', (second,)).fetchone()[0], 'PENDING')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 1)
-            self.assertEqual(db.execute('SELECT paid_until FROM prepaid_subscription_entitlements').fetchone()[0], '2026-12-12T10:00:00.000Z')
+            self.assertEqual(db.execute('SELECT paid_until FROM sahmino_prepaid_subscription_entitlements').fetchone()[0], '2026-12-12T10:00:00.000Z')
         finally:
             db.close()
 
@@ -96,7 +96,7 @@ class SahminoSQLiteIntegration(unittest.TestCase):
         db = make_db()
         try:
             pending(db)
-            db.execute("CREATE TRIGGER fail_grant BEFORE INSERT ON prepaid_subscription_entitlements BEGIN SELECT RAISE(ABORT,'GRANT_DENIED'); END")
+            db.execute("CREATE TRIGGER fail_grant BEFORE INSERT ON sahmino_prepaid_subscription_entitlements BEGIN SELECT RAISE(ABORT,'GRANT_DENIED'); END")
             with self.assertRaises(sqlite3.IntegrityError):
                 settle(db)
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders').fetchone()[0], 'PENDING')
