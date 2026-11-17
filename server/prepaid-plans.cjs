@@ -2,11 +2,11 @@
 // Provider-independent prepaid Pro domain rules. NOT a checkout endpoint.
 // Amounts are final server-owned catalogue values in IRR; no extra discounts.
 const LAUNCH_PLANS=Object.freeze({
- SAHAMBAN_PRO_30D:Object.freeze({days:30,priceRial:1500000}),
- SAHAMBAN_PRO_60D:Object.freeze({days:60,priceRial:2850000}),
- SAHAMBAN_PRO_90D:Object.freeze({days:90,priceRial:4050000}),
- SAHAMBAN_PRO_180D:Object.freeze({days:180,priceRial:7650000}),
- SAHAMBAN_PRO_365D:Object.freeze({days:365,priceRial:14600000})
+ SAHMINO_PRO_30D:Object.freeze({days:30,priceRial:1500000}),
+ SAHMINO_PRO_60D:Object.freeze({days:60,priceRial:2850000}),
+ SAHMINO_PRO_90D:Object.freeze({days:90,priceRial:4050000}),
+ SAHMINO_PRO_180D:Object.freeze({days:180,priceRial:7650000}),
+ SAHMINO_PRO_365D:Object.freeze({days:365,priceRial:14600000})
 });
 const ID=/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
 function id(value,label){
