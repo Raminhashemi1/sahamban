@@ -42,6 +42,7 @@ jobs:
           tests/prepaid-account-overview.test.cjs
           tests/worker-api.test.cjs
           tests/sahmino-subscription-ui-catalog.test.cjs
+          tests/sahmino-account-panel.test.cjs
           tests/sahmino-sms-otp-core.test.cjs
           tests/sahmino-sms-otp-service.test.cjs
           tests/d1-sms-otp-session.test.cjs
