@@ -47,3 +47,23 @@ This is automated code-level evidence only. It is not a real browser, deployed W
 - Auto-renew remains unavailable; manual renewal is the default.
 - No production D1 migration, public deployment, release or merge is authorized by this work.
 - Do not merge this feature branch into `main` without explicit owner approval.
+
+## Progress update — 2026-11-17
+
+Reviewed the current Worker routes, order API, account overview, PWA panel, and existing integration gate before making changes.
+
+- Completed the PWA pending-order integration in `sahmino-account-panel.js`: GET and POST use the existing `/api/v1/me/prepaid-orders` cookie-authenticated route.
+- The panel reuses the five existing server-approved plan IDs. It first checks for an existing pending order, then creates one only when none exists.
+- Removed the obsolete `/api/v1/me/prepaid-checkout` call and all checkout URL handling/redirect behavior from this panel.
+- The UI explicitly states that a pending order is not a payment and does not activate Pro.
+- Added `tests/sahmino-account-panel.test.cjs` to guard the route, no-checkout safety, and five plan IDs; included it in the subscription-v2 CI workflow.
+- GitHub Actions run `44128816453` (subscription-v2 validation on the updated branch head) completed successfully. The syntax, Node unit/API tests, OTP migration/runtime checks, subscription migration checks, and SQLite settlement integration steps all passed.
+
+### Still not accepted / not deployed
+
+- This does not establish that the production PWA has a configured `SAHMINO_API_BASE`, exact-origin CORS allowlisting, or deployed Worker feature flags.
+- No real SMS vendor sandbox delivery, production/test D1 provisioning evidence, or physical Android WebView cookie-persistence acceptance was performed here.
+- Checkout and automatic renewal remain disabled; pending orders grant no entitlement.
+- Pull request #185 remains open and draft. No merge to `main`, public feature-flag enablement, or production deployment was performed.
+
+Next safe gate: provision a private test Worker and test D1 with the owner, configure the exact PWA origin, then verify OTP session persistence and order creation on a real Android WebView before considering any public rollout.
