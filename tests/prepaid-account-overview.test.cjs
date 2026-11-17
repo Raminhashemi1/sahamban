@@ -10,7 +10,7 @@ test('overview reports paid access, manual renewal default and merged private or
  assert.equal(result.status,200);assert.equal(result.proEnabled,true);assert.equal(result.paidUntil,account.paid_until);
  assert.equal(result.remainingSeconds,92*86400);assert.equal(result.autoRenew,false);assert.equal(result.checkoutEnabled,false);
  assert.equal(result.orders[0].planId,item.plan_id);assert.deepEqual(db.calls.map(x=>x.args),[[subject],['u1','u1']]);
- assert.match(LOOKUP,/WHERE u.auth_subject=\?/);assert.match(HISTORY,/UNION ALL/);assert.match(HISTORY,/sahmino_prepaid_subscription_orders/);
+ assert.match(LOOKUP,/WHERE u.auth_subject=\?/);assert.match(LOOKUP,/sahmino_prepaid_subscription_entitlements/);assert.match(LOOKUP,/COALESCE/);assert.match(HISTORY,/UNION ALL/);assert.match(HISTORY,/sahmino_prepaid_subscription_orders/);
 });
 test('expiry boundary, absent purchase and blocked account',async()=>{
  assert.equal((await prepaidAccountOverview(dbFor({user:{...account,paid_until:now}}),{authenticatedSubject:subject,now})).reason,'EXPIRED');
