@@ -23,7 +23,7 @@ async function digest(value){
 function expectedSku(env,provider,planId){
  const suffix=PLAN_SUFFIX[planId],key=provider+'_SKU_'+suffix;
  const value=env?.[key];
- if(typeof value!=='string'||!value.trim()||value.length>128||/[\s]/.test(value))throw new Error('STORE_SKU_NOT_CONFIGURED');
+ if(typeof value!=='string'||!value.trim()||value.length>128||/[\s]/.test(value)||/REPLACE|PLACEHOLDER/i.test(value))throw new Error('STORE_SKU_NOT_CONFIGURED');
  return value.trim();
 }
 function parsePurchaseTime(value){
