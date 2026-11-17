@@ -126,6 +126,40 @@ function createD1SmsOtpRepository(db, { sessionTtlSeconds = 30 * 24 * 60 * 60, c
     return linked?.user_id ? { userId: linked.user_id } : null;
   }
 
+  async function findActiveSession(bearer, now = clock()) {
+    if (typeof bearer !== 'string' || !/^[a-f0-9]{64}$/.test(bearer)) return null;
+    const tokenHash = await sha256Hex(bearer);
+    const row = await db.prepare(`SELECT s.id AS sessionId,s.user_id AS userId,
+      s.expires_at AS expiresAt,s.last_seen_at AS lastSeenAt
+      FROM sahmino_shared_sessions s
+      JOIN sahamban_users u ON u.id=s.user_id
+      WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>?
+        AND u.status='ACTIVE' LIMIT 1`)
+      .bind(tokenHash, iso(now)).first();
+    return row || null;
+  }
+
+  async function revokeSession(bearer, revokedAt = iso(clock())) {
+    if (typeof bearer !== 'string' || !/^[a-f0-9]{64}$/.test(bearer)) return false;
+    const tokenHash = await sha256Hex(bearer);
+    const result = await db.prepare(`UPDATE sahmino_shared_sessions SET revoked_at=?
+      WHERE token_hash=? AND revoked_at IS NULL AND expires_at>?`)
+      .bind(revokedAt, tokenHash, revokedAt).run();
+    return result.meta?.changes === 1;
+  }
+
+  async function revokeAllUserSessions(userId, revokedAt = iso(clock())) {
+    if (typeof userId !== 'string' || !/^usr_[a-f0-9]{32}$/.test(userId)) return 0;
+    const result = await db.prepare(`UPDATE sahmino_shared_sessions SET revoked_at=?
+      WHERE user_id=? AND revoked_at IS NULL AND expires_at>?`)
+      .bind(revokedAt, userId, revokedAt).run();
+    return result.meta?.changes || 0;
+  }
+
+  function clearSessionCookie() {
+    return 'sahmino_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
+  }
+
   async function createSharedSession({ userId, authenticatedAt }) {
     const bearer = randomHex(32);
     const tokenHash = await sha256Hex(bearer);
@@ -142,7 +176,8 @@ function createD1SmsOtpRepository(db, { sessionTtlSeconds = 30 * 24 * 60 * 60, c
   return Object.freeze({
     checkSendQuota, createChallengeAndReserveQuota, markChallengeFailed,
     markChallengeAccepted, getChallenge, recordFailedAttempt,
-    consumeChallengeOnce, resolveOrCreateByVerifiedPhone, createSharedSession
+    consumeChallengeOnce, resolveOrCreateByVerifiedPhone, createSharedSession,
+    findActiveSession, revokeSession, revokeAllUserSessions, clearSessionCookie
   });
 }
 
