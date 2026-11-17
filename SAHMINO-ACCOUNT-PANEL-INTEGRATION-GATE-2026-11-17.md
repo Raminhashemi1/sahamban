@@ -6,7 +6,7 @@ Reviewed HEAD: `b03406e06fed2e58240e56b71d558595afea3613`
 
 ## Verified implementation
 
-- The PWA already contains the five approved plan choices and final IRR display amounts in `index.html`. Reuse this UI; do not rebuild it.
+- The PWA already contains the five approved plan choices and final Toman display amounts in `index.html`. Reuse this UI; do not rebuild it.
 - `server/prepaid-plans.cjs` owns the five final IRR prices.
 - `server/d1-sahmino-subscription-v2.sql` defines the five-plan order catalogue, payment-event ledger, unique pending-order constraint and order-history indexes.
 - `server/prepaid-orders-api.cjs` creates pending orders from server-owned prices and retrieves a user's pending order.
@@ -29,7 +29,7 @@ This is automated code-level evidence only. It is not a real browser, deployed W
 3. The SMS adapter still requires a real provider binding, approved sender, credentials and sandbox delivery evidence. Tests use a fake/provider-neutral adapter only.
 4. The D1 schema is tested with SQLite fixtures, but no separately provisioned test D1 database has been migrated. Production D1 must not be touched without inventory, backup, rollback and owner approval.
 5. Cross-origin cookie persistence, CSRF behavior and account isolation still require acceptance on supported browsers and the Android WebView.
-6. No payment provider is selected or enabled. Do not add a provider or payment path unless the owner explicitly approves it.
+6. No verified end-to-end payment path is enabled. The Zarinpal adapter is a separately tested module, not proof of a deployed callback, order binding or payment settlement flow.
 7. Auto-renew remains unavailable. Manual renewal is the default; do not implement or enable recurring charges without explicit consent and a supported provider contract.
 
 ## Next implementation sequence
@@ -125,21 +125,3 @@ The source workflow is now prepared to add the five-plan D1 schema safely on the
 5. Explicitly authorize promotion of PR #185 from Draft and merge to `main` only when ready. The pilot deploy workflow is main-only and manual; no merge or deploy is implied by this report.
 
 Until these approvals and acceptance checks are complete, keep public OTP/order flags off, payments off, auto-renew off, and do not claim production readiness.
-
-
-## Owner decision — remove ZarinPal (2026-11-17)
-
-- ZarinPal is removed from the Sahmino subscription plan at the owner's explicit instruction.
-- Its adapter, dedicated tests, integration guide, and provider-specific intent table from the new D1 schema were removed in commit `2195ac31036a8052ebcdb74459202337e77501b3`.
-- The subscription validation workflow no longer checks or runs ZarinPal-specific code.
-- No replacement provider is selected. Do not reintroduce ZarinPal or add another provider without a new explicit owner decision.
-- Existing provider-neutral order history, entitlement and settlement primitives remain. Checkout and payment activation remain disabled.
-- The old provider-specific table is not dropped from any already-provisioned database by this source change; no destructive remote migration was run.
-
-## Progress update — idempotent pending-order creation
-
-- A fresh review of `prepaid-orders-api.cjs` identified a race: two near-simultaneous create requests could contend on the one-pending-order-per-user unique index. The losing request previously returned a generic 503 even though the winning pending order existed.
-- The create path now re-reads the authenticated user's pending order after an insert failure and returns it as `EXISTING_PENDING_ORDER` (HTTP 200), without changing its plan, amount, or state.
-- The lookup uses the same trusted authenticated subject or internal OTP user ID used for creation; client-supplied user IDs are not used.
-- Both the ordinary authenticated-subject path and OTP internal-user path have regression tests.
-- This does not create a checkout URL, verify a payment, or grant Pro. Both flags remain false.

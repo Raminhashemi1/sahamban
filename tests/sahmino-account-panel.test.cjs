@@ -57,3 +57,11 @@ test('account panel sends credentials only to a configured HTTPS origin',()=>{
   assert.equal(safe.calls[0].url,'https://worker.example/api/v1/auth/session');
   assert.equal(safe.calls[0].options.credentials,'include');
 });
+
+test('account panel displays all subscription amounts in rial without conversion to toman',()=>{
+  assert.match(panel,/const rial=n=>new Intl\.NumberFormat\('fa-IR'\)\.format\(n\)\+' ریال'/);
+  assert.doesNotMatch(panel,/toman|تومان|Math\.round\(n\/10\)/i);
+  assert.match(panel,/rial\(order\.amountRial\)/);
+  assert.match(panel,/rial\(existing\.order\.amountRial\)/);
+  assert.match(panel,/rial\(created\.order\.amountRial\)/);
+});

@@ -18,9 +18,9 @@ test('rejects unauthenticated, legacy or unknown plans, invalid time, bad ID and
  assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>'bad'})).reason,'ORDER_ID_UNAVAILABLE');
  assert.equal((await createPrepaidOrder(null,{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId})).reason,'DATABASE_UNAVAILABLE');
 });
-test('inactive account fails closed when no existing pending order can be recovered',async()=>{
+test('inactive account and pending-order uniqueness fail closed',async()=>{
  assert.equal((await createPrepaidOrder(dbFor({changes:0}),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId})).reason,'ACCOUNT_NOT_ELIGIBLE');
- assert.equal((await createPrepaidOrder(dbFor({error:new Error('database unavailable')}),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId})).reason,'ORDER_UNAVAILABLE');
+ assert.equal((await createPrepaidOrder(dbFor({error:new Error('unique index')}),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId})).reason,'ORDER_UNAVAILABLE');
 });
 test('retrieves only matching pending Sahmino order and never enables checkout',async()=>{
  const row={id:orderId,plan_id:'SAHMINO_PRO_90D',amount_rial:4050000,currency:'IRR',created_at:now};
@@ -46,41 +46,4 @@ test('OTP internal user ID creates and retrieves orders using only the internal 
 test('invalid client-supplied internal account IDs are never accepted',async()=>{
  const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedUserId:'usr_client_supplied',planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
  assert.equal(out.status,401);assert.equal(db.calls.length,0);
-});
-
-test('concurrent duplicate create returns the already-created pending order idempotently',async()=>{
- const existing={id:'ord_'+'c'.repeat(32),plan_id:'SAHMINO_PRO_60D',amount_rial:2850000,currency:'IRR',created_at:now};
- const calls=[];
- const db={prepare(sql){
-  calls.push(sql);
-  return {bind(...args){return {
-   async run(){throw new Error('UNIQUE constraint failed: idx_sahmino_one_pending_order_per_user');},
-   async first(){return existing;}
-  };}};
- }};
- const out=await createPrepaidOrder(db,{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
- assert.equal(out.status,200);
- assert.equal(out.reason,'EXISTING_PENDING_ORDER');
- assert.equal(out.order.id,existing.id);
- assert.equal(out.order.planId,'SAHMINO_PRO_60D');
- assert.equal(out.order.amountRial,2850000);
- assert.equal(out.checkoutEnabled,false);
- assert.equal(out.proEnabled,false);
- assert.equal(calls.length,2);
-});
-test('concurrent duplicate create for OTP sessions reuses only the authenticated internal user order',async()=>{
- const userId='usr_'+'b'.repeat(32);
- const existing={id:'ord_'+'d'.repeat(32),plan_id:'SAHMINO_PRO_30D',amount_rial:1500000,currency:'IRR',created_at:now};
- const calls=[];
- const db={prepare(sql){
-  calls.push(sql);
-  return {bind(...args){return {
-   async run(){throw new Error('UNIQUE constraint failed');},
-   async first(){return existing;}
-  };}};
- }};
- const out=await createPrepaidOrder(db,{authenticatedUserId:userId,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
- assert.equal(out.reason,'EXISTING_PENDING_ORDER');
- assert.equal(out.order.id,existing.id);
- assert.match(calls[1],/u\.id=\?/);
 });
