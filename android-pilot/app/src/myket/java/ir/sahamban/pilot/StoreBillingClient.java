@@ -44,7 +44,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
             return;
         }
         try {
-            // These are non-renewing prepaid in-app products, not store subscriptions.
+            // Store-managed recurring subscription. The store owns renewal and cancellation.
             if (!helper.subscriptionsSupported()) {
                 listener.onFailure("MYKET_SUBSCRIPTIONS_NOT_SUPPORTED");
                 return;
