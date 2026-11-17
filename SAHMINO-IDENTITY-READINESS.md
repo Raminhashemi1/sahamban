@@ -52,6 +52,10 @@ Do not apply a production migration until existing account rows have been invent
 - A user's order history and entitlement never disclose another user's records.
 - The private pilot remains disabled for public registration and payment.
 
+## Accepted sign-in direction
+
+The product owner selected mobile-number sign-in with SMS one-time codes and agreed to keep the SMS gateway provider-neutral until a later selection. See [SAHMINO-SMS-OTP-PROVIDER-NEUTRAL.md](SAHMINO-SMS-OTP-PROVIDER-NEUTRAL.md). This approves the direction only; it does not approve live SMS sending, production account creation, or paid access. Country scope, OTP lifetime, retry/rate-limit thresholds, recovery policy, and web/Android session strategy remain open.
+
 ## Decisions still required from the product owner
 
 1. Which identity provider/service is authorized for Sahmino, and which channels must it support (web, Android, and any store-distributed app)?
