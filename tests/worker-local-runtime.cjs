@@ -98,9 +98,9 @@ async function main(){
   }
   if(enablePrepaid){
    const create=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_60D'})});
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHMINO_PRO_60D'})});
    assert.equal(create.status,201);
-   assert.equal(create.data.order.planId,'SAHAMBAN_PRO_60D');
+   assert.equal(create.data.order.planId,'SAHMINO_PRO_60D');
    assert.equal(create.data.order.amountRial,2850000);
    assert.equal(create.data.checkoutEnabled,false);
    assert.equal(create.data.proEnabled,false);
@@ -110,7 +110,7 @@ async function main(){
    assert.equal(pending.data.pending,true);
    assert.equal(pending.data.order.id,create.data.order.id);
    const duplicate=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_30D'})});
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHMINO_PRO_30D'})});
    assert.equal(duplicate.status,503);
    const tampered=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
     headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_3M',amountRial:1})});
