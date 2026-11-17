@@ -4,6 +4,10 @@ plugins {
 
 def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('').get()
 def myketPublicKey = providers.gradleProperty('MYKET_IAB_PUBLIC_KEY').orElse('').get()
+def apiBaseUrl = providers.gradleProperty('SAHMINO_API_BASE_URL').orElse('').get()
+def pwaOrigin = providers.gradleProperty('SAHMINO_PWA_ORIGIN').orElse('https://raminhashemi1.github.io').get()
+def apiBaseUrlLiteral = groovy.json.JsonOutput.toJson(apiBaseUrl)
+def pwaOriginLiteral = groovy.json.JsonOutput.toJson(pwaOrigin)
 
 android {
     // Source namespace stays stable; applicationId below is the publisher-approved store identity.
@@ -40,6 +44,8 @@ android {
                 marketPermission: 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
             ]
             buildConfigField 'String', 'STORE_CHANNEL', '"CAFEBAZAAR"'
+            buildConfigField 'String', 'API_BASE_URL', apiBaseUrlLiteral
+            buildConfigField 'String', 'PWA_ORIGIN', pwaOriginLiteral
             buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + bazaarPublicKey + '"'
             buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
             buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
@@ -55,6 +61,8 @@ android {
                 marketPermission: 'ir.mservices.market.BILLING'
             ]
             buildConfigField 'String', 'STORE_CHANNEL', '"MYKET"'
+            buildConfigField 'String', 'API_BASE_URL', apiBaseUrlLiteral
+            buildConfigField 'String', 'PWA_ORIGIN', pwaOriginLiteral
             buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
             buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
             buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
