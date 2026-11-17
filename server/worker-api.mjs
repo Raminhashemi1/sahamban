@@ -75,15 +75,10 @@ async function handleOtpRoutes(request,env,url,nowMs){
   if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
   let body;try{body=await request.json();}catch(_){return otpJson(request,{error:'INVALID_JSON'},400,origin);}
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||typeof body.challengeId!=='string'||typeof body.code!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
-  const adapter=createSmsBindingAdapter(env.SAHMINO_SMS_PROVIDER);
-  if(!adapter)return otpJson(request,{error:'SMS_PROVIDER_UNAVAILABLE'},503,origin);
-  const ipKey=await keyedIpPseudonym(request,env.SAHMINO_OTP_RATE_LIMIT_SECRET);
-  if(!ipKey)return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
+  const adapter={async sendOtp(){return {accepted:false};}};
   const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
   const result=await service.verifyCode({challengeId:body.challengeId,code:body.code});
   if(!result.ok)return otpJson(request,{error:result.error},result.status,origin);
-  const cookieParts=result.sessionCookie.split(';');
-  const cookieValue=cookieParts[0];
   return otpJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie});
  }
  if(route==='/api/v1/auth/session'){
@@ -179,7 +174,7 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Sahmino-CSRF','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
   const otpResponse=await handleOtpRoutes(request,env,url,nowMs);
   if(otpResponse)return otpResponse;
