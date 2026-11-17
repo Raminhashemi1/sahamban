@@ -1,46 +1,49 @@
-# Sahmino account panel and order history — integration gate
+# Sahmino account panel and pending-order integration gate
 
 Date: 2026-11-17
 Branch: `feat/android-subscription-preview-20261115`
-Reviewed HEAD before this note: `40c7aff05c02f28da4036b2ddfa96a6c3941212d`
+Reviewed HEAD: `f6849bdfb9a71e1bb88809c54937bf54bf674de7`
 
-## Verified existing implementation
+## Verified implementation
 
-- The PWA already contains the five approved plan choices and their final Toman display amounts in `index.html`. This UI must be reused, not rebuilt.
-- `server/prepaid-plans.cjs` defines the five server-owned plans in IRR.
+- The PWA already contains the five approved plan choices and final Toman display amounts in `index.html`. Reuse this UI; do not rebuild it.
+- `server/prepaid-plans.cjs` owns the five final IRR prices.
 - `server/d1-sahmino-subscription-v2.sql` defines the five-plan order catalogue, payment-event ledger, unique pending-order constraint and order-history indexes.
-- `server/prepaid-orders-api.cjs` creates pending orders using server-owned prices and supports finding a pending order.
+- `server/prepaid-orders-api.cjs` creates pending orders from server-owned prices and retrieves a user's pending order.
 - `server/prepaid-account-overview.cjs` returns entitlement status and the latest 20 orders, merging v2 and legacy history.
-- Tests exist for the plan catalogue, order creation, account overview, settlement and Worker routes.
-- The Worker routes for prepaid orders and overview are guarded by `PREPAID_ORDERS_ENABLED`; they use the pilot HS256 bearer-token identity.
-- SMS OTP routes are separately guarded by `SAHMINO_OTP_ENABLED`; they issue an HttpOnly session cookie and resolve an internal `sahamban_users.id`.
+- `server/worker-api.mjs` has cookie-authenticated OTP-session routes for overview and pending-order creation. The internal user ID comes from a validated active server-side session, not client input. Pilot JWT routes remain isolated.
+- `sahmino-account-panel.js` resolves the OTP session, reads overview/history, checks for an existing pending order, and creates a pending order through `POST /api/v1/me/prepaid-orders`.
+- The panel no longer calls the nonexistent `/api/v1/me/prepaid-checkout` route and never expects a checkout URL or redirects to a payment provider.
+- Regression coverage is in `tests/sahmino-account-panel.test.cjs`, included in `.github/workflows/sahmino-subscription-v2.yml`.
 
-## Blocking integration defects — do not paper over these
+## Latest verified CI evidence
 
-1. The prepaid Worker endpoints authenticate with the pilot JWT (`AUTH_HMAC_SECRET`), not the OTP session cookie (`sahmino_session`).
-2. OTP-created accounts are resolved by internal user ID; the existing prepaid order and overview modules resolve by `auth_subject`. OTP-created rows can have `auth_subject = NULL`. Consequently, a successful OTP login does not currently authenticate the existing prepaid overview/order endpoints.
-3. The static PWA does not have a configured Worker API base URL or a client integration for authenticated account overview/order history.
-4. The OTP SMS adapter is provider-neutral and requires a private service binding. No real SMS vendor adapter, credentials, sender approval, or sandbox delivery evidence is present.
-5. The Worker/D1 example is a template with a placeholder database ID. No production D1 migration or deployment evidence is present.
-6. Cross-origin cookie behavior between GitHub Pages, Worker hosting and Android WebView has not passed real-device acceptance.
+For commit `f6849bdfb9a71e1bb88809c54937bf54bf674de7`, the Sahmino subscription v2 GitHub Actions job completed successfully. Its logs show all three new account-panel regression tests passing, together with the existing subscription, Worker API, settlement and D1 migration tests.
 
-## Required implementation sequence
+This is automated code-level evidence only. It is not a real browser, deployed Worker, production D1, SMS delivery, or physical-device acceptance test.
 
-1. Add internal-user-ID variants for prepaid overview and order creation. The ID must come only from a validated server-side OTP session lookup; never accept a user ID from request JSON, query parameters or headers.
-2. Add cookie-authenticated Worker routes for overview, order history and pending-order creation. Keep pilot JWT routes isolated. Use exact-origin CORS, CSRF protection for POST, no-store responses, bounded JSON bodies and fail-closed database behavior.
-3. Add PWA account panel integration: resolve session, render active/expired/no-subscription states, show paid-until and remaining time, list up to 20 orders with plan/amount/status/date, and support creating a pending order. No checkout URL or payment action until a verified provider integration exists.
-4. Add worker/API tests for cross-account isolation, missing/expired/revoked session, history pagination/limit, malformed database rows, order amount tampering, duplicate pending orders and CSRF/origin rejection.
-5. Select and implement the SMS provider adapter; run sandbox delivery and verify session persistence in supported mobile browsers and the Android WebView.
-6. Apply migrations to a separately provisioned test D1 database, deploy only to a private test Worker after owner approval, and perform end-to-end tests on a real phone.
+## Remaining blockers — do not enable public traffic
+
+1. `window.SAHMINO_API_BASE` has no deployment value in the static PWA. The owner must provision and approve the private test Worker URL before browser-to-Worker integration can operate.
+2. `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` remain disabled by default. Do not enable them for public traffic.
+3. The SMS adapter still requires a real provider binding, approved sender, credentials and sandbox delivery evidence. Tests use a fake/provider-neutral adapter only.
+4. The D1 schema is tested with SQLite fixtures, but no separately provisioned test D1 database has been migrated. Production D1 must not be touched without inventory, backup, rollback and owner approval.
+5. Cross-origin cookie persistence, CSRF behavior and account isolation still require acceptance on supported browsers and the Android WebView.
+6. No verified end-to-end payment path is enabled. The Zarinpal adapter is a separately tested module, not proof of a deployed callback, order binding or payment settlement flow.
+7. Auto-renew remains unavailable. Manual renewal is the default; do not implement or enable recurring charges without explicit consent and a supported provider contract.
+
+## Next implementation sequence
+
+1. Provision a private test Worker and test D1 after owner approval; record the exact API origin and set `SAHMINO_API_BASE` only in the approved deployment configuration.
+2. Run OTP-session-to-order integration tests against test D1, including missing, expired and revoked sessions; cross-account isolation; origin/CSRF rejection; duplicate pending orders; and client price/user-ID tampering.
+3. Verify SMS sandbox delivery and session-cookie persistence on a real phone and supported mobile browsers.
+4. Only then begin provider-specific sandbox checkout and server-side receipt/callback verification. A pending order must never grant Pro.
+5. Keep Bazaar, Myket, website and Google Play purchase paths separate until their product IDs, signatures and verification contracts are confirmed.
 
 ## Safety state
 
-- Checkout remains disabled.
+- Checkout and payment activation remain disabled.
 - A pending order is not a payment and must never grant Pro.
-- Auto-renew remains unavailable and manual renewal remains the default.
-- Do not enable either feature flag for public traffic.
+- Auto-renew remains unavailable; manual renewal is the default.
+- No production D1 migration, public deployment, release or merge is authorized by this work.
 - Do not merge this feature branch into `main` without explicit owner approval.
-
-## Acceptance evidence still required
-
-A green unit-test suite is not a substitute for: test-D1 migration evidence, sandbox SMS delivery, browser/WebView cookie persistence, API-to-PWA account isolation, and physical-device acceptance. Record the test Worker URL and device/browser versions only after the owner provisions the environment.
