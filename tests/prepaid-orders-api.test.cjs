@@ -39,7 +39,7 @@ test('OTP internal user ID creates and retrieves orders using only the internal 
  const userId='usr_'+'b'.repeat(32),db=dbFor(),created=await createPrepaidOrder(db,{authenticatedUserId:userId,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
  assert.equal(created.status,201);
  assert.deepEqual(db.calls[1],['bind',orderId,'SAHMINO_PRO_30D',1500000,now,userId]);
- assert.match(db.calls[0][1],/u\\.id=\\?/);
+ assert.match(db.calls[0][1],/u\.id=\?/);
  const pending=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHMINO_PRO_30D',amount_rial:1500000,currency:'IRR',created_at:now}}),null,userId);
  assert.equal(pending.pending,true);
 });
