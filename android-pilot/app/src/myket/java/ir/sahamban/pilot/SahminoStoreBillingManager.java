@@ -23,8 +23,8 @@ public final class SahminoStoreBillingManager {
         void onPurchaseNeedsServerVerification(SahminoBillingCatalog.Plan plan, Purchase purchase);
         void onOwnedInventoryItem(SahminoBillingCatalog.Plan plan, Purchase purchase);
         void onNoOwnedPurchase();
-        default void onSignedPurchaseEvidence(SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence) { }
-        default void onOwnedPurchaseEvidence(SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence) { }
+        default void onSignedPurchaseEvidence(SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence, Purchase purchase) { }
+        default void onOwnedPurchaseEvidence(SahminoBillingCatalog.Plan plan, SahminoPurchaseEvidence evidence, Purchase purchase) { }
     }
 
     private static final String TAG = "SahminoBilling";
@@ -104,7 +104,7 @@ public final class SahminoStoreBillingManager {
                             foundOwned = true;
                             // Existing purchase is reported, never locally activated.
                             SahminoPurchaseEvidence evidence = SahminoPurchaseEvidence.from(owned);
-                            if (evidence != null) listener.onOwnedPurchaseEvidence(plan, evidence);
+                            if (evidence != null) listener.onOwnedPurchaseEvidence(plan, evidence, owned);
                             else status("خرید قبلی پیدا شد، اما اطلاعات رسید برای تأیید امن کامل نیست.");
                         }
                     }
@@ -158,7 +158,7 @@ public final class SahminoStoreBillingManager {
                         return;
                     }
                     status("رسید امضاشده دریافت شد؛ برای تأیید سمت سرور آماده است.");
-                    listener.onSignedPurchaseEvidence(plan, evidence);
+                    listener.onSignedPurchaseEvidence(plan, evidence, purchase);
                 } else {
                     status("خرید تکمیل یا تأیید نشد؛ اگر وجهی کسر شده، پس از اتصال دوباره بازیابی را انجام دهید.");
                 }
@@ -167,6 +167,24 @@ public final class SahminoStoreBillingManager {
             Log.e(TAG, "Purchase flow failed", ex);
             busy = false;
             status("شروع خرید ممکن نشد؛ دوباره تلاش کنید.");
+        }
+    }
+
+    /** Consume the one-time Myket item only after the server confirms durable settlement. */
+    public void consumeAfterServerSettlement(Purchase purchase) {
+        if (destroyed || helper == null || purchase == null) return;
+        try {
+            helper.consumeAsync(purchase, (item, result) -> onMain(() -> {
+                if (destroyed) return;
+                if (result != null && result.isSuccess()) {
+                    status("تأیید سرور و مصرف محصول فروشگاه با موفقیت انجام شد.");
+                } else {
+                    status("اشتراک در سرور ثبت شده؛ مصرف فروشگاهی ناموفق بود و در بازیابی بعدی دوباره تلاش می‌شود.");
+                }
+            }));
+        } catch (RuntimeException ex) {
+            Log.e(TAG, "Consume after settlement failed", ex);
+            status("اشتراک در سرور ثبت شده؛ مصرف فروشگاهی بعداً دوباره تلاش می‌شود.");
         }
     }
 
