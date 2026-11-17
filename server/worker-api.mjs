@@ -225,7 +225,7 @@ export default {
      return send({error:'FEATURE_DISABLED'},404,cors);
     if(!cors||origin!==allowed)return send({error:'ORIGIN_NOT_ALLOWED'},403);
     const sessionRepo=createD1SmsOtpRepository(env?.SAHAMBAN_DB);
-    const activeSession=await sessionRepo.findActiveSession(sessionCookie,new Date(nowMs).toISOString());
+    const activeSession=await sessionRepo.findActiveSession(sessionCookie,nowMs);
     if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
     if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
      return send({error:'CSRF_REJECTED'},403,cors);
