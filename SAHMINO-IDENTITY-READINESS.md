@@ -1,6 +1,6 @@
 # Sahmino identity and account-linking readiness
 
-Status: architecture gate only — no identity provider selected, no login implementation, no production deployment.
+Status: provider-neutral Iranian mobile SMS OTP and shared-session implementation is present on the feature branch and covered by automated tests. No SMS gateway has been selected or enabled for production; no production deployment or public registration is authorized.
 
 ## Current verified boundary
 
@@ -54,16 +54,16 @@ Do not apply a production migration until existing account rows have been invent
 
 ## Accepted sign-in direction
 
-The product owner selected mobile-number sign-in with SMS one-time codes and agreed to keep the SMS gateway provider-neutral until a later selection. See [SAHMINO-SMS-OTP-PROVIDER-NEUTRAL.md](SAHMINO-SMS-OTP-PROVIDER-NEUTRAL.md). This approves the direction only; it does not approve live SMS sending, production account creation, or paid access. Country scope, OTP lifetime, retry/rate-limit thresholds, recovery policy, and web/Android session strategy remain open.
+The product owner selected Iranian mobile-number sign-in with SMS one-time codes. The implemented contract accepts Iranian mobile numbers only, sets OTP lifetime to 120 seconds, permits at most 5 verification attempts per challenge, and issues a shared server-managed session for the web and Android clients. The SMS gateway remains provider-neutral pending a later provider decision. The implementation uses a 30-day session lifetime by default and a Secure, HttpOnly, SameSite=None cookie. See [SAHMINO-SMS-OTP-PROVIDER-NEUTRAL.md](SAHMINO-SMS-OTP-PROVIDER-NEUTRAL.md). These decisions and automated tests do not authorize live SMS sending, production account creation, or paid access.
 
 ## Decisions still required from the product owner
 
-1. Which identity provider/service is authorized for Sahmino, and which channels must it support (web, Android, and any store-distributed app)?
-2. Which sign-in methods are wanted (email OTP, password, Google, Apple, phone, or a subset)?
-3. What is the approved account recovery and support process?
-4. Are existing private-pilot accounts to be migrated, or kept isolated?
+1. Which SMS gateway/provider is approved for production delivery, and what sender identity/template is authorized?
+2. What is the approved account recovery and support process for a lost or changed Iranian mobile number?
+3. Are existing private-pilot accounts to be migrated, or kept isolated?
+4. What are the approved session revocation, device/session management, and account-disablement support procedures for commercial use?
 
-Until these decisions are made, provider-specific code, public registration, production identity migration, and paid access must remain unimplemented. The next implementation slice is the provider adapter and identity-link migration, followed by tests against that provider's sandbox.
+Until these decisions are made, live SMS delivery, public registration, production identity migration, and paid access must remain disabled. The next implementation slice is provider selection and sandbox delivery verification, followed by account recovery and cross-client session acceptance tests.
 
 ## Release gate
 
