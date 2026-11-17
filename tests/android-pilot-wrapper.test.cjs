@@ -43,6 +43,18 @@ test('Sahmino subscription preview displays all five approved periods and exact 
  assert.match(activity,/حالت تمدید پیش‌فرض: دستی/);
  assert.match(activity,/تمدید خودکار تا اتصال و تأیید رسمی ارائه‌دهنده غیرفعال است/);
  assert.match(activity,/پرداخت واقعی در این نسخه آزمایشی غیرفعال است/);
+ const billing=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MarketplaceBillingClient.java');
+ assert.match(billing,/void consume\(PurchaseReceipt receipt, ConsumptionListener listener\)/);
+ const bazaar=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/StoreBillingClient.java');
+ const myket=read('android-pilot/app/src/myket/java/ir/sahamban/pilot/StoreBillingClient.java');
+ assert.match(bazaar,/payment\.consumeProduct\(receipt\.purchaseToken/);
+ assert.match(myket,/helper\.consumeAsync\(\(Purchase\) receipt\.storePurchase/);
+ assert.match(bazaar,/Invoke only after backend settlement/);
+ assert.match(myket,/Invoke only after backend settlement/);
+ assert.match(bazaar,/payment\.purchaseProduct/);
+ assert.match(myket,/helper\.launchPurchaseFlow/);
+ assert.doesNotMatch(bazaar,/subscribeProduct/);
+ assert.doesNotMatch(myket,/launchSubscriptionPurchaseFlow/);
  assert.match(activity,/ریال/);
  assert.doesNotMatch(activity,/تومان|TOMAN/);
  const web=read('index.html');
