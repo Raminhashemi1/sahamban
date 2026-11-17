@@ -62,3 +62,26 @@ Only afterwards choose a market-specific release wrapper/signing approach.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
+
+## Immediate phone-test checklist
+
+Use only the newest successful CI artifact named
+`sahamban-universal-installer-diagnostic-debug-NOT-FOR-STORE`.
+It is a debug APK, not a store release. Keep the existing PWA installed and
+use synthetic data only.
+
+1. Install, cold-launch, close and relaunch; record PASS/FAIL and any crash.
+2. Confirm Persian RTL, open the subscription preview, select all five
+   durations, and confirm the displayed amount changes.
+3. Confirm the purchase action remains disabled; do not attempt payment.
+4. Search a symbol, navigate within the PWA, use Android Back, and confirm
+   external HTTPS links open outside the app.
+5. Test synthetic portfolio backup export and import separately. Export is
+   UNVERIFIED unless an actual file is saved and restored successfully.
+6. Test Wi-Fi/mobile data, a brief offline period, and reconnect.
+7. Record device model, Android and Android System WebView versions, CI run
+   URL, and PASS/FAIL/UNVERIFIED for each step. Do not send private financial
+   or account screenshots.
+
+Do not uninstall or clear the existing PWA: its local storage is separate
+from the Android WebView and is not migrated automatically.
