@@ -8,6 +8,20 @@ def apiBaseUrl = providers.gradleProperty('SAHMINO_API_BASE_URL').orElse('').get
 def pwaOrigin = providers.gradleProperty('SAHMINO_PWA_ORIGIN').orElse('https://raminhashemi1.github.io').get()
 def apiBaseUrlLiteral = groovy.json.JsonOutput.toJson(apiBaseUrl)
 def pwaOriginLiteral = groovy.json.JsonOutput.toJson(pwaOrigin)
+def skuValue = { channel, suffix ->
+    def fallback = "sahmino_pro_" + suffix.toLowerCase()
+    providers.gradleProperty(channel + "_SKU_" + suffix).orElse(fallback).get()
+}
+def bazaarSku30 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '30D'))
+def bazaarSku60 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '60D'))
+def bazaarSku90 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '90D'))
+def bazaarSku180 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '180D'))
+def bazaarSku365 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '365D'))
+def myketSku30 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '30D'))
+def myketSku60 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '60D'))
+def myketSku90 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '90D'))
+def myketSku180 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '180D'))
+def myketSku365 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '365D'))
 
 android {
     // Source namespace stays stable; applicationId below is the publisher-approved store identity.
@@ -47,11 +61,11 @@ android {
             buildConfigField 'String', 'API_BASE_URL', apiBaseUrlLiteral
             buildConfigField 'String', 'PWA_ORIGIN', pwaOriginLiteral
             buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + bazaarPublicKey + '"'
-            buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
-            buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
-            buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
-            buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
-            buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
+            buildConfigField 'String', 'SKU_30D', bazaarSku30
+            buildConfigField 'String', 'SKU_60D', bazaarSku60
+            buildConfigField 'String', 'SKU_90D', bazaarSku90
+            buildConfigField 'String', 'SKU_180D', bazaarSku180
+            buildConfigField 'String', 'SKU_365D', bazaarSku365
         }
         myket {
             dimension 'store'
@@ -64,11 +78,11 @@ android {
             buildConfigField 'String', 'API_BASE_URL', apiBaseUrlLiteral
             buildConfigField 'String', 'PWA_ORIGIN', pwaOriginLiteral
             buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
-            buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
-            buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
-            buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
-            buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
-            buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
+            buildConfigField 'String', 'SKU_30D', myketSku30
+            buildConfigField 'String', 'SKU_60D', myketSku60
+            buildConfigField 'String', 'SKU_90D', myketSku90
+            buildConfigField 'String', 'SKU_180D', myketSku180
+            buildConfigField 'String', 'SKU_365D', myketSku365
         }
     }
 
