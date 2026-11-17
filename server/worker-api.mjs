@@ -146,10 +146,6 @@ const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
- const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
- if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
- return new Response(JSON.stringify(body),{status,headers});
-}
 function redirect(url){return new Response(null,{status:303,headers:{Location:url,'Cache-Control':'no-store'} });}
 async function handleZarinpal(request,env,url,nowMs){
  const route=url.pathname;
