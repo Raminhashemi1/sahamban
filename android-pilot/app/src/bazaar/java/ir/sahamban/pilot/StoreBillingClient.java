@@ -63,7 +63,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
             return;
         }
         payment.purchaseProduct(activity.getActivityResultRegistry(),
-            new PurchaseRequest(productId, serverOrderPayload), callback -> {
+            new PurchaseRequest(productId, serverOrderPayload, null), callback -> {
                 callback.purchaseSucceed(info -> {
                     listener.onPurchased(new PurchaseReceipt(
                         "CAFEBAZAAR", info.getProductId(), info.getPurchaseToken(),
