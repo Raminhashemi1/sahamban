@@ -37,6 +37,7 @@ jobs:
           tests/prepaid-settlement.test.cjs
           tests/prepaid-account-overview.test.cjs
           tests/worker-api.test.cjs
+          tests/sahmino-subscription-ui-catalog.test.cjs
       - name: Run legacy and additive v2 D1 migration constraints
         run: python tests/d1-prepaid-migration.test.py
       - name: Run standalone five-plan v2 schema regression tests
