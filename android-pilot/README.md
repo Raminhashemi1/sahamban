@@ -1,6 +1,6 @@
 # سهمینو — Android pre-release billing integration
 
-This module is a development wrapper for the Sahmino Android app. The debug APK is not signed as a production release and must not be uploaded as a production APK.
+This module is a development wrapper for the Sahmino Android app. The debug APK is not a signed production release and must not be uploaded as a production APK.
 
 ## Current verified scope
 - Separate Android flavors: `bazaar` and `myket`.
