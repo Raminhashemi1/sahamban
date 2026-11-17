@@ -32,6 +32,11 @@ android {
             ]
             buildConfigField 'String', 'STORE_CHANNEL', '"CAFEBAZAAR"'
             buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + bazaarPublicKey + '"'
+            buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
+            buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
+            buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
+            buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
+            buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
         }
         myket {
             dimension 'store'
@@ -42,6 +47,11 @@ android {
             ]
             buildConfigField 'String', 'STORE_CHANNEL', '"MYKET"'
             buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
+            buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
+            buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
+            buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
+            buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
+            buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
         }
     }
 
