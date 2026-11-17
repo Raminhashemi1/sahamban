@@ -7,7 +7,8 @@ android {
     compileSdk 35
 
     defaultConfig {
-        // Temporary test-only identifier. Owner must approve final package ID.
+        // Temporary test-only identifier. Must be replaced with the owner's
+        // exact registered package ID before either store release.
         applicationId 'ir.sahamban.pilot'
         minSdk 26
         targetSdk 35
@@ -15,11 +16,39 @@ android {
         versionName '0.2.3-sahmino-branding-preview'
     }
 
-    // One identical APK for all stores. Installer provenance is assessed at
-    // runtime as a best-effort UI hint, NEVER as payment authorization.
+    // Separate store builds: each APK contains only its own market billing SDK.
+    // Never distribute the generic/unflavoured APK to either store.
+    flavorDimensions 'store'
+    productFlavors {
+        bazaar {
+            dimension 'store'
+            manifestPlaceholders = [
+                marketApplicationId: 'com.farsitel.bazaar',
+                marketBindAddress: 'ir.cafebazaar.pardakht.InAppBillingService.BIND',
+                marketPermission: 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
+            ]
+            def publicKey = providers.gradleProperty('BAZAAR_PUBLIC_KEY').orElse('').get()
+            buildConfigField 'String', 'BAZAAR_PUBLIC_KEY', "\"${publicKey}\""
+        }
+        myket {
+            dimension 'store'
+            manifestPlaceholders = [
+                marketApplicationId: 'ir.mservices.market',
+                marketBindAddress: 'ir.mservices.market.InAppBillingService.BIND',
+                marketPermission: 'ir.mservices.market.BILLING'
+            ]
+            def publicKey = providers.gradleProperty('MYKET_PUBLIC_KEY').orElse('').get()
+            buildConfigField 'String', 'MYKET_PUBLIC_KEY', "\"${publicKey}\""
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
@@ -28,4 +57,10 @@ android {
             minifyEnabled false
         }
     }
+}
+
+dependencies {
+    // Keep each marketplace SDK out of the other store's APK.
+    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'
+    myketImplementation 'ir.myket:billing:2.2'
 }
