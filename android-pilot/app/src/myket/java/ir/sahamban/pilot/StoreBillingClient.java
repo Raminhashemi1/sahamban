@@ -32,7 +32,7 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
     }
 
     @Override
-    public void purchase(ComponentActivity activity, String productId, String serverOrderPayload,
+    public void subscribe(ComponentActivity activity, String productId, String serverOrderPayload,
                          PurchaseListener listener) {
         if (helper == null) {
             listener.onFailure("MYKET_NOT_CONNECTED");
@@ -45,7 +45,11 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
         }
         try {
             // These are non-renewing prepaid in-app products, not store subscriptions.
-            helper.launchPurchaseFlow(activity, productId, (IabResult result, Purchase purchase) -> {
+            if (!helper.subscriptionsSupported()) {
+                listener.onFailure("MYKET_SUBSCRIPTIONS_NOT_SUPPORTED");
+                return;
+            }
+            helper.launchSubscriptionPurchaseFlow(activity, productId, (IabResult result, Purchase purchase) -> {
                 if (result == null || !result.isSuccess() || purchase == null) {
                     if (result != null && result.getResponse() == IabHelper.BILLING_RESPONSE_RESULT_USER_CANCELED) {
                         listener.onCancelled();
@@ -62,27 +66,6 @@ public final class StoreBillingClient implements MarketplaceBillingClient {
         } catch (RuntimeException error) {
             listener.onFailure("MYKET_PURCHASE_FLOW_NOT_STARTED");
         }
-    }
-
-    @Override
-    public void consume(PurchaseReceipt receipt, ConsumptionListener listener) {
-        if (helper == null) {
-            listener.onFailure("MYKET_NOT_CONNECTED");
-            return;
-        }
-        if (receipt == null || !"MYKET".equals(receipt.provider) ||
-            !(receipt.storePurchase instanceof Purchase)) {
-            listener.onFailure("INVALID_MYKET_RECEIPT");
-            return;
-        }
-        // Invoke only after backend settlement; subscriptions must never be consumed.
-        helper.consumeAsync((Purchase) receipt.storePurchase, (purchase, result) -> {
-            if (result != null && result.isSuccess()) {
-                listener.onConsumed();
-            } else {
-                listener.onFailure("MYKET_CONSUME_FAILED");
-            }
-        });
     }
 
     @Override
