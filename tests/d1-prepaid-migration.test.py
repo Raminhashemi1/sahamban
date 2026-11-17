@@ -98,10 +98,14 @@ class SahminoV2MigrationTests(unittest.TestCase):
             ("SAHMINO_PRO_365D", 14600000),
         ]
         for i, (plan, amount) in enumerate(pairs):
+            user_id = f"plan-user-{i}"
+            self.db.execute(
+                "INSERT INTO sahamban_users(id,created_at) VALUES(?,?)",
+                (user_id, "2026-11-12T10:00:00Z"))
             self.db.execute("""INSERT INTO sahmino_prepaid_subscription_orders
                 (id,user_id,plan_id,amount_rial,currency,state,created_at)
                 VALUES(?,?,?,?,?,'PENDING','2026-11-12T10:00:00Z')""",
-                (f"new{i}", "u1", plan, amount, "IRR"))
+                (f"new{i}", user_id, plan, amount, "IRR"))
             self.db.execute("UPDATE sahmino_prepaid_subscription_orders SET state='CANCELLED' WHERE id=?", (f"new{i}",))
         self.assertEqual(self.db.execute(
             "SELECT count(*) FROM sahmino_prepaid_subscription_orders").fetchone()[0], 5)
