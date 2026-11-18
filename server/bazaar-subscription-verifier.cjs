@@ -15,16 +15,16 @@ function publicKeyBytes(pem){
  const body=pem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g,'');
  return decodeBase64(body);
 }
-function validReceipt(receipt,order,packageName){
+function validReceipt(receipt,order,packageName,productId){
  if(!receipt||typeof receipt!=='object'||Array.isArray(receipt)||
   !receipt.orderId||!ID.test(receipt.orderId)||typeof receipt.purchaseToken!=='string'||!TOKEN.test(receipt.purchaseToken)||
-  receipt.payload!==order.id||receipt.packageName!==packageName||receipt.productId!==order.product_id||
+  receipt.payload!==order.id||receipt.packageName!==packageName||receipt.productId!==productId||
   !Number.isSafeInteger(receipt.purchaseTime)||receipt.purchaseTime<=0||
   receipt.purchaseState!==0||typeof receipt.originalJson!=='string'||receipt.originalJson.length>16384||
   typeof receipt.dataSignature!=='string'||receipt.dataSignature.length>8192)return false;
  let raw;try{raw=JSON.parse(receipt.originalJson);}catch(_){return false;}
  return raw&&raw.orderId===receipt.orderId&&raw.purchaseToken===receipt.purchaseToken&&
-  raw.developerPayload===order.id&&raw.packageName===packageName&&raw.productId===order.product_id&&
+  raw.developerPayload===order.id&&raw.packageName===packageName&&raw.productId===productId&&
   raw.purchaseState===0&&raw.purchaseTime===receipt.purchaseTime;
 }
 async function verifyBazaarSignature(receipt,publicKey){
@@ -41,12 +41,12 @@ async function sha256Hex(value){
 }
 async function verifyBazaarSubscription({receipt,order,packageName,clientId,clientSecret,refreshToken,publicKey,now,fetchImpl=fetch}={}){
  if(!order||typeof order!=='object'||order.state!=='PENDING'||typeof order.id!=='string'||!ORDER.test(order.id)||
-  typeof order.plan_id!=='string'||!SKU.test(order.product_id)||!Number.isSafeInteger(order.amount_rial)||order.amount_rial<=0||
+  typeof order.plan_id!=='string'||!SKU_BY_PLAN[order.plan_id]||!Number.isSafeInteger(order.amount_rial)||order.amount_rial<=0||
   order.currency!=='IRR'||typeof packageName!=='string'||!PACKAGE.test(packageName)||
   typeof clientId!=='string'||!clientId||typeof clientSecret!=='string'||!clientSecret||
   typeof refreshToken!=='string'||!refreshToken||typeof publicKey!=='string'||!publicKey||
   !Number.isFinite(Date.parse(now)))return {ok:false,reason:'BAZAAR_VERIFIER_NOT_CONFIGURED'};
- if(!validReceipt(receipt,order,packageName))return {ok:false,reason:'RECEIPT_ORDER_MISMATCH'};
+ const productId=SKU_BY_PLAN[order.plan_id];\n if(!validReceipt(receipt,order,packageName,productId))return {ok:false,reason:'RECEIPT_ORDER_MISMATCH'};
  if(!await verifyBazaarSignature(receipt,publicKey))return {ok:false,reason:'RECEIPT_SIGNATURE_INVALID'};
  try{
   const form=new URLSearchParams({grant_type:'refresh_token',client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken});
@@ -58,7 +58,7 @@ async function verifyBazaarSubscription({receipt,order,packageName,clientId,clie
   if(!tokenBody||typeof tokenBody.access_token!=='string'||!tokenBody.access_token||
    !Number.isSafeInteger(tokenBody.expires_in)||tokenBody.expires_in<=0)return {ok:false,reason:'BAZAAR_OAUTH_INVALID'};
   const url='https://pardakht.cafebazaar.ir/devapi/v2/api/applications/'+
-   encodeURIComponent(packageName)+'/subscriptions/'+encodeURIComponent(order.product_id)+
+   encodeURIComponent(packageName)+'/subscriptions/'+encodeURIComponent(productId)+
    '/purchases/'+encodeURIComponent(receipt.purchaseToken)+'/?access_token='+encodeURIComponent(tokenBody.access_token);
   const response=await fetchImpl(url,{method:'GET',headers:{'Accept':'application/json'}});
   if(!response?.ok)return {ok:false,reason:'BAZAAR_VALIDATION_FAILED'};
@@ -76,4 +76,4 @@ async function verifyBazaarSubscription({receipt,order,packageName,clientId,clie
   }};
  }catch(_){return {ok:false,reason:'BAZAAR_VALIDATION_UNAVAILABLE'};}
 }
-module.exports=Object.freeze({verifyBazaarSubscription,verifyBazaarSignature,validReceipt,decodeBase64});
+module.exports=Object.freeze({verifyBazaarSubscription,verifyBazaarSignature,validReceipt,decodeBase64,SKU_BY_PLAN});
