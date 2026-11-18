@@ -72,20 +72,27 @@ async function verifyBazaar(env,body,order){
  const tokenBody=await tokenResponse.json().catch(()=>null);
  if(!tokenBody||typeof tokenBody.access_token!=='string'||!tokenBody.access_token||
     (typeof tokenBody.token_type==='string'&&tokenBody.token_type.toLowerCase()!=='bearer'))throw new Error('BAZAAR_TOKEN_INVALID');
- const path='https://pardakht.cafebazaar.ir/devapi/v2/api/validate/'+
-  encodeURIComponent(PACKAGE)+'/inapp/'+encodeURIComponent(sku)+'/purchases/'+
+ // Subscription verification uses the dedicated subscriptions endpoint.
+ // The inapp/validate endpoint is only for one-time in-app products.
+ const path='https://pardakht.cafebazaar.ir/devapi/v2/api/applications/'+
+  encodeURIComponent(PACKAGE)+'/subscriptions/'+encodeURIComponent(sku)+'/purchases/'+
   encodeURIComponent(body.purchaseToken)+'/?access_token='+encodeURIComponent(tokenBody.access_token);
  const response=await fetch(path,{method:'GET',headers:{Accept:'application/json'}});
  if(!response.ok)throw new Error('BAZAAR_PURCHASE_LOOKUP_FAILED');
  const purchase=await response.json().catch(()=>null);
- if(!purchase||purchase.purchaseState!==0||purchase.developerPayload!==order.id)
-  throw new Error('BAZAAR_PURCHASE_MISMATCH');
- const paidAt=parsePurchaseTime(purchase.purchaseTime);
- if(!paidAt)throw new Error('BAZAAR_PURCHASE_TIME_INVALID');
- const paymentId=await digest('CAFEBAZAAR:'+body.purchaseToken);
- return {providerName:PROVIDERS.CAFEBAZAAR,providerEventId:await digest('CAFEBAZAAR:event:'+body.purchaseToken),
+ if(!purchase||purchase.kind!=='androidpublisher#subscriptionPurchase'||
+    typeof purchase.validUntilTimestampMsec!=='number'||
+    !Number.isSafeInteger(purchase.validUntilTimestampMsec)||
+    purchase.validUntilTimestampMsec<=Date.now())
+  throw new Error('BAZAAR_SUBSCRIPTION_INACTIVE');
+ const initiation=parsePurchaseTime(purchase.initiationTimestampMsec);
+ const validUntil=new Date(purchase.validUntilTimestampMsec).toISOString();
+ if(!initiation)throw new Error('BAZAAR_SUBSCRIPTION_TIME_INVALID');
+ const paymentId=await digest('CAFEBAZAAR:SUBSCRIPTION:'+body.purchaseToken);
+ return {providerName:PROVIDERS.CAFEBAZAAR,providerEventId:await digest('CAFEBAZAAR:SUBSCRIPTION_EVENT:'+body.purchaseToken),
   providerPaymentId:paymentId,orderId:order.id,planId:order.plan_id,
-  amountRial:order.amount_rial,currency:'IRR',paidAt};
+  amountRial:order.amount_rial,currency:'IRR',paidAt:initiation,providerPaidUntil:validUntil,
+  autoRenewing:purchase.autoRenewing===true};
 }
 async function verifyMarketplaceReceipt(env,body,order){
  if(!body||typeof body!=='object'||Array.isArray(body)||!order||
