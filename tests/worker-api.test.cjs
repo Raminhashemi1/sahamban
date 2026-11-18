@@ -235,16 +235,20 @@ test('Bazaar cancellation route is disabled by default and rejects unsupported m
  assert.equal(method.status,405);
 });
 
-test('OTP order endpoint persists explicit auto-renew consent only when versioned consent is supplied',async()=>{
+test('pilot prepaid order endpoint records versioned automatic-renew consent',async()=>{
  const worker=(await api()).default,token=await signedToken(),calls=[];
  const storage={prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {
   async run(){return {success:true,meta:{changes:1}};},async first(){return null;}
  };}};}};
  const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
-  method:'POST',headers:{Origin:origin,Cookie:'sahmino_session='+'a'.repeat(64),'Content-Type':'application/json','X-Sahmino-CSRF':'1'},
+  method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
   body:JSON.stringify({planId:'SAHMINO_PRO_30D',renewalMode:'AUTO',consentVersion:'sahmino-auto-renew-v1'})
- }),{...env(storage),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'});
- // This test's fake OTP session store is not installed; authentication must fail closed.
- assert.equal(response.status,401);
- assert.equal(calls.length,0);
+ }),{...env(storage),PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(response.status,201);
+ const body=await response.json();
+ assert.equal(body.order.renewalMode,'AUTO');
+ assert.equal(body.order.consentVersion,'sahmino-auto-renew-v1');
+ assert.equal(body.order.consentAt,calls[0].values[7]);
+ assert.equal(calls[0].values[5],'AUTO');
+ assert.equal(calls[0].values[6],'sahmino-auto-renew-v1');
 });
