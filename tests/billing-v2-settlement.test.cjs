@@ -20,8 +20,10 @@ test('first verified in-app purchase atomically records payment and grants 30 da
  assert.deepEqual(result,{ok:true,restored:false,expiresAt:'2026-01-31T00:00:00.000Z',daysAdded:30,renewalMode:'MANUAL'});
  assert.equal(db.calls.length,1);assert.equal(db.calls[0].length,3);
  assert.match(db.calls[0][0].sql,/status='PAID'/);
- assert.match(db.calls[0][1].sql,/auto_renewing=0/);
- assert.match(db.calls[0][2].sql,/PURCHASE_VERIFIED/);
+ assert.match(db.calls[0][1].sql,/PURCHASE_VERIFIED/);
+ assert.match(db.calls[0][1].sql,/changes\(\)=1/);
+ assert.match(db.calls[0][2].sql,/auto_renewing=0/);
+ assert.match(db.calls[0][2].sql,/changes\(\)=1/);
 });
 test('same Bazaar purchase is idempotent and never grants days twice',async()=>{
  const db=fakeDb({id:'order',user_id:'u1',status:'PAID',plan_id:input.planId,
