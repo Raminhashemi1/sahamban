@@ -1,5 +1,4 @@
 import settlement from './settlement.cjs';
-import crypto from 'node:crypto';
 const {settle}=settlement;
 const PLAN_IDS=['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D','SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D'];
 function skuMap(raw){
@@ -51,7 +50,8 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  if(!planId)return {status:400,body:{error:'UNKNOWN_SKU'}};
  try{
   const receipt=await verifyReceipt(env,{sku:body.sku,token:body.token,orderId:body.orderId},fetcher);
-  const tokenHash=crypto.createHash('sha256').update(body.token).digest('hex');
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
+  const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
   const result=await settle(db,{orderId:body.orderId,subject,planId,
    amountRial:({SAHAMBAN_PRO_30D:1500000,SAHAMBAN_PRO_60D:2850000,SAHAMBAN_PRO_90D:4050000,SAHAMBAN_PRO_180D:7650000,SAHAMBAN_PRO_365D:14600000})[planId],
    bazaarOrderId:receipt.orderId,tokenHash,now});
