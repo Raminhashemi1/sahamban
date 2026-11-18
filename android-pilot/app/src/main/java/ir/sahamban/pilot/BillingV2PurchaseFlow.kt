@@ -41,7 +41,7 @@ class BillingV2PurchaseFlow(
                                     callback(Outcome.Failed("PURCHASE_EVIDENCE_MISMATCH"))
                                     return@buy
                                 }
-                                api.verifySubscription(order.id, sku, evidence.purchaseToken,
+                                api.verifyPurchase(order.id, sku, evidence.purchaseToken,
                                     evidence.originalJson, evidence.dataSignature) { verification ->
                                     when (verification) {
                                         is BillingV2ApiClient.Result.Success ->
