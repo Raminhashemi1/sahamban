@@ -23,34 +23,42 @@ class BillingV2PurchaseFlow(
             callback(Outcome.Failed("PLAN_NOT_CONFIGURED"))
             return
         }
-        api.createOrder(planId) { orderResult ->
-            when (orderResult) {
-                is BillingV2ApiClient.Result.Failure ->
-                    callback(Outcome.Failed(orderResult.code))
-                is BillingV2ApiClient.Result.Success -> {
-                    val order = orderResult.value
-                    bazaar.buy(sku, order.id) { purchaseResult ->
-                        when (purchaseResult) {
-                            BillingV2Coordinator.PurchaseResult.Cancelled ->
-                                callback(Outcome.Cancelled)
-                            is BillingV2Coordinator.PurchaseResult.Failure ->
-                                callback(Outcome.Failed(purchaseResult.code))
-                            is BillingV2Coordinator.PurchaseResult.Success -> {
-                                val evidence = purchaseResult.evidence
-                                if (evidence.packageName != expectedPackageName ||
-                                    evidence.planSku != sku || evidence.orderId != order.id) {
-                                    callback(Outcome.Failed("PURCHASE_EVIDENCE_MISMATCH"))
-                                    return@buy
-                                }
-                                api.verifyPurchase(order.id, sku, evidence.purchaseToken,
-                                    evidence.originalJson, evidence.dataSignature) { verification ->
-                                    when (verification) {
-                                        is BillingV2ApiClient.Result.Success ->
-                                            bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
-                                                callback(Outcome.Active(verification.value, consumptionPending = !consumed))
-                                            }
-                                        is BillingV2ApiClient.Result.Failure ->
-                                            callback(Outcome.Failed(verification.code))
+        // Establish the Bazaar connection before creating an order; otherwise a
+        // disconnected client leaves an avoidable orphan CREATED order on the server.
+        bazaar.connect { connected ->
+            if (!connected) {
+                callback(Outcome.Failed("BAZAAR_CONNECTION_FAILED"))
+                return@connect
+            }
+            api.createOrder(planId) { orderResult ->
+                when (orderResult) {
+                    is BillingV2ApiClient.Result.Failure ->
+                        callback(Outcome.Failed(orderResult.code))
+                    is BillingV2ApiClient.Result.Success -> {
+                        val order = orderResult.value
+                        bazaar.buy(sku, order.id) { purchaseResult ->
+                            when (purchaseResult) {
+                                BillingV2Coordinator.PurchaseResult.Cancelled ->
+                                    callback(Outcome.Cancelled)
+                                is BillingV2Coordinator.PurchaseResult.Failure ->
+                                    callback(Outcome.Failed(purchaseResult.code))
+                                is BillingV2Coordinator.PurchaseResult.Success -> {
+                                    val evidence = purchaseResult.evidence
+                                    if (evidence.packageName != expectedPackageName ||
+                                        evidence.planSku != sku || evidence.orderId != order.id) {
+                                        callback(Outcome.Failed("PURCHASE_EVIDENCE_MISMATCH"))
+                                        return@buy
+                                    }
+                                    api.verifyPurchase(order.id, sku, evidence.purchaseToken,
+                                        evidence.originalJson, evidence.dataSignature) { verification ->
+                                        when (verification) {
+                                            is BillingV2ApiClient.Result.Success ->
+                                                bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                                    callback(Outcome.Active(verification.value, consumptionPending = !consumed))
+                                                }
+                                            is BillingV2ApiClient.Result.Failure ->
+                                                callback(Outcome.Failed(verification.code))
+                                        }
                                     }
                                 }
                             }
