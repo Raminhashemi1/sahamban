@@ -7,6 +7,7 @@ BASE = (ROOT / "server" / "d1-schema.sql").read_text(encoding="utf-8")
 V1 = (ROOT / "server" / "d1-prepaid-migration.sql").read_text(encoding="utf-8")
 V2 = (ROOT / "server" / "d1-sahmino-subscription-v2.sql").read_text(encoding="utf-8")
 TOKEN = (ROOT / "server" / "d1-bazaar-token-vault-migration.sql").read_text(encoding="utf-8")
+RENEWAL = (ROOT / "server" / "d1-sahmino-renewal-consent-migration.sql").read_text(encoding="utf-8")
 CONTROL = (ROOT / "server" / "d1-sahmino-bazaar-subscription-control-migration.sql").read_text(encoding="utf-8")
 NOW = "2026-11-18T10:00:00.000Z"
 UNTIL = "2026-12-18T10:00:00.000Z"
@@ -19,6 +20,7 @@ class BazaarSubscriptionControlMigrationTests(unittest.TestCase):
         self.db.executescript(V1)
         self.db.execute("INSERT INTO sahamban_users(id,created_at) VALUES('u1',?)", (NOW,))
         self.db.executescript(V2)
+        self.db.executescript(RENEWAL)
         self.db.executescript(TOKEN)
         self.db.execute("""INSERT INTO sahmino_prepaid_subscription_orders
             (id,user_id,plan_id,amount_rial,currency,state,created_at)
