@@ -72,6 +72,16 @@ test('replayed purchase is idempotent and early manual repurchase stacks exactly
  sqlite.close();
 });
 
+test('a new term starts at settlement time when the previous entitlement has expired',async()=>{
+ const {sqlite,adapter}=setup(),id='ord_'+'5'.repeat(32),hash='5'.repeat(64);
+ createOrder(sqlite,id);
+ sqlite.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) VALUES(?,?,0,?)")
+  .run('u1','2025-12-01T00:00:00.000Z','2025-11-01T00:00:00.000Z');
+ const result=await settle(adapter,input(id,hash));
+ assert.equal(result.expiresAt,'2026-01-31T00:00:00.000Z');
+ sqlite.close();
+});
+
 test('fixed elapsed-day calculation preserves the purchase settlement millisecond',async()=>{
  const {sqlite,adapter}=setup(),id='ord_'+'4'.repeat(32),hash='4'.repeat(64);
  const fractional='2026-01-01T00:00:00.789Z';
