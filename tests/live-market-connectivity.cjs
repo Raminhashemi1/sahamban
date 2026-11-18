@@ -4,6 +4,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {classifyTehranQuoteFreshness}=require('./market-freshness-v111.cjs');
+const {networkFailureCode}=require('./live-market-network-failure.cjs');
 
 const API='https://cdn.tsetmc.com/api';
 const symbol='فولاد';
@@ -55,6 +56,7 @@ function dateAge(date){
  assert.ok(candidates.length<=5,'unexpectedly many exact instrument identities: '+candidates.length);
  const valid=[];
  const historyLag=[];
+ const networkFailures=[];
  for(const code of candidates){
   try{
    const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
@@ -73,7 +75,18 @@ function dateAge(date){
    }else if(rows.length===0&&clean.length>=1&&latestHistoryDate&&latestHistoryDate<date){
     historyLag.push({code,price,date,latestHistoryDate,historyCount:clean.length,lastTradeTime:info?.lastHEven,finalLastDate:info?.finalLastDate});
    }
-  }catch(error){console.log('Candidate rejected '+code+': '+String(error.message||error));}
+  }catch(error){
+   const networkCode=networkFailureCode(error);
+   if(networkCode)networkFailures.push(networkCode);
+   console.log('Candidate rejected '+code+': '+String(error.message||error));
+  }
+ }
+ // Any inaccessible candidate prevents proving a unique validated quote.
+ // Never turn a partial candidate scan into a market-data PASS.
+ if(networkFailures.length){
+  recordOutcome('UNVERIFIED_NETWORK',{network_error_code:networkFailures[0],
+   finding:'At least one exact-identity candidate could not be verified due to transport failure.'});
+  return;
  }
  if(valid.length===0&&historyLag.length===1){
   const lag=historyLag[0];
@@ -122,9 +135,8 @@ function dateAge(date){
   history_rows:q.historyCount
  });
 })().catch(error=>{
- const cause=error?.cause;
- const code=cause?.code||error?.code;
- if(['UND_ERR_CONNECT_TIMEOUT','ECONNREFUSED','ENETUNREACH','EHOSTUNREACH','ENOTFOUND'].includes(code)){
+ const code=networkFailureCode(error);
+ if(code){
   recordOutcome('UNVERIFIED_NETWORK',{network_error_code:code});
   console.log('SKIP live TSETMC test: GitHub Actions runner cannot establish outbound connectivity to the public market-data host ('+code+'). This is an environment/network restriction, not a quote-validation pass or a confirmed market-data failure.');
   process.exitCode=0;

@@ -6,6 +6,7 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SahambanSignalAuditV132=api;})(typeof globalThis!=='undefined'?globalThis:null,function(){
  function maxDrawdown(returns){let equity=1,peak=1,worst=0;for(const r of returns){equity*=1+r/100;peak=Math.max(peak,equity);worst=Math.min(worst,(equity/peak-1)*100);}return worst;}
  function audit(quote,{holdingDays=10,minHistory=110,roundTripCostPct=1}={}){
+  if(quote?.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED')throw new Error('مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ آزمون تاریخی متوقف شد.');
   if(!quote||!Array.isArray(quote.history)||quote.history.length<minHistory)throw new RangeError('برای آزمون تاریخی دست‌کم ۱۱۰ جلسه معتبر لازم است.');
   if(holdingDays!==10)throw new RangeError('در این نسخه افق محاسبه فقط ۱۰ جلسه معاملاتی است.');
   if(!Number.isFinite(roundTripCostPct)||roundTripCostPct<0||roundTripCostPct>5)throw new RangeError('هزینه فرضی رفت‌وبرگشت باید بین صفر تا ۵ درصد باشد.');

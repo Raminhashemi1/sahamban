@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
 jobs:
   webkit-mobile:
+    # Official Playwright image includes the pinned browser and required Linux libraries.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -17,7 +20,9 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save playwright@1.56.1 axe-core@4.10.3
-      - run: npx playwright install --with-deps webkit
+      # Avoid intermittent Ubuntu apt mirror DNS failures before browser tests start.
+      # Keep browser installation and the actual tests enabled.
+      - run: npx playwright install webkit
       - run: node tests/webkit-mobile-v106.cjs
       - run: node tests/webkit-a11y-proxy-v109.cjs
       - run: SAHAMBAN_UI_ENGINE=webkit node tests/holdings-ui-matrix-v117.cjs

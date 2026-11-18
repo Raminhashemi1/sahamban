@@ -64,7 +64,19 @@ jobs:
       - run: node tests/market-validation.cjs
       - run: node tests/market-freshness-v111.test.cjs
       - run: node --test tests/market-date-tehran-v127.test.cjs
+      - run: node --test tests/live-market-network-failure.test.cjs
       - run: node tests/live-market-connectivity.cjs
+      - run: node --test tests/day4-public-subscription-boundary.test.cjs
+      - run: node --test tests/history-basis-consumption-v162.test.cjs
+      - run: node --test tests/trade-cost-v1.test.cjs
+      - run: node --test tests/trade-cost-receipt-review-v1.test.cjs
+      - run: node --test tests/tsetmc-capture-integrity-review-v1.test.cjs
+      - run: node --test tests/tsetmc-single-day-integrity-review-v1.test.cjs
+      - run: node --test day3-trusted-evidence-boundary-v1.test.cjs
+      - run: node --test tests/day3-dividend-corroboration-v1.test.cjs
+      - run: python3 -m unittest discover -s tests -p test_day3_fetch_original_codal.py -v
+      - run: node --test tests/day3-real-evidence-audit-v1.test.cjs
+      - run: node --test tests/day3-original-capture-cli.test.cjs
       - name: Preserve explicit live-market status (including network skip)
         if: always()
         uses: actions/upload-artifact@v6
@@ -98,6 +110,7 @@ jobs:
       - run: node tests/holdings-ui-matrix-v117.cjs
       - run: node tests/portfolio-axe-v118.cjs
       - run: node tests/pwa-install-v119.cjs
+      - run: node tests/trade-cost-v1-browser.cjs
       - name: Preserve PWA install readiness proof (Chromium)
         if: always()
         uses: actions/upload-artifact@v6

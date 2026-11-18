@@ -1,0 +1,32 @@
+{
+  "status": "CAPTURED_FOR_MANUAL_REVIEW",
+  "insCode": "25514780181345713",
+  "collectedAt": "2026-11-10T18:12:03.032Z",
+  "host": "https://cdn.tsetmc.com",
+  "files": {
+    "daily": {
+      "filename": "tsetmc-25514780181345713-2026-11-10T18-12-03-032Z-daily.json",
+      "url": "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/25514780181345713/500",
+      "sha256": "c974e81430cbf58240d0b89018bdadfd60fd352bf78299f8d2e396634d7dece3",
+      "sizeBytes": 158761,
+      "rowCount": 500,
+      "contentType": "application/json; charset=utf-8"
+    },
+    "adjustments": {
+      "filename": "tsetmc-25514780181345713-2026-11-10T18-12-03-032Z-adjustments.json",
+      "url": "https://cdn.tsetmc.com/api/ClosingPrice/GetPriceAdjustList/25514780181345713",
+      "sha256": "9363ac67e70d2b86c398d46b4d33dc4e623df35132bef8b0417e7087be6c5cdd",
+      "sizeBytes": 2076,
+      "rowCount": 15,
+      "contentType": "application/json; charset=utf-8"
+    }
+  },
+  "captureScope": "BOUNDED_DAILY_TOP_500",
+  "dailyTop": 500,
+  "sourceAuthenticated": false,
+  "priceBasisVerified": false,
+  "capitalActionsVerified": false,
+  "entryEligible": false,
+  "tradingSignalsEnabled": false,
+  "note": "Browser-based opt-in raw HTTPS response capture; no source authentication or adjustment-basis attestation."
+}

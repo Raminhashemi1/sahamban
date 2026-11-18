@@ -39,11 +39,19 @@
     const data=await json(BASE+'/ClosingPrice/GetClosingPriceDailyList/'+encodeURIComponent(c.insCode)+'/0',fetcher);
     const quote=globalThis.SahambanDiscoveryV130.parseHistory(data,c);
     const report=globalThis.SahambanDecisionV129.analyze(quote,{today,maxAgeDays:7});
+    const basisAttested=quote.historyPriceBasisEvidence==='INDEPENDENTLY_ATTESTED';
+    if(!basisAttested){
+     report.code='DATA_BASIS_UNVERIFIED';report.action='عدم صدور سیگنال؛ مبنای تعدیل قیمت تاریخی تأیید نشده';
+     report.reason='منبع TSETMC فیلدهای dEven و pClosing را ارائه کرده، اما خام یا تعدیل‌شده بودن تاریخچه مستقلاً احراز نشده است. امتیاز تکنیکال صرفاً تشخیصی است؛ نامزد ورود و حد ضرر صادر نمی‌شود.';
+     report.stop=null;report.target=null;report.riskPerShare=null;report.dataBasisStatus='UNKNOWN_NOT_ATTESTED';
+    }
     let historical=null;
-    try{historical=globalThis.SahambanSignalAuditV132.audit(quote);}
+    if(!basisAttested)historical={error:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است.'};
+    else try{historical=globalThis.SahambanSignalAuditV132.audit(quote);}
     catch(e){historical={error:e.message};}
     let holdout=null;
-    try{holdout=globalThis.SahambanHoldoutV134.evaluate(quote);}
+    if(!basisAttested)holdout={error:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است.'};
+    else try{holdout=globalThis.SahambanHoldoutV134.evaluate(quote);}
     catch(e){holdout={error:e.message};}
     results.push({symbol:c.symbol,ok:true,report,historical,holdout,quote});
    }catch(e){results.push({symbol:c.symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به بورس پایان یافت':e.message});}

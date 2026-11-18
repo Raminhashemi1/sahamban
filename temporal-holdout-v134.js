@@ -31,6 +31,7 @@
  };
  function evaluate(quote,{holdingDays=10,costPct=1,trainingShare=.6}={}){
   if(holdingDays!==10||trainingShare!==.6)throw new RangeError('تقسیم زمانی ثابت ۶۰/۴۰ و افق ۱۰ جلسه قابل تغییر نیستند.');
+  if(quote?.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED')throw new Error('مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ ارزیابی خارج از نمونه متوقف شد.');
   if(!Number.isFinite(costPct)||costPct<0||costPct>5)throw new RangeError('هزینه فرضی باید بین صفر تا ۵ درصد باشد.');
   if(!globalThis.SahambanDecisionV129?.analyze)throw new Error('موتور سیگنال در دسترس نیست.');
   const h=quote?.history;if(!Array.isArray(h)||h.length<200)throw new RangeError('برای جداسازی زمانی حداقل ۲۰۰ جلسه قیمت پایانی معتبر لازم است.');

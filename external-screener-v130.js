@@ -27,7 +27,7 @@
   if(new Set(hist.map(x=>x.date)).size!==hist.length)throw new Error('تاریخچه دارای تاریخ تکراری است؛ تحلیل متوقف شد.');
   if(hist.length>12000)throw new Error('حجم تاریخچه خارج از محدوده امن است.');
   const history=hist.slice(-250);
-  return {symbol:identity.symbol,insCode:identity.insCode,marketDate:history.at(-1).date,history};
+  return {symbol:identity.symbol,insCode:identity.insCode,marketDate:history.at(-1).date,history,historyPriceBasis:'UNKNOWN_NOT_ATTESTED',historyPriceBasisEvidence:'NOT_ESTABLISHED',capitalAdjustmentAllowed:false,historicalPriceSource:{provider:'TSETMC',endpoint:'/ClosingPrice/GetClosingPriceDailyList/'+identity.insCode+'/0',dateField:'dEven',priceField:'pClosing',dateCalendar:'GREGORIAN_YYYYMMDD',adjustmentBasis:'UNKNOWN_NOT_ATTESTED'}};
  }
  async function getJson(path,{fetcher=fetch,timeoutMs=15000}={}){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
@@ -46,7 +46,7 @@
  async function screen(raw,{fetcher,today,onProgress}={}){
   const names=parseNames(raw),results=new Array(names.length);let next=0,done=0;
   if(!/^[0-9]{8}$/.test(String(today??'')))throw new Error('تاریخ مبنای بازار مشخص نیست.');
-  async function worker(){while(next<names.length){const i=next++;try{const quote=await discoverOne(names[i],{fetcher});const report=globalThis.SahambanDecisionV129.analyze(quote,{today,maxAgeDays:7});results[i]={symbol:names[i].symbol,ok:true,report};}catch(e){results[i]={symbol:names[i].symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به منبع بازار تمام شد':e.message};}done++;onProgress?.(done,names.length);}}
+  async function worker(){while(next<names.length){const i=next++;try{const quote=await discoverOne(names[i],{fetcher});const report=globalThis.SahambanDecisionV129.analyze(quote,{today,maxAgeDays:7});if(quote.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED'){report.code='DATA_BASIS_UNVERIFIED';report.action='عدم صدور سیگنال؛ مبنای تعدیل قیمت تاریخی تأیید نشده';report.reason='مبنای تعدیل تاریخچه قیمت از منبع بازار مستقلاً احراز نشده است. امتیاز تکنیکال صرفاً تشخیصی است و نامزد ورود، خروج یا حد ضرر صادر نمی‌شود.';report.stop=null;report.target=null;report.riskPerShare=null;report.dataBasisStatus='UNKNOWN_NOT_ATTESTED';}results[i]={symbol:names[i].symbol,ok:true,report,quote};}catch(e){results[i]={symbol:names[i].symbol,ok:false,error:e.name==='AbortError'?'مهلت اتصال به منبع بازار تمام شد':e.message};}done++;onProgress?.(done,names.length);}}
   await Promise.all(Array.from({length:Math.min(2,names.length)},()=>worker()));
   return results;
  }

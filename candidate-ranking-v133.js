@@ -9,6 +9,7 @@
  function quality(item){
   const r=item?.report,h=item?.quote?.history;
   if(!item?.ok||!r||!Array.isArray(h)||h.length<60)return {eligible:false,reason:'داده معتبر و کامل برای نماد دریافت نشده است.'};
+  if(item?.quote?.historyPriceBasisEvidence!=='INDEPENDENTLY_ATTESTED')return {eligible:false,reason:'مبنای تعدیل قیمت تاریخی مستقلاً تأیید نشده است؛ رتبه ورود صادر نمی‌شود.'};
   if(r.code!=='ENTRY_CANDIDATE')return {eligible:false,reason:'بر اساس قواعد فعلی، نماد نامزد ورود نیست.'};
   if(!Number.isFinite(r.last)||r.last<=0||!Number.isFinite(r.stop)||r.stop<=0||r.stop>=r.last)return {eligible:false,reason:'سطح حد ضرر ساختاری معتبر موجود نیست.'};
   const latest=h.slice(-20),values=latest.map(x=>x?.tradedValue).filter(x=>Number.isFinite(x)&&x>0);

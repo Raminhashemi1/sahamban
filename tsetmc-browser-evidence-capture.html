@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://cdn.tsetmc.com; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>دریافت شواهد خام بورس | سهام‌بان</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light dark}
+body{max-width:720px;margin:auto;padding:20px;line-height:1.9}
+main{border:1px solid #8887;border-radius:16px;padding:18px}
+button{padding:10px 16px;margin:5px;border:0;border-radius:9px;background:#2066c2;color:white;font:inherit}
+button:disabled{opacity:.45} input{font:inherit;direction:ltr;width:min(95%,340px);padding:9px;border-radius:8px}
+#status{white-space:pre-wrap;overflow-wrap:anywhere;border-right:3px solid #888;padding:12px}
+small{opacity:.8}code{direction:ltr;unicode-bidi:isolate}
+</style>
+</head>
+<body><main>
+<h1>دریافت شواهد خام TSETMC</h1>
+<p>مخصوص وساخت با شناسه 25514780181345713. فقط دو درخواست عمومی و خواندنی؛ تاریخچه با Top=0 برای همهٔ ردیف‌های در دسترس درخواست می‌شود. کامل‌بودن واقعی تاریخچه باید جداگانه بررسی شود. بدون حساب کارگزاری یا اطلاعات سبد. هیچ داده‌ای به سهام‌بان یا GitHub بارگذاری نمی‌شود؛ فایل‌ها فقط با کلیک شما روی همین دستگاه ذخیره می‌شوند.</p>
+<label for="code">شناسه عمومی نماد وساخت (تأییدشده در آرشیوهای مستقل):</label>
+<input id="code" inputmode="numeric" pattern="[0-9]{8,25}" value="25514780181345713" aria-label="شناسه نماد">
+<p><button id="capture" type="button">دریافت داده بورس</button></p>
+<p id="status" role="status" aria-live="polite">درخواست جدید برای کل تاریخچهٔ در دسترس است (Top=0، نه حالت تعدیل). سقف هر پاسخ ۸ مگابایت و مهلت دریافت ۴۵ ثانیه است؛ پاسخ ناقص ذخیره نمی‌شود.</p>
+<section id="results" hidden>
+<h2>دریافت انجام شد؛ هر سه فایل را جداگانه ذخیره کنید</h2>
+<p id="summary"></p>
+<p><button id="daily" type="button">۱. ذخیره تاریخچه (JSON)</button>
+<button id="adjustments" type="button">۲. ذخیره تعدیلات (JSON)</button>
+<button id="manifest" type="button">۳. ذخیره Manifest (JSON)</button></p>
+<p><small>سه فایل را کنار هم نگه دارید و برای بررسی ارسال کنید. دانلود هر فایل ممکن است نیازمند تأیید مرورگر باشد. فایل‌ها با تغییر صفحه از حافظه مرورگر پاک می‌شوند.</small></p>
+</section>
+<hr>
+<p><small>این ابزار فقط تمامیت بایت‌های دریافتی و قالب پایه داده را بررسی می‌کند. HTTPS و SHA-256 به‌تنهایی احراز مستقل ناشر، مبنای تعدیل ۰/۱/۲ یا کارمزد واقعی نیستند. نتیجه، مجوز سیگنال یا معامله نیست. اگر CORS/شبکه مانع دریافت شود، هیچ مدرکی ساخته نمی‌شود.</small></p>
+</main>
+<script>
+'use strict';
+(()=>{
+ const HOST='https://cdn.tsetmc.com', MAX=8*1024*1024, LIMIT_MS=45000, DAILY_TOP=0;
+ const $=id=>document.getElementById(id);
+ let current=null;
+ const asciiDate=d=>{
+  const s=String(d??'');
+  if(!/^(19|20|21)\d{6}$/.test(s))return false;
+  const year=+s.slice(0,4),month=+s.slice(4,6),day=+s.slice(6);
+  const dt=new Date(Date.UTC(year,month-1,day,12));
+  return dt.getUTCFullYear()===year&&dt.getUTCMonth()+1===month&&dt.getUTCDate()===day;
+ };
+ function validate(data,kind){
+  const rows=data?.[kind==='daily'?'closingPriceDaily':'priceAdjust'];
+  if(!Array.isArray(rows)||rows.length===0||rows.length>20000)throw Error('قالب یا تعداد ردیف‌های '+kind+' معتبر نیست.');
+  const dates=new Set();
+  for(const row of rows){
+   if(!row||typeof row!=='object'||Array.isArray(row)||!asciiDate(row.dEven))
+    throw Error('تاریخ نامعتبر در '+kind);
+   if(kind==='daily'){
+    if(typeof row.pClosing!=='number'||!Number.isFinite(row.pClosing)||row.pClosing<=0)
+     throw Error('قیمت پایانی نامعتبر');
+    const date=String(row.dEven);
+    if(dates.has(date))throw Error('تاریخ تکراری');
+    dates.add(date);
+   }
+  }
+  // Top=0 requests all available rows, not the adjustment mode 0.
+  return rows.length;
+ }
+ async function fetchRaw(url,kind,signal,expectedInsCode){
+  const response=await fetch(url,{method:'GET',mode:'cors',credentials:'omit',redirect:'error',cache:'no-store',signal,
+   headers:{Accept:'application/json'}});
+  if(!response.ok||response.url!==url)throw Error('آدرس/وضعیت پاسخ '+kind+' قابل تأیید نیست: HTTP '+response.status);
+  const contentType=response.headers.get('content-type')||'';
+  if(!/^application\/json(?:\s*;|$)/.test(contentType)||contentType!==contentType.toLowerCase())
+   throw Error('نوع محتوا JSON نیست: '+kind);
+  const length=response.headers.get('content-length');
+  if(length!==null&&(+length>MAX||!Number.isFinite(+length)))throw Error('اندازه پاسخ بیش از سقف است: '+kind);
+  if(!response.body)throw Error('مرورگر امکان دریافت جریان پاسخ را ندارد');
+  const reader=response.body.getReader();let size=0;const chunks=[];
+  try{
+   for(;;){
+    const piece=await reader.read();
+    if(piece.done)break;
+    size+=piece.value.byteLength;
+    if(size>MAX)throw Error('پاسخ بزرگ‌تر از ۸ مگابایت است؛ ذخیره ناقص ممنوع');
+    chunks.push(piece.value);
+   }
+  }catch(error){await reader.cancel().catch(()=>{});throw error;}
+  if(size===0)throw Error('پاسخ خالی: '+kind);
+  const bytes=new Uint8Array(size);let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  const decoded=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  const encoded=new TextEncoder().encode(decoded);
+  if(encoded.length!==bytes.length||encoded.some((b,i)=>b!==bytes[i]))throw Error('بایت‌های UTF-8 معتبر نیستند');
+  const count=validate(JSON.parse(decoded),kind);
+  // JavaScript numbers cannot safely represent the 17-digit adjustment insCode.
+  // Verify the *original JSON digits*, not the rounded JSON.parse numeric value.
+  const identityTokens=[...decoded.matchAll(/"insCode"\s*:\s*(?:"([0-9]{8,25})"|([0-9]{8,25}))(?![0-9])/g)];
+  if(identityTokens.length!==count||identityTokens.some(m=>(m[1]||m[2])!==expectedInsCode))
+   throw Error('شناسهٔ نماد در بایت‌های پاسخ با وساخت تطبیق ندارد: '+kind);
+  if(!crypto?.subtle)throw Error('محیط مرورگر امن نیست؛ SHA-256 در دسترس نیست');
+  const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
+  const sha256=Array.from(hash,b=>b.toString(16).padStart(2,'0')).join('');
+  return {bytes,url,sha256,sizeBytes:bytes.length,rowCount:count,contentType};
+ }
+ function download(name,bytes){
+  const url=URL.createObjectURL(new Blob([bytes],{type:'application/json;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }
+ $('capture').addEventListener('click',async()=>{
+  current=null;$('results').hidden=true;
+  const code=$('code').value.trim(),button=$('capture');
+  if(code!=='25514780181345713'){$('status').textContent='برای جلوگیری از اشتباه قبلی، این نسخه فقط داده وساخت را دریافت می‌کند.';return;}
+  if(!/^\d{8,25}$/.test(code)||/^0+$/.test(code)){
+   $('status').textContent='شناسه باید شامل ۸ تا ۲۵ رقم غیرصفر باشد.';return;
+  }
+  button.disabled=true;$('status').textContent='در حال دریافت از TSETMC؛ لطفاً همین صفحه را باز نگه دارید...';
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),LIMIT_MS);
+  try{
+   const daily=await fetchRaw(HOST+'/api/ClosingPrice/GetClosingPriceDailyList/'+code+'/'+DAILY_TOP,'daily',controller.signal,code);
+   const adjustments=await fetchRaw(HOST+'/api/ClosingPrice/GetPriceAdjustList/'+code,'adjustments',controller.signal,code);
+   const collectedAt=new Date().toISOString(),prefix='tsetmc-'+code+'-'+collectedAt.replace(/[:.]/g,'-');
+   const files={};
+   for(const [kind,item] of [['daily',daily],['adjustments',adjustments]]){
+    files[kind]={filename:prefix+'-'+kind+'.json',url:item.url,sha256:item.sha256,
+     sizeBytes:item.sizeBytes,rowCount:item.rowCount,contentType:item.contentType};
+   }
+   const manifest={status:'CAPTURED_FOR_MANUAL_REVIEW',insCode:code,collectedAt,host:HOST,files,
+    captureScope:'RAW_TOP_0_ALL_AVAILABLE_REQUEST_NOT_INDEPENDENTLY_FULL_HISTORY',dailyTop:DAILY_TOP,
+    requestedAllAvailableHistory:true,fullHistoryVerified:false,
+    sourceAuthenticated:false,priceBasisVerified:false,capitalActionsVerified:false,
+    entryEligible:false,tradingSignalsEnabled:false,
+    note:'Browser-based opt-in raw HTTPS response capture; no source authentication or adjustment-basis attestation.'};
+   current={daily,adjustments,manifest,manifestName:prefix+'-manifest.json'};
+   $('summary').textContent='تعداد ردیف: تاریخچه '+daily.rowCount+'، تعدیلات '+adjustments.rowCount+
+    ' | Top=0 درخواست شد؛ پوشش کامل تاریخچه هنوز مستقل تأیید نشده است. هش SHA-256 برای هر دو فایل محاسبه شد. احراز مستقل منبع هنوز انجام نشده است.';
+   $('status').textContent='دریافت موفق؛ اکنون دکمه ذخیره هر سه فایل را جداگانه بزنید.';
+   $('results').hidden=false;
+  }catch(error){
+   $('status').textContent='دریافت ناموفق؛ هیچ فایل تأییدشده‌ای ساخته نشد.\n'+
+    (controller.signal.aborted?'مهلت ۴۵ ثانیه تمام شد.':String(error?.message||error))+
+    '\nاگر سایت عادی باز می‌شود اما این درخواست شکست می‌خورد، ممکن است CORS یا دسترسی API محدود باشد.';
+  }finally{clearTimeout(timer);button.disabled=false;}
+ });
+ for(const kind of ['daily','adjustments'])$(''+kind).addEventListener('click',()=>{
+  if(current)download(current.manifest.files[kind].filename,current[kind].bytes);
+ });
+ $('manifest').addEventListener('click',()=>{
+  if(current)download(current.manifestName,new TextEncoder().encode(JSON.stringify(current.manifest,null,2)+'\n'));
+ });
+})();
+</script>
+</body></html>

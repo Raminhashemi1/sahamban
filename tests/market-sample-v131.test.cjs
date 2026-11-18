@@ -12,12 +12,12 @@ test('historical events are strictly post-signal, do not overlap, and do not lea
  const original=globalThis.SahambanDecisionV129;
  const seen=[];
  globalThis.SahambanDecisionV129={analyze(q,args){const last=q.history.at(-1);assert.equal(last.date,args.today);seen.push(q.history.length);return {code:q.history.length===61||q.history.length===64||q.history.length===83?'ENTRY_CANDIDATE':'WAIT',score:90};}};
- try{const h=series(),result=audit.audit({symbol:'ساختگی',history:h});assert.equal(result.count,2);assert.deepEqual(seen.slice(0,3),[60,61,72]);assert.equal(result.events[0].signalDate,h[60].date);assert.equal(result.events[0].entryDate,h[61].date);assert.equal(result.events[0].exitDate,h[71].date);assert.equal(result.events[1].signalDate,h[82].date);assert.ok(result.events[1].entryDate>result.events[0].exitDate);assert.equal(result.events[0].returnPct,(h[71].close/h[61].close-1)*100);assert.ok(!result.adequateSample);}finally{globalThis.SahambanDecisionV129=original;}
+ try{const h=series(),result=audit.audit({symbol:'ساختگی',history:h,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'});assert.equal(result.count,2);assert.deepEqual(seen.slice(0,3),[60,61,72]);assert.equal(result.events[0].signalDate,h[60].date);assert.equal(result.events[0].entryDate,h[61].date);assert.equal(result.events[0].exitDate,h[71].date);assert.equal(result.events[1].signalDate,h[82].date);assert.ok(result.events[1].entryDate>result.events[0].exitDate);assert.equal(result.events[0].returnPct,(h[71].close/h[61].close-1)*100);assert.ok(!result.adequateSample);}finally{globalThis.SahambanDecisionV129=original;}
 });
 test('audit rejects too-short, invalid and nonchronological histories',()=>{
- assert.throws(()=>audit.audit({symbol:'نماد',history:series(90)}),/۱۱۰/);
- const h=series();h[8].date=h[7].date;assert.throws(()=>audit.audit({symbol:'نماد',history:h}),/تاریخ/);
- const k=series();k[20].close=0;assert.throws(()=>audit.audit({symbol:'نماد',history:k}),/قیمت/);
+ assert.throws(()=>audit.audit({symbol:'نماد',history:series(90),historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/۱۱۰/);
+ const h=series();h[8].date=h[7].date;assert.throws(()=>audit.audit({symbol:'نماد',history:h,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/تاریخ/);
+ const k=series();k[20].close=0;assert.throws(()=>audit.audit({symbol:'نماد',history:k,historyPriceBasisEvidence:'INDEPENDENTLY_ATTESTED'}),/قیمت/);
 });
 test('market sampling picks at most six distinct exact instruments; duplicates are not repeated',()=>{
  const feed={tradeTop:[{instrument:{lVal18AFC:'فولاد',insCode:'123456789012'}},{instrument:{lVal18AFC:'فولاد',insCode:'123456789012'}},...Array.from({length:15},(_,i)=>({instrument:{lVal18AFC:'نماد'+i,insCode:String(300000000000+i)}}))]};

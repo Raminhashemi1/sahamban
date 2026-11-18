@@ -24,15 +24,34 @@ async function main(){
   await page.locator('#sahambanModulesV87 a[href="#externalScreenerV130"]').click();
   await page.waitForFunction(()=>document.getElementById('externalScreenerV130')?.hidden===false);
   await page.locator('#marketSampleRunV131').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#marketSampleResultsV131 details').length===6,{timeout:30000});
+  await page.waitForFunction(()=>document.querySelectorAll('#marketSampleResultsV131 details').length===7,{timeout:30000});
   assert.equal(requests.length,7);
-  assert.equal(await page.locator('#marketQualifiedRankV133 li').count(),6);
-  assert.match(await page.locator('#marketSampleResultsV131').innerText(),/فاصله حد ضرر/);
+  assert.equal(await page.locator('#marketQualifiedRankV133 li').count(),0,'Unattested price basis must suppress all entry ranks');
+  assert.match(await page.locator('#marketSampleResultsV131').innerText(),/تأیید مستقل مبنای تعدیل تاریخچه الزامی‌اند/);
   assert.equal(requests.filter(x=>x.includes('GetTradeTop')).length,1);
   assert.match(await page.locator('#marketSampleResultsV131').innerText(),/نمونه بررسی‌شده/);
-  await page.locator('#marketSampleResultsV131 details summary').first().click();
-  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/بررسی گذشته‌نگر/);
-  assert.match(await page.locator('#marketSampleResultsV131 details').first().innerText(),/ارزیابی زمانی مستقل/);
+  const firstCandidate=page.locator('#marketSampleResultsV131 details').nth(1);
+  await firstCandidate.locator('summary').click();
+  assert.match(await firstCandidate.innerText(),/آزمون گذشته قابل محاسبه نیست/);
+  assert.match(await firstCandidate.innerText(),/بررسی زمانی مجزا قابل محاسبه نیست/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),storage);
+  // All per-symbol histories fail: the UI must show an explicit empty state, never ranks.
+  await page.unroute('https://cdn.tsetmc.com/api/**');
+  await page.route('https://cdn.tsetmc.com/api/**',async route=>{
+   const url=route.request().url();
+   const data=url.includes('GetTradeTop')?top:{closingPriceDaily:[]};
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  });
+  await page.locator('#marketSampleRunV131').click();
+  await page.waitForFunction(()=>document.getElementById('marketNoRankV133')?.isConnected===true);
+  assert.equal(await page.locator('#marketQualifiedRankV133 li').count(),0);
+  assert.match(await page.locator('#marketSampleResultsV131').innerText(),/کمتر از ۶۰ قیمت پایانی معتبر/);
+  assert.match(await page.locator('#marketSampleStatusV131').innerText(),/۰ نماد با داده قابل قبول/);
+  // A top-list network failure must surface an error and leave holdings untouched.
+  await page.unroute('https://cdn.tsetmc.com/api/**');
+  await page.route('https://cdn.tsetmc.com/api/**',route=>route.abort());
+  await page.locator('#marketSampleRunV131').click();
+  await page.waitForFunction(()=>document.getElementById('marketSampleStatusV131')?.innerText.includes('دریافت فهرست یا تاریخچه ممکن نشد'));
   assert.equal(await page.evaluate(()=>localStorage.getItem('sahamban-broker-holdings-v1')),storage);
   assert.deepEqual(errors,[]);
   await context.close();

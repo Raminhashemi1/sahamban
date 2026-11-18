@@ -15,7 +15,7 @@
    const lead=document.createElement('p');lead.textContent='منبع: فهرست پربازدیدهای بازار؛ ردیف‌های بازگشتی: '+fmt(out.poolSize)+'؛ نمونه بررسی‌شده: '+fmt(out.sampled)+'؛ قابل تحلیل: '+fmt(good.length)+'. این فهرست رتبه‌بندی کل بازار یا فهرست بهترین سهم‌ها نیست.';results.append(lead);
    const ranking=window.SahambanRankV133.rank(out.results);
    const title=document.createElement('h4');title.textContent='فهرست اولویت بررسی نامزدهای ورود (فقط از همین نمونه محدود)';results.append(title);
-   const context=document.createElement('p');context.textContent='قابل رتبه‌بندی: '+fmt(ranking.ranked.length)+' از '+fmt(out.sampled)+'. شرط ورود، پوشش حداقل ۱۵ جلسه از ۲۰ جلسه ارزش معاملات، و حد ضرر معتبر الزامی‌اند. رتبه احتمال سود نیست و بر پایه کل بورس محاسبه نشده است.';results.append(context);
+   const context=document.createElement('p');context.textContent='قابل رتبه‌بندی: '+fmt(ranking.ranked.length)+' از '+fmt(out.sampled)+'. شرط ورود، پوشش حداقل ۱۵ جلسه از ۲۰ جلسه ارزش معاملات، حد ضرر معتبر و تأیید مستقل مبنای تعدیل تاریخچه الزامی‌اند. تا زمان تأیید مبنای قیمت، هیچ رتبه ورود صادر نمی‌شود. رتبه احتمال سود نیست و بر پایه کل بورس محاسبه نشده است.';results.append(context);
    if(ranking.ranked.length){
     const list=document.createElement('ol');list.id='marketQualifiedRankV133';
     for(const item of ranking.ranked){const li=document.createElement('li');
