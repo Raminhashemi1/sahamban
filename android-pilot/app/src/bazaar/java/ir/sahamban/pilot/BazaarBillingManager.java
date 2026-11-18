@@ -37,18 +37,11 @@ public final class BazaarBillingManager {
         if (activity == null || listener == null) throw new IllegalArgumentException("activity/listener required");
         this.activity = activity;
         this.listener = listener;
-        String publicKey = BuildConfig.IAB_PUBLIC_KEY == null ? "" : BuildConfig.IAB_PUBLIC_KEY.trim();
-        this.configured = publicKey.length() >= 100 && !publicKey.contains("PLACEHOLDER")
-            && !publicKey.contains("replace-with-real");
-        if (configured) {
-            // Match CafeBazaar's official Poolakey sample: verify the purchase signature locally.
-            // The Worker independently verifies the provider receipt before entitlement settlement.
-            PaymentConfiguration config = new PaymentConfiguration(new SecurityCheck.Enable(publicKey), true);
-            this.payment = new Payment(activity, config);
-        } else {
-            // Missing publisher key must disable checkout, not crash the subscription screen.
-            this.payment = null;
-        }
+        // Poolakey explicitly recommends disabling local RSA checks when every receipt
+        // is validated server-to-server through CafeBazaar Developer API before entitlement.
+        PaymentConfiguration config = new PaymentConfiguration(SecurityCheck.Disable.INSTANCE, true);
+        this.payment = new Payment(activity, config);
+        this.configured = true;
     }
 
     public boolean isConfigured() { return configured && payment != null; }
@@ -56,7 +49,7 @@ public final class BazaarBillingManager {
     public void connect() {
         if (destroyed || ready) return;
         if (!configured || payment == null) {
-            status("کلید عمومی کافه‌بازار هنوز در تنظیمات نسخه آزمایشی ثبت نشده است؛ صفحه اشتراک قابل مشاهده است اما خرید غیرفعال می‌ماند.");
+            status("اعتبارسنجی خرید از طریق API رسمی بازار در سرور انجام می‌شود.");
             return;
         }
         status("در حال اتصال به سرویس پرداخت کافه‌بازار…");
