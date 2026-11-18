@@ -6,8 +6,8 @@ const read=p=>fs.readFileSync(p,'utf8');
 
 test('Android wrapper keeps HTTPS navigation and sensitive local resources restricted',()=>{
  const m=read('android-pilot/app/src/main/AndroidManifest.xml');
- assert.match(m,/android\\.permission\\.INTERNET/);
- assert.doesNotMatch(m,/android\\.permission\\.(READ_|WRITE_|CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION)/);
+ assert.match(m,/android\.permission\.INTERNET/);
+ assert.doesNotMatch(m,/android\.permission\.(READ_|WRITE_|CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION)/);
  assert.match(m,/android:usesCleartextTraffic="false"/);
  assert.match(m,/android:allowBackup="false"/);
  assert.equal((m.match(/android:exported="true"/g)||[]).length,1);
@@ -21,7 +21,7 @@ test('Android wrapper keeps HTTPS navigation and sensitive local resources restr
 
 test('Android billing is Bazaar-only with the approved Sahmino identity and no release signing',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/applicationId 'ir\\.manahesab\\.sahmino'/);
+ assert.match(build,/applicationId 'ir\.manahesab\.sahmino'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/compileBazaarDebugJavaWithJavac/);
@@ -29,10 +29,10 @@ test('Android billing is Bazaar-only with the approved Sahmino identity and no r
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.doesNotMatch(wf,/upload-artifact|assembleBazaarDebug/);
  assert.match(read('android-pilot/README.md'),/CafeBazaar only/);
- assert.match(build,/bazaar\\s*\\{/);
- assert.doesNotMatch(build,/myket|MYKET|com\\.android\\.vending|ir\\.myket/);
+ assert.match(build,/bazaar\s*\{/);
+ assert.doesNotMatch(build,/myket|MYKET|com\.android\.vending|ir\.myket/);
  assert.match(build,/sahmino_pro_365d/);
  assert.doesNotMatch(build,/BAZAAR_IAB_PUBLIC_KEY|IAB_PUBLIC_KEY/);
  assert.doesNotMatch(build,/MYKET_IAB_PUBLIC_KEY/);
- assert.doesNotMatch(read('android-pilot/settings.gradle'),/maven\\.myket/);
+ assert.doesNotMatch(read('android-pilot/settings.gradle'),/maven\.myket/);
 });
