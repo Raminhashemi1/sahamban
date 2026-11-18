@@ -15,7 +15,7 @@ import ir.cafebazaar.poolakey.request.PurchaseRequest
 /**
  * Cafe Bazaar-only billing boundary.
  *
- * A successful Poolakey callback is purchase evidence, NOT subscription activation.
+ * These plans are one-time fixed-term access passes, not auto-renewing subscriptions.\n * A successful Poolakey callback is purchase evidence, NOT access activation.
  * The server must independently validate the signed Bazaar receipt before granting access.
  */
 class SahambanBazaarBillingManager(
@@ -56,14 +56,14 @@ class SahambanBazaarBillingManager(
         }
     }
 
-    fun subscribe(productId: String, opaqueServerOrderId: String, callback: (Result) -> Unit) {
+    fun purchaseFixedTermPlan(productId: String, opaqueServerOrderId: String, callback: (Result) -> Unit) {
         require(productId.matches(Regex("^[A-Za-z0-9._-]{1,100}$")))
         require(opaqueServerOrderId.matches(Regex("^ord_[a-f0-9]{32}$")))
         if (connection?.getState() != ConnectionState.Connected) {
             callback(Result.Failed("BAZAAR_NOT_CONNECTED"))
             return
         }
-        payment.subscribeProduct(
+        payment.purchaseProduct(
             registry = activity.activityResultRegistry,
             request = PurchaseRequest(productId = productId, payload = opaqueServerOrderId)
         ) {
@@ -86,7 +86,7 @@ class SahambanBazaarBillingManager(
             onFailure()
             return
         }
-        payment.getSubscribedProducts {
+        payment.getPurchasedProducts {
             querySucceed { items ->
                 onEvidence(items.mapNotNull { it.toEvidence() })
             }
