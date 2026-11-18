@@ -1,4 +1,3 @@
-import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import billingOrders from './billing/orders.cjs';
 const {createOrder}=billingOrders;
 /*
@@ -14,11 +13,9 @@ const TOKEN_ISSUER='sahamban-pilot',TOKEN_AUDIENCE='sahamban-api';
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const TOKEN_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
- CASE WHEN pe.paid_until IS NOT NULL AND (le.paid_until IS NULL OR pe.paid_until>le.paid_until) THEN pe.paid_until ELSE le.paid_until END AS paid_until,
- COALESCE(le.suspended,0) AS suspended,COALESCE(le.auto_renew_cancelled,0) AS auto_renew_cancelled
- FROM sahamban_users u
- LEFT JOIN subscription_entitlements le ON le.user_id=u.id
- LEFT JOIN prepaid_subscription_entitlements pe ON pe.user_id=u.id
+ le.paid_until AS paid_until,COALESCE(le.suspended,0) AS suspended,
+ COALESCE(le.auto_renew_cancelled,0) AS auto_renew_cancelled
+ FROM sahamban_users u LEFT JOIN subscription_entitlements le ON le.user_id=u.id
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
@@ -102,11 +99,9 @@ export default {
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
-  const isOrders=url.pathname==='/api/v1/me/orders';
   const isBillingOrders=url.pathname==='/api/v2/billing/orders';
-  if(!isEntitlement&&!isOrders&&!isBillingOrders)return send({error:'NOT_FOUND'},404,cors);
+  if(!isEntitlement&&!isBillingOrders)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
-  if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isBillingOrders&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
@@ -127,32 +122,6 @@ export default {
      b=>b.toString(16).padStart(2,'0')).join(''))
    });
    return send(result,result.status||503,cors);
-  }
-  if(isOrders){
-   if(request.method==='POST'){
-    // No body is necessary or accepted: identity and price are server-trusted.
-    const length=request.headers.get('Content-Length');
-    if(length!==null&&length!=='0')return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
-    // Workers may expose an empty POST body as a readable stream instead of null.
-    // Reject the first actual byte without buffering an attacker-controlled body.
-    if(request.body){
-     const reader=request.body.getReader();
-     let first;
-     try{first=await reader.read();}catch(_){return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);}
-     finally{reader.cancel().catch(()=>{});}
-     if(!first.done)return send({error:'REQUEST_BODY_NOT_ALLOWED'},400,cors);
-    }
-    const order=await createPilotPendingOrder(env?.SAHAMBAN_DB,{
-     authenticatedSubject:subject,now:new Date(nowMs).toISOString(),
-     configuredPriceRial:env?.PILOT_ANNUAL_PRICE_RIAL,
-     enabled:env?.PILOT_ORDERS_ENABLED==='true',
-     makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
-       b=>b.toString(16).padStart(2,'0')).join(''))
-    });
-    return send(order,order.status,cors);
-   }
-   const pending=await findPilotPendingOrder(env?.SAHAMBAN_DB,subject);
-   return send(pending,pending.status,cors);
   }
   const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs);
   if(result.http!==200)return send({proEnabled:false,reason:result.state},result.http,cors);
