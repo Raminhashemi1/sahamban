@@ -37,8 +37,9 @@ android {
         versionName '0.3.0-market-flavors-preview'
     }
 
-    // Store flavors are isolated per distribution channel. Product IDs are replaceable mappings;
-    // store-generated IDs are reconciled during publisher-console upload/configuration.
+    // Store flavors are isolated per distribution channel. Product IDs (SKUs) are chosen
+    // by the developer when creating each in-app product in that store's publisher console;
+    // uploading the APK does not generate the product IDs.
     buildFeatures { buildConfig true }
 
     // Keep store SDK implementations out of the shared source set.
