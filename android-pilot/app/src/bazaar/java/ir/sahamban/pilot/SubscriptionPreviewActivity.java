@@ -18,6 +18,8 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
     private SahminoStoreBillingManager billing;
     private SahminoPrepaidOrderClient orders;
     private TextView status;
+    private final boolean[] catalogVerified = new boolean[DAYS.length];
+    private final Button[] planButtons = new Button[DAYS.length];
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -41,8 +43,13 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             plan.setAllCaps(false);
             plan.setText(DAYS[i] + " روز — " + format.format(PRICES[i]) + " ریال");
             final String selectedPlanId = SahminoBillingCatalog.at(i).planId;
-            plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured()); // Explicit opt-in plus HTTPS Worker configuration required.
+            planButtons[i] = plan;
+            plan.setEnabled(false); // Requires a live Bazaar SKU and exact approved-price match first.
             plan.setOnClickListener(v -> {
+                if (!catalogVerified[indexOfPlan(selectedPlanId)] || !BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || !orders.isConfigured()) {
+                    status.setText("شناسه و قیمت اشتراک در کافه‌بازار هنوز تأیید نشده است؛ خرید آغاز نشد.");
+                    return;
+                }
                 orders.prepare(selectedPlanId, false, new SahminoPrepaidOrderClient.Callback() {
                 @Override public void onPrepared(String serverOrderId) {
                     if (!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || billing == null) {
@@ -97,6 +104,11 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             }
 
             @Override public void onCatalogPrice(SahminoBillingCatalog.Plan plan, String price, boolean matches) {
+                int index = indexOfPlan(plan.planId);
+                if (index >= 0) {
+                    catalogVerified[index] = matches;
+                    planButtons[index].setEnabled(matches && BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured());
+                }
                 status.setText("قیمت SKU اشتراک " + plan.days + " روزه: " + price
                     + (matches ? " — مطابق کاتالوگ مصوب" : " — مغایر/تأییدنشده")
                     + "\nپرداخت تا اتصال سفارش احراز‌شده و اعتبارسنجی سرور غیرفعال است.");
@@ -131,6 +143,13 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             }
         });
         billing.connect();
+    }
+
+    private static int indexOfPlan(String planId) {
+        for (int i = 0; i < DAYS.length; i++) {
+            if (SahminoBillingCatalog.at(i).planId.equals(planId)) return i;
+        }
+        return -1;
     }
 
     @Override protected void onDestroy() {
