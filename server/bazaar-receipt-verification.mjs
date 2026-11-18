@@ -54,6 +54,7 @@ async function verifyBazaarReceipt({env,packageName,productId,purchaseToken,orde
   throw Error('BAZAAR_RECEIPT_NOT_VALID');
  return receipt;
 }
+export {parseProductMap,getBazaarAccessToken,verifyBazaarReceipt};
 export async function verifyAndSettleBazaarPurchase({db,env,subject,body,now,fetchImpl=fetch}){
  if(typeof subject!=='string'||!subject)return json({error:'NOT_AUTHENTICATED'},401);
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function')return json({error:'DATABASE_UNAVAILABLE'},503);
