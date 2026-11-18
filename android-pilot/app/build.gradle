@@ -16,6 +16,7 @@ android {
         versionName '0.1.0-pilot'
         buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '""'
         buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
+        buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
     }
 
     buildFeatures { buildConfig true }
