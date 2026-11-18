@@ -119,9 +119,7 @@ class SahambanBazaarBillingManager(
         if (purchaseState != PurchaseState.PURCHASED) return null
         if (purchaseToken.isBlank() || orderId.isBlank() || packageName.isBlank() ||
             productId.isBlank() || originalJson.isBlank() || purchaseTime <= 0L) return null
-        val serverOrderId = try {
-            org.json.JSONObject(originalJson).optString("developerPayload")
-        } catch (_: Exception) { "" }
+        val serverOrderId = payload
         if (!serverOrderId.matches(Regex("^ord_[a-f0-9]{32}$"))) return null
         return Evidence(
             productId = productId,
