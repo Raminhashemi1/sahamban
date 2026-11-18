@@ -11,7 +11,7 @@ class BillingV2PurchaseFlow(
     private val expectedPackageName: String
 ) {
     sealed interface Outcome {
-        data class Active(val access: BillingV2ApiClient.Access) : Outcome
+        data class Active(val access: BillingV2ApiClient.Access, val consumptionPending: Boolean = false) : Outcome
         data object Cancelled : Outcome
         data class Failed(val reason: String) : Outcome
     }
@@ -45,7 +45,9 @@ class BillingV2PurchaseFlow(
                                     evidence.originalJson, evidence.dataSignature) { verification ->
                                     when (verification) {
                                         is BillingV2ApiClient.Result.Success ->
-                                            callback(Outcome.Active(verification.value))
+                                            bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                                callback(Outcome.Active(verification.value, consumptionPending = !consumed))
+                                            }
                                         is BillingV2ApiClient.Result.Failure ->
                                             callback(Outcome.Failed(verification.code))
                                     }
@@ -82,13 +84,22 @@ class BillingV2PurchaseFlow(
                 } else {
                     api.verifySubscription(evidence.orderId, sku, evidence.purchaseToken,
                         evidence.originalJson, evidence.dataSignature) { verification ->
-                        results.add(when (verification) {
-                            is BillingV2ApiClient.Result.Success -> Outcome.Active(verification.value)
-                            is BillingV2ApiClient.Result.Failure -> Outcome.Failed(verification.code)
-                        })
-                        synchronized(results) {
-                            remaining--
-                            if (remaining == 0) callback(results.toList())
+                        when (verification) {
+                            is BillingV2ApiClient.Result.Success ->
+                                bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                    results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
+                                    synchronized(results) {
+                                        remaining--
+                                        if (remaining == 0) callback(results.toList())
+                                    }
+                                }
+                            is BillingV2ApiClient.Result.Failure -> {
+                                results.add(Outcome.Failed(verification.code))
+                                synchronized(results) {
+                                    remaining--
+                                    if (remaining == 0) callback(results.toList())
+                                }
+                            }
                         }
                     }
                 }
