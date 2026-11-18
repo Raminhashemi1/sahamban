@@ -1,4 +1,5 @@
-import {settleVerifiedPrepaidPayment} from './prepaid-settlement.cjs';
+import settlement from './prepaid-settlement.cjs';
+const {settleVerifiedPrepaidPayment}=settlement;
 
 const PLANS=Object.freeze({
  SAHAMBAN_PRO_30D:1500000,
