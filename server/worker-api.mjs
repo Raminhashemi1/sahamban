@@ -81,7 +81,9 @@ async function lookupEntitlement(db,subject,nowMs){
   const row=await db.prepare(QUERY).bind(subject).first();
   if(!row||row.account_status!=='ACTIVE'||typeof row.user_id!=='string')return {state:'INACTIVE',http:403};
   if(row.paid_until===null)return {state:'NO_SUBSCRIPTION',http:403};
-  if(row.auto_renewing!==0&&row.auto_renewing!==1)return {state:'UNAVAILABLE',http:503};
+  // Billing V2 grants only manual one-time products. Never label an auto-renewing
+  // legacy/provider entitlement as MANUAL or expose it through this route.
+  if(row.auto_renewing!==0)return {state:'UNAVAILABLE',http:503};
   const until=parsePaidUntil(row.paid_until);
   if(until===null)return {state:'UNAVAILABLE',http:503};
   if(until<=nowMs)return {state:'EXPIRED',http:403};
