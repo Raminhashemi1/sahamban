@@ -29,7 +29,7 @@ test('Bazaar expiry parser accepts only a future exact millisecond timestamp',()
 test('settlement requires provider verification and exact order match',async()=>{
  assert.equal((await settleVerifiedPrepaidPayment(dbFor(),{...payment,signatureValid:false},{now,verifyAtProvider,tokenEncryptionKey})).reason,'PROVIDER_VERIFICATION_REQUIRED');
  assert.equal((await settleVerifiedPrepaidPayment(dbFor({row:{user_id:'u1',plan_id:payment.planId,
- amount_rial:1,currency:'IRR',state:'PENDING'}}),payment,{now,verifyAtProvider})).reason,'ORDER_MISMATCH');
+ amount_rial:1,currency:'IRR',state:'PENDING'}}),payment,{now,verifyAtProvider,tokenEncryptionKey})).reason,'ORDER_MISMATCH');
 });
 test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
  const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider,tokenEncryptionKey});
@@ -45,23 +45,23 @@ test('existing later paid-through date is never shortened by a provider response
  const later='2027-01-10T10:00:00.000Z';
  const db=dbFor({row:{user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,
  currency:'IRR',state:'PENDING',paid_until:later}});
- const out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider});
+ const out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider,tokenEncryptionKey});
  assert.equal(out.paidUntil,later);
 });
 test('expired or malformed Bazaar expiry is rejected before DB writes',async()=>{
  for(const value of [Date.parse(now),Date.parse('2026-02-30T00:00:00Z'),0,'not-a-time']){
-  const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,{...payment,validUntilTimestampMsec:value},{now,verifyAtProvider});
+  const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,{...payment,validUntilTimestampMsec:value},{now,verifyAtProvider,tokenEncryptionKey});
   assert.equal(out.reason,'INVALID_PROVIDER_EXPIRY');assert.equal(db.calls.length,0);
  }
 });
 test('settlement fails closed on malformed data, DB errors and partial results',async()=>{
  for(const bad of [{...payment,currency:'USD'},{...payment,amountRial:1},{...payment,orderId:'bad'}])
-  assert.equal((await settleVerifiedPrepaidPayment(dbFor(),bad,{now,verifyAtProvider})).ok,false);
+  assert.equal((await settleVerifiedPrepaidPayment(dbFor(),bad,{now,verifyAtProvider,tokenEncryptionKey})).ok,false);
  const failed=dbFor({results:[{success:true,meta:{changes:1}},{success:true,meta:{changes:0}},{success:true,meta:{changes:0}}]});
- assert.equal((await settleVerifiedPrepaidPayment(failed,payment,{now,verifyAtProvider})).reason,'SETTLEMENT_NOT_APPLIED');
+ assert.equal((await settleVerifiedPrepaidPayment(failed,payment,{now,verifyAtProvider,tokenEncryptionKey})).reason,'SETTLEMENT_NOT_APPLIED');
  const broken=dbFor();broken.batch=async()=>{throw Error('db down');};
- assert.equal((await settleVerifiedPrepaidPayment(broken,payment,{now,verifyAtProvider})).reason,'SETTLEMENT_FAILED');
- assert.equal((await settleVerifiedPrepaidPayment(null,payment,{now,verifyAtProvider})).reason,'DATABASE_UNAVAILABLE');
+ assert.equal((await settleVerifiedPrepaidPayment(broken,payment,{now,verifyAtProvider,tokenEncryptionKey})).reason,'SETTLEMENT_FAILED');
+ assert.equal((await settleVerifiedPrepaidPayment(null,payment,{now,verifyAtProvider,tokenEncryptionKey})).reason,'DATABASE_UNAVAILABLE');
 });
 test('settlement SQL binds Bazaar verified expiry and a unique provider event',()=>{
  assert.match(EVENT_SQL,/sahmino_prepaid_payment_events/);assert.match(EVENT_SQL,/state='PENDING'/);
