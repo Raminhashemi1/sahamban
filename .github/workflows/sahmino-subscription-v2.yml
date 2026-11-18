@@ -29,6 +29,7 @@ jobs:
           node --check server/prepaid-orders-api.cjs
           node --check server/prepaid-settlement.cjs
           node --check server/prepaid-account-overview.cjs
+          node --check server/bazaar-subscription-verifier.cjs
           node --check server/worker-api.mjs
           node --check server/sms-otp-core.cjs
           node --check server/sms-otp-service.cjs
@@ -40,6 +41,7 @@ jobs:
           tests/prepaid-orders-api.test.cjs
           tests/prepaid-settlement.test.cjs
           tests/prepaid-account-overview.test.cjs
+          tests/bazaar-subscription-verifier.test.cjs
           tests/worker-api.test.cjs
           tests/sahmino-subscription-ui-catalog.test.cjs
           tests/sahmino-account-panel.test.cjs
