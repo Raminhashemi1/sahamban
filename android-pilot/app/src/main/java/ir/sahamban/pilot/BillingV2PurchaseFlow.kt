@@ -73,14 +73,14 @@ class BillingV2PurchaseFlow(
             purchases.forEach { evidence ->
                 val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
                 if (sku == null || evidence.packageName != expectedPackageName ||
-                    evidence.orderId != evidence.payload) {
+                    !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
                     results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
                     synchronized(results) {
                         remaining--
                         if (remaining == 0) callback(results.toList())
                     }
                 } else {
-                    api.verifySubscription(evidence.payload, sku, evidence.purchaseToken,
+                    api.verifySubscription(evidence.orderId, sku, evidence.purchaseToken,
                         evidence.originalJson, evidence.dataSignature) { verification ->
                         results.add(when (verification) {
                             is BillingV2ApiClient.Result.Success -> Outcome.Active(verification.value)
