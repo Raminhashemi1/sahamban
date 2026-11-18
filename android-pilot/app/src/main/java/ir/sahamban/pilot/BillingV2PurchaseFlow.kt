@@ -12,6 +12,7 @@ class BillingV2PurchaseFlow(
 ) {
     sealed interface Outcome {
         data class Active(val access: BillingV2ApiClient.Access, val consumptionPending: Boolean = false) : Outcome
+        data class EntitlementRestored(val entitlement: BillingV2ApiClient.Entitlement) : Outcome
         data object Cancelled : Outcome
         data class Failed(val reason: String) : Outcome
     }
@@ -61,43 +62,53 @@ class BillingV2PurchaseFlow(
     }
 
     fun restore(callback: (List<Outcome>) -> Unit) {
-        bazaar.restore { purchases ->
-            if (purchases == null) {
-                callback(listOf(Outcome.Failed("RESTORE_UNAVAILABLE")))
-                return@restore
+        // Bazaar inventory contains only unconsumed purchases. A previously consumed
+        // purchase must be restored from the account's durable server entitlement.
+        api.refreshEntitlement { entitlementResult ->
+            val durable = when (entitlementResult) {
+                is BillingV2ApiClient.Result.Success ->
+                    if (entitlementResult.value.proEnabled)
+                        Outcome.EntitlementRestored(entitlementResult.value)
+                    else null
+                is BillingV2ApiClient.Result.Failure ->
+                    Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
             }
-            if (purchases.isEmpty()) {
-                callback(emptyList())
-                return@restore
-            }
-            val results = java.util.Collections.synchronizedList(mutableListOf<Outcome>())
-            var remaining = purchases.size
-            purchases.forEach { evidence ->
-                val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
-                if (sku == null || evidence.packageName != expectedPackageName ||
-                    !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
-                    results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
-                    synchronized(results) {
+            bazaar.restore { purchases ->
+                if (purchases == null) {
+                    callback(listOfNotNull(durable) + Outcome.Failed("RESTORE_UNAVAILABLE"))
+                    return@restore
+                }
+                if (purchases.isEmpty()) {
+                    callback(listOfNotNull(durable))
+                    return@restore
+                }
+                val results = java.util.Collections.synchronizedList(mutableListOf<Outcome>())
+                var remaining = purchases.size
+                fun completeOne() {
+                    val done = synchronized(results) {
                         remaining--
-                        if (remaining == 0) callback(results.toList())
+                        remaining == 0
                     }
-                } else {
-                    api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
-                        evidence.originalJson, evidence.dataSignature) { verification ->
-                        when (verification) {
-                            is BillingV2ApiClient.Result.Success ->
-                                bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
-                                    results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
-                                    synchronized(results) {
-                                        remaining--
-                                        if (remaining == 0) callback(results.toList())
+                    if (done) callback(listOfNotNull(durable) + results.toList())
+                }
+                purchases.forEach { evidence ->
+                    val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
+                    if (sku == null || evidence.packageName != expectedPackageName ||
+                        !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
+                        results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
+                        completeOne()
+                    } else {
+                        api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
+                            evidence.originalJson, evidence.dataSignature) { verification ->
+                            when (verification) {
+                                is BillingV2ApiClient.Result.Success ->
+                                    bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                        results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
+                                        completeOne()
                                     }
-                                }
-                            is BillingV2ApiClient.Result.Failure -> {
-                                results.add(Outcome.Failed(verification.code))
-                                synchronized(results) {
-                                    remaining--
-                                    if (remaining == 0) callback(results.toList())
+                                is BillingV2ApiClient.Result.Failure -> {
+                                    results.add(Outcome.Failed(verification.code))
+                                    completeOne()
                                 }
                             }
                         }
