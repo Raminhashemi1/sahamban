@@ -1,4 +1,4 @@
-name: Sahmino Bazaar and Myket integration validation
+name: Sahmino CafeBazaar integration validation
 # Build internal debug APKs for device validation only. Never publish these artifacts.
 on:
   workflow_dispatch:
@@ -36,17 +36,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MANAGER=android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoStoreBillingManager.java
-          grep -q 'helper.launchPurchaseFlow(activity, plan.productId' "$MANAGER"
+          MANAGER=android-pilot/app/src/bazaar/java/ir/sahamban/pilot/BazaarBillingManager.java
+          grep -q 'poolakey' android-pilot/app/build.gradle
           ! grep -q 'launchSubscriptionPurchaseFlow' "$MANAGER"
-          grep -q 'SahminoPurchaseEvidence.from(purchase)' "$MANAGER"
-          echo "Manual-renewal IAP policy: PASS"
-      - name: Verify signed purchase evidence extraction
-        shell: bash
-        run: |
-          mkdir -p /tmp/sahmino-evidence-check
-          javac -d /tmp/sahmino-evidence-check android-pilot/tests/fakes/ir/myket/billingclient/util/Purchase.java android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoPurchaseEvidence.java android-pilot/tests/SahminoPurchaseEvidenceTest.java
-          java -cp /tmp/sahmino-evidence-check ir.sahamban.pilot.SahminoPurchaseEvidenceTest
+          echo "CafeBazaar one-time purchase policy: PASS"
       - name: Verify IRR-only store price matching
         shell: bash
         run: |
@@ -75,23 +68,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Compile-check both store variants
-        run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac :app:compileMyketDebugJavaWithJavac
-      - name: Assemble internal debug APKs (not for store upload)
-        run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug :app:assembleMyketDebug
+      - name: Compile CafeBazaar variant
+        run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac
+      - name: Assemble CafeBazaar internal debug APK (not for store upload)
+        run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug
       - name: Verify both APK files exist
         shell: bash
         run: |
           set -euo pipefail
           test -s android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
-          test -s android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
-          sha256sum android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
-      - name: Upload internal debug APKs for physical-device testing
+          sha256sum android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
+      - name: Upload CafeBazaar internal debug APK for physical-device testing
         uses: actions/upload-artifact@v4
         with:
-          name: sahmino-internal-debug-apks
+          name: sahmino-cafebazaar-debug-apk
           if-no-files-found: error
           retention-days: 7
           path: |
             android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
-            android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
