@@ -109,6 +109,7 @@ export default {
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
   if(isBillingVerify){
+   if(env?.BILLING_V2_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
     return send({error:'JSON_REQUIRED'},415,cors);
    const parsed=await readJsonLimited(request,8192);
