@@ -41,7 +41,7 @@ class BillingV2Coordinator(
         context.applicationContext,
         PaymentConfiguration(
             localSecurityCheck = SecurityCheck.Enable(rsaPublicKey = BuildConfig.BAZAAR_RSA_PUBLIC_KEY),
-            shouldSupportSubscription = true
+            shouldSupportSubscription = false
         )
     )
     private var connection: Connection? = null
