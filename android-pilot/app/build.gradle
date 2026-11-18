@@ -3,27 +3,21 @@ plugins {
 }
 
 def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('').get()
-def myketPublicKey = providers.gradleProperty('MYKET_IAB_PUBLIC_KEY').orElse('').get()
 
 android {
-    // Source namespace stays stable; applicationId below is the publisher-approved store identity.
     namespace 'ir.sahamban.pilot'
     compileSdk 35
 
     defaultConfig {
-        // Permanent package ID approved by the app owner; both stores must register this exact ID.
         applicationId 'ir.manahesab.sahmino'
         minSdk 26
         targetSdk 35
         versionCode 4
-        versionName '0.3.0-market-flavors-preview'
+        versionName '0.4.0-bazaar-only-preview'
     }
 
-    // Store flavors are isolated per distribution channel. Product IDs are replaceable mappings;
-    // store-generated IDs are reconciled during publisher-console upload/configuration.
     buildFeatures { buildConfig true }
 
-    // Keep store SDK implementations out of the shared source set.
     sourceSets {
         main.java.exclude 'ir/sahamban/pilot/SubscriptionPreviewActivity.java'
         main.java.exclude 'ir/sahamban/pilot/SahminoStoreBillingManager.java'
@@ -47,21 +41,6 @@ android {
             buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
             buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
         }
-        myket {
-            dimension 'store'
-            manifestPlaceholders = [
-                marketApplicationId: 'ir.mservices.market',
-                marketBindAddress: 'ir.mservices.market.InAppBillingService.BIND',
-                marketPermission: 'ir.mservices.market.BILLING'
-            ]
-            buildConfigField 'String', 'STORE_CHANNEL', '"MYKET"'
-            buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
-            buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
-            buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
-            buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
-            buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
-            buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
-        }
     }
 
     compileOptions {
@@ -72,15 +51,11 @@ android {
     buildTypes {
         debug { }
         release {
-            // No release signing is configured until the owner supplies and
-            // securely stores the permanent upload key. Never publish unsigned.
             minifyEnabled false
         }
     }
 }
 
 dependencies {
-    // Each store SDK is isolated to its own install flavor.
-    myketImplementation 'ir.myket:billing:2.2'
     bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
 }
