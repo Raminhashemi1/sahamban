@@ -32,7 +32,7 @@ test('Android billing is Bazaar-only with the approved Sahmino identity and no r
  assert.match(build,/bazaar\\s*\\{/);
  assert.doesNotMatch(build,/myket|MYKET|com\\.android\\.vending|ir\\.myket/);
  assert.match(build,/sahmino_pro_365d/);
- assert.match(build,/BAZAAR_IAB_PUBLIC_KEY/);
+ assert.doesNotMatch(build,/BAZAAR_IAB_PUBLIC_KEY|IAB_PUBLIC_KEY/);
  assert.doesNotMatch(build,/MYKET_IAB_PUBLIC_KEY/);
  assert.doesNotMatch(read('android-pilot/settings.gradle'),/maven\\.myket/);
 });
