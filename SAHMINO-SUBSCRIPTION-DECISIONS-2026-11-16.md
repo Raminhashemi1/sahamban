@@ -99,7 +99,7 @@
 - محصولات سهمینو در Poolakey باید از API نوع Subscription استفاده کنند، نه API خرید یک‌باره In-App:
   - دریافت جزئیات: `getSubscriptionSkuDetails`
   - شروع خرید: `subscribeProduct`
-  - بازیابی/استعلام: `getSubscribedProducts` و `querySubscribeProduct`
+  - بازیابی/استعلام: `getSubscribedProducts`
   - `consumeProduct` برای اشتراک ممنوع است و نباید در مسیر خرید/بازیابی فراخوانی شود.
 - سرور باید با CafeBazaar Developer API و endpoint اعتبارسنجی Subscription خرید را بررسی کند. تاریخ پایان اعتبار باید از مقدار معتبر و تأییدشده `validUntilTimestampMsec` در پاسخ بازار گرفته شود؛ محاسبه `paid_until` صرفاً با جمع‌کردن تعداد روز پلن مجاز نیست.
 - مبلغ و پلن همچنان از کاتالوگ سرور می‌آیند. callback کلاینت به‌تنهایی مجوز فعال‌سازی نیست؛ شناسه سفارش سرور باید در payload خرید متصل و در سرور تطبیق داده شود.
