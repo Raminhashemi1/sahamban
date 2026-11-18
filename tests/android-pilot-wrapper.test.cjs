@@ -21,10 +21,10 @@ test('Android wrapper keeps HTTPS navigation and sensitive local resources restr
 
 test('Sahmino pilot targets CafeBazaar only and keeps production signing disabled',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/applicationId 'ir\\.manahesab\\.sahmino'/);
+ assert.ok(build.includes("applicationId 'ir.manahesab.sahmino'"));
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
- assert.match(build,/bazaar\\s*\\{/);
- assert.doesNotMatch(build,/myket\\s*\\{|myketImplementation|MYKET_IAB_PUBLIC_KEY|ir\\.myket:billing/);
+ assert.ok(build.includes('bazaar {'));
+ for (const forbidden of ['myket {','myketImplementation','MYKET_IAB_PUBLIC_KEY','ir.myket:billing']) assert.ok(!build.includes(forbidden),forbidden);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/compileBazaarDebugJavaWithJavac/);
  assert.ok(!wf.includes('compileMyketDebugJavaWithJavac'));
@@ -33,10 +33,10 @@ test('Sahmino pilot targets CafeBazaar only and keeps production signing disable
  assert.match(wf,/assembleBazaarDebug/);
  assert.ok(wf.includes('actions/upload-artifact@v4'));
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease/);
- assert.match(read('android-pilot/README.md'),/CafeBazaar only/);
+ assert.ok(read('android-pilot/README.md').includes('CafeBazaar only'));
  const bazaarUi=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  assert.match(bazaarUi,/پرداخت امن از طریق کافه‌بازار/);
  assert.match(bazaarUi,/خرید اشتراک از کافه‌بازار/);
- assert.match(build,/BAZAAR_IAB_PUBLIC_KEY/);
- assert.doesNotMatch(build,/com\\.android\\.vending/);
+ assert.ok(build.includes('BAZAAR_IAB_PUBLIC_KEY'));
+ assert.ok(!build.includes('com.android.vending'));
 });
