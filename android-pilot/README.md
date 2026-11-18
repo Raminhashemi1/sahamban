@@ -46,7 +46,7 @@ Worker secrets:
 - `MYKET_IAB_PUBLIC_KEY`.
 - `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`, `BAZAAR_REFRESH_TOKEN`.
 
-The current default product IDs are placeholders, not confirmed store-created product IDs. Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until the deployment and acceptance gates below pass.
+**How product IDs are obtained:** first register the app/package in each store's developer console and upload a build if that console requires it to unlock in-app products. Then, inside that app's in-app products section, create five products and enter a unique product ID/SKU for each one yourself. The store does not automatically create these five IDs when the APK is uploaded. Save each ID exactly as entered; IDs are normally immutable after product creation. Use the exact same strings in that store's Gradle properties and Worker variables. Bazaar and Myket each have their own separate product catalogue, so create/configure five products in each store (ten entries total). The current `sahmino_pro_30d` etc. values in Gradle are fallback placeholders only, not IDs issued by either store. Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until the deployment and acceptance gates below pass.
 
 ## Release blockers
 
