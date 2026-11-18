@@ -255,7 +255,7 @@ export default {
        !env?.BAZAAR_PACKAGE_NAME||!env?.BAZAAR_CLIENT_ID||!env?.BAZAAR_CLIENT_SECRET||!env?.BAZAAR_REFRESH_TOKEN)
       return send({error:'BAZAAR_CANCELLATION_NOT_CONFIGURED'},503,cors);
      const rows=await env.SAHAMBAN_DB.prepare(
-      `SELECT c.order_id,c.provider_payment_id,c.lifecycle_state,c.provider_auto_renewing,
+      `SELECT c.order_id,c.provider_payment_id,c.lifecycle_state,c.provider_auto_renewing,c.provider_paid_until,
        o.plan_id,o.provider_token_version,o.provider_token_nonce,o.provider_token_ciphertext
        FROM sahmino_bazaar_subscription_control c
        JOIN sahmino_prepaid_subscription_orders o ON o.id=c.order_id
