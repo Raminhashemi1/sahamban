@@ -27,14 +27,14 @@ jobs:
         with:
           node-version: '22'
       - name: Test private pilot security rules
-        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-feature-gate.test.cjs
+        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-feature-gate.test.cjs
       - name: Install pinned Wrangler CLI for offline build
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
         run: npx wrangler deploy --dry-run --config server/wrangler.local.toml --outdir /tmp/sahamban-worker-bundle
       - name: Apply application schema to isolated local Cloudflare D1
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/d1-schema.sql --yes
-      - name: Apply isolated Billing V2 subscription schema
+      - name: Apply isolated Billing V2 manual-purchase schema
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/billing/schema.sql --yes
       - name: Verify isolated Billing V2 tables exist
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS billing_tables FROM sqlite_master WHERE type='table' AND name IN ('billing_orders','billing_access','billing_events');"
