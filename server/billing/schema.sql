@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS billing_orders(
  UNIQUE(bazaar_order_id),UNIQUE(purchase_token_hash)
 );
 CREATE TABLE IF NOT EXISTS billing_access(
- user_id TEXT PRIMARY KEY REFERENCES sahamban_users(id),expires_at TEXT NOT NULL,updated_at TEXT NOT NULL
+ user_id TEXT PRIMARY KEY REFERENCES sahamban_users(id),expires_at TEXT NOT NULL,auto_renewing INTEGER NOT NULL CHECK(auto_renewing IN (0,1)),updated_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS billing_events(
  event_id TEXT PRIMARY KEY,order_id TEXT NOT NULL REFERENCES billing_orders(id),
