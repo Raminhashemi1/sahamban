@@ -80,6 +80,22 @@ class SahambanBazaarBillingManager(
         }
     }
 
+    /**
+     * Call only after the trusted server confirms SETTLED for this exact purchase.
+     * Consuming earlier could make an unverified purchase unrecoverable.
+     */
+    fun consumeAfterServerSettlement(purchaseToken: String, callback: (Boolean) -> Unit) {
+        require(purchaseToken.isNotBlank() && purchaseToken.length <= 4096)
+        if (connection?.getState() != ConnectionState.Connected) {
+            callback(false)
+            return
+        }
+        payment.consumeProduct(purchaseToken) {
+            consumeSucceed { callback(true) }
+            consumeFailed { callback(false) }
+        }
+    }
+
     fun restore(onEvidence: (List<Evidence>) -> Unit, onFailure: () -> Unit) {
         if (connection?.getState() != ConnectionState.Connected) {
             onFailure()
