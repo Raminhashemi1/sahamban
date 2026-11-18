@@ -59,5 +59,7 @@ jobs:
         run: python tests/d1-prepaid-migration.test.py
       - name: Run standalone five-plan v2 schema regression tests
         run: python tests/d1-sahmino-subscription-v2.test.py
+      - name: Run encrypted Bazaar token migration constraints
+        run: python tests/d1-bazaar-token-vault-migration.test.py
       - name: Run five-plan exact-day SQLite settlement integration
         run: python tests/d1-prepaid-settlement-sqlite.integration.test.py
