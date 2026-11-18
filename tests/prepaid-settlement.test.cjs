@@ -36,7 +36,7 @@ test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
  assert.match(batch[0].sql,/state='PENDING'/);assert.match(batch[1].sql,/state='PENDING'/);
  assert.match(batch[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);
  assert.doesNotMatch(batch[2].sql,/strftime|\+\|\|/);
- assert.deepEqual(batch[2].values,[orderId,'cafebazaar','pay-1','2026-12-22T10:00:00.000Z',now]);
+ const entitlementCall=db.calls.find(x=>x.sql===ENTITLEMENT_UPSERT_SQL);assert.deepEqual(entitlementCall.values,[orderId,'cafebazaar','pay-1','2026-12-22T10:00:00.000Z',now]);
 });
 test('existing later paid-through date is never shortened by a provider response',async()=>{
  const later='2027-01-10T10:00:00.000Z';
