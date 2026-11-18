@@ -29,7 +29,7 @@ This is a static source inspection only. No browser execution, live TSETMC/Codal
 
 ## Risks requiring deeper verification
 
-- No automated test harness was found at the conventional locations checked. Financial calculations and import/restore logic need repeatable unit tests before any replacement.
+- Some automated Node tests exist, but test coverage appears concentrated on CODAL/fundamental evidence and capital-action logic. Coverage for portfolio sizing, import/restore, indicators, market freshness, and UI integration still needs to be mapped.
 - The app's large number of classic-script modules creates hidden coupling through globals, DOM IDs, custom events, and script order.
 - The service-worker precache list is manually maintained and needs an automated consistency check against actual page assets.
 - The app stores user data and a recorded audio data URL in localStorage. Quota behavior, data migration, and backup coverage need explicit tests; the backup module currently documents that recorded audio is excluded.
