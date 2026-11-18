@@ -10,6 +10,25 @@ function skuMap(raw){
   return v;
  }catch(_){return null;}
 }
+function decodeBase64(value){
+ if(typeof value!=='string'||!value||!/^[A-Za-z0-9+/]+={0,2}$/.test(value))throw Error('INVALID_BASE64');
+ const raw=atob(value);
+ return Uint8Array.from(raw,c=>c.charCodeAt(0));
+}
+async function verifySignedPurchase(env,{originalJson,dataSignature,orderId,sku,token}){
+ const keyRaw=env.BAZAAR_RSA_PUBLIC_KEY;
+ if(typeof keyRaw!=='string'||!keyRaw)throw Error('BAZAAR_PUBLIC_KEY_MISSING');
+ const signed=JSON.parse(originalJson);
+ if(signed.developerPayload!==orderId||signed.productId!==sku||
+    signed.packageName!==env.BAZAAR_PACKAGE_NAME||signed.purchaseToken!==token||
+    signed.purchaseState!==0)throw Error('SIGNED_PURCHASE_MISMATCH');
+ const key=await crypto.subtle.importKey('spki',decodeBase64(keyRaw),
+  {name:'RSASSA-PKCS1-v1_5',hash:'SHA-1'},false,['verify']);
+ const valid=await crypto.subtle.verify('RSASSA-PKCS1-v1_5',key,
+  decodeBase64(dataSignature),new TextEncoder().encode(originalJson));
+ if(!valid)throw Error('PURCHASE_SIGNATURE_INVALID');
+ return signed;
+}
 async function accessToken(env,fetcher){
  const {BAZAAR_CLIENT_ID,BAZAAR_CLIENT_SECRET,BAZAAR_REFRESH_TOKEN}=env;
  if(!BAZAAR_CLIENT_ID||!BAZAAR_CLIENT_SECRET||!BAZAAR_REFRESH_TOKEN)throw Error('BAZAAR_CREDENTIALS_MISSING');
@@ -36,17 +55,17 @@ async function verifySubscription(env,{sku,token,orderId,nowMs=Date.now()},fetch
  const expiryMs=typeof expiryRaw==='string'?Number(expiryRaw):expiryRaw;
  if(!receipt||receipt.kind!=='androidpublisher#subscriptionPurchase'||
     !Number.isSafeInteger(expiryMs)||expiryMs<=nowMs||
-    typeof receipt.autoRenewing!=='boolean'||receipt.developerPayload!==orderId)
-  throw Error('SUBSCRIPTION_NOT_ACTIVE');
- const expiresAt=new Date(expiryMs).toISOString();
- return {receipt,expiresAt,autoRenewing:receipt.autoRenewing};
+    typeof receipt.autoRenewing!=='boolean')throw Error('SUBSCRIPTION_NOT_ACTIVE');
+ return {receipt,expiresAt:new Date(expiryMs).toISOString(),autoRenewing:receipt.autoRenewing};
 }
 export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  if(env.BILLING_V2_ENABLED!=='true')return {status:404,body:{error:'BILLING_DISABLED'}};
  if(!subject)return {status:401,body:{error:'UNAUTHENTICATED'}};
- if(!body||Object.keys(body).sort().join(',')!=='orderId,sku,token'||
+ if(!body||Object.keys(body).sort().join(',')!=='dataSignature,orderId,originalJson,sku,token'||
    typeof body.orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.orderId)||
-   typeof body.sku!=='string'||typeof body.token!=='string'||body.token.length<8||body.token.length>4096)
+   typeof body.sku!=='string'||typeof body.token!=='string'||body.token.length<8||body.token.length>4096||
+   typeof body.originalJson!=='string'||body.originalJson.length<2||body.originalJson.length>8192||
+   typeof body.dataSignature!=='string'||body.dataSignature.length<16||body.dataSignature.length>4096)
   return {status:400,body:{error:'INVALID_SUBSCRIPTION'}};
  const mapping=skuMap(env.BAZAAR_SKU_MAP);
  if(!mapping)return {status:503,body:{error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'}};
@@ -56,6 +75,7 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
   const order=await db.prepare("SELECT id,plan_id,status FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
+  await verifySignedPurchase(env,body);
   const verified=await verifySubscription(env,{sku:body.sku,token:body.token,orderId:body.orderId,nowMs:Date.parse(now)},fetcher);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
@@ -67,4 +87,4 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
    {status:409,body:{error:result.error}};
  }catch(_){return {status:503,body:{error:'SUBSCRIPTION_VERIFICATION_UNAVAILABLE'}};}
 }
-export {skuMap,verifySubscription};
+export {skuMap,verifySubscription,verifySignedPurchase};
