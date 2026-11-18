@@ -33,6 +33,8 @@ test('Purchase evidence is raw only and never grants Pro locally',()=>{
 
 test('Android dependencies and build contain Bazaar only',()=>{
  const gradle=read('android-pilot/app/build.gradle');
+ const main=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ const sessionRepo=read('server/d1-sms-otp-repository.cjs');
  assert.match(gradle,/poolakey:2\.2\.0/);
  assert.match(gradle,/poolakey-rx:2\.2\.0/);
  assert.doesNotMatch(gradle,/myket|MYKET|com\.android\.vending/i);
@@ -52,6 +54,9 @@ test('native order handoff and receipt verification use authenticated Worker end
  for(const marker of ['getCookie(baseUrl)','sahmino_session=','X-Sahmino-CSRF',
      'setInstanceFollowRedirects(false)','/api/v1/me/prepaid-orders',
      'PENDING_ORDER_CREATED','amountRial','^ord_[a-f0-9]{32}$']) assert.ok(client.includes(marker),marker);
+ assert.match(main,/setAcceptThirdPartyCookies\(webView, true\)/);
+ assert.match(main,/SameSite=None/);
+ assert.match(sessionRepo,/HttpOnly; Secure; SameSite=None/);
  for(const marker of ['/api/v1/me/prepaid-orders/verify','serverOrderId','purchaseToken',
      'originalJson','dataSignature','purchaseState','status','SETTLED',
      'proEnabled','AUTO_RENEW','onVerified']) assert.ok(client.includes(marker),marker);
