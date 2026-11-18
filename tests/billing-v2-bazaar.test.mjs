@@ -90,12 +90,30 @@ test('replayed settled purchase remains idempotent after Bazaar marks the consum
  const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',user_id:'u1',
   created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
  let providerCalls=0;
- const fetcher=async()=>{providerCalls++;throw Error('A settled replay must not need another Bazaar validation call');};
+ const fetcher=async u=>{
+  providerCalls++;
+  if(String(u).includes('/auth/token/'))return new Response(JSON.stringify({access_token:'access'}),{status:200});
+  return new Response(JSON.stringify({...receipt,consumptionState:1}),{status:200});
+ };
  const result=await verifyAndSettle({db,env,subject:'user',body:validBody,now,fetcher});
  assert.equal(result.status,200);
  assert.equal(result.body.status,'ACTIVE');
  assert.equal(result.body.expiresAt,expiresAt);
  assert.equal(result.body.daysAdded,0);
  assert.equal(result.body.restored,true);
- assert.equal(providerCalls,0);
+ assert.equal(providerCalls,2);
+});
+
+test('replayed settled purchase cannot restore access after Bazaar reports a refund',async()=>{
+ const tokenHash=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(validBody.token))).toString('hex');
+ const expiresAt='2026-01-31T00:00:00.000Z';
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',user_id:'u1',
+  created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
+ const fetcher=async u=>{
+  if(String(u).includes('/auth/token/'))return new Response(JSON.stringify({access_token:'access'}),{status:200});
+  return new Response(JSON.stringify({...receipt,purchaseState:1,consumptionState:1}),{status:200});
+ };
+ const result=await verifyAndSettle({db,env,subject:'user',body:validBody,now,fetcher});
+ assert.equal(result.status,409);
+ assert.equal(result.body.error,'PURCHASE_NOT_VALID');
 });
