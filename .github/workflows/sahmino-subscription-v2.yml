@@ -63,6 +63,8 @@ jobs:
         run: python tests/d1-sahmino-subscription-v2.test.py
       - name: Run encrypted Bazaar token migration constraints
         run: python tests/d1-bazaar-token-vault-migration.test.py
+      - name: Run explicit renewal consent order migration constraints
+        run: python tests/d1-sahmino-renewal-consent-migration.test.py
       - name: Run Bazaar subscription consent and cancellation lifecycle constraints
         run: python tests/d1-sahmino-bazaar-subscription-control-migration.test.py
       - name: Run five-plan exact-day SQLite settlement integration
