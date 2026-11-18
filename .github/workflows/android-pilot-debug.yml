@@ -17,12 +17,25 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify PWA and native backup JavaScript integration
+        run: |
+          node tests/smoke.cjs
+          node --test tests/local-backup-v148.test.cjs tests/native-backup-export-v1.test.cjs
       - name: Verify URL origin policy with a real Java runtime
         shell: bash
         run: |
           mkdir -p /tmp/sahamban-java-check
-          javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
+          javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupExportPolicy.java \
+            android-pilot/app/src/main/java/ir/sahamban/pilot/BackupFileVerifier.java \
+            android-pilot/tests/BackupExportPolicyTest.java \
+            android-pilot/tests/BackupFileVerifierTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupExportPolicyTest
+          java -cp /tmp/sahamban-java-check ir.sahamban.pilot.BackupFileVerifierTest
       - name: Use installed Android SDK (avoid obsolete sdkmanager tools package)
         shell: bash
         run: |
