@@ -1,4 +1,4 @@
-"""Integration tests for actual five-plan settlement SQL in offline SQLite.
+"""Integration tests for actual Bazaar-expiry settlement SQL in offline SQLite.
 No live banking, Worker deployment, merchant credentials or customer data.
 """
 from pathlib import Path
@@ -11,7 +11,7 @@ SOURCE = (ROOT / 'server' / 'prepaid-settlement.cjs').read_text(encoding='utf-8'
 
 def actual_sql(name):
     tick = chr(96)
-    match = re.search(r'const\s+' + re.escape(name) + r'\s*=\s*' + tick +
+    match = re.search(r'const\\s+' + re.escape(name) + r'\\s*=\\s*' + tick +
                       r'([^' + tick + r']*)' + tick + r';', SOURCE, re.S)
     if not match:
         raise AssertionError('Missing settlement SQL: ' + name)
@@ -38,13 +38,14 @@ def pending(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000):
                (oid, 'u1', plan, amount, 'IRR', 'PENDING', NOW))
     db.commit()
 
-def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, days=30,
-           now=NOW, event='evt_1', payment='pay_1'):
+def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000,
+           now=NOW, valid_until='2026-12-22T10:00:00.000Z',
+           event='evt_1', payment='pay_1'):
     with db:
-        event_result = db.execute(EVENT, ('provider', event, payment, now, oid, plan, amount))
-        order_result = db.execute(ORDER, (now, 'provider', payment, oid, plan, amount,
-                                          'provider', event, payment))
-        db.execute(ENTITLEMENT, (now, now, oid, 'provider', payment, days, now))
+        event_result = db.execute(EVENT, ('cafebazaar', event, payment, now, oid, plan, amount))
+        order_result = db.execute(ORDER, (now, 'cafebazaar', payment, oid, plan, amount,
+                                          'cafebazaar', event, payment))
+        db.execute(ENTITLEMENT, (oid, 'cafebazaar', payment, valid_until, now))
         grant_changes = db.execute('SELECT changes()').fetchone()[0]
         if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1:
             raise AssertionError('Settlement did not update event, order and entitlement atomically')
@@ -52,27 +53,29 @@ def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, days=30,
                       ('u1',)).fetchone()[0]
 
 class SahminoSQLiteIntegration(unittest.TestCase):
-    def test_exact_days_across_month_end(self):
+    def test_provider_expiry_is_stored_exactly_not_recomputed_from_plan_days(self):
         db = make_db()
         try:
             pending(db)
-            self.assertEqual(settle(db, now='2026-01-31T10:00:00.000Z'),
-                             '2026-03-02T10:00:00.000Z')
+            provider_expiry = '2027-01-03T04:05:06.000Z'
+            self.assertEqual(settle(db, valid_until=provider_expiry), provider_expiry)
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders').fetchone()[0], 'SETTLED')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 1)
         finally:
             db.close()
 
-    def test_early_manual_repurchase_adds_full_days(self):
+    def test_manual_repurchase_never_shortens_existing_later_entitlement(self):
         db = make_db()
         try:
             pending(db)
-            self.assertEqual(settle(db), '2026-12-12T10:00:00.000Z')
+            self.assertEqual(settle(db, valid_until='2026-12-22T10:00:00.000Z'),
+                             '2026-12-22T10:00:00.000Z')
             second = 'ord_' + 'b' * 32
             pending(db, second, 'SAHMINO_PRO_60D', 2850000)
             self.assertEqual(settle(db, oid=second, plan='SAHMINO_PRO_60D',
-                                    amount=2850000, days=60, event='evt_2',
-                                    payment='pay_2'), '2027-02-10T10:00:00.000Z')
+                                    amount=2850000, valid_until='2027-02-10T10:00:00.000Z',
+                                    event='evt_2', payment='pay_2'),
+                             '2027-02-10T10:00:00.000Z')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 2)
         finally:
             db.close()
@@ -88,7 +91,7 @@ class SahminoSQLiteIntegration(unittest.TestCase):
                 settle(db, oid=second, payment='pay_2')
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders WHERE id=?', (second,)).fetchone()[0], 'PENDING')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 1)
-            self.assertEqual(db.execute('SELECT paid_until FROM sahmino_prepaid_subscription_entitlements').fetchone()[0], '2026-12-12T10:00:00.000Z')
+            self.assertEqual(db.execute('SELECT paid_until FROM sahmino_prepaid_subscription_entitlements').fetchone()[0], '2026-12-22T10:00:00.000Z')
         finally:
             db.close()
 
