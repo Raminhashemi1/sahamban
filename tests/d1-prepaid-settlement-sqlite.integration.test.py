@@ -29,6 +29,7 @@ def make_db():
     db.executescript((ROOT / 'server' / 'd1-schema.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-prepaid-migration.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-sahmino-subscription-v2.sql').read_text(encoding='utf-8'))
+    db.executescript((ROOT / 'server' / 'd1-bazaar-token-vault-migration.sql').read_text(encoding='utf-8'))
     db.execute('INSERT INTO sahamban_users(id,auth_subject,created_at,status) VALUES(?,?,?,?)',
                ('u1', 'integration:subject', NOW, 'ACTIVE'))
     return db
