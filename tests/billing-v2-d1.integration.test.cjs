@@ -72,6 +72,15 @@ test('replayed purchase is idempotent and early manual repurchase stacks exactly
  sqlite.close();
 });
 
+test('fixed elapsed-day calculation preserves the purchase settlement millisecond',async()=>{
+ const {sqlite,adapter}=setup(),id='ord_'+'4'.repeat(32),hash='4'.repeat(64);
+ const fractional='2026-01-01T00:00:00.789Z';
+ createOrder(sqlite,id,fractional);
+ const result=await settle(adapter,{...input(id,hash),now:fractional,purchaseTime:fractional});
+ assert.equal(result.expiresAt,'2026-01-31T00:00:00.789Z');
+ sqlite.close();
+});
+
 test('two different purchases verified concurrently both extend the same account entitlement',async()=>{
  const {sqlite,adapter}=setup(),first='ord_'+'2'.repeat(32),second='ord_'+'3'.repeat(32);
  createOrder(sqlite,first);createOrder(sqlite,second);
