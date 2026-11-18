@@ -318,7 +318,7 @@ export default {
      if(!env?.SAHAMBAN_DB||typeof env?.BAZAAR_PACKAGE_NAME!=='string'||!env.BAZAAR_PACKAGE_NAME)
       return send({error:'BAZAAR_VERIFIER_NOT_CONFIGURED'},503,cors);
      const order=await env.SAHAMBAN_DB.prepare(
-      `SELECT id,user_id,plan_id,amount_rial,currency,state
+      `SELECT id,user_id,plan_id,amount_rial,currency,state,renewal_mode,renewal_consent_version,renewal_consent_at
        FROM sahmino_prepaid_subscription_orders
        WHERE id=? AND user_id=? LIMIT 1`
      ).bind(body.serverOrderId,activeSession.userId).first();
@@ -335,10 +335,10 @@ export default {
        'BAZAAR_VALIDATION_FAILED','BAZAAR_VALIDATION_UNAVAILABLE'];
       return send({error:checked.reason,proEnabled:false},unavailable.includes(checked.reason)?503:422,cors);
      }
-     // Subscription SKUs may renew automatically. Until the manual-default
-     // cancellation/consent contract is implemented, do not settle an auto-renewing purchase.
-     if(checked.verified.autoRenewing!==false)
-      return send({error:'AUTO_RENEW_POLICY_UNRESOLVED',proEnabled:false},409,cors);
+     // The provider's renewal flag must exactly match the authenticated,
+     // server-persisted order choice. The settlement primitive repeats this check.
+     if(checked.verified.autoRenewing!==(order.renewal_mode==='AUTO'))
+      return send({error:'PROVIDER_RENEWAL_MODE_MISMATCH',proEnabled:false},409,cors);
      const settled=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,body,{
       now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>checked.verified,
       tokenEncryptionKey:env.BAZAAR_TOKEN_ENCRYPTION_KEY
@@ -362,10 +362,15 @@ export default {
     const parsed=await readSmallJson(request,1024);
     if(parsed.error)return send({error:parsed.error},parsed.status,cors);
     const body=parsed.body;
-    if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||typeof body.planId!=='string')
+    if(!body||typeof body!=='object'||Array.isArray(body)||
+     Object.keys(body).some(k=>!['planId','renewalMode','consentVersion'].includes(k))||
+     typeof body.planId!=='string'||
+     (body.renewalMode!==undefined&&!['MANUAL','AUTO'].includes(body.renewalMode))||
+     (body.consentVersion!==undefined&&typeof body.consentVersion!=='string'))
      return send({error:'INVALID_REQUEST'},400,cors);
     const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
-     authenticatedUserId:activeSession.userId,planId:body.planId,now:new Date(nowMs).toISOString(),
+     authenticatedUserId:activeSession.userId,planId:body.planId,
+     renewalMode:body.renewalMode||'MANUAL',consentVersion:body.consentVersion??null,now:new Date(nowMs).toISOString(),
      makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
       b=>b.toString(16).padStart(2,'0')).join(''))
     });
@@ -397,10 +402,14 @@ export default {
     let body;
     try{body=await request.json();}catch(_){return send({error:'INVALID_JSON'},400,cors);}
     if(!body||typeof body!=='object'||Array.isArray(body)||
-      Object.keys(body).length!==1||typeof body.planId!=='string')
+      Object.keys(body).some(k=>!['planId','renewalMode','consentVersion'].includes(k))||
+      typeof body.planId!=='string'||
+      (body.renewalMode!==undefined&&!['MANUAL','AUTO'].includes(body.renewalMode))||
+      (body.consentVersion!==undefined&&typeof body.consentVersion!=='string'))
      return send({error:'INVALID_REQUEST'},400,cors);
     const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
-     authenticatedSubject:subject,planId:body.planId,now:new Date(nowMs).toISOString(),
+     authenticatedSubject:subject,planId:body.planId,
+     renewalMode:body.renewalMode||'MANUAL',consentVersion:body.consentVersion??null,now:new Date(nowMs).toISOString(),
      makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
       b=>b.toString(16).padStart(2,'0')).join(''))
     });
