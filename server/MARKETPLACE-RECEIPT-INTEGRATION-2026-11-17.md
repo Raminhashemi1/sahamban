@@ -20,6 +20,23 @@ Branch: `feat/sahmino-store-receipt-verification-20261117`
 - Both flavors gate the purchase action on configured API origin and a store-reported price match for the selected plan.
 - Manual renewal is the only renewal mode in these flows; no automatic recurring billing is represented as available.
 
+## Correct project phase (2026-11-18)
+
+The project is currently **pre-upload integration debugging**, not publisher-console product setup or public release preparation. Real Bazaar/Myket product IDs are therefore not expected yet. Placeholder SKUs may be used only for source-level and mocked contract tests; they must never be treated as live store products or used to enable real checkout.
+
+Current work should validate the adapters, order/receipt API contracts, signature/provider-verification handling with controlled fixtures, idempotent settlement, entitlement extension, and consume-after-settlement logic. Real store checkout and provider sandbox acceptance require the app to be registered in each store and the store-specific products/test configuration to exist.
+
+Correct order:
+1. Finish automated and mocked payment integration tests and fix both flavor/channel flows.
+2. Verify server order, receipt verification, settlement, entitlement and failure/retry behavior.
+3. Build and inspect debug APKs for internal validation.
+4. Only after integration debugging is complete, register/upload the app as required by each publisher console.
+5. Create five products separately in each store, then configure the actual IDs, prices and provider credentials.
+6. Deploy the Worker/D1 configuration and complete physical-device sandbox acceptance.
+7. Prepare signed official release builds and submit for store review/publication.
+
+Do not block steps 1–3 on product IDs that can only be created later in publisher consoles. Keep production payment feature flags disabled throughout pre-upload debugging.
+
 ## Verified CI evidence
 
 Latest observed run:
@@ -30,7 +47,7 @@ Latest observed run:
 - Passed embedded dashboard JavaScript syntax check.
 - Passed Gradle compile tasks `:app:compileBazaarDebugJavaWithJavac` and `:app:compileMyketDebugJavaWithJavac`.
 
-This run did **not** assemble APKs, verify packaged SDK isolation, deploy a Worker, apply live D1 migrations, or execute either store's sandbox/live purchase flow. Do not describe those activities as completed.
+A later workflow run `44241041761` at commit `41981064297b80a7da3dc0f0bf0218f62d9c2d9b` assembled both internal debug APKs and uploaded the artifact; inspection confirmed store SDK isolation. Neither run deployed a Worker, applied live D1 migrations, or executed either store's sandbox/live purchase flow.
 
 ## Required runtime configuration
 
@@ -55,7 +72,7 @@ Private bindings:
 
 Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until real deployment and end-to-end acceptance.
 
-## Remaining blockers — do not enable live payments
+## Later-stage prerequisites — not blockers for current pre-upload debugging
 
 1. No Worker deployment or real D1 migration has been performed; the example configuration intentionally has no production database ID.
 2. Publisher consoles were not accessible. Exact package registration, five product IDs and displayed IRR prices per store, public keys, CafeBazaar API permission/credentials and test accounts remain unverified.
@@ -77,4 +94,4 @@ Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until real deploym
 - Test expiry, refund/revoke, account recovery, reinstall, device change and session persistence on physical Android devices.
 - Confirm premium resources enforce entitlement from D1, not local UI state.
 
-**Release decision: NOT READY FOR LIVE PAYMENTS.** Source integration is implemented and both store variants pass Java compilation in CI. Publisher setup, server deployment, APK packaging inspection and physical-device purchase acceptance remain unverified.
+**Current decision: continue pre-upload integration debugging; do not enable live payments.** Both store variants have been compiled and internal debug APKs assembled in CI. Publisher setup, production deployment and physical-device store checkout are later-stage acceptance tasks.
