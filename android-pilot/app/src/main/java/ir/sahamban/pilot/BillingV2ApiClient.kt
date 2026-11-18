@@ -9,7 +9,7 @@ import java.util.concurrent.Executors
 
 /** HTTPS-only adapter for authenticated Billing V2 Worker endpoints. */
 class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: String) {
-    data class Order(val id: String, val planId: String, val days: Int, val amountRial: Long)
+    data class Order(val id: String, val planId: String, val days: Int)
     data class Access(val planId: String, val expiresAt: String, val autoRenewing: Boolean)
 
     sealed interface Result<out T> {
@@ -34,10 +34,9 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
                 val order = json.optJSONObject("order")
                 val id = order?.optString("id").orEmpty()
                 val days = order?.optInt("days", 0) ?: 0
-                val amount = order?.optLong("amountRial", 0L) ?: 0L
                 val returnedPlan = order?.optString("planId").orEmpty()
-                if (id.matches(Regex("^ord_[a-f0-9]{32}$")) && days > 0 && amount > 0 &&
-                    returnedPlan == planId) Result.Success(Order(id, returnedPlan, days, amount))
+                if (id.matches(Regex("^ord_[a-f0-9]{32}$")) && days > 0 &&
+                    returnedPlan == planId) Result.Success(Order(id, returnedPlan, days))
                 else Result.Failure(502, "INVALID_ORDER_RESPONSE")
             } else Result.Failure(status, json.optString("error", "ORDER_FAILED"))
         }.also { /* request dispatches asynchronously */ }
