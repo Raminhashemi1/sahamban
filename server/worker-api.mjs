@@ -3,12 +3,16 @@ import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.m
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
 import bazaarVerifierModule from './bazaar-subscription-verifier.cjs';
 import prepaidSettlementModule from './prepaid-settlement.cjs';
+import bazaarCancellationModule from './bazaar-subscription-cancellation.cjs';
+import bazaarTokenVaultModule from './bazaar-token-vault.cjs';
 import otpServiceModule from './sms-otp-service.cjs';
 import otpRepositoryModule from './d1-sms-otp-repository.cjs';
 const {createSmsOtpService}=otpServiceModule;
 const {createD1SmsOtpRepository}=otpRepositoryModule;
 const {verifyBazaarSubscription}=bazaarVerifierModule;
 const {settleVerifiedPrepaidPayment}=prepaidSettlementModule;
+const {cancelBazaarSubscription}=bazaarCancellationModule;
+const {decryptPurchaseToken}=bazaarTokenVaultModule;
 
 function parseCookie(request,name){
  const raw=request.headers.get('Cookie')||'';
@@ -220,18 +224,20 @@ export default {
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
   const isPrepaidOverview=url.pathname==='/api/v1/me/prepaid-overview';
   const isPrepaidVerify=url.pathname==='/api/v1/me/prepaid-orders/verify';
-  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview&&!isPrepaidVerify)return send({error:'NOT_FOUND'},404,cors);
+  const isPrepaidCancel=url.pathname==='/api/v1/me/prepaid-subscription/cancel';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview&&!isPrepaidVerify&&!isPrepaidCancel)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidVerify&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidCancel&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   // Cookie-authenticated Sahmino account routes. The internal user ID is
   // derived only from a validated, unrevoked OTP session in D1; never from input.
   if(isPrepaidVerify&&!parseCookie(request,'sahmino_session'))return send({error:'NOT_AUTHENTICATED'},401,cors);
-  if(isPrepaidOrders||isPrepaidOverview||isPrepaidVerify){
+  if(isPrepaidOrders||isPrepaidOverview||isPrepaidVerify||isPrepaidCancel){
    const sessionCookie=parseCookie(request,'sahmino_session');
    if(sessionCookie){
     if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
@@ -242,6 +248,60 @@ export default {
     if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
     if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
      return send({error:'CSRF_REJECTED'},403,cors);
+    if(isPrepaidCancel){
+     if(env?.BAZAAR_SUBSCRIPTIONS_ENABLED!=='true'||env?.BAZAAR_CANCELLATION_ENABLED!=='true')
+      return send({error:'FEATURE_DISABLED'},404,cors);
+     if(!env?.SAHAMBAN_DB||!env?.BAZAAR_TOKEN_ENCRYPTION_KEY||
+       !env?.BAZAAR_PACKAGE_NAME||!env?.BAZAAR_CLIENT_ID||!env?.BAZAAR_CLIENT_SECRET||!env?.BAZAAR_REFRESH_TOKEN)
+      return send({error:'BAZAAR_CANCELLATION_NOT_CONFIGURED'},503,cors);
+     const rows=await env.SAHAMBAN_DB.prepare(
+      `SELECT c.order_id,c.provider_payment_id,c.lifecycle_state,c.provider_auto_renewing,
+       o.plan_id,o.provider_token_version,o.provider_token_nonce,o.provider_token_ciphertext
+       FROM sahmino_bazaar_subscription_control c
+       JOIN sahmino_prepaid_subscription_orders o ON o.id=c.order_id
+       WHERE c.user_id=? AND c.provider_auto_renewing=1
+        AND c.lifecycle_state IN ('RENEWAL_ACTIVE','CANCELLATION_PENDING')
+       ORDER BY c.updated_at DESC,c.created_at DESC,c.order_id DESC LIMIT 1`
+     ).bind(activeSession.userId).first();
+     if(!rows)return send({error:'NO_ACTIVE_AUTO_RENEWAL'},409,cors);
+     const now=new Date(nowMs).toISOString();
+     const pending=await env.SAHAMBAN_DB.prepare(
+      `UPDATE sahmino_bazaar_subscription_control
+       SET lifecycle_state='CANCELLATION_PENDING',
+        cancellation_requested_at=COALESCE(cancellation_requested_at,?),updated_at=?
+       WHERE order_id=? AND user_id=? AND provider_auto_renewing=1
+        AND lifecycle_state IN ('RENEWAL_ACTIVE','CANCELLATION_PENDING')`
+     ).bind(now,now,rows.order_id,activeSession.userId).run();
+     if(pending?.success!==true||pending?.meta?.changes!==1)
+      return send({error:'CANCELLATION_STATE_CONFLICT'},409,cors);
+     let purchaseToken;
+     try{
+      purchaseToken=await decryptPurchaseToken({
+       version:rows.provider_token_version,nonce:rows.provider_token_nonce,ciphertext:rows.provider_token_ciphertext
+      },{secret:env.BAZAAR_TOKEN_ENCRYPTION_KEY,orderId:rows.order_id,providerPaymentId:rows.provider_payment_id});
+     }catch(_){
+      await env.SAHAMBAN_DB.prepare(
+       `UPDATE sahmino_bazaar_subscription_control SET lifecycle_state='REVIEW_REQUIRED',updated_at=?
+        WHERE order_id=? AND user_id=? AND lifecycle_state='CANCELLATION_PENDING'`
+      ).bind(now,rows.order_id,activeSession.userId).run();
+      return send({error:'TOKEN_DECRYPTION_FAILED'},503,cors);
+     }
+     const cancelled=await cancelBazaarSubscription({
+      packageName:env.BAZAAR_PACKAGE_NAME,planId:rows.plan_id,purchaseToken,
+      clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+      refreshToken:env.BAZAAR_REFRESH_TOKEN,fetchImpl:fetch
+     });
+     if(!cancelled.ok)return send({error:cancelled.reason,cancellationPending:true},503,cors);
+     const confirmed=await env.SAHAMBAN_DB.prepare(
+      `UPDATE sahmino_bazaar_subscription_control
+       SET lifecycle_state='CANCELLED',provider_auto_renewing=0,
+        cancellation_confirmed_at=?,updated_at=?
+       WHERE order_id=? AND user_id=? AND lifecycle_state='CANCELLATION_PENDING'`
+     ).bind(now,now,rows.order_id,activeSession.userId).run();
+     if(confirmed?.success!==true||confirmed?.meta?.changes!==1)
+      return send({error:'CANCELLATION_CONFIRMATION_NOT_RECORDED',cancellationPending:true},503,cors);
+     return send({status:'CANCELLED',renewalCancelled:true,accessUntil:rows.provider_paid_until||null},200,cors);
+    }
     if(isPrepaidVerify){
      if(env?.BAZAAR_SUBSCRIPTIONS_ENABLED!=='true')
       return send({error:'FEATURE_DISABLED'},404,cors);
