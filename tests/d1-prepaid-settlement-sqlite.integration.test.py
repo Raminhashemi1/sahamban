@@ -20,6 +20,7 @@ def actual_sql(name):
 EVENT = actual_sql('EVENT_SQL')
 ORDER = actual_sql('ORDER_SQL')
 ENTITLEMENT = actual_sql('ENTITLEMENT_UPSERT_SQL')
+CONTROL = actual_sql('CONTROL_INSERT_SQL')
 NOW = '2026-11-12T10:00:00.000Z'
 ORDER_ID = 'ord_' + 'a' * 32
 
@@ -30,6 +31,7 @@ def make_db():
     db.executescript((ROOT / 'server' / 'd1-prepaid-migration.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-sahmino-subscription-v2.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-bazaar-token-vault-migration.sql').read_text(encoding='utf-8'))
+    db.executescript((ROOT / 'server' / 'd1-sahmino-bazaar-subscription-control-migration.sql').read_text(encoding='utf-8'))
     db.execute('INSERT INTO sahamban_users(id,auth_subject,created_at,status) VALUES(?,?,?,?)',
                ('u1', 'integration:subject', NOW, 'ACTIVE'))
     return db
@@ -47,8 +49,10 @@ def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000,
         order_result = db.execute(ORDER, (now, 'cafebazaar', payment, 'v1', 'test-nonce', 'test-ciphertext',
                                           oid, plan, amount, 'cafebazaar', event, payment))
         db.execute(ENTITLEMENT, (oid, 'cafebazaar', payment, valid_until, now))
+        control_result = db.execute(CONTROL, (valid_until, now, now, oid, payment))
+        control_changes = control_result.rowcount
         grant_changes = db.execute('SELECT changes()').fetchone()[0]
-        if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1:
+        if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1 or control_changes != 1:
             raise AssertionError('Settlement did not update event, order and entitlement atomically')
     return db.execute('SELECT paid_until FROM sahmino_prepaid_subscription_entitlements WHERE user_id=?',
                       ('u1',)).fetchone()[0]
@@ -62,6 +66,8 @@ class SahminoSQLiteIntegration(unittest.TestCase):
             self.assertEqual(settle(db, valid_until=provider_expiry), provider_expiry)
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders').fetchone()[0], 'SETTLED')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 1)
+            control = db.execute('SELECT renewal_mode,provider_auto_renewing,lifecycle_state,provider_paid_until FROM sahmino_bazaar_subscription_control').fetchone()
+            self.assertEqual(control, ('MANUAL', 0, 'VERIFIED', provider_expiry))
         finally:
             db.close()
 
@@ -78,6 +84,7 @@ class SahminoSQLiteIntegration(unittest.TestCase):
                                     event='evt_2', payment='pay_2'),
                              '2027-02-10T10:00:00.000Z')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 2)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_bazaar_subscription_control').fetchone()[0], 2)
         finally:
             db.close()
 
@@ -92,6 +99,7 @@ class SahminoSQLiteIntegration(unittest.TestCase):
                 settle(db, oid=second, payment='pay_2')
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders WHERE id=?', (second,)).fetchone()[0], 'PENDING')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 1)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_bazaar_subscription_control').fetchone()[0], 1)
             self.assertEqual(db.execute('SELECT paid_until FROM sahmino_prepaid_subscription_entitlements').fetchone()[0], '2026-12-22T10:00:00.000Z')
         finally:
             db.close()
@@ -105,6 +113,7 @@ class SahminoSQLiteIntegration(unittest.TestCase):
                 settle(db)
             self.assertEqual(db.execute('SELECT state FROM sahmino_prepaid_subscription_orders').fetchone()[0], 'PENDING')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 0)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_bazaar_subscription_control').fetchone()[0], 0)
         finally:
             db.close()
 
