@@ -42,21 +42,23 @@ async function accessToken(env,fetcher){
  if(typeof json.access_token!=='string'||!json.access_token)throw Error('BAZAAR_AUTH_INVALID');
  return json.access_token;
 }
-async function verifySubscription(env,{sku,token,orderId,nowMs=Date.now()},fetcher=fetch){
+async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now()},fetcher=fetch){
  const pkg=env.BAZAAR_PACKAGE_NAME;
  if(typeof pkg!=='string'||!/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(pkg))throw Error('PACKAGE_NOT_CONFIGURED');
  const bearer=await accessToken(env,fetcher);
- const path=['https://pardakht.cafebazaar.ir/devapi/v2/api/applications',
-  encodeURIComponent(pkg),'subscriptions',encodeURIComponent(sku),'purchases',encodeURIComponent(token)].join('/')+'/?access_token='+encodeURIComponent(bearer);
+ const path=['https://pardakht.cafebazaar.ir/devapi/v2/api/validate',
+  encodeURIComponent(pkg),'inapp',encodeURIComponent(sku),'purchases',encodeURIComponent(token)].join('/')+'/?access_token='+encodeURIComponent(bearer);
  const response=await fetcher(path,{headers:{Accept:'application/json'}});
- if(!response.ok)throw Error('SUBSCRIPTION_REJECTED');
+ if(!response.ok)throw Error('INAPP_PURCHASE_REJECTED');
  const receipt=await response.json();
- const expiryRaw=receipt?.validUntilTimestampMsec;
- const expiryMs=typeof expiryRaw==='string'?Number(expiryRaw):expiryRaw;
- if(!receipt||receipt.kind!=='androidpublisher#subscriptionPurchase'||
-    !Number.isSafeInteger(expiryMs)||expiryMs<=nowMs||
-    typeof receipt.autoRenewing!=='boolean')throw Error('SUBSCRIPTION_NOT_ACTIVE');
- return {receipt,expiresAt:new Date(expiryMs).toISOString(),autoRenewing:receipt.autoRenewing};
+ const purchaseTimeRaw=receipt?.purchaseTimeMillis;
+ const purchaseTimeMs=typeof purchaseTimeRaw==='string'?Number(purchaseTimeRaw):purchaseTimeRaw;
+ if(!receipt||receipt.kind!=='androidpublisher#productPurchase'||
+    receipt.purchaseState!==0||receipt.consumptionState!==0||
+    !Number.isSafeInteger(purchaseTimeMs)||purchaseTimeMs<=0||
+    purchaseTimeMs>nowMs+5*60*1000||nowMs-purchaseTimeMs>24*60*60*1000)
+   throw Error('INAPP_PURCHASE_NOT_VALID');
+ return {receipt,purchaseTime:new Date(purchaseTimeMs).toISOString()};
 }
 export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  if(env.BILLING_V2_ENABLED!=='true')return {status:404,body:{error:'BILLING_DISABLED'}};
@@ -66,25 +68,25 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
    typeof body.sku!=='string'||typeof body.token!=='string'||body.token.length<8||body.token.length>4096||
    typeof body.originalJson!=='string'||body.originalJson.length<2||body.originalJson.length>8192||
    typeof body.dataSignature!=='string'||body.dataSignature.length<16||body.dataSignature.length>4096)
-  return {status:400,body:{error:'INVALID_SUBSCRIPTION'}};
+  return {status:400,body:{error:'INVALID_PURCHASE'}};
  const mapping=skuMap(env.BAZAAR_SKU_MAP);
  if(!mapping)return {status:503,body:{error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'}};
  const planId=PLAN_IDS.find(id=>mapping[id]===body.sku);
- if(!planId)return {status:400,body:{error:'UNKNOWN_SUBSCRIPTION_SKU'}};
+ if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
   const order=await db.prepare("SELECT id,plan_id,status FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
   await verifySignedPurchase(env,body);
-  const verified=await verifySubscription(env,{sku:body.sku,token:body.token,orderId:body.orderId,nowMs:Date.parse(now)},fetcher);
+  const verified=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,nowMs:Date.parse(now)},fetcher);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
   const result=await settle(db,{orderId:body.orderId,subject,planId,
    bazaarOrderId:verified.receipt.orderId||tokenHash,tokenHash,
-   verifiedExpiresAt:verified.expiresAt,autoRenewing:verified.autoRenewing,now});
+   purchaseTime:verified.purchaseTime,now});
   return result.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:result.expiresAt,
-   autoRenewing:verified.autoRenewing,restored:!!result.restored}}:
+   renewalMode:'MANUAL',daysAdded:result.daysAdded,restored:!!result.restored}}:
    {status:409,body:{error:result.error}};
- }catch(_){return {status:503,body:{error:'SUBSCRIPTION_VERIFICATION_UNAVAILABLE'}};}
+ }catch(_){return {status:503,body:{error:'PURCHASE_VERIFICATION_UNAVAILABLE'}};}
 }
-export {skuMap,verifySubscription,verifySignedPurchase};
+export {skuMap,verifyInAppPurchase,verifySignedPurchase};
