@@ -24,7 +24,7 @@ async function accessToken(env,fetcher){
  if(typeof json.access_token!=='string'||!json.access_token)throw Error('BAZAAR_AUTH_INVALID');
  return json.access_token;
 }
-async function verifySubscription(env,{sku,token,orderId},fetcher=fetch){
+async function verifySubscription(env,{sku,token,orderId,nowMs=Date.now()},fetcher=fetch){
  const pkg=env.BAZAAR_PACKAGE_NAME;
  if(typeof pkg!=='string'||!/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(pkg))throw Error('PACKAGE_NOT_CONFIGURED');
  const bearer=await accessToken(env,fetcher);
@@ -33,11 +33,11 @@ async function verifySubscription(env,{sku,token,orderId},fetcher=fetch){
  const response=await fetcher(path,{headers:{Accept:'application/json'}});
  if(!response.ok)throw Error('SUBSCRIPTION_REJECTED');
  const receipt=await response.json();
- const expiryRaw=receipt?.validUntilTimestampMsec??receipt?.expiryTimeMillis;
+ const expiryRaw=receipt?.validUntilTimestampMsec;
  const expiryMs=typeof expiryRaw==='string'?Number(expiryRaw):expiryRaw;
- if(!receipt||!Number.isSafeInteger(expiryMs)||expiryMs<=Date.now()||
-    typeof receipt.autoRenewing!=='boolean'||
-    (receipt.developerPayload!==undefined&&receipt.developerPayload!==orderId))
+ if(!receipt||receipt.kind!=='androidpublisher#subscriptionPurchase'||
+    !Number.isSafeInteger(expiryMs)||expiryMs<=nowMs||
+    typeof receipt.autoRenewing!=='boolean'||receipt.developerPayload!==orderId)
   throw Error('SUBSCRIPTION_NOT_ACTIVE');
  const expiresAt=new Date(expiryMs).toISOString();
  return {receipt,expiresAt,autoRenewing:receipt.autoRenewing};
@@ -57,7 +57,7 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
   const order=await db.prepare("SELECT id,plan_id,amount_rial,status FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId||order.amount_rial!==PRICES[planId])return {status:409,body:{error:'ORDER_MISMATCH'}};
-  const verified=await verifySubscription(env,{sku:body.sku,token:body.token,orderId:body.orderId},fetcher);
+  const verified=await verifySubscription(env,{sku:body.sku,token:body.token,orderId:body.orderId,nowMs:Date.parse(now)},fetcher);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
   const result=await settle(db,{orderId:body.orderId,subject,planId,amountRial:PRICES[planId],
