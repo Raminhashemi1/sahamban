@@ -20,6 +20,7 @@ test('Purchase evidence is raw only and never grants Pro in the Android client',
  assert.match(evidence,/getPurchaseToken/);
  assert.match(evidence,/getOriginalJson/);
  assert.match(evidence,/getDataSignature/);
+ assert.match(evidence,/purchaseState = 0/);
  assert.match(evidence,/PurchaseState\.PURCHASED/);
  assert.doesNotMatch(evidence,/proEnabled|grantPro|paidUntil|consumeProduct/);
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
