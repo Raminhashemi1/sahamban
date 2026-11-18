@@ -34,9 +34,7 @@ Manual renewal remains the default. Any automatic-renewal choice must be explici
 
 ## Store configuration
 
-The following key is not committed and must be provided through a secure Gradle property:
-
-- `BAZAAR_IAB_PUBLIC_KEY`
+The CafeBazaar RSA public key is used only by the trusted Worker verifier as `BAZAAR_IAB_PUBLIC_KEY`; it is not placed in the APK. OAuth client ID, client secret and refresh token are Worker secrets only.
 
 The five current SKU strings are provisional mappings only. They must be reconciled with the exact subscription IDs configured in the CafeBazaar publisher panel before enabling purchases.
 
