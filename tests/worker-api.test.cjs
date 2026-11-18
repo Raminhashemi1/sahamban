@@ -202,3 +202,22 @@ test('OTP request and verify routes reject oversized JSON bodies before provider
   assert.deepEqual(await response.json(),{error:'BODY_TOO_LARGE'});
  }
 });
+
+
+test('CafeBazaar receipt verification is cookie-authenticated and disabled until consent and provider gates are ready',async()=>{
+ const worker=(await api()).default;
+ const noCookie=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders/verify',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Sahmino-CSRF':'1'},
+  body:JSON.stringify({})
+ }),{...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true',BAZAAR_SUBSCRIPTIONS_ENABLED:'true'});
+ assert.equal(noCookie.status,401);
+ const disabled=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders/verify',{
+  method:'POST',headers:{Origin:origin,Cookie:'sahmino_session='+'a'.repeat(64),'Content-Type':'application/json','X-Sahmino-CSRF':'1'},
+  body:JSON.stringify({})
+ }),{...env(),SAHMINO_OTP_ENABLED:'false',PREPAID_ORDERS_ENABLED:'true',BAZAAR_SUBSCRIPTIONS_ENABLED:'true'});
+ assert.equal(disabled.status,404);
+ const wrongMethod=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders/verify',{
+  method:'GET',headers:{Origin:origin,Cookie:'sahmino_session='+'a'.repeat(64)}
+ }),env());
+ assert.equal(wrongMethod.status,405);
+});
