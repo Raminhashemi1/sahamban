@@ -77,11 +77,27 @@ export async function verifyAndSettleBazaarPurchase({db,env,subject,body,now,fet
    FROM prepaid_subscription_orders o JOIN sahamban_users u ON u.id=o.user_id
    WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1`).bind(body.orderId,subject).first();
   if(!order)return json({error:'ORDER_NOT_FOUND'},404);
-  if(order.state!=='PENDING'||order.plan_id!==planId||order.amount_rial!==PLANS[planId]||order.currency!=='IRR')
+  if(order.plan_id!==planId||order.amount_rial!==PLANS[planId]||order.currency!=='IRR')
    return json({error:'ORDER_MISMATCH'},409);
+  const eventId=await sha256Hex(body.purchaseToken);
+  // Idempotent restore: the same cryptographically fingerprinted token may be
+  // submitted again after it was consumed. Never extend the term twice.
+  if(order.state==='SETTLED'){
+   const prior=await db.prepare(`SELECT e.provider_payment_id,pe.paid_until
+    FROM prepaid_payment_events e
+    JOIN prepaid_subscription_orders o ON o.id=e.order_id
+    JOIN prepaid_subscription_entitlements pe ON pe.user_id=o.user_id
+    WHERE e.provider_name='CAFE_BAZAAR' AND e.provider_event_id=?
+      AND e.order_id=? AND e.event_type='PAYMENT_SETTLED'
+      AND o.state='SETTLED' AND o.provider_name='CAFE_BAZAAR'
+    LIMIT 1`).bind(eventId,body.orderId).first();
+   if(prior&&typeof prior.provider_payment_id==='string'&&prior.provider_payment_id.length>0)
+    return json({status:'SETTLED',planId,paidUntil:prior.paid_until,restored:true},200);
+   return json({error:'ORDER_MISMATCH'},409);
+  }
+  if(order.state!=='PENDING')return json({error:'ORDER_MISMATCH'},409);
   const receipt=await verifyBazaarReceipt({env,packageName,productId:body.productId,
    purchaseToken:body.purchaseToken,orderId:body.orderId,fetchImpl});
-  const eventId=await sha256Hex(body.purchaseToken);
   const result=await settleVerifiedPrepaidPayment(db,{
    verified:true,providerName:'CAFE_BAZAAR',providerEventId:eventId,
    providerPaymentId:receipt.orderId,orderId:body.orderId,planId,
