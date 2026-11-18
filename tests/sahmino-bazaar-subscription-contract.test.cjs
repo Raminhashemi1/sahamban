@@ -74,7 +74,7 @@ test('restoration is derived from the authenticated server entitlement, not Baza
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  const overview=read('server/prepaid-account-overview.cjs');
  assert.match(client,/GET/);
- assert.match(client,/api\\/v1\\/me\\/prepaid-overview/);
+ assert.ok(client.includes('/api/v1/me/prepaid-overview'));
  assert.match(client,/response\\.optBoolean\\("proEnabled", false\\)/);
  assert.match(activity,/onRestoredEvidence/);
  assert.match(activity,/orders\\.refreshEntitlement/);
