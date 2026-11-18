@@ -9,7 +9,7 @@ https://raminhashemi1.github.io/sahamban/
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
   The temporary `ir.sahamban.pilot` package ID and build-generated debug
   certificate must **not** become the final app identity/signing key.
-- A native Cafe Bazaar Poolakey billing boundary is now included in the Android module. It connects to Bazaar, launches subscription purchases, and returns raw purchase evidence only. It does not grant Pro locally.
+- - A native Cafe Bazaar Poolakey subscription boundary is included: `subscribeProduct`, `getSubscribedProducts`, subscription SKU details, and local RSA signature verification. It returns signed evidence only; the trusted Worker verifies it against Bazaar's Developer API before D1 settlement.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
@@ -58,7 +58,7 @@ Physical Android device: PWA loading, RTL, basic navigation, browser
 handoff, permissions, synthetic 20/100-holding portfolio import and export,
 offline/slow network, cold/warm start, font scaling, TalkBack, and secure
 update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach. The native Poolakey boundary now uses one-time `purchaseProduct/getPurchasedProducts` (not recurring subscription APIs) and sends its evidence through `SahambanBazaarReceiptClient` to the authenticated Worker. The Worker verifies the receipt against Cafe Bazaar's Developer API before atomic D1 settlement. All live purchase flags remain false until package/SKU mapping and server credentials are configured.
+Only afterwards choose a market-specific release wrapper/signing approach. The native Poolakey boundary uses recurring subscription APIs (`subscribeProduct`, `getSubscribedProducts`) and sends signed purchase evidence to the authenticated Worker. The Worker verifies the RSA-signed developer payload and the subscription receipt with Cafe Bazaar before D1 settlement. The billing coordinator and purchase orchestration are not yet wired into `MainActivity` or the PWA UI; identity/session delivery and user-visible plan/price screens remain release blockers. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
