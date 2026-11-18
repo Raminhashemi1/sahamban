@@ -35,3 +35,10 @@ test('Android dependencies and build contain Bazaar only',()=>{
  assert.match(gradle,/poolakey-rx:2\.2\.0/);
  assert.doesNotMatch(gradle,/myket|MYKET|com\.android\.vending/i);
 });
+
+test('Worker fails closed while Bazaar automatic renewal is not reconciled with manual-default consent',()=>{
+ const worker=read('server/worker-api.mjs');
+ assert.match(worker,/BAZAAR_SUBSCRIPTIONS_ENABLED!=='true'/);
+ assert.match(worker,/autoRenewing!==false/);
+ assert.match(worker,/AUTO_RENEW_POLICY_UNRESOLVED/);
+});
