@@ -26,7 +26,7 @@ test('native receipt API requires HTTPS and the authenticated HttpOnly session c
  assert.doesNotMatch(client,/amountRial/);
 });
 
-test('CafeBazaar uses Poolakey one-time products, server payload, REST receipt submission and post-settlement consume',()=>{
+test('CafeBazaar uses Poolakey subscription APIs and never consumes subscription receipts',()=>{
  const manager=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/BazaarBillingManager.java');
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  assert.match(manager,/new SecurityCheck\.Enable\(publicKey\)/);
