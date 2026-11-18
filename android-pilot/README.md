@@ -9,7 +9,7 @@ https://raminhashemi1.github.io/sahamban/
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
   The temporary `ir.sahamban.pilot` package ID and build-generated debug
   certificate must **not** become the final app identity/signing key.
-- No checkout, Pro subscription, account registration or payments are added.
+- A native Cafe Bazaar Poolakey billing boundary is now included in the Android module. It connects to Bazaar, launches subscription purchases, and returns raw purchase evidence only. It does not grant Pro locally.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
@@ -58,7 +58,7 @@ Physical Android device: PWA loading, RTL, basic navigation, browser
 handoff, permissions, synthetic 20/100-holding portfolio import and export,
 offline/slow network, cold/warm start, font scaling, TalkBack, and secure
 update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach.
+Only afterwards choose a market-specific release wrapper/signing approach. The Poolakey boundary is not yet wired to a production receipt-verification endpoint; purchase flags intentionally remain false.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
