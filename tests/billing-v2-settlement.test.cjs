@@ -10,8 +10,20 @@ const input={orderId,subject:'pilot-user',planId:'SAHAMBAN_PRO_30D',
 function fakeDb(order,{batchChanges=1}={}){
  const calls=[];
  return {calls,
-  prepare(sql){return {sql,bind(...values){return {sql,values,first:async()=>order}}}},
-  async batch(statements){calls.push(statements);return statements.map(()=>({success:true,meta:{changes:batchChanges}}));}
+  prepare(sql){return {sql,bind(...values){return {sql,values,first:async()=>{
+   if(sql.includes("SELECT expires_at FROM billing_access"))return {expires_at:order.settledExpiresAt||order.expires_at};
+   return order;
+  }}}}},
+  async batch(statements){
+   calls.push(statements);
+   if(batchChanges===1){
+    const values=statements[2].values,nowValue=values[1],days=values[4];
+    const existing=order.expires_at;
+    const base=existing&&Date.parse(existing)>Date.parse(nowValue)?existing:nowValue;
+    order.settledExpiresAt=new Date(Date.parse(base)+days*86400000).toISOString();
+   }
+   return statements.map(()=>({success:true,meta:{changes:batchChanges}}));
+  }
  };
 }
 test('first verified in-app purchase atomically records payment and grants 30 days manually',async()=>{
