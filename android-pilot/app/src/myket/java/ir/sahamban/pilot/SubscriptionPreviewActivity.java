@@ -124,7 +124,8 @@ public final class SubscriptionPreviewActivity extends Activity {
         io.execute(() -> {
             try {
                 boolean settled = SahminoReceiptApiClient.submitMyketReceipt(
-                    this, evidence.developerPayload, evidence);
+                    this, evidence.developerPayload, evidence.developerPayload,
+                    evidence.originalJson, evidence.signature);
                 if (!settled) throw new java.io.IOException("تسویه سمت سرور تأیید نشد.");
                 runOnUiThread(() -> {
                     storeStatus = "رسید مایکت توسط سرور تأیید و اشتراک ثبت شد.";
