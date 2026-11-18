@@ -36,7 +36,13 @@ public final class BazaarBillingManager {
         if (activity == null || listener == null) throw new IllegalArgumentException("activity/listener required");
         this.activity = activity;
         this.listener = listener;
-        PaymentConfiguration config = new PaymentConfiguration(SecurityCheck.Disable.INSTANCE, true);
+        String publicKey = BuildConfig.IAB_PUBLIC_KEY == null ? "" : BuildConfig.IAB_PUBLIC_KEY.trim();
+        if (publicKey.length() < 100 || publicKey.contains("PLACEHOLDER")) {
+            throw new IllegalStateException("CafeBazaar RSA public key is not configured");
+        }
+        // Match CafeBazaar's official Poolakey sample: verify the purchase signature locally.
+        // The Worker independently verifies the provider receipt before entitlement settlement.
+        PaymentConfiguration config = new PaymentConfiguration(SecurityCheck.Enable(publicKey), true);
         this.payment = new Payment(activity, config);
     }
 
