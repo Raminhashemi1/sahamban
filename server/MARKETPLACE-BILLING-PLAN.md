@@ -68,7 +68,7 @@
 - Gradle اکنون فقط flavor بازار را تعریف می‌کند؛ کد/وابستگی مایکت حذف شده است.
 - primitive تسویه اکنون تاریخ پایان تأییدشده Bazaar را می‌پذیرد و روزهای پلن را برای محاسبه انقضا جمع نمی‌کند.
 - endpoint واقعی OAuth/ValidateSubscription هنوز باید به Worker متصل شود.
-- Poolakey adapter مبتنی بر متدهای Subscription، payload سفارش سرور، restore و ارسال receipt هنوز باید تکمیل شود.
+- آداپتر Poolakey مبتنی بر متدهای Subscription، دریافت SKU و restore پیاده‌سازی شده؛ اتصال endpoint سفارش و receipt به Worker هنوز باقی است.
 - آزمون sandbox و گوشی واقعی انجام نشده است.
 - پرداخت و فعال‌سازی همچنان خاموش‌اند.
 
