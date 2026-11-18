@@ -4,13 +4,13 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const read=p=>fs.readFileSync(p,'utf8');
 
-test('native billing boundary is wired to the official Cafe Bazaar Poolakey SDK',()=>{
+test('native billing boundary uses one-time Cafe Bazaar Poolakey products',()=>{
  const manager=read('android-pilot/app/src/main/java/ir/sahamban/pilot/SahambanBazaarBillingManager.kt');
  const gradle=read('android-pilot/app/build.gradle');
  const settings=read('android-pilot/settings.gradle');
  const manifest=read('android-pilot/app/src/main/AndroidManifest.xml');
- for(const marker of ['PaymentConfiguration','SecurityCheck.Disable','payment.connect',
-   'payment.subscribeProduct','PurchaseRequest','payment.getSubscribedProducts',
+ for(const marker of ['purchaseFixedTermPlan','PaymentConfiguration','SecurityCheck.Disable','payment.connect',
+   'payment.purchaseProduct','PurchaseRequest','payment.getPurchasedProducts',
    'PurchaseState.PURCHASED','purchaseToken','originalJson','dataSignature',
    'serverOrderId','onReady']) assert.ok(manager.includes(marker),marker);
  assert.match(gradle,/com\.github\.cafebazaar\.Poolakey:poolakey:2\.2\.0/);
