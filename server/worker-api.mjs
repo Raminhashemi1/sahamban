@@ -3,7 +3,7 @@ import {verifyAndSettle} from './billing/bazaar.mjs';
 const {createOrder}=billingOrders;
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
- * Private-pilot entitlement lookup and gated Billing V2 subscription endpoints.
+ * Private-pilot entitlement lookup and gated Billing V2 manual fixed-term purchase endpoints.
  * Checkout remains disabled by default; production identity and merchant configuration
  * are required before any live payment flow can be enabled.
  * Environment: SAHAMBAN_DB (private D1 binding), AUTH_HMAC_SECRET (secret),
@@ -85,7 +85,7 @@ async function lookupEntitlement(db,subject,nowMs){
   const until=parsePaidUntil(row.paid_until);
   if(until===null)return {state:'UNAVAILABLE',http:503};
   if(until<=nowMs)return {state:'EXPIRED',http:403};
-  return {state:'ACTIVE',http:200,paidUntil:row.paid_until,autoRenewing:row.auto_renewing===1};
+  return {state:'ACTIVE',http:200,paidUntil:row.paid_until,renewalMode:'MANUAL'};
  }catch(_){return {state:'UNAVAILABLE',http:503};}
 }
 export default {
@@ -135,7 +135,7 @@ export default {
   }
   const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs);
   if(result.http!==200)return send({proEnabled:false,reason:result.state},result.http,cors);
-  return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,autoRenewing:result.autoRenewing},200,cors);
+  return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,renewalMode:'MANUAL'},200,cors);
  }
 };
 export {verifyPilotToken,lookupEntitlement};
