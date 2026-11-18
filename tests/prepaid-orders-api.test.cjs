@@ -8,7 +8,7 @@ test('creates pending orders for all five plans with server-owned final prices',
  for(const [planId,amountRial] of plans){const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedSubject:subject,planId,now,makeOrderId:()=>orderId});
   assert.equal(out.status,201);assert.equal(out.order.amountRial,amountRial);assert.equal(out.checkoutEnabled,false);assert.equal(out.proEnabled,false);
   assert.match(db.calls[0][1],/sahmino_prepaid_subscription_orders/);
-  assert.deepEqual(db.calls[1],['bind',orderId,planId,amountRial,now,subject]);
+  assert.deepEqual(db.calls[1],['bind',orderId,planId,amountRial,now,'MANUAL',null,null,subject]);
  }
 });
 test('rejects unauthenticated, legacy or unknown plans, invalid time, bad ID and missing DB',async()=>{
@@ -38,7 +38,7 @@ test('no order and malformed pending order fail closed',async()=>{
 test('OTP internal user ID creates and retrieves orders using only the internal account key',async()=>{
  const userId='usr_'+'b'.repeat(32),db=dbFor(),created=await createPrepaidOrder(db,{authenticatedUserId:userId,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
  assert.equal(created.status,201);
- assert.deepEqual(db.calls[1],['bind',orderId,'SAHMINO_PRO_30D',1500000,now,userId]);
+ assert.deepEqual(db.calls[1],['bind',orderId,'SAHMINO_PRO_30D',1500000,now,'MANUAL',null,null,userId]);
  assert.match(db.calls[0][1],/u\.id=\?/);
  const pending=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHMINO_PRO_30D',amount_rial:1500000,currency:'IRR',created_at:now}}),null,userId);
  assert.equal(pending.pending,true);
@@ -46,4 +46,19 @@ test('OTP internal user ID creates and retrieves orders using only the internal 
 test('invalid client-supplied internal account IDs are never accepted',async()=>{
  const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedUserId:'usr_client_supplied',planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId});
  assert.equal(out.status,401);assert.equal(db.calls.length,0);
+});
+
+test('automatic renewal requires a versioned explicit consent and records server time',async()=>{
+ const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedUserId:'usr_'+'c'.repeat(32),
+  planId:'SAHMINO_PRO_90D',renewalMode:'AUTO',consentVersion:'sahmino-auto-renew-v1',
+  now,makeOrderId:()=>orderId});
+ assert.equal(out.status,201);
+ assert.equal(out.order.renewalMode,'AUTO');
+ assert.equal(out.order.consentVersion,'sahmino-auto-renew-v1');
+ assert.equal(out.order.consentAt,now);
+ assert.deepEqual(db.calls[1],['bind',orderId,'SAHMINO_PRO_90D',4050000,now,'AUTO','sahmino-auto-renew-v1',now,'usr_'+'c'.repeat(32)]);
+ assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',
+  renewalMode:'AUTO',now,makeOrderId:()=>orderId})).reason,'EXPLICIT_RENEWAL_CONSENT_REQUIRED');
+ assert.equal((await createPrepaidOrder(dbFor(),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',
+  renewalMode:'MANUAL',consentVersion:'sahmino-auto-renew-v1',now,makeOrderId:()=>orderId})).reason,'UNEXPECTED_RENEWAL_CONSENT');
 });
