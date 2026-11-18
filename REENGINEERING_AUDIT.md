@@ -40,11 +40,11 @@ The IDs above are server-side catalog keys, not Cafe Bazaar Product IDs. Actual 
 
 ## Remaining blockers
 
-1. A native Kotlin Poolakey billing boundary has now been added to the Android pilot module. It connects to Bazaar, launches subscription purchases, and returns raw signed purchase evidence. It is not yet invoked from the WebView UI and does not itself verify receipts or grant Pro.
+1. A native Kotlin Poolakey boundary and HTTPS receipt client have been added. Fixed-term plans use one-time `purchaseProduct/getPurchasedProducts` (not recurring subscription APIs). The client submits order ID, product ID and purchase token to the authenticated Worker.
 2. Actual Cafe Bazaar Product IDs for all five plans and their explicit server mapping are still needed; no products should be created until the official app build is ready.
-3. Trusted server-to-server validation of Bazaar receipts, including package/product/status/transaction checks and replay protection, is not yet connected. The Worker currently has no receipt-verification endpoint.
+3. A fail-closed Worker endpoint now refreshes a server-side Bazaar Developer API access token, validates the exact package/product/purchase token, requires PURCHASED + unconsumed state and exact developer payload/order binding, then atomically settles the D1 order and entitlement. This remains disabled until the five real SKUs, package ID and Bazaar OAuth credentials are securely configured.
 4. Refund/reversal processing and entitlement recovery on a real Bazaar-installed device remain outstanding.
-5. The Worker is a private pilot prototype; checkout and payments remain disabled.
+5. The Worker is a private pilot prototype; checkout and payments remain disabled. New Bazaar receipt verification regression tests were added to the Worker CI.
 6. The D1 migration has not been applied to a production database. Review migration history before applying any schema changes to an existing database.
 
 ## Safety and scope
