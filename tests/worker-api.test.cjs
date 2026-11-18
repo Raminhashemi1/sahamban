@@ -248,7 +248,7 @@ test('pilot prepaid order endpoint records versioned automatic-renew consent',as
  const body=await response.json();
  assert.equal(body.order.renewalMode,'AUTO');
  assert.equal(body.order.consentVersion,'sahmino-auto-renew-v1');
- assert.equal(body.order.consentAt,calls[0].values[7]);
+ assert.equal(body.order.consentAt,calls[0].values[6]);
  assert.equal(calls[0].values[5],'AUTO');
  assert.equal(calls[0].values[6],'sahmino-auto-renew-v1');
 });
