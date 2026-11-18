@@ -74,7 +74,7 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  const planId=PLAN_IDS.find(id=>mapping[id]===body.sku);
  if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
-  const order=await db.prepare("SELECT id,plan_id,status,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
+  const order=await db.prepare("SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
   await verifySignedPurchase(env,body);
