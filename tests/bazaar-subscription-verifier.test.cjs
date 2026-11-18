@@ -31,8 +31,8 @@ test('server verifies signed payload, OAuth token and Bazaar subscription expiry
  assert.equal(result.verified.orderId,order.id);assert.equal(result.verified.planId,order.plan_id);
  assert.equal(result.verified.amountRial,order.amount_rial);assert.equal(result.verified.validUntilTimestampMsec,Date.parse('2026-12-18T09:59:00.000Z'));
  assert.equal(result.verified.autoRenewing,false);assert.equal(calls.length,2);
- assert.match(calls[0].url,/devapi\\/v2\\/auth\\/token/);
- assert.match(calls[1].url,/subscriptions\\/sahmino_pro_30d\\/purchases/);
+ assert.match(calls[0].url,/devapi\/v2\/auth\/token/);
+ assert.match(calls[1].url,/subscriptions\/sahmino_pro_30d\/purchases/);
  assert.match(calls[0].options.body,/grant_type=refresh_token/);
 });
 test('client cannot change account order payload, SKU or package',async()=>{
