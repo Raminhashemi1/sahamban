@@ -67,7 +67,7 @@
 - پنج پلن و قیمت ریالی در سرور، D1 و پیش‌نمایش موجودند.
 - Gradle اکنون فقط flavor بازار را تعریف می‌کند؛ کد/وابستگی مایکت حذف شده است.
 - primitive تسویه اکنون تاریخ پایان تأییدشده Bazaar را می‌پذیرد و روزهای پلن را برای محاسبه انقضا جمع نمی‌کند.
-- endpoint واقعی OAuth/ValidateSubscription هنوز باید به Worker متصل شود.
+- verifier OAuth/ValidateSubscription و route احراز‌شده Worker پیاده‌سازی شده‌اند؛ هنوز feature flag خاموش است و باید روی D1 آزمایشی و sandbox تست شود.
 - آداپتر Poolakey مبتنی بر متدهای Subscription، دریافت SKU و restore پیاده‌سازی شده؛ اتصال endpoint سفارش و receipt به Worker هنوز باقی است.
 - آزمون sandbox و گوشی واقعی انجام نشده است.
 - پرداخت و فعال‌سازی همچنان خاموش‌اند.
