@@ -32,14 +32,18 @@ jobs:
           mkdir -p /tmp/sahmino-billing-check
           javac -d /tmp/sahmino-billing-check android-pilot/tests/fakes/ir/sahamban/pilot/BuildConfig.java android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java android-pilot/tests/SahminoBillingCatalogTest.java
           java -cp /tmp/sahmino-billing-check ir.sahamban.pilot.SahminoBillingCatalogTest
-      - name: Enforce one-time purchase policy for manual renewal
+      - name: Enforce native subscription purchase policy
         shell: bash
         run: |
           set -euo pipefail
           MANAGER=android-pilot/app/src/bazaar/java/ir/sahamban/pilot/BazaarBillingManager.java
           grep -q 'poolakey' android-pilot/app/build.gradle
-          ! grep -q 'launchSubscriptionPurchaseFlow' "$MANAGER"
-          echo "CafeBazaar one-time purchase policy: PASS"
+          grep -q 'subscribeProduct' "$MANAGER"
+          grep -q 'getSubscriptionSkuDetails' "$MANAGER"
+          grep -q 'getSubscribedProducts' "$MANAGER"
+          ! grep -q 'purchaseProduct' "$MANAGER"
+          ! grep -q 'consumeProduct' "$MANAGER"
+          echo "CafeBazaar subscription purchase policy: PASS"
       - name: Verify IRR-only store price matching
         shell: bash
         run: |
@@ -72,7 +76,7 @@ jobs:
         run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac
       - name: Assemble CafeBazaar internal debug APK (not for store upload)
         run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug
-      - name: Verify both APK files exist
+      - name: Verify CafeBazaar APK exists
         shell: bash
         run: |
           set -euo pipefail
