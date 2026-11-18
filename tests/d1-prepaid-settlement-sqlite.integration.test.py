@@ -37,20 +37,20 @@ def make_db():
                ('u1', 'integration:subject', NOW, 'ACTIVE'))
     return db
 
-def pending(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000):
-    db.execute('INSERT INTO sahmino_prepaid_subscription_orders(id,user_id,plan_id,amount_rial,currency,state,created_at) VALUES(?,?,?,?,?,?,?)',
-               (oid, 'u1', plan, amount, 'IRR', 'PENDING', NOW))
+def pending(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000, renewal='MANUAL', consent_version=None):
+    db.execute('INSERT INTO sahmino_prepaid_subscription_orders(id,user_id,plan_id,amount_rial,currency,state,created_at,renewal_mode,renewal_consent_version,renewal_consent_at) VALUES(?,?,?,?,?,?,?,?,?,?)',
+               (oid, 'u1', plan, amount, 'IRR', 'PENDING', NOW, renewal, consent_version, NOW if renewal == 'AUTO' else None))
     db.commit()
 
 def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000,
            now=NOW, valid_until='2026-12-22T10:00:00.000Z',
-           event='evt_1', payment='pay_1'):
+           event='evt_1', payment='pay_1', provider_auto_renewing=0):
     with db:
         event_result = db.execute(EVENT, ('cafebazaar', event, payment, now, oid, plan, amount))
         order_result = db.execute(ORDER, (now, 'cafebazaar', payment, 'v1', 'test-nonce', 'test-ciphertext',
                                           oid, plan, amount, 'cafebazaar', event, payment))
         db.execute(ENTITLEMENT, (oid, 'cafebazaar', payment, valid_until, now))
-        control_result = db.execute(CONTROL, (0, valid_until, now, now, oid, payment))
+        control_result = db.execute(CONTROL, (provider_auto_renewing, valid_until, now, now, oid, payment))
         control_changes = control_result.rowcount
         grant_changes = db.execute('SELECT changes()').fetchone()[0]
         if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1 or control_changes != 1:
@@ -69,6 +69,16 @@ class SahminoSQLiteIntegration(unittest.TestCase):
             self.assertEqual(db.execute('SELECT COUNT(*) FROM sahmino_prepaid_payment_events').fetchone()[0], 1)
             control = db.execute('SELECT renewal_mode,provider_auto_renewing,lifecycle_state,provider_paid_until FROM sahmino_bazaar_subscription_control').fetchone()
             self.assertEqual(control, ('MANUAL', 0, 'VERIFIED', provider_expiry))
+        finally:
+            db.close()
+
+    def test_auto_renewal_requires_order_consent_and_records_active_provider_state(self):
+        db = make_db()
+        try:
+            pending(db, renewal='AUTO', consent_version='sahmino-auto-renew-v1')
+            self.assertEqual(settle(db, provider_auto_renewing=1), '2026-12-22T10:00:00.000Z')
+            control = db.execute('SELECT renewal_mode,consent_version,consent_at,provider_auto_renewing,lifecycle_state FROM sahmino_bazaar_subscription_control').fetchone()
+            self.assertEqual(control, ('AUTO', 'sahmino-auto-renew-v1', NOW, 1, 'RENEWAL_ACTIVE'))
         finally:
             db.close()
 
