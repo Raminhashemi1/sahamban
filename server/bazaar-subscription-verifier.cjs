@@ -73,7 +73,7 @@ async function verifyBazaarSubscription({receipt,order,packageName,clientId,clie
   return {ok:true,verified:{
    providerName:'cafebazaar',providerEventId:receipt.orderId,providerPaymentId,
    orderId:order.id,planId:order.plan_id,amountRial:order.amount_rial,currency:'IRR',
-   validUntilTimestampMsec:expiry,autoRenewing:body.autoRenewing,
+   validUntilTimestampMsec:expiry,autoRenewing:body.autoRenewing,purchaseToken:receipt.purchaseToken,
    initiationTimestampMsec:started
   }};
  }catch(_){return {ok:false,reason:'BAZAAR_VALIDATION_UNAVAILABLE'};}
