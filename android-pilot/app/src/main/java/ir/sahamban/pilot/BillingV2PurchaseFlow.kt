@@ -1,7 +1,7 @@
 package ir.sahamban.pilot
 
 /**
- * Native orchestration for one Bazaar subscription purchase.
+ * Native orchestration for one manually renewed Bazaar time-plan purchase.
  * The UI must call this only after explicit user intent; server settlement is authoritative.
  */
 class BillingV2PurchaseFlow(
@@ -82,7 +82,7 @@ class BillingV2PurchaseFlow(
                         if (remaining == 0) callback(results.toList())
                     }
                 } else {
-                    api.verifySubscription(evidence.orderId, sku, evidence.purchaseToken,
+                    api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
                         evidence.originalJson, evidence.dataSignature) { verification ->
                         when (verification) {
                             is BillingV2ApiClient.Result.Success ->
