@@ -335,16 +335,37 @@ export default {
        'BAZAAR_VALIDATION_FAILED','BAZAAR_VALIDATION_UNAVAILABLE'];
       return send({error:checked.reason,proEnabled:false},unavailable.includes(checked.reason)?503:422,cors);
      }
-     // The provider's renewal flag must exactly match the authenticated,
-     // server-persisted order choice. The settlement primitive repeats this check.
-     if(checked.verified.autoRenewing!==(order.renewal_mode==='AUTO'))
+     // Manual is the default. If Bazaar starts the SKU with auto-renew enabled,
+     // cancel it server-side before granting access, then revalidate provider state.
+     let verifiedPayment=checked.verified;
+     if(order.renewal_mode==='MANUAL'&&verifiedPayment.autoRenewing){
+      if(!env?.BAZAAR_TOKEN_ENCRYPTION_KEY)
+       return send({error:'TOKEN_ENCRYPTION_NOT_CONFIGURED',proEnabled:false},503,cors);
+      const cancelled=await cancelBazaarSubscription({
+       packageName:env.BAZAAR_PACKAGE_NAME,planId:order.plan_id,purchaseToken:verifiedPayment.purchaseToken,
+       clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+       refreshToken:env.BAZAAR_REFRESH_TOKEN,fetchImpl:fetch
+      });
+      if(!cancelled.ok)
+       return send({error:cancelled.reason,proEnabled:false,renewalCancellationPending:true},503,cors);
+      const rechecked=await verifyBazaarSubscription({
+       receipt:body,order,packageName:env.BAZAAR_PACKAGE_NAME,
+       clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+       refreshToken:env.BAZAAR_REFRESH_TOKEN,publicKey:env.BAZAAR_IAB_PUBLIC_KEY,
+       now:new Date(nowMs).toISOString(),fetchImpl:fetch
+      });
+      if(!rechecked.ok||rechecked.verified.autoRenewing!==false)
+       return send({error:'MANUAL_RENEWAL_CANCELLATION_NOT_CONFIRMED',proEnabled:false,renewalCancellationPending:true},503,cors);
+      verifiedPayment=rechecked.verified;
+     }
+     if(verifiedPayment.autoRenewing!==(order.renewal_mode==='AUTO'))
       return send({error:'PROVIDER_RENEWAL_MODE_MISMATCH',proEnabled:false},409,cors);
      const settled=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,body,{
-      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>checked.verified,
+      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>verifiedPayment,
       tokenEncryptionKey:env.BAZAAR_TOKEN_ENCRYPTION_KEY
      });
      if(!settled.ok)return send({error:settled.reason,proEnabled:false},503,cors);
-     return send({status:'SETTLED',proEnabled:true,autoRenew:false,
+     return send({status:'SETTLED',proEnabled:true,autoRenew:order.renewal_mode==='AUTO',
       orderId:settled.orderId,planId:settled.planId,paidUntil:settled.paidUntil},200,cors);
     }
     if(isPrepaidOverview){
