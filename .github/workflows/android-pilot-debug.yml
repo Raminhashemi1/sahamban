@@ -1,5 +1,5 @@
 name: Sahmino Bazaar and Myket integration validation
-# Compile-check store variants only. Do not assemble or upload APKs before release readiness.
+# Build internal debug APKs for device validation only. Never publish these artifacts.
 on:
   workflow_dispatch:
   push:
@@ -75,5 +75,23 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Compile-check both store variants (no APKs or artifacts)
+      - name: Compile-check both store variants
         run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac :app:compileMyketDebugJavaWithJavac
+      - name: Assemble internal debug APKs (not for store upload)
+        run: gradle -p android-pilot --no-daemon :app:assembleBazaarDebug :app:assembleMyketDebug
+      - name: Verify both APK files exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
+          test -s android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
+          sha256sum android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
+      - name: Upload internal debug APKs for physical-device testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahmino-internal-debug-apks
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk
+            android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk
