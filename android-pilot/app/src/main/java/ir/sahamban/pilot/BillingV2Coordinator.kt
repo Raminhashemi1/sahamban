@@ -9,6 +9,7 @@ import ir.cafebazaar.poolakey.config.PaymentConfiguration
 import ir.cafebazaar.poolakey.config.SecurityCheck
 import ir.cafebazaar.poolakey.entity.PurchaseInfo
 import ir.cafebazaar.poolakey.entity.PurchaseState
+import ir.cafebazaar.poolakey.entity.SkuDetails
 import ir.cafebazaar.poolakey.request.PurchaseRequest
 
 /**
@@ -73,6 +74,25 @@ class BillingV2Coordinator(
             purchaseCanceled { callback(PurchaseResult.Cancelled) }
             purchaseFailed { callback(PurchaseResult.Failure("PURCHASE_FAILED")) }
             failedToBeginFlow { callback(PurchaseResult.Failure("FLOW_NOT_STARTED")) }
+        }
+    }
+
+    data class PlanDetails(val sku: String, val localizedBazaarPrice: String,
+                           val title: String, val description: String)
+
+    fun loadPlanDetails(skus: List<String>, callback: (List<PlanDetails>?) -> Unit) {
+        require(skus.size == 5 && skus.distinct().size == 5 &&
+            skus.all { it.matches(Regex("^[A-Za-z0-9._-]{1,100}$")) })
+        if (connection?.getState() != ConnectionState.Connected) {
+            callback(null)
+            return
+        }
+        payment.getSubscriptionSkuDetails(skus) {
+            getSkuDetailsSucceed { details ->
+                val mapped = details.map { PlanDetails(it.sku, it.price, it.title, it.description) }
+                callback(mapped.takeIf { it.size == 5 && it.map(PlanDetails::sku).toSet() == skus.toSet() })
+            }
+            getSkuDetailsFailed { callback(null) }
         }
     }
 
