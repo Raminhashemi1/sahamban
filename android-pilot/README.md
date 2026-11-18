@@ -9,7 +9,7 @@ https://raminhashemi1.github.io/sahamban/
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
   The temporary `ir.sahamban.pilot` package ID and build-generated debug
   certificate must **not** become the final app identity/signing key.
-- - A native Cafe Bazaar Poolakey subscription boundary is included: `subscribeProduct`, `getSubscribedProducts`, subscription SKU details, and local RSA signature verification. It returns signed evidence only; the trusted Worker verifies it against Bazaar's Developer API before D1 settlement.
+- A native Cafe Bazaar Poolakey subscription boundary is included: `subscribeProduct`, `getSubscribedProducts`, subscription SKU details, and local RSA signature verification. It returns signed evidence only; the trusted Worker verifies it against Bazaar's Developer API before D1 settlement.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
