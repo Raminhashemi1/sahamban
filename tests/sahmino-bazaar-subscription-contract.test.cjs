@@ -60,7 +60,7 @@ test('native order handoff and receipt verification use authenticated Worker end
  assert.match(sessionRepo,/HttpOnly; Secure; SameSite=None/);
  for(const marker of ['/api/v1/me/prepaid-orders/verify','serverOrderId','purchaseToken',
      'originalJson','dataSignature','purchaseState','status','SETTLED',
-     'proEnabled','AUTO_RENEW','onVerified','/api/v1/me/prepaid-overview','refreshEntitlement','NO_ACTIVE_ENTITLEMENT']) assert.ok(client.includes(marker),marker);
+     'proEnabled','autoRenew','onVerified','/api/v1/me/prepaid-overview','refreshEntitlement','NO_ACTIVE_ENTITLEMENT']) assert.ok(client.includes(marker),marker);
  for(const marker of ['grantPro','consumeProduct','readNBytes','proEnabled = true']) assert.ok(!client.includes(marker),marker);
  for(const marker of ['orders.prepare(selectedPlanId','billing.subscribe(selectedPlanId, serverOrderId)',
      'orders.verifyPurchase(evidence','orders.refreshEntitlement','plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured())',
