@@ -3,7 +3,7 @@
 // plan or account identity; those values come from the authenticated D1 order.
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const ORDER=/^ord_[a-f0-9]{32}$/;
-const TOKEN=/^[A-Za-z0-9._~-]{16,4096}$/;
+const TOKEN=/^[^\\s]{16,4096}$/;
 const SKU=/^[A-Za-z0-9._-]{1,128}$/;
 const PACKAGE=/^[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+){1,}$/;
 function decodeBase64(value){
