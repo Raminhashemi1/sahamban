@@ -55,6 +55,24 @@ async function verifyPilotToken(authHeader,secret,nowMs){
   return p.sub;
  }catch(_){return null;}
 }
+async function readJsonLimited(request,maxBytes){
+ if(!request.body)return {error:'INVALID_JSON'};
+ const reader=request.body.getReader();
+ const chunks=[];let total=0;
+ try{
+  while(true){
+   const {done,value}=await reader.read();
+   if(done)break;
+   total+=value.byteLength;
+   if(total>maxBytes){await reader.cancel();return {error:'BODY_TOO_LARGE'};}
+   chunks.push(value);
+  }
+ }catch(_){return {error:'INVALID_JSON'};}
+ const bytes=new Uint8Array(total);let offset=0;
+ for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ try{return {body:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))};}
+ catch(_){return {error:'INVALID_JSON'};}
+}
 function parsePaidUntil(value){
  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value))return null;
  const n=Date.parse(value);
