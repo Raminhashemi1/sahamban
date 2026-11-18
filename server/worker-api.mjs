@@ -389,6 +389,8 @@ export default {
      (body.renewalMode!==undefined&&!['MANUAL','AUTO'].includes(body.renewalMode))||
      (body.consentVersion!==undefined&&typeof body.consentVersion!=='string'))
      return send({error:'INVALID_REQUEST'},400,cors);
+    if(body.renewalMode==='AUTO'&&env?.BAZAAR_AUTO_RENEW_ENABLED!=='true')
+     return send({error:'AUTO_RENEW_NOT_AVAILABLE'},409,cors);
     const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
      authenticatedUserId:activeSession.userId,planId:body.planId,
      renewalMode:body.renewalMode||'MANUAL',consentVersion:body.consentVersion??null,now:new Date(nowMs).toISOString(),
@@ -428,6 +430,8 @@ export default {
       (body.renewalMode!==undefined&&!['MANUAL','AUTO'].includes(body.renewalMode))||
       (body.consentVersion!==undefined&&typeof body.consentVersion!=='string'))
      return send({error:'INVALID_REQUEST'},400,cors);
+    if(body.renewalMode==='AUTO'&&env?.BAZAAR_AUTO_RENEW_ENABLED!=='true')
+     return send({error:'AUTO_RENEW_NOT_AVAILABLE'},409,cors);
     const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
      authenticatedSubject:subject,planId:body.planId,
      renewalMode:body.renewalMode||'MANUAL',consentVersion:body.consentVersion??null,now:new Date(nowMs).toISOString(),
