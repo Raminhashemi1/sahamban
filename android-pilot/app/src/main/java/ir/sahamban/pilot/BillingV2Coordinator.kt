@@ -9,7 +9,6 @@ import ir.cafebazaar.poolakey.config.PaymentConfiguration
 import ir.cafebazaar.poolakey.config.SecurityCheck
 import ir.cafebazaar.poolakey.entity.PurchaseInfo
 import ir.cafebazaar.poolakey.entity.PurchaseState
-import ir.cafebazaar.poolakey.entity.SkuDetails
 import ir.cafebazaar.poolakey.request.PurchaseRequest
 
 /**
