@@ -8,9 +8,9 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 test('both Android flavors are configured for separate publisher SKU IDs and HTTPS API origin',()=>{
  const gradle=read('android-pilot/app/build.gradle');
- assert.match(gradle,/gradleProperty\(channel \+ '_SKU_' \+ suffix\)/);
- assert.match(gradle,/skuValue\('BAZAAR'/);
- assert.match(gradle,/skuValue\('MYKET'/);
+ assert.match(gradle,/providers\.gradleProperty\(channel \+ "_SKU_" \+ suffix\)/);
+ assert.match(gradle,/skuValue\('BAZAAR', '30D'\)/);
+ assert.match(gradle,/skuValue\('MYKET', '30D'\)/);
  assert.match(gradle,/SAHMINO_API_BASE_URL/);
  assert.match(gradle,/bazaarImplementation .*Poolakey/);
  assert.match(gradle,/myketImplementation .*ir\.myket:billing/);
