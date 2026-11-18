@@ -67,7 +67,17 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         Button refresh = new Button(this);
         refresh.setAllCaps(false);
         refresh.setText("بررسی قیمت و بازیابی اشتراک‌های بازار");
-        refresh.setOnClickListener(v -> { if (billing != null) billing.refreshAll(); });
+        refresh.setOnClickListener(v -> {
+            if (billing != null) billing.refreshAll();
+            orders.refreshEntitlement(new SahminoPrepaidOrderClient.VerifyCallback() {
+                @Override public void onVerified(String paidUntil) {
+                    status.setText("اعتبار اشتراک از سرور بازیابی شد. اعتبار تا: " + paidUntil);
+                }
+                @Override public void onFailure(String reason) {
+                    status.setText("بازیابی اعتبار سرور انجام نشد: " + reason);
+                }
+            });
+        });
         root.addView(refresh);
 
         Button back = new Button(this);
@@ -106,7 +116,16 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
 
             @Override public void onRestoredEvidence(SahminoBillingCatalog.Plan plan,
                     SahminoPurchaseEvidence evidence) {
-                status.setText("اشتراک قبلی در حساب بازار پیدا شد؛ بازیابی آن نیازمند مسیر تطبیق مجدد سرور است. دسترسی فعال نشد.");
+                status.setText("اشتراک در حساب بازار پیدا شد؛ در حال بررسی اعتبار ثبت‌شده در سرور…");
+                orders.refreshEntitlement(new SahminoPrepaidOrderClient.VerifyCallback() {
+                    @Override public void onVerified(String paidUntil) {
+                        status.setText("اشتراک قبلی از سرور بازیابی شد. اعتبار تا: " + paidUntil);
+                    }
+                    @Override public void onFailure(String reason) {
+                        status.setText("رسید بازار پیدا شد اما اعتبار فعالی در سرور تأیید نشد: "
+                                + reason + " — دسترسی Pro فعال نشد.");
+                    }
+                });
             }
         });
         billing.connect();
