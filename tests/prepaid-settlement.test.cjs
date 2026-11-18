@@ -14,6 +14,7 @@ test('valid settlement atomically writes event, order and exact day entitlement'
  const batch=db.calls.find(x=>x.batch).batch;assert.equal(batch.length,3);
  assert.match(batch[0].sql,/state='PENDING'/);assert.match(batch[1].sql,/state='PENDING'/);
  assert.match(batch[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);assert.ok(batch[2].sql.includes("base_date,'+'||?||' days'"));
+ assert.ok(batch[2].sql.includes('CASE WHEN ? IS NOT NULL THEN ?'));
 });
 test('same verified receipt retry is idempotent after the original D1 commit',async()=>{
  const paidUntil='2026-12-12T10:00:00.000Z';
@@ -42,4 +43,20 @@ test('settlement fails closed on malformed data, DB errors and partial results',
 test('settlement SQL binds v2 orders and unique provider events',()=>{
  assert.match(EVENT_SQL,/sahmino_prepaid_payment_events/);assert.match(EVENT_SQL,/state='PENDING'/);
  assert.match(ORDER_SQL,/provider_event_id/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);
+});
+
+test('CafeBazaar subscription settlement uses provider-confirmed expiry instead of local plan arithmetic',async()=>{
+ const providerPaidUntil='2026-12-20T10:00:00.000Z';
+ const verify=async()=>({...payment,providerPaidUntil});
+ const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider:verify});
+ assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:providerPaidUntil});
+ const batch=db.calls.find(x=>x.batch).batch;
+ assert.equal(batch[2].values[5],providerPaidUntil);
+ assert.equal(batch[2].values[6],providerPaidUntil);
+});
+test('subscription settlement rejects expired or malformed provider expiry',async()=>{
+ for(const providerPaidUntil of ['2026-11-11T10:00:00.000Z','not-a-date']){
+  const out=await settleVerifiedPrepaidPayment(dbFor(),payment,{now,verifyAtProvider:async()=>({...payment,providerPaidUntil})});
+  assert.equal(out.reason,'INVALID_PROVIDER_EXPIRY');
+ }
 });
