@@ -1,21 +1,15 @@
-# Sahmino Android — CafeBazaar and Myket
+# Sahmino Android — CafeBazaar only
 
 ## Identity
 
 - Owner-approved Android application ID: `ir.manahesab.sahmino`.
-- Source namespace: `ir.sahamban.pilot` (internal Java/BuildConfig namespace).
-- The exact same application ID must be registered for Sahmino in both stores.
-- The ID is approved by the owner but is not yet registered/verified in either
-  store console.
+- Source namespace: `ir.sahamban.pilot`.
+- CafeBazaar is the only supported Android distribution and payment channel.
+- Myket, Google Play and website/direct-PSP payment are out of scope and must not be added back without a new explicit owner decision.
 
 ## Scope
 
-Only CafeBazaar and Myket are in scope. Website checkout, ZarinPal and Google
-Play are excluded from this Android work. Auto-renewal is not being implemented
-unless a store explicitly supports the owner's opt-in policy; current default
-is manual renewal.
-
-The existing five-plan preview is preserved. Approved prices:
+The existing five-plan preview is preserved; it is not rebuilt. The approved server catalog remains authoritative:
 
 | Plan | Duration | Final price (IRR) |
 |---|---:|---:|
@@ -25,74 +19,39 @@ The existing five-plan preview is preserved. Approved prices:
 | SAHMINO_PRO_180D | 180 days | 7,650,000 |
 | SAHMINO_PRO_365D | 365 days | 14,600,000 |
 
-## Android store variants
+## Bazaar subscription architecture
 
-Gradle defines `bazaar` and `myket` product flavors. The module currently
-declares the official Myket Billing Client 2.2 SDK and the official Myket
-Maven repository. The official SDK sample documents both store flavors and
-the Bazaar/Myket market service binding values.
+Sahmino's fixed-term Pro plans are being integrated as CafeBazaar subscription SKUs, not one-time consumable in-app products. The Poolakey calls must therefore be the subscription-specific methods:
 
-The following public verification keys are intentionally not committed:
+- `getSubscriptionSkuDetails` for catalog details.
+- `subscribeProduct` to start the purchase.
+- `getSubscribedProducts` / `querySubscribeProduct` to restore/query subscriptions.
+- `consumeProduct` must never be called for subscriptions.
+
+The server must validate the subscription with CafeBazaar Developer API and use the verified `validUntilTimestampMsec` as the provider expiry. The client callback or a locally calculated number of days must never activate Pro.
+
+Manual renewal remains the default. Any automatic-renewal choice must be explicit and supported by the actual Bazaar subscription contract. Until this is proven and implemented, the UI must not promise auto-renew controls.
+
+## Store configuration
+
+The following key is not committed and must be provided through a secure Gradle property:
 
 - `BAZAAR_IAB_PUBLIC_KEY`
-- `MYKET_IAB_PUBLIC_KEY`
 
-Five product IDs in `app/build.gradle` are proposed placeholders only. They
-must be created/approved in each publisher console and then checked against
-the server catalog before purchase is enabled:
+The five current SKU strings are provisional mappings only. They must be reconciled with the exact subscription IDs configured in the CafeBazaar publisher panel before enabling purchases.
 
-| Plan | Proposed product ID |
-|---|---|
-| 30 days | `sahmino_pro_30d` |
-| 60 days | `sahmino_pro_60d` |
-| 90 days | `sahmino_pro_90d` |
-| 180 days | `sahmino_pro_180d` |
-| 365 days | `sahmino_pro_365d` |
+## Work still required — purchases remain disabled
 
-## Work still required — purchases are disabled
-
-The current `SubscriptionPreviewActivity` is display-only. Its purchase button
-is disabled. Gradle flavors and SDK dependency are not a completed billing
-integration.
-
-Before enabling purchases:
-
-1. Obtain written/current confirmation from BOTH stores that one-time
-   consumable purchases can be used for fixed-duration digital entitlements,
-   including same-SKU repurchase and consumption requirements.
-2. Register the Sahmino app in both consoles with the exact package ID above.
-3. Create the five products in both consoles, and obtain each store's public
-   verification key and sandbox/test account.
-4. Implement each store's native purchase adapter and authenticated account
-   binding with a server-generated one-time nonce.
-5. Verify receipt/signature, app package, SKU, amount, currency, account,
-   transaction identity and purchase state on the server. A client callback
-   alone must never grant Pro.
-6. Atomically settle the order, append the exact purchased days to the current
-   paid-through date, and record a unique provider event/payment ledger.
-7. Consume a consumable purchase only after server verification and durable
-   entitlement commit. Reconcile unconsumed purchases after crashes/network
-   loss; support restore and refund/revocation.
-8. Test success, cancel, decline, duplicate receipt, wrong account/SKU/amount,
-   network loss, consume failure, refund and reinstall on physical devices
-   using each store's approved test route.
-
-## Release blockers
-
-- Store app records, package registration, five approved SKUs, public keys and
-  sandbox/test accounts have not yet been supplied or verified.
-- Native billing flows and server-side receipt verification are not yet
-  implemented.
-- Store policy approval for fixed-duration consumable entitlement and
-  repurchase/consume behavior is pending.
-- Permanent release signing and secure signing CI are not configured.
-- Physical-device end-to-end tests are not complete.
-- Store listing assets, descriptions, privacy/support details and review
-  submission are not complete.
+1. Implement the Poolakey subscription-specific API adapter and receipt-evidence extraction.
+2. Create an authenticated server order before launching Bazaar's subscription flow; bind the server order ID in the Poolakey payload.
+3. Send the Bazaar subscription purchase token and order evidence to the authenticated Worker.
+4. Verify the purchase server-to-server through Bazaar's OAuth Developer API.
+5. Check package name, subscription SKU, purchase state, order payload binding, provider token, account ownership and replay.
+6. Use Bazaar's verified expiry timestamp; do not derive `paid_until` from `plan.days`.
+7. Atomically record provider event, settle order and update entitlement. Never grant Pro from a pending order or client callback.
+8. Add cancellation/renewal handling only after confirming Bazaar's supported behavior; cancellation must not remove already-paid access.
+9. Test success, cancel, decline, duplicate receipt, wrong account/SKU, network loss, restore, expiry and refund/revocation on a physical device.
 
 ## CI safety
 
-GitHub Actions validates source, manifest and store-flavor configuration and
-compile-checks both variants. It deliberately does NOT assemble, upload or
-publish APKs before the owner confirms release readiness. No debug artifact
-should be uploaded to either store.
+GitHub Actions compile-checks only the Bazaar flavor and runs catalog/security tests. It does not assemble, upload or publish APKs. No production signing, D1 migration, deployment, payment activation, merge or release is implied.
