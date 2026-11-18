@@ -4,7 +4,6 @@ import androidx.activity.ComponentActivity;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -18,7 +17,6 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
     private static final long[] PRICES = {1500000L, 2850000L, 4050000L, 7650000L, 14600000L};
     private SahminoStoreBillingManager billing;
     private TextView status;
-    private final boolean[] verifiedPrices = new boolean[DAYS.length];
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -72,9 +70,6 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             }
 
             @Override public void onCatalogPrice(SahminoBillingCatalog.Plan plan, String price, boolean matches) {
-                for (int i = 0; i < DAYS.length; i++) {
-                    if (DAYS[i] == plan.days) verifiedPrices[i] = matches;
-                }
                 status.setText("قیمت SKU اشتراک " + plan.days + " روزه: " + price
                     + (matches ? " — مطابق کاتالوگ مصوب" : " — مغایر/تأییدنشده")
                     + "\nپرداخت تا اتصال سفارش احراز‌شده و اعتبارسنجی سرور غیرفعال است.");
