@@ -15,7 +15,7 @@ test('Poolakey adapter uses CafeBazaar subscription APIs only',()=>{
  assert.match(manager,/serverOrderId\.matches\(ORDER_ID\)/);
 });
 
-test('Purchase evidence is raw only and never grants Pro in the Android client',()=>{
+test('Purchase evidence is raw only and never grants Pro locally',()=>{
  const evidence=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SahminoPurchaseEvidence.java');
  assert.match(evidence,/getPurchaseToken/);
  assert.match(evidence,/getOriginalJson/);
@@ -27,6 +27,7 @@ test('Purchase evidence is raw only and never grants Pro in the Android client',
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  assert.match(activity,/extends ComponentActivity/);
  assert.match(activity,/plan\.setEnabled\(false\)/);
+ assert.match(activity,/orders\.verifyPurchase\(evidence/);
  assert.match(activity,/دسترسی Pro فعال نشد/);
 });
 
@@ -44,22 +45,20 @@ test('Worker fails closed while Bazaar automatic renewal is not reconciled with 
  assert.match(worker,/AUTO_RENEW_POLICY_UNRESOLVED/);
 });
 
-test('native Bazaar order handoff requires authenticated Worker order and disabled checkout',()=>{
+test('native order handoff and receipt verification use authenticated Worker endpoints',()=>{
  const client=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SahminoPrepaidOrderClient.java');
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  const gradle=read('android-pilot/app/build.gradle');
  for(const marker of ['getCookie(baseUrl)','sahmino_session=','X-Sahmino-CSRF',
      'setInstanceFollowRedirects(false)','/api/v1/me/prepaid-orders',
-     'PENDING_ORDER_CREATED','amountRial','^ord_[a-f0-9]{32}$']){
-   assert.ok(client.includes(marker),marker);
- }
- for(const marker of ['grantPro','consumeProduct','readNBytes']){
-   assert.ok(!client.includes(marker),marker);
- }
+     'PENDING_ORDER_CREATED','amountRial','^ord_[a-f0-9]{32}$']) assert.ok(client.includes(marker),marker);
+ for(const marker of ['/api/v1/me/prepaid-orders/verify','serverOrderId','purchaseToken',
+     'originalJson','dataSignature','purchaseState','status','SETTLED',
+     'proEnabled','AUTO_RENEW','onVerified']) assert.ok(client.includes(marker),marker);
+ for(const marker of ['grantPro','consumeProduct','readNBytes','proEnabled = true']) assert.ok(!client.includes(marker),marker);
  for(const marker of ['orders.prepare(selectedPlanId','billing.subscribe(selectedPlanId, serverOrderId)',
-     'plan.setEnabled(false)','!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED']){
-   assert.ok(activity.includes(marker),marker);
- }
+     'orders.verifyPurchase(evidence','plan.setEnabled(false)',
+     '!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED','اشتراک Pro توسط سرور تأیید و فعال شد']) assert.ok(activity.includes(marker),marker);
  assert.ok(gradle.includes("SAHMINO_WORKER_BASE_URL', '\"\"'"));
  assert.ok(gradle.includes("SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'"));
 });
