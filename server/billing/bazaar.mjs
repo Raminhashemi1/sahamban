@@ -42,7 +42,7 @@ async function accessToken(env,fetcher){
  if(typeof json.access_token!=='string'||!json.access_token)throw Error('BAZAAR_AUTH_INVALID');
  return json.access_token;
 }
-async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now()},fetcher=fetch){
+async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now(),allowConsumed=false},fetcher=fetch){
  const pkg=env.BAZAAR_PACKAGE_NAME;
  if(typeof pkg!=='string'||!/^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/.test(pkg))throw Error('PACKAGE_NOT_CONFIGURED');
  const bearer=await accessToken(env,fetcher);
@@ -54,7 +54,7 @@ async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now()},fetcher=fetc
  const purchaseTimeRaw=receipt?.purchaseTimeMillis;
  const purchaseTimeMs=typeof purchaseTimeRaw==='string'?Number(purchaseTimeRaw):purchaseTimeRaw;
  if(!receipt||receipt.kind!=='androidpublisher#productPurchase'||
-    receipt.purchaseState!==0||receipt.consumptionState!==0||
+    receipt.purchaseState!==0||(!allowConsumed&&receipt.consumptionState!==0)||
     !Number.isSafeInteger(purchaseTimeMs)||purchaseTimeMs<=0||
     purchaseTimeMs>nowMs+5*60*1000)
    throw Error('INAPP_PURCHASE_NOT_VALID');
@@ -84,6 +84,14 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
   // Confirm the same signed token against the durable order before querying Bazaar again.
   if(order.status==='PAID'){
    if(order.purchase_token_hash!==tokenHash)return {status:409,body:{error:'ORDER_ALREADY_SETTLED'}};
+   // Re-check current Bazaar state on replay: a previously valid purchase may since
+   // have been refunded/reversed. Consumed state is expected for a settled consumable.
+   const current=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,
+    nowMs:Date.parse(now),allowConsumed:true},fetcher);
+   if(current.purchaseTime!==order.paid_at||
+      (current.receipt.orderId&&order.bazaar_order_id&&order.bazaar_order_id!==tokenHash&&
+       current.receipt.orderId!==order.bazaar_order_id))
+    return {status:409,body:{error:'PURCHASE_STATE_MISMATCH'}};
    const restored=await settle(db,{orderId:body.orderId,subject,planId,
     bazaarOrderId:order.bazaar_order_id||tokenHash,tokenHash,
     purchaseTime:order.paid_at,now});
