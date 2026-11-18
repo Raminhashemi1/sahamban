@@ -8,9 +8,9 @@ function dbFor({user=account,orders=[item],error=false}={}){const calls=[];retur
 test('overview reports paid access, manual renewal default and merged private order history',async()=>{
  const db=dbFor(),result=await prepaidAccountOverview(db,{authenticatedSubject:subject,now});
  assert.equal(result.status,200);assert.equal(result.proEnabled,true);assert.equal(result.paidUntil,account.paid_until);
- assert.equal(result.remainingSeconds,92*86400);assert.equal(result.autoRenew,false);assert.equal(result.checkoutEnabled,false);
+ assert.equal(result.remainingSeconds,92*86400);assert.equal(result.autoRenew,false);assert.equal(result.renewalMode,null);assert.equal(result.subscriptionLifecycle,null);assert.equal(result.checkoutEnabled,false);
  assert.equal(result.orders[0].planId,item.plan_id);assert.deepEqual(db.calls.map(x=>x.args),[[subject],['u1','u1']]);
- assert.match(LOOKUP,/WHERE u.auth_subject=\?/);assert.match(LOOKUP,/sahmino_prepaid_subscription_entitlements/);assert.match(LOOKUP,/CASE[\s\S]*v2\.paid_until[\s\S]*e\.paid_until[\s\S]*le\.paid_until/);assert.match(HISTORY,/UNION ALL/);assert.match(HISTORY,/sahmino_prepaid_subscription_orders/);
+ assert.match(LOOKUP,/WHERE u.auth_subject=\?/);assert.match(LOOKUP,/sahmino_prepaid_subscription_entitlements/);assert.match(LOOKUP,/sahmino_bazaar_subscription_control/);assert.match(LOOKUP,/ORDER BY c2\.updated_at DESC,c2\.created_at DESC,c2\.order_id DESC LIMIT 1/);assert.match(LOOKUP,/CASE[\s\S]*v2\.paid_until[\s\S]*e\.paid_until[\s\S]*le\.paid_until/);assert.match(HISTORY,/UNION ALL/);assert.match(HISTORY,/sahmino_prepaid_subscription_orders/);
 });
 test('expiry boundary, absent purchase and blocked account',async()=>{
  assert.equal((await prepaidAccountOverview(dbFor({user:{...account,paid_until:now}}),{authenticatedSubject:subject,now})).reason,'EXPIRED');
@@ -42,4 +42,20 @@ test('entitlement overview selects the furthest paid-through date across v2, v1 
  assert.match(LOOKUP,/v2\.paid_until>=e\.paid_until/);
  assert.match(LOOKUP,/v2\.paid_until>=le\.paid_until/);
  assert.match(LOOKUP,/e\.paid_until>=le\.paid_until/);
+});
+
+test('overview exposes latest Bazaar lifecycle state without enabling checkout',async()=>{
+ const userId='usr_'+'b'.repeat(32),calls=[];
+ const db={prepare(sql){calls.push({sql});return {bind(...args){return {async first(){return {...account,renewal_mode:'MANUAL',
+  subscription_lifecycle_state:'VERIFIED',provider_auto_renewing:0,provider_paid_until:account.paid_until,
+  cancellation_requested_at:null,cancellation_confirmed_at:null};},
+  async all(){return {success:true,results:[item]};}};}};}};
+ const result=await prepaidAccountOverview(db,{authenticatedUserId:userId,now});
+ assert.equal(result.renewalMode,'MANUAL');
+ assert.equal(result.subscriptionLifecycle,'VERIFIED');
+ assert.equal(result.providerPaidUntil,account.paid_until);
+ assert.equal(result.cancellationRequestedAt,null);
+ assert.equal(result.cancellationConfirmedAt,null);
+ assert.equal(result.checkoutEnabled,false);
+ assert.equal(result.autoRenew,false);
 });
