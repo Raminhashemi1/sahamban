@@ -30,6 +30,7 @@ def make_db():
     db.executescript((ROOT / 'server' / 'd1-schema.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-prepaid-migration.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-sahmino-subscription-v2.sql').read_text(encoding='utf-8'))
+    db.executescript((ROOT / 'server' / 'd1-sahmino-renewal-consent-migration.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-bazaar-token-vault-migration.sql').read_text(encoding='utf-8'))
     db.executescript((ROOT / 'server' / 'd1-sahmino-bazaar-subscription-control-migration.sql').read_text(encoding='utf-8'))
     db.execute('INSERT INTO sahamban_users(id,auth_subject,created_at,status) VALUES(?,?,?,?)',
@@ -49,7 +50,7 @@ def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000,
         order_result = db.execute(ORDER, (now, 'cafebazaar', payment, 'v1', 'test-nonce', 'test-ciphertext',
                                           oid, plan, amount, 'cafebazaar', event, payment))
         db.execute(ENTITLEMENT, (oid, 'cafebazaar', payment, valid_until, now))
-        control_result = db.execute(CONTROL, (valid_until, now, now, oid, payment))
+        control_result = db.execute(CONTROL, (0, valid_until, now, now, oid, payment))
         control_changes = control_result.rowcount
         grant_changes = db.execute('SELECT changes()').fetchone()[0]
         if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1 or control_changes != 1:
