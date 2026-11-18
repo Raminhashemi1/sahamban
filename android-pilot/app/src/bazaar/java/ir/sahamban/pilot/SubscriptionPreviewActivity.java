@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -36,11 +35,6 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         root.addView(title);
 
         orders = new SahminoPrepaidOrderClient(BuildConfig.SAHMINO_WORKER_BASE_URL);
-        CheckBox autoRenew = new CheckBox(this);
-        autoRenew.setText("تمدید خودکار اختیاری — فقط با انتخاب و رضایت صریح شما");
-        autoRenew.setTextColor(Color.rgb(12, 37, 64));
-        autoRenew.setChecked(false);
-        root.addView(autoRenew);
         NumberFormat format = NumberFormat.getIntegerInstance(new Locale("fa", "IR"));
         for (int i = 0; i < DAYS.length; i++) {
             Button plan = new Button(this);
@@ -49,8 +43,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             final String selectedPlanId = SahminoBillingCatalog.at(i).planId;
             plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured()); // Explicit opt-in plus HTTPS Worker configuration required.
             plan.setOnClickListener(v -> {
-                final boolean automaticRenewal = autoRenew.isChecked();
-                orders.prepare(selectedPlanId, automaticRenewal, new SahminoPrepaidOrderClient.Callback() {
+                orders.prepare(selectedPlanId, false, new SahminoPrepaidOrderClient.Callback() {
                 @Override public void onPrepared(String serverOrderId) {
                     if (!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || billing == null) {
                         status.setText("سفارش سرور آماده است؛ پرداخت تا تأیید نهایی غیرفعال است.");
@@ -67,7 +60,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         }
 
         status = new TextView(this);
-        status.setText("تمدید دستی حالت پیش‌فرض است. تمدید خودکار فقط با انتخاب گزینه بالا فعال می‌شود.");
+        status.setText("تمدید دستی فعال است. گزینه تمدید خودکار تا تأیید نهایی پشتیبانی و لغو در محیط آزمایشی بازار غیرفعال مانده است.");
         status.setTextSize(16);
         status.setTextColor(Color.rgb(137, 63, 18));
         status.setPadding(8, 24, 8, 24);
