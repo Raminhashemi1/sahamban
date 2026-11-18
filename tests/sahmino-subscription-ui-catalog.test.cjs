@@ -13,7 +13,7 @@ const expected=[
  {days:365,rial:14600000,id:'SAHMINO_PRO_365D'}
 ];
 test('PWA and Bazaar use the five approved server prices in rial only',()=>{
- const server=plansSource.match(/const LAUNCH_PLANS=Object\\.freeze\\(\\{([\\s\\S]*?)\\n\\}\\);/);
+ const server=plansSource.match(/const LAUNCH_PLANS=Object\.freeze\(\{([\\s\\S]*?)\n\}\);/);
  assert.ok(server,'server launch catalogue exists');
  const inputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\\d+)" data-price-rial="(\\d+)"/g)];
  assert.equal(inputs.length,5);
