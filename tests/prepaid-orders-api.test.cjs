@@ -23,7 +23,7 @@ test('inactive account and pending-order uniqueness fail closed',async()=>{
  assert.equal((await createPrepaidOrder(dbFor({error:new Error('unique index')}),{authenticatedSubject:subject,planId:'SAHMINO_PRO_30D',now,makeOrderId:()=>orderId})).reason,'ORDER_UNAVAILABLE');
 });
 test('retrieves only matching pending Sahmino order and never enables checkout',async()=>{
- const row={id:orderId,plan_id:'SAHMINO_PRO_90D',amount_rial:4050000,currency:'IRR',created_at:now};
+ const row={id:orderId,plan_id:'SAHMINO_PRO_90D',amount_rial:4050000,currency:'IRR',created_at:now,renewal_mode:'MANUAL',renewal_consent_version:null,renewal_consent_at:null};
  const db=dbFor({row}),out=await findPrepaidPendingOrder(db,subject);
  assert.equal(out.pending,true);assert.equal(out.order.planId,row.plan_id);assert.equal(out.checkoutEnabled,false);assert.equal(out.proEnabled,false);
  assert.deepEqual(db.calls[1],['bind',subject]);
@@ -40,7 +40,7 @@ test('OTP internal user ID creates and retrieves orders using only the internal 
  assert.equal(created.status,201);
  assert.deepEqual(db.calls[1],['bind',orderId,'SAHMINO_PRO_30D',1500000,now,'MANUAL',null,null,userId]);
  assert.match(db.calls[0][1],/u\.id=\?/);
- const pending=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHMINO_PRO_30D',amount_rial:1500000,currency:'IRR',created_at:now}}),null,userId);
+ const pending=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHMINO_PRO_30D',amount_rial:1500000,currency:'IRR',created_at:now,renewal_mode:'MANUAL',renewal_consent_version:null,renewal_consent_at:null}}),null,userId);
  assert.equal(pending.pending,true);
 });
 test('invalid client-supplied internal account IDs are never accepted',async()=>{
