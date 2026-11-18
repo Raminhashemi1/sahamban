@@ -48,6 +48,7 @@ jobs:
           tests/sahmino-sms-otp-core.test.cjs
           tests/sahmino-sms-otp-service.test.cjs
           tests/d1-sms-otp-session.test.cjs
+          tests/sahmino-bazaar-subscription-contract.test.cjs
       - name: Run provider-neutral SMS OTP migration constraints
         run: python tests/d1-sahmino-sms-otp-migration.test.py
       - name: Run D1 SMS OTP runtime repository schema and atomicity tests
