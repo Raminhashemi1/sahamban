@@ -54,7 +54,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         Button refresh = new Button(this);
         refresh.setAllCaps(false);
         refresh.setText("بررسی قیمت و بازیابی اشتراک‌های بازار");
-        refresh.setOnClickListener(v -> { if (billing != null) billing.refreshInventory(); });
+        refresh.setOnClickListener(v -> { if (billing != null) billing.refreshAll(); });
         root.addView(refresh);
 
         Button back = new Button(this);
