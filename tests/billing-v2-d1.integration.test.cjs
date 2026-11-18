@@ -72,6 +72,20 @@ test('replayed purchase is idempotent and early manual repurchase stacks exactly
  sqlite.close();
 });
 
+test('two different purchases verified concurrently both extend the same account entitlement',async()=>{
+ const {sqlite,adapter}=setup(),first='ord_'+'2'.repeat(32),second='ord_'+'3'.repeat(32);
+ createOrder(sqlite,first);createOrder(sqlite,second);
+ const [a,b]=await Promise.all([
+  settle(adapter,input(first,'2'.repeat(64))),
+  settle(adapter,input(second,'3'.repeat(64)))
+ ]);
+ assert.equal(a.ok,true);assert.equal(b.ok,true);
+ const expiry=sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at;
+ assert.equal(expiry,'2026-03-02T00:00:00.000Z');
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,2);
+ sqlite.close();
+});
+
 test('a lost concurrent order race cannot create an event or extend the entitlement',async()=>{
  const id='ord_'+'d'.repeat(32),hash='d'.repeat(64);
  const {sqlite,adapter}=setup({beforeBatch(db){
