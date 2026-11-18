@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import ir.cafebazaar.poolakey.Connection
 import ir.cafebazaar.poolakey.ConnectionState
 import ir.cafebazaar.poolakey.Payment
-import ir.cafebazaar.poolakey.callback.PurchaseQueryCallback
 import ir.cafebazaar.poolakey.config.PaymentConfiguration
 import ir.cafebazaar.poolakey.config.SecurityCheck
 import ir.cafebazaar.poolakey.entity.PurchaseInfo
@@ -102,7 +101,7 @@ class SahambanBazaarBillingManager(
     private fun PurchaseInfo.toEvidence(): Evidence? {
         if (purchaseState != PurchaseState.PURCHASED) return null
         if (purchaseToken.isBlank() || orderId.isBlank() || packageName.isBlank() ||
-            productId.isBlank() || originalJson.isBlank() || dataSignature.isBlank() ||
+            productId.isBlank() || originalJson.isBlank() ||
             purchaseTime <= 0L) return null
         return Evidence(
             productId = productId,
