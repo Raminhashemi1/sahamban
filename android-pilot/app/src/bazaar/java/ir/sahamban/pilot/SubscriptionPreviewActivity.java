@@ -116,9 +116,9 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
                     this, purchase.getPayload(), purchase.getPurchaseToken());
                 if (!settled) throw new java.io.IOException("تسویه سمت سرور تأیید نشد.");
                 runOnUiThread(() -> {
-                    storeStatus = "خرید بازار توسط API رسمی فروشگاه تأیید و ثبت شد.";
+                    storeStatus = "اشتراک بازار توسط API رسمی فروشگاه تأیید و ثبت شد.";
                     renderChoices();
-                    if (billing != null) billing.consumeAfterServerSettlement(purchase);
+                    if (billing != null) // CafeBazaar subscriptions remain owned by the store; never consume them.
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> {
