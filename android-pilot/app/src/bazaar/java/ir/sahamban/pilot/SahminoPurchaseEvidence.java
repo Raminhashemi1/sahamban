@@ -38,7 +38,7 @@ public final class SahminoPurchaseEvidence {
                     || !valid(purchase.getOriginalJson(), 16384)
                     || purchase.getPurchaseTime() <= 0) return null;
             String signature = purchase.getDataSignature();
-            if (signature != null && signature.length() > 8192) return null;
+            if (!valid(signature, 8192)) return null;
             return new SahminoPurchaseEvidence(purchase);
         } catch (RuntimeException error) {
             return null;
