@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -35,6 +36,11 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         root.addView(title);
 
         orders = new SahminoPrepaidOrderClient(BuildConfig.SAHMINO_WORKER_BASE_URL);
+        CheckBox autoRenew = new CheckBox(this);
+        autoRenew.setText("تمدید خودکار اختیاری — فقط با انتخاب و رضایت صریح شما");
+        autoRenew.setTextColor(Color.rgb(12, 37, 64));
+        autoRenew.setChecked(false);
+        root.addView(autoRenew);
         NumberFormat format = NumberFormat.getIntegerInstance(new Locale("fa", "IR"));
         for (int i = 0; i < DAYS.length; i++) {
             Button plan = new Button(this);
@@ -42,7 +48,9 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             plan.setText(DAYS[i] + " روز — " + format.format(PRICES[i]) + " ریال");
             final String selectedPlanId = SahminoBillingCatalog.at(i).planId;
             plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured()); // Explicit opt-in plus HTTPS Worker configuration required.
-            plan.setOnClickListener(v -> orders.prepare(selectedPlanId, new SahminoPrepaidOrderClient.Callback() {
+            plan.setOnClickListener(v -> {
+                final boolean automaticRenewal = autoRenew.isChecked();
+                orders.prepare(selectedPlanId, automaticRenewal, new SahminoPrepaidOrderClient.Callback() {
                 @Override public void onPrepared(String serverOrderId) {
                     if (!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || billing == null) {
                         status.setText("سفارش سرور آماده است؛ پرداخت تا تأیید نهایی غیرفعال است.");
@@ -53,12 +61,13 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
                 @Override public void onFailure(String reason) {
                     status.setText("ایجاد سفارش تأیید نشد: " + reason + " — پرداخت غیرفعال است.");
                 }
-            }));
+                });
+            });
             root.addView(plan);
         }
 
         status = new TextView(this);
-        status.setText("در حال آماده‌سازی اتصال اشتراک کافه‌بازار…");
+        status.setText("تمدید دستی حالت پیش‌فرض است. تمدید خودکار فقط با انتخاب گزینه بالا فعال می‌شود.");
         status.setTextSize(16);
         status.setTextColor(Color.rgb(137, 63, 18));
         status.setPadding(8, 24, 8, 24);
