@@ -1,21 +1,12 @@
 # Sahmino Android — CafeBazaar and Myket
 
 ## Identity
+- Application ID configured in Gradle: `ir.manahesab.sahmino`.
+- Internal source namespace: `ir.sahamban.pilot`.
+- Publisher registration for this package in either store is not yet verified.
 
-- Owner-approved Android application ID: `ir.manahesab.sahmino`.
-- Source namespace: `ir.sahamban.pilot` (internal Java/BuildConfig namespace).
-- The exact same application ID must be registered for Sahmino in both stores.
-- The ID is approved by the owner but is not yet registered/verified in either
-  store console.
-
-## Scope
-
-Only CafeBazaar and Myket are in scope. Website checkout, ZarinPal and Google
-Play are excluded from this Android work. Auto-renewal is not being implemented
-unless a store explicitly supports the owner's opt-in policy; current default
-is manual renewal.
-
-The existing five-plan preview is preserved. Approved prices:
+## Scope and approved catalogue
+Only CafeBazaar and Myket are in this Android integration. ZarinPal and Google Play are excluded. Renewal defaults to manual; no auto-renewal is exposed by these one-time purchase flows.
 
 | Plan | Duration | Final price (IRR) |
 |---|---:|---:|
@@ -25,74 +16,50 @@ The existing five-plan preview is preserved. Approved prices:
 | SAHMINO_PRO_180D | 180 days | 7,650,000 |
 | SAHMINO_PRO_365D | 365 days | 14,600,000 |
 
-## Android store variants
+The existing five-plan preview is preserved; the work below connects its purchase action rather than rebuilding the preview.
 
-Gradle defines `bazaar` and `myket` product flavors. The module currently
-declares the official Myket Billing Client 2.2 SDK and the official Myket
-Maven repository. The official SDK sample documents both store flavors and
-the Bazaar/Myket market service binding values.
+## Implemented source paths
 
-The following public verification keys are intentionally not committed:
+- Gradle isolates `bazaar` and `myket` product flavors and their billing SDKs.
+- Myket adapter obtains the server-created order ID as developer payload, sends signed `originalJson` and signature to the Worker, and consumes only after server settlement.
+- CafeBazaar adapter uses Poolakey one-time products, sends the server order ID as developer payload, submits the purchase token to the Worker, and consumes only after settlement.
+- The Worker verifies Myket RSA signature and purchase fields, or calls the CafeBazaar Developer API; it derives amount/duration from the server order and records settlement idempotently.
+- Android only enables the purchase action after the store-reported product price matches the configured IRR plan and an HTTPS API origin is configured.
+- Receipt/order APIs require the authenticated session cookie and CSRF protection. Missing session/configuration fails closed.
 
-- `BAZAAR_IAB_PUBLIC_KEY`
-- `MYKET_IAB_PUBLIC_KEY`
+These are implemented source paths, not evidence that either publisher account, production credentials, or live purchases have been validated.
 
-Five product IDs in `app/build.gradle` are proposed placeholders only. They
-must be created/approved in each publisher console and then checked against
-the server catalog before purchase is enabled:
+## Required private configuration
 
-| Plan | Proposed product ID |
-|---|---|
-| 30 days | `sahmino_pro_30d` |
-| 60 days | `sahmino_pro_60d` |
-| 90 days | `sahmino_pro_90d` |
-| 180 days | `sahmino_pro_180d` |
-| 365 days | `sahmino_pro_365d` |
+Android Gradle properties (never commit private values):
+- `SAHMINO_API_BASE_URL` — deployed HTTPS Worker origin.
+- `SAHMINO_PWA_ORIGIN` — exact configured PWA origin.
+- `BAZAAR_IAB_PUBLIC_KEY`, `MYKET_IAB_PUBLIC_KEY`.
+- `BAZAAR_SKU_30D` through `BAZAAR_SKU_365D`, and `MYKET_SKU_30D` through `MYKET_SKU_365D` — exact publisher-console product IDs.
 
-## Work still required — purchases are disabled
+Worker variables:
+- `BAZAAR_SKU_30D`, `BAZAAR_SKU_60D`, `BAZAAR_SKU_90D`, `BAZAAR_SKU_180D`, `BAZAAR_SKU_365D`.
+- `MYKET_SKU_30D`, `MYKET_SKU_60D`, `MYKET_SKU_90D`, `MYKET_SKU_180D`, `MYKET_SKU_365D`.
 
-The current `SubscriptionPreviewActivity` is display-only. Its purchase button
-is disabled. Gradle flavors and SDK dependency are not a completed billing
-integration.
+Worker secrets:
+- `MYKET_IAB_PUBLIC_KEY`.
+- `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`, `BAZAAR_REFRESH_TOKEN`.
 
-Before enabling purchases:
-
-1. Obtain written/current confirmation from BOTH stores that one-time
-   consumable purchases can be used for fixed-duration digital entitlements,
-   including same-SKU repurchase and consumption requirements.
-2. Register the Sahmino app in both consoles with the exact package ID above.
-3. Create the five products in both consoles, and obtain each store's public
-   verification key and sandbox/test account.
-4. Implement each store's native purchase adapter and authenticated account
-   binding with a server-generated one-time nonce.
-5. Verify receipt/signature, app package, SKU, amount, currency, account,
-   transaction identity and purchase state on the server. A client callback
-   alone must never grant Pro.
-6. Atomically settle the order, append the exact purchased days to the current
-   paid-through date, and record a unique provider event/payment ledger.
-7. Consume a consumable purchase only after server verification and durable
-   entitlement commit. Reconcile unconsumed purchases after crashes/network
-   loss; support restore and refund/revocation.
-8. Test success, cancel, decline, duplicate receipt, wrong account/SKU/amount,
-   network loss, consume failure, refund and reinstall on physical devices
-   using each store's approved test route.
+The current default product IDs are placeholders, not confirmed store-created product IDs. Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until the deployment and acceptance gates below pass.
 
 ## Release blockers
 
-- Store app records, package registration, five approved SKUs, public keys and
-  sandbox/test accounts have not yet been supplied or verified.
-- Native billing flows and server-side receipt verification are not yet
-  implemented.
-- Store policy approval for fixed-duration consumable entitlement and
-  repurchase/consume behavior is pending.
-- Permanent release signing and secure signing CI are not configured.
-- Physical-device end-to-end tests are not complete.
-- Store listing assets, descriptions, privacy/support details and review
-  submission are not complete.
+1. Register/verify the exact package ID and create all five products in each publisher console; supply their actual IDs and displayed prices.
+2. Obtain the public verification keys, CafeBazaar API credentials/permissions, and approved test accounts.
+3. Deploy the Worker and apply the real D1 migrations/bindings. No production deployment or D1 migration is claimed by this branch.
+4. Resolve authenticated session cookie behavior: the current GitHub Pages PWA origin and a `workers.dev` API are cross-site. Confirm a reliable same-site custom domain or approve a secure native session-exchange design; do not weaken cookie policy as a shortcut.
+5. Confirm both stores' current policies and API contracts for fixed-duration digital entitlements, one-time consumable repurchase, and consume timing.
+6. Confirm Myket refund/revoke reconciliation and CafeBazaar refund/void lifecycle handling.
+7. Build and inspect distributable debug APKs, then run sandbox purchases (success, cancel, decline, restore, retry, duplicate/replay, wrong account/SKU/package, network loss, consume failure, refund) on physical devices.
+8. Configure permanent release signing securely; complete store listing, privacy/support material, and publisher review.
 
-## CI safety
+## CI status and safety
 
-GitHub Actions validates source, manifest and store-flavor configuration and
-compile-checks both variants. It deliberately does NOT assemble, upload or
-publish APKs before the owner confirms release readiness. No debug artifact
-should be uploaded to either store.
+The latest observed GitHub Actions run `44240549816` succeeded at commit `f892920d57b52505aa7aac8fa218ef7b41cca5b8`. It ran Java/source contract tests and Gradle `compileBazaarDebugJavaWithJavac` plus `compileMyketDebugJavaWithJavac`. It did **not** assemble APKs, inspect packaged SDK contents, deploy the Worker, or test purchases.
+
+Do not upload debug builds to either store. No live payment is enabled by this documentation; release remains blocked until all publisher, deployment, session, and device acceptance checks pass.
