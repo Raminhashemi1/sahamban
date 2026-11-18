@@ -16,6 +16,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
     private static final long[] PRICES = {1500000L, 2850000L, 4050000L, 7650000L, 14600000L};
     private SahminoStoreBillingManager billing;
+    private SahminoPrepaidOrderClient orders;
     private TextView status;
 
     @Override protected void onCreate(Bundle state) {
@@ -33,12 +34,26 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         title.setTextColor(Color.rgb(12, 37, 64));
         root.addView(title);
 
+        orders = new SahminoPrepaidOrderClient(BuildConfig.SAHMINO_WORKER_BASE_URL);
         NumberFormat format = NumberFormat.getIntegerInstance(new Locale("fa", "IR"));
         for (int i = 0; i < DAYS.length; i++) {
             Button plan = new Button(this);
             plan.setAllCaps(false);
             plan.setText(DAYS[i] + " روز — " + format.format(PRICES[i]) + " ریال");
-            plan.setEnabled(false); // Preview only until authenticated order + server verification exist.
+            final String selectedPlanId = SahminoBillingCatalog.at(i).planId;
+            plan.setEnabled(false); // Fail closed until the server and Bazaar sandbox are verified.
+            plan.setOnClickListener(v -> orders.prepare(selectedPlanId, new SahminoPrepaidOrderClient.Callback() {
+                @Override public void onPrepared(String serverOrderId) {
+                    if (!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || billing == null) {
+                        status.setText("سفارش سرور آماده است؛ پرداخت تا تأیید نهایی غیرفعال است.");
+                        return;
+                    }
+                    billing.subscribe(selectedPlanId, serverOrderId);
+                }
+                @Override public void onFailure(String reason) {
+                    status.setText("ایجاد سفارش تأیید نشد: " + reason + " — پرداخت غیرفعال است.");
+                }
+            }));
             root.addView(plan);
         }
 
@@ -90,6 +105,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
 
     @Override protected void onDestroy() {
         if (billing != null) billing.close();
+        if (orders != null) orders.close();
         super.onDestroy();
     }
 }
