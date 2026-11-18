@@ -13,7 +13,7 @@ Record the renewal facts and implementation gaps before changing the payment lif
 - Poolakey uses Subscription APIs: `getSubscriptionSkuDetails`, `subscribeProduct`, and `getSubscribedProducts`.
 - The Worker verifies each receipt against CafeBazaar Developer API and obtains `validUntilTimestampMsec` and `autoRenewing`.
 - The initial implementation rejected every `autoRenewing=true` receipt. The current branch has since replaced that blanket check with order-bound consent matching: MANUAL receipts are cancelled and revalidated before settlement; AUTO receipts require a versioned consent record and the provider flag to match. AUTO remains disabled by the `BAZAAR_AUTO_RENEW_ENABLED` rollout gate and is not exposed in the Android UI.
-- The database stores a SHA-256 digest of the purchase token as `provider_payment_id`; it does not store the raw purchase token needed to call the provider cancellation endpoint.
+- The database stores a SHA-256 digest of the purchase token as `provider_payment_id` and, in the current branch, an authenticated-encryption envelope (`provider_token_version`, `provider_token_nonce`, `provider_token_ciphertext`) for server-side cancellation. Plaintext purchase tokens must never be persisted or logged.
 - Entitlement settlement uses the provider-reported expiry and never computes expiry by adding the plan's day count. It also never shortens an already later `paid_until`.
 
 ## Provider API evidence reviewed on 2026-11-18
@@ -41,9 +41,9 @@ These references establish that a cancellation API exists and that CafeBazaar ha
 7. Test failed payment, failed cancellation, duplicate receipt, cancellation retry, already-cancelled subscription, provider outage, and expiry after cancellation.
 8. Verify Bazaar's actual behavior for a second purchase while a previous subscription is active. Do not assume the provider stacks time or that the current settlement max-expiry behavior implements Sahmino's manual purchase stacking requirement.
 
-## Current decision
+## Original research decision (historical)
 
-No runtime code is changed by this note. The UI must not promise an automatic-renewal toggle or claim manual-only purchase is implemented. The current fail-closed rejection of auto-renewing receipts remains in place until the provider behavior and secure token lifecycle are verified.
+At the time this research note was first written, runtime changes were not authorized by the note. The current branch has since implemented the encrypted-token and consent/cancellation flow described in the follow-up audit below. That implementation remains unvalidated against the live Bazaar sandbox and does not authorize checkout or release.
 
 
 ## Follow-up audit — current branch state (2026-11-18)
@@ -71,3 +71,40 @@ The implementation has progressed beyond the baseline described in the original 
 ### Release gate
 
 Keep checkout disabled, `BAZAAR_AUTO_RENEW_ENABLED` unset/false, and `BAZAAR_CANCELLATION_ENABLED` unset/false until CI passes, all migrations are exercised in a non-production D1 database, and the Sandbox tests above are recorded. This note does not authorize deployment or merging to `main`.
+
+
+## Additional catalog and release audit — 2026-11-18
+
+### Bazaar product identifiers are still provisional
+
+The Android catalog at `android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java` explicitly labels all five product IDs as provisional and says they must be reconciled with the exact subscription IDs configured in the CafeBazaar publisher panel before enabling purchases:
+
+- `sahmino_pro_30d`
+- `sahmino_pro_60d`
+- `sahmino_pro_90d`
+- `sahmino_pro_180d`
+- `sahmino_pro_365d`
+
+The Worker verifier independently hardcodes the same mapping. Matching two code locations is not proof that these SKUs exist in the publisher account, are active subscription products, or have the intended duration and price. Before any purchase test, export/check the five actual Bazaar panel records and reconcile product ID, subscription type, period, availability and displayed price against the approved server catalog. Do not change approved plan prices to fit a mismatch; resolve the Bazaar product configuration.
+
+### What the current settlement code actually guarantees
+
+- It grants no more than the provider-verified `validUntilTimestampMsec` and does not calculate expiry locally from plan days.
+- It keeps the later of the already-paid entitlement and the new provider expiry, so a second purchase cannot shorten current access.
+- It does **not** add the new plan's day count to the user's remaining entitlement. The requirement "manual repurchase adds the purchased period to remaining credit" is only satisfied if Bazaar itself returns a correspondingly extended provider expiry for the second purchase. That provider behavior has not been demonstrated.
+- A unit/integration test that feeds a later expiry into SQLite proves storage behavior, not Bazaar's actual second-purchase semantics.
+
+### CI observation
+
+The commit `6e95faa5456eefaf5d1ac05a14a4dfa186b73a12` has a workflow run created by the PR event, but the run and its jobs were still queued at the time of this audit. No passing test result is claimed. Other repository workflows for the same event were queued too, indicating this is not evidence of a subscription-specific test failure.
+
+### Next safe work order
+
+1. Reconcile all five SKU identifiers and configured subscription periods/prices against the Bazaar publisher panel.
+2. Run the subscription-v2 workflow and wait for completed job results; fix any actual failing step.
+3. Use the Bazaar sandbox/test account to buy a plan, record the first provider expiry, then buy again while entitlement is active and record the second provider expiry. Compare the result with the expected remaining-period-plus-new-period rule.
+4. In the same sandbox, test MANUAL purchase cancellation immediately after payment and confirm both `autoRenewing=false` and unchanged `validUntilTimestampMsec`.
+5. Only after these observations should implementation changes be made to the expiry model. Do not locally fabricate paid validity if Bazaar does not confirm it.
+6. Keep checkout and both renewal feature gates disabled until the above evidence is recorded.
+
+No production migration, deployment, or merge to `main` is authorized by this audit.
