@@ -9,7 +9,7 @@ This directory implements five manually renewed, time-limited access plans. They
 - The server verifies via Bazaar's in-app product validation API (\`/validate/{package}/inapp/{product}/purchases/{token}/\`), not the subscription-validation API.
 - Access duration is granted by the server using the selected internal plan's fixed day count. If the user buys before the current access expires, the new days are added after the current expiry; otherwise they start at the new purchase settlement time.
 - Repeated verification of the same order/token is idempotent and must never grant the same days twice.
-- Customer-facing prices must be shown in toman, derived from Bazaar's configured localized in-app product price. Never hardcode unapproved prices.
+- Customer-facing prices remain in IRR (rial), matching the approved product contract. Preserve Bazaar's localized price string verbatim; do not convert to toman or hardcode unapproved prices.
 - The client callback is evidence only; it cannot activate access by itself.
 
 ## Release blockers
