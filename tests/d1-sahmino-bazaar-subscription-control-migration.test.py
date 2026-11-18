@@ -72,6 +72,9 @@ class BazaarSubscriptionControlMigrationTests(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT cancellation_confirmed_at FROM sahmino_bazaar_subscription_control").fetchone()[0], NOW)
 
     def test_provider_payment_identity_is_unique(self):
+        self.db.execute("""INSERT INTO sahmino_prepaid_subscription_orders
+            (id,user_id,plan_id,amount_rial,currency,state,created_at)
+            VALUES('ord_test_2','u1','SAHMINO_PRO_60D',2850000,'IRR','PENDING',?)""", (NOW,))
         self.insert_control()
         with self.assertRaises(sqlite3.IntegrityError):
             self.insert_control(order_id="ord_test_2")
