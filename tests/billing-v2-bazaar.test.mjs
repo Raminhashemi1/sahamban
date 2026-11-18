@@ -22,8 +22,18 @@ const validBody={orderId,sku:'pro30',token:'token-123',originalJson,dataSignatur
 const receipt={kind:'androidpublisher#productPurchase',purchaseState:0,consumptionState:0,
  purchaseTimeMillis:Date.parse(now),orderId:'bazaar-order'};
 function fakeDb(order){
- return {prepare(){return {bind(){return {first:async()=>order}}}},
-  batch:async statements=>statements.map(()=>({success:true,meta:{changes:1}}))};
+ return {prepare(sql){return {bind(...values){return {first:async()=>{
+   if(sql.includes("SELECT expires_at FROM billing_access"))return {expires_at:order.settledExpiresAt||order.expires_at};
+   return order;
+  }}}}},
+  batch:async statements=>{
+   const values=statements[2].values,nowValue=values[1],days=values[4];
+   const existing=order.expires_at;
+   const base=existing&&Date.parse(existing)>Date.parse(nowValue)?existing:nowValue;
+   order.settledExpiresAt=new Date(Date.parse(base)+days*86400000).toISOString();
+   return statements.map(()=>({success:true,meta:{changes:1}}));
+  }
+ };
 }
 
 test('SKU map requires exactly five unique valid in-app products',()=>{
