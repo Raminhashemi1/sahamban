@@ -21,7 +21,9 @@ test('purchase token vault rejects tampering, wrong order and wrong key',async()
  const sealed=await encryptPurchaseToken(token,{secret,...context});
  await assert.rejects(decryptPurchaseToken(sealed,{secret,orderId:'ord_'+'c'.repeat(32),providerPaymentId:context.providerPaymentId}),/TOKEN_DECRYPTION_FAILED/);
  await assert.rejects(decryptPurchaseToken(sealed,{secret:Buffer.alloc(32,8).toString('base64url'),...context}),/TOKEN_DECRYPTION_FAILED/);
- const altered={...sealed,ciphertext:sealed.ciphertext.slice(0,-1)+(sealed.ciphertext.endsWith('A')?'B':'A')};
+ const raw=Buffer.from(sealed.ciphertext.replace(/-/g,'+').replace(/_/g,'/'),'base64');
+ raw[0]^=0x01;
+ const altered={...sealed,ciphertext:raw.toString('base64url')};
  await assert.rejects(decryptPurchaseToken(altered,{secret,...context}),/TOKEN_DECRYPTION_FAILED|TOKEN_CIPHERTEXT_INVALID/);
 });
 test('purchase token vault fails closed for missing keys, malformed tokens and context',async()=>{
