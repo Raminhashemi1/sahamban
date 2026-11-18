@@ -78,10 +78,22 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
   await verifySignedPurchase(env,body);
-  const verified=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,nowMs:Date.parse(now)},fetcher);
-  if(Date.parse(verified.purchaseTime)<Date.parse(order.created_at)-5*60*1000)return {status:409,body:{error:'PURCHASE_PRECEDES_ORDER'}};
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+  // A previously settled consumable may already have consumptionState=1.
+  // Confirm the same signed token against the durable order before querying Bazaar again.
+  if(order.status==='PAID'){
+   if(order.purchase_token_hash!==tokenHash)return {status:409,body:{error:'ORDER_ALREADY_SETTLED'}};
+   const restored=await settle(db,{orderId:body.orderId,subject,planId,
+    bazaarOrderId:order.bazaar_order_id||tokenHash,tokenHash,
+    purchaseTime:order.paid_at,now});
+   return restored.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:restored.expiresAt,
+    renewalMode:'MANUAL',daysAdded:0,restored:true}}:
+    {status:409,body:{error:restored.error}};
+  }
+  if(order.status!=='CREATED')return {status:409,body:{error:'ORDER_NOT_PENDING'}};
+  const verified=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,nowMs:Date.parse(now)},fetcher);
+  if(Date.parse(verified.purchaseTime)<Date.parse(order.created_at)-5*60*1000)return {status:409,body:{error:'PURCHASE_PRECEDES_ORDER'}};
   const result=await settle(db,{orderId:body.orderId,subject,planId,
    bazaarOrderId:verified.receipt.orderId||tokenHash,tokenHash,
    purchaseTime:verified.purchaseTime,now});
