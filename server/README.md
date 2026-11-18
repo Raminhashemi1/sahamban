@@ -190,7 +190,7 @@ before use. No live payment or free cloud service has been enabled.
 
 ## Prepaid five-plan Pro access (new, not deployed)
 
-- `prepaid-plans.cjs` contains the provider-neutral fixed-day 30/60/90/180/365-day plan rules and exact launch prices in IRR. It is pure business logic; its verification callback is only a seam for a future trusted provider adapter, not proof of payment.
+- `prepaid-plans.cjs` contains the five owner-approved fixed-day plans: 30/60/90/180/365 days, priced at 1,500,000 / 2,850,000 / 4,050,000 / 7,650,000 / 14,600,000 IRR. The periods are exact elapsed days, not calendar months. Its verification callback is only a seam for a future trusted marketplace adapter, not proof of payment.
 - `d1-prepaid-migration.sql` is an additive migration for prepaid orders, entitlement dates and provider event deduplication. It deliberately leaves the legacy annual schema intact. Apply only to a private D1 database after backup and migration review.
 - `prepaid-access-gate.cjs` is a read-only, fail-closed authorization query for the new prepaid entitlement table. The caller must pass an authentication subject independently verified by a real identity provider. Never accept a browser-supplied account ID as identity.
 - `tests/prepaid-plans.test.cjs`, `tests/d1-prepaid-migration.test.py`, and `tests/prepaid-access-gate.test.cjs` cover plan math, schema constraints, replay prevention and authorization denial cases. The new access-gate CI run is pending at time of this update: https://github.com/Raminhashemi1/sahamban/actions/runs/43248190028 .
@@ -206,7 +206,7 @@ The module is unit-tested in `tests/prepaid-orders-api.test.cjs`. It is delibera
 
 ## Provider-verified prepaid settlement primitive (not wired to a gateway)
 
-`prepaid-settlement.cjs` accepts only a server-produced verification result (never a browser callback), validates provider/event/payment/order IDs, plan, IRR amount and server timestamp, then batches event-ledger insertion, pending-order settlement and entitlement upsert in one D1 batch. The event and payment unique constraints plus pending-order guards prevent replay/double grant. The entitlement SQL computes exact-day expiry and extends from the current paid-until date when still active. This is a settlement primitive, **not a provider adapter**: no gateway signature/query verification exists yet, and no Worker route calls it. A trusted provider adapter must construct the verified object only after server-to-server confirmation. Refund/chargeback revocation and full D1 integration tests remain outstanding.
+`prepaid-settlement.cjs` accepts only a server-produced verification result (never a browser callback), validates provider/event/payment/order IDs, plan, IRR amount and server timestamp, then batches event-ledger insertion, pending-order settlement and entitlement upsert in one D1 batch. The event and payment unique constraints plus pending-order guards prevent replay/double grant. The entitlement SQL computes exact fixed-day expiry and extends from the current paid-until date when still active. This is a settlement primitive, **not a provider adapter**: no gateway signature/query verification exists yet, and no Worker route calls it. A trusted provider adapter must construct the verified object only after server-to-server confirmation. Refund/chargeback revocation and full D1 integration tests remain outstanding.
 
 
 ## Worker route for prepaid pending orders (feature flag OFF)
