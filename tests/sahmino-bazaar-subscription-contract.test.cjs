@@ -43,7 +43,9 @@ test('Worker fails closed while Bazaar automatic renewal is not reconciled with 
  const worker=read('server/worker-api.mjs');
  assert.match(worker,/BAZAAR_SUBSCRIPTIONS_ENABLED!=='true'/);
  assert.match(worker,/autoRenewing!==false/);
- assert.match(worker,/AUTO_RENEW_POLICY_UNRESOLVED/);
+ assert.match(worker,/PROVIDER_RENEWAL_MODE_MISMATCH/);
+ assert.match(worker,/renewalMode:body\.renewalMode\|\|'MANUAL'/);
+ assert.match(worker,/consentVersion:body\.consentVersion\?\?null/);
 });
 
 test('native order handoff and receipt verification use authenticated Worker endpoints',()=>{
