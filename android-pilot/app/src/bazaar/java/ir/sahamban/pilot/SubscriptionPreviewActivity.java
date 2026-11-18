@@ -11,7 +11,7 @@ import android.widget.TextView;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-/** Existing five-plan preview, now backed by Bazaar Subscription catalog/restore only. */
+/** Existing five-plan preview, backed by Bazaar subscriptions and server receipt verification. */
 public final class SubscriptionPreviewActivity extends ComponentActivity {
     private static final int[] DAYS = {30, 60, 90, 180, 365};
     private static final long[] PRICES = {1500000L, 2850000L, 4050000L, 7650000L, 14600000L};
@@ -41,7 +41,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             plan.setAllCaps(false);
             plan.setText(DAYS[i] + " روز — " + format.format(PRICES[i]) + " ریال");
             final String selectedPlanId = SahminoBillingCatalog.at(i).planId;
-            plan.setEnabled(false); // Fail closed until the server and Bazaar sandbox are verified.
+            plan.setEnabled(false); // Remains disabled until production and sandbox gates are approved.
             plan.setOnClickListener(v -> orders.prepare(selectedPlanId, new SahminoPrepaidOrderClient.Callback() {
                 @Override public void onPrepared(String serverOrderId) {
                     if (!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || billing == null) {
@@ -81,7 +81,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
 
         billing = new SahminoStoreBillingManager(this, new SahminoStoreBillingManager.Listener() {
             @Override public void onStatus(String message) {
-                status.setText(message + "\nپرداخت و فعال‌سازی Pro تا اتصال اعتبارسنجی سرور غیرفعال است.");
+                status.setText(message + "\nپرداخت و فعال‌سازی Pro تا تأیید رسید توسط سرور غیرفعال است.");
             }
 
             @Override public void onCatalogPrice(SahminoBillingCatalog.Plan plan, String price, boolean matches) {
@@ -92,12 +92,21 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
 
             @Override public void onPurchaseEvidence(SahminoBillingCatalog.Plan plan,
                     SahminoPurchaseEvidence evidence) {
-                status.setText("رسید اشتراک دریافت شد؛ هنوز به سرور ارسال و تأیید نشده است. دسترسی Pro فعال نشد.");
+                status.setText("رسید دریافت شد؛ در حال ارسال امن برای اعتبارسنجی کافه‌بازار…");
+                orders.verifyPurchase(evidence, new SahminoPrepaidOrderClient.VerifyCallback() {
+                    @Override public void onVerified(String paidUntil) {
+                        status.setText("اشتراک Pro توسط سرور تأیید و فعال شد. اعتبار تا: " + paidUntil);
+                    }
+                    @Override public void onFailure(String reason) {
+                        status.setText("رسید هنوز تأیید نشده است: " + reason
+                                + " — دسترسی Pro فعال نشد.");
+                    }
+                });
             }
 
             @Override public void onRestoredEvidence(SahminoBillingCatalog.Plan plan,
                     SahminoPurchaseEvidence evidence) {
-                status.setText("اشتراک قبلی در حساب بازار پیدا شد؛ برای بازیابی دسترسی باید سرور آن را تأیید کند.");
+                status.setText("اشتراک قبلی در حساب بازار پیدا شد؛ بازیابی آن نیازمند مسیر تطبیق مجدد سرور است. دسترسی فعال نشد.");
             }
         });
         billing.connect();
