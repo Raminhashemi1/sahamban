@@ -58,7 +58,7 @@ Physical Android device: PWA loading, RTL, basic navigation, browser
 handoff, permissions, synthetic 20/100-holding portfolio import and export,
 offline/slow network, cold/warm start, font scaling, TalkBack, and secure
 update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach. The Poolakey boundary is not yet wired to a production receipt-verification endpoint; purchase flags intentionally remain false.
+Only afterwards choose a market-specific release wrapper/signing approach. The native Poolakey boundary now uses one-time `purchaseProduct/getPurchasedProducts` (not recurring subscription APIs) and sends its evidence through `SahambanBazaarReceiptClient` to the authenticated Worker. The Worker verifies the receipt against Cafe Bazaar's Developer API before atomic D1 settlement. All live purchase flags remain false until package/SKU mapping and server credentials are configured.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
