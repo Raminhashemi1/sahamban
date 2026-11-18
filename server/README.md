@@ -262,3 +262,63 @@ D1 database.
 This is still a non-commercial prototype: checkout, real payments, provider
 adapters and automatic renewal remain disabled. Manual renewal is the product
 default. No automatic-renewal consent or recurring charge is implemented.
+
+
+---
+
+## Current Sahmino subscription architecture — owner correction (2026-11-18)
+
+This section supersedes older provider-neutral/multi-channel notes above for the current Sahmino five-plan work.
+
+### One supported channel
+
+CafeBazaar is the only payment channel. Myket, Google Play and website/direct-PSP checkout are excluded. The existing five-plan preview is preserved.
+
+### Poolakey Subscription APIs only
+
+The Bazaar Android flavor now uses Poolakey 2.2.0 plus its RxJava 2 facade. `SahminoStoreBillingManager.java` calls:
+- `getSubscriptionSkuDetails` through `PaymentRxKt`
+- `subscribeProduct` through `PaymentRxKt`
+- `getSubscribedProducts` through `PaymentRxKt`
+
+It creates a `PurchaseRequest` only when the caller provides a server-generated `ord_<32 hex>` payload. The UI does not start purchases until the authenticated server order flow is wired. `consumeProduct`, `purchaseProduct`, `getInAppSkuDetails` and `getPurchasedProducts` are not used for these subscriptions.
+
+`SahminoPurchaseEvidence.java` extracts raw Poolakey fields only. It does not grant Pro. Local RSA checking is disabled in Poolakey because the intended trust boundary is server-side verification; the server independently verifies the Bazaar signature using the publisher RSA public key and then calls Bazaar Developer API.
+
+### Bazaar receipt verification route
+
+`bazaar-subscription-verifier.cjs`:
+- validates the receipt's raw JSON fields against the authenticated server order and server-owned SKU mapping;
+- verifies the Poolakey `dataSignature` over `originalJson` with RSA-SHA1 as Poolakey 2.2.0 does;
+- refreshes a CafeBazaar OAuth access token using the server-only client ID, client secret and refresh token;
+- calls the CafeBazaar Developer API v2 Subscription validation endpoint;
+- accepts only a future `validUntilTimestampMsec`, valid `initiationTimestampMsec`, and boolean `autoRenewing` response;
+- returns the server order's plan/price, never client-supplied price or account identity.
+
+The Worker has a cookie-authenticated `POST /api/v1/me/prepaid-orders/verify` route. It is gated by `SAHMINO_OTP_ENABLED`, `PREPAID_ORDERS_ENABLED` and `BAZAAR_SUBSCRIPTIONS_ENABLED`, all of which remain off by default. It checks the session-derived internal user ID, D1 order ownership, CSRF, exact receipt shape and provider verification before calling the atomic settlement primitive.
+
+### Renewal policy gate
+
+Bazaar subscriptions may be auto-renewing. The Worker currently refuses to settle a receipt when the verified Bazaar response says `autoRenewing:true`, returning `AUTO_RENEW_POLICY_UNRESOLVED`. This is deliberately fail-closed: until default-manual behavior is implemented using the official Bazaar cancellation contract and verified not to remove paid-through access, the app must not expose a paid purchase button or promise auto-renew consent controls.
+
+### Entitlement expiry
+
+`prepaid-settlement.cjs` now uses only the verified Bazaar `validUntilTimestampMsec` as the new provider expiry. It never calculates paid-through by adding `plan.days`. Existing later paid-through access is not shortened. Event, order and entitlement are written in one D1 batch.
+
+### Required private environment bindings before controlled sandbox verification
+
+- `BAZAAR_SUBSCRIPTIONS_ENABLED` — must remain `false` until renewal policy and all tests pass.
+- `BAZAAR_PACKAGE_NAME` — exact publisher package name.
+- `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`, `BAZAAR_REFRESH_TOKEN` — CafeBazaar OAuth credentials; secret values must be configured only through Worker secrets.
+- `BAZAAR_IAB_PUBLIC_KEY` — CafeBazaar publisher RSA public key used to verify signed purchase JSON.
+
+No values for these credentials are assumed or committed. No remote D1 migration, deployment, live checkout, purchase, APK release or merge to main is authorized.
+
+### New tests
+
+- `tests/bazaar-subscription-verifier.test.cjs` — synthetic RSA signature, payload/SKU/package mismatch, OAuth failure, Bazaar expiry and auto-renew response.
+- `tests/prepaid-settlement.test.cjs` — provider timestamp expiry and fail-closed cases.
+- `tests/worker-api.test.cjs` — receipt route authentication and disabled-by-default checks.
+- `tests/sahmino-bazaar-subscription-contract.test.cjs` — Poolakey subscription-only methods and no client-side Pro grant.
+
+The local Node unit checks for the verifier and settlement have been run in this session. The exact-head GitHub Actions and Android Gradle compile checks still need confirmation.
