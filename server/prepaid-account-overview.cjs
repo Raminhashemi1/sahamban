@@ -9,11 +9,24 @@ const LOOKUP=`SELECT u.id AS user_id,u.status AS account_status,
   WHEN e.paid_until IS NOT NULL AND (le.paid_until IS NULL OR e.paid_until>=le.paid_until) THEN e.paid_until
   ELSE le.paid_until
  END AS paid_until,
- COALESCE(le.suspended,0) AS payment_suspended
+ COALESCE(le.suspended,0) AS payment_suspended,
+ bc.renewal_mode AS renewal_mode,
+ bc.lifecycle_state AS subscription_lifecycle_state,
+ bc.provider_auto_renewing AS provider_auto_renewing,
+ bc.provider_paid_until AS provider_paid_until,
+ bc.cancellation_requested_at AS cancellation_requested_at,
+ bc.cancellation_confirmed_at AS cancellation_confirmed_at
 FROM sahamban_users u
 LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id
 LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=u.id
 LEFT JOIN subscription_entitlements le ON le.user_id=u.id
+LEFT JOIN (
+ SELECT c1.* FROM sahmino_bazaar_subscription_control c1
+ WHERE c1.updated_at=(
+  SELECT MAX(c2.updated_at) FROM sahmino_bazaar_subscription_control c2
+  WHERE c2.user_id=c1.user_id
+ )
+) bc ON bc.user_id=u.id
 WHERE u.auth_subject=? LIMIT 1`;
 const LOOKUP_USER=LOOKUP.replace('WHERE u.auth_subject=?','WHERE u.id=?');
 const HISTORY=`SELECT id,plan_id,amount_rial,currency,state,created_at,settled_at FROM (
@@ -55,7 +68,13 @@ async function prepaidAccountOverview(db,{authenticatedSubject,authenticatedUser
   const active=until!==null&&current<until;
   return {status:200,reason:active?'ACTIVE':until===null?'NO_SUBSCRIPTION':'EXPIRED',
    proEnabled:active,paidUntil:account.paid_until,remainingSeconds:active?Math.ceil((until-current)/1000):0,
-   autoRenew:false,checkoutEnabled:false,orders:items};
+   autoRenew:account.provider_auto_renewing===1,
+   renewalMode:account.renewal_mode||null,
+   subscriptionLifecycle:account.subscription_lifecycle_state||null,
+   providerPaidUntil:account.provider_paid_until||null,
+   cancellationRequestedAt:account.cancellation_requested_at||null,
+   cancellationConfirmedAt:account.cancellation_confirmed_at||null,
+   checkoutEnabled:false,orders:items};
  }catch(_){return fail('OVERVIEW_UNAVAILABLE',503);}
 }
 module.exports=Object.freeze({prepaidAccountOverview,LOOKUP,LOOKUP_USER,HISTORY});
