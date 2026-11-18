@@ -1,17 +1,19 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL,bazaarExpiry}=require('../server/prepaid-settlement.cjs');
+const {webcrypto}=require('node:crypto');if(!globalThis.crypto)globalThis.crypto=webcrypto;
+const tokenEncryptionKey=Buffer.alloc(32,7).toString('base64url');
 const now='2026-11-12T10:00:00.000Z',orderId='ord_'+'a'.repeat(32);
 const expiry=Date.parse('2026-12-22T10:00:00.000Z');
 const verifyAtProvider=async receipt=>receipt.signatureValid===true?{
  providerName:receipt.providerName,providerEventId:receipt.providerEventId,
  providerPaymentId:receipt.providerPaymentId,orderId:receipt.orderId,
  planId:receipt.planId,amountRial:receipt.amountRial,currency:receipt.currency,
- validUntilTimestampMsec:receipt.validUntilTimestampMsec
+ validUntilTimestampMsec:receipt.validUntilTimestampMsec,purchaseToken:receipt.purchaseToken
 }:false;
 const payment={signatureValid:true,providerName:'cafebazaar',providerEventId:'evt-1',
  providerPaymentId:'pay-1',orderId,planId:'SAHMINO_PRO_30D',amountRial:1500000,
- currency:'IRR',validUntilTimestampMsec:expiry};
+ currency:'IRR',validUntilTimestampMsec:expiry,purchaseToken:'bazaar-purchase-token-123456789'};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,
  currency:'IRR',state:'PENDING',paid_until:null},results}={}){
  const calls=[];return {calls,prepare(sql){calls.push({sql,values:null});return {
@@ -25,17 +27,18 @@ test('Bazaar expiry parser accepts only a future exact millisecond timestamp',()
  assert.equal(bazaarExpiry(Number.MAX_SAFE_INTEGER,now),null);
 });
 test('settlement requires provider verification and exact order match',async()=>{
- assert.equal((await settleVerifiedPrepaidPayment(dbFor(),{...payment,signatureValid:false},{now,verifyAtProvider})).reason,'PROVIDER_VERIFICATION_REQUIRED');
+ assert.equal((await settleVerifiedPrepaidPayment(dbFor(),{...payment,signatureValid:false},{now,verifyAtProvider,tokenEncryptionKey})).reason,'PROVIDER_VERIFICATION_REQUIRED');
  assert.equal((await settleVerifiedPrepaidPayment(dbFor({row:{user_id:'u1',plan_id:payment.planId,
  amount_rial:1,currency:'IRR',state:'PENDING'}}),payment,{now,verifyAtProvider})).reason,'ORDER_MISMATCH');
 });
 test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
- const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider});
+ const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider,tokenEncryptionKey});
  assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2026-12-22T10:00:00.000Z'});
  const batch=db.calls.find(x=>x.batch).batch;assert.equal(batch.length,3);
  assert.match(batch[0].sql,/state='PENDING'/);assert.match(batch[1].sql,/state='PENDING'/);
  assert.match(batch[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);
  assert.doesNotMatch(batch[2].sql,/strftime|\+\|\|/);
+ const orderCall=db.calls.find(x=>x.sql===ORDER_SQL);assert.equal(orderCall.values.length,12);assert.equal(orderCall.values[2],'v1');assert.ok(orderCall.values[3]);assert.ok(orderCall.values[4]);
  const entitlementCall=db.calls.find(x=>x.sql===ENTITLEMENT_UPSERT_SQL);assert.deepEqual(entitlementCall.values,[orderId,'cafebazaar','pay-1','2026-12-22T10:00:00.000Z',now]);
 });
 test('existing later paid-through date is never shortened by a provider response',async()=>{
@@ -62,7 +65,7 @@ test('settlement fails closed on malformed data, DB errors and partial results',
 });
 test('settlement SQL binds Bazaar verified expiry and a unique provider event',()=>{
  assert.match(EVENT_SQL,/sahmino_prepaid_payment_events/);assert.match(EVENT_SQL,/state='PENDING'/);
- assert.match(ORDER_SQL,/provider_event_id/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);
+ assert.match(ORDER_SQL,/provider_event_id/);assert.match(ORDER_SQL,/provider_token_ciphertext/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);
  assert.match(ENTITLEMENT_UPSERT_SQL,/paid_until>excluded\.paid_until/);
  assert.doesNotMatch(ENTITLEMENT_UPSERT_SQL,/strftime|\+\|\|/);
 });
