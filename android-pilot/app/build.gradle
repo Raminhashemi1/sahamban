@@ -3,7 +3,6 @@ plugins {
 }
 
 def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('').get()
-def myketPublicKey = providers.gradleProperty('MYKET_IAB_PUBLIC_KEY').orElse('').get()
 def apiBaseUrl = providers.gradleProperty('SAHMINO_API_BASE_URL').orElse('').get()
 def pwaOrigin = providers.gradleProperty('SAHMINO_PWA_ORIGIN').orElse('https://raminhashemi1.github.io').get()
 def apiBaseUrlLiteral = groovy.json.JsonOutput.toJson(apiBaseUrl)
@@ -17,11 +16,6 @@ def bazaarSku60 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '60D'))
 def bazaarSku90 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '90D'))
 def bazaarSku180 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '180D'))
 def bazaarSku365 = groovy.json.JsonOutput.toJson(skuValue('BAZAAR', '365D'))
-def myketSku30 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '30D'))
-def myketSku60 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '60D'))
-def myketSku90 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '90D'))
-def myketSku180 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '180D'))
-def myketSku365 = groovy.json.JsonOutput.toJson(skuValue('MYKET', '365D'))
 
 android {
     // Source namespace stays stable; applicationId below is the publisher-approved store identity.
@@ -68,23 +62,7 @@ android {
             buildConfigField 'String', 'SKU_180D', bazaarSku180
             buildConfigField 'String', 'SKU_365D', bazaarSku365
         }
-        myket {
-            dimension 'store'
-            manifestPlaceholders = [
-                marketApplicationId: 'ir.mservices.market',
-                marketBindAddress: 'ir.mservices.market.InAppBillingService.BIND',
-                marketPermission: 'ir.mservices.market.BILLING'
-            ]
-            buildConfigField 'String', 'STORE_CHANNEL', '"MYKET"'
-            buildConfigField 'String', 'API_BASE_URL', apiBaseUrlLiteral
-            buildConfigField 'String', 'PWA_ORIGIN', pwaOriginLiteral
-            buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + myketPublicKey + '"'
-            buildConfigField 'String', 'SKU_30D', myketSku30
-            buildConfigField 'String', 'SKU_60D', myketSku60
-            buildConfigField 'String', 'SKU_90D', myketSku90
-            buildConfigField 'String', 'SKU_180D', myketSku180
-            buildConfigField 'String', 'SKU_365D', myketSku365
-        }
+
     }
 
     compileOptions {
@@ -105,6 +83,5 @@ android {
 dependencies {
     // Each store SDK is isolated to its own install flavor.
     implementation 'androidx.activity:activity:1.10.1'
-    myketImplementation 'ir.myket:billing:2.2'
-    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
+        bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
 }
