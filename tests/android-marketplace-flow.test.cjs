@@ -6,14 +6,13 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('both Android flavors are configured for separate publisher SKU IDs and HTTPS API origin',()=>{
+test('CafeBazaar-only Android build uses Bazaar SKU IDs and HTTPS API origin',()=>{
  const gradle=read('android-pilot/app/build.gradle');
  assert.match(gradle,/providers\.gradleProperty\(channel \+ "_SKU_" \+ suffix\)/);
  assert.match(gradle,/skuValue\('BAZAAR', '30D'\)/);
- assert.match(gradle,/skuValue\('MYKET', '30D'\)/);
  assert.match(gradle,/SAHMINO_API_BASE_URL/);
  assert.match(gradle,/bazaarImplementation .*Poolakey/);
- assert.match(gradle,/myketImplementation .*ir\.myket:billing/);
+ assert.doesNotMatch(gradle,/myketImplementation|MYKET|ir\.myket:billing/);
 });
 
 test('native receipt API requires HTTPS and the authenticated HttpOnly session cookie',()=>{
@@ -25,17 +24,6 @@ test('native receipt API requires HTTPS and the authenticated HttpOnly session c
  assert.match(client,/\/api\/v1\/me\/prepaid-orders/);
  assert.match(client,/\/api\/v1\/me\/prepaid-receipts/);
  assert.doesNotMatch(client,/amountRial/);
-});
-
-test('Myket payload binds the store purchase to a server-generated order and consumes after settlement',()=>{
- const manager=read('android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoStoreBillingManager.java');
- const activity=read('android-pilot/app/src/myket/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
- assert.match(manager,/purchase\(String planId, String serverOrderId\)/);
- assert.match(manager,/String payload = serverOrderId/);
- assert.match(manager,/consumeAfterServerSettlement/);
- assert.match(activity,/SahminoReceiptApiClient\.createOrder/);
- assert.match(activity,/submitMyketReceipt/);
- assert.match(activity,/billing\.consumeAfterServerSettlement\(purchase\)/);
 });
 
 test('CafeBazaar uses Poolakey one-time products, server payload, REST receipt submission and post-settlement consume',()=>{
