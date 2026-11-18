@@ -12,7 +12,7 @@ import ir.cafebazaar.poolakey.entity.PurchaseState
 import ir.cafebazaar.poolakey.request.PurchaseRequest
 
 /**
- * New Cafe Bazaar one-time billing adapter.
+ * Cafe Bazaar recurring subscription adapter. Subscriptions are never consumed.
  * It only returns purchase evidence. The trusted server owns verification and access grants.
  */
 class BillingV2Coordinator(
@@ -58,7 +58,7 @@ class BillingV2Coordinator(
             callback(PurchaseResult.Failure("BAZAAR_CONNECTION_REQUIRED"))
             return
         }
-        payment.purchaseProduct(
+        payment.subscribeProduct(
             registry = activity.activityResultRegistry,
             request = PurchaseRequest(productId = sku, payload = orderId)
         ) {
@@ -78,21 +78,9 @@ class BillingV2Coordinator(
             callback(null)
             return
         }
-        payment.getPurchasedProducts {
+        payment.getSubscribedProducts {
             querySucceed { purchases -> callback(purchases.mapNotNull { it.toEvidence() }) }
             queryFailed { callback(null) }
-        }
-    }
-
-    fun consumeAfterServerGrant(token: String, callback: (Boolean) -> Unit) {
-        require(token.isNotBlank() && token.length <= 4096)
-        if (connection?.getState() != ConnectionState.Connected) {
-            callback(false)
-            return
-        }
-        payment.consumeProduct(token) {
-            consumeSucceed { callback(true) }
-            consumeFailed { callback(false) }
         }
     }
 
