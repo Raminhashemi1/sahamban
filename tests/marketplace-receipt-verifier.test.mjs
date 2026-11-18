@@ -51,12 +51,12 @@ test('Myket: rejects package, product and purchase-state mismatches',async()=>{
  }
 });
 
-test('Bazaar: refreshes server OAuth token then validates purchase with server SKU',async()=>{
+test('Bazaar: refreshes OAuth token then validates subscription using subscription SKU endpoint',async()=>{
  const originalFetch=globalThis.fetch;const calls=[];
  globalThis.fetch=async(url,options={})=>{
   calls.push({url:String(url),options});
   if(String(url).includes('/auth/token/'))return new Response(JSON.stringify({access_token:'access-token',token_type:'Bearer',expires_in:3600}),{status:200});
-  return new Response(JSON.stringify({purchaseState:0,developerPayload:order.id,purchaseTime:now,kind:'androidpublisher#inappPurchase'}),{status:200});
+  return new Response(JSON.stringify({kind:'androidpublisher#subscriptionPurchase',initiationTimestampMsec:now,validUntilTimestampMsec:now+30*86400000,autoRenewing:false}),{status:200});
  };
  try{
   const result=await verifyMarketplaceReceipt(env,{provider:'CAFEBAZAAR',orderId:order.id,purchaseToken:'bazaar-token'},order);
@@ -64,18 +64,19 @@ test('Bazaar: refreshes server OAuth token then validates purchase with server S
   assert.equal(result.planId,order.plan_id);
   assert.equal(calls.length,2);
   assert.match(calls[0].url,/pardakht\.cafebazaar\.ir\/devapi\/v2\/auth\/token/);
-  assert.match(calls[1].url,/bazaar_30d/);
+  assert.match(calls[1].url,/subscriptions\\/bazaar_30d\\/purchases/);
+  assert.equal(result.providerPaidUntil,new Date(now+30*86400000).toISOString());
   assert.match(calls[1].url,/access-token/);
  }finally{globalThis.fetch=originalFetch;}
 });
 
-test('Bazaar: rejects invalid purchase and wrong developer payload',async()=>{
+test('Bazaar: rejects inactive subscription',async()=>{
  const originalFetch=globalThis.fetch;
  globalThis.fetch=async url=>String(url).includes('/auth/token/')
   ?new Response(JSON.stringify({access_token:'access-token'}),{status:200})
-  :new Response(JSON.stringify({purchaseState:1,developerPayload:order.id,purchaseTime:now}),{status:200});
+  :new Response(JSON.stringify({kind:'androidpublisher#subscriptionPurchase',initiationTimestampMsec:now,validUntilTimestampMsec:now-1000,autoRenewing:false}),{status:200});
  try{
-  await assert.rejects(()=>verifyMarketplaceReceipt(env,{provider:'CAFEBAZAAR',orderId:order.id,purchaseToken:'bad'},order),/BAZAAR_PURCHASE_MISMATCH/);
+  await assert.rejects(()=>verifyMarketplaceReceipt(env,{provider:'CAFEBAZAAR',orderId:order.id,purchaseToken:'bad'},order),/BAZAAR_SUBSCRIPTION_INACTIVE/);
  }finally{globalThis.fetch=originalFetch;}
 });
 
