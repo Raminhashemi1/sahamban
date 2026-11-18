@@ -1,25 +1,25 @@
-# Billing V2 — Cafe Bazaar subscriptions
+# Billing V2 — Cafe Bazaar manual time-pass purchases
 
-This directory implements the subscription-specific billing domain.
+This directory implements five manually renewed, time-limited access plans. They are displayed to customers as subscriptions/plans, but are **not configured as Bazaar auto-renewing subscription products**.
 
-- Five Bazaar subscription SKUs: 30/60/90/180/365-day billing periods.
-- Final customer-facing prices must be shown in toman. Product prices and exact billing periods must be configured and confirmed in Bazaar Pishkhan; do not invent or hardcode unapproved prices.
-- Android checkout uses Poolakey \`subscribeProduct\`, not \`purchaseProduct\`.
-- Restore uses \`getSubscribedProducts\`, not \`getPurchasedProducts\`.
-- Subscription tokens are never consumed.
-- Backend verifies through Bazaar's subscription-validation API, not the in-app-product validation route.
-- The provider's verified expiry is authoritative. Local code must never invent or extend a subscription period by adding plan days.
-- Order, authenticated user, signed developer payload, SKU and provider receipt must match before access can be granted. Bazaar Pishkhan is the price authority; the app must display its confirmed localized price with an explicitly verified toman conversion.
-- The client callback is only evidence; it cannot activate access by itself.
-- Renewal state and expiry must be refreshed from the provider. Cancellation of auto-renewal does not immediately revoke already-paid access.
+- Five Bazaar **consumable in-app product** SKUs: 30/60/90/180/365 days.
+- Each user explicitly initiates and pays for every new term. No automatic debit or automatic renewal is used.
+- After server-side verification and durable entitlement settlement, Android consumes the purchase token with Poolakey \`consumeProduct\`. This releases the SKU so it can be purchased again later.
+- If consumption fails after settlement, access remains granted and the pending purchase is retried/reconciled on the next app session. Never consume before server settlement.
+- The server verifies via Bazaar's in-app product validation API (\`/validate/{package}/inapp/{product}/purchases/{token}/\`), not the subscription-validation API.
+- Access duration is granted by the server using the selected internal plan's fixed day count. If the user buys before the current access expires, the new days are added after the current expiry; otherwise they start at the new purchase settlement time.
+- Repeated verification of the same order/token is idempotent and must never grant the same days twice.
+- Customer-facing prices must be shown in toman, derived from Bazaar's configured localized in-app product price. Never hardcode unapproved prices.
+- The client callback is evidence only; it cannot activate access by itself.
 
 ## Release blockers
 
-1. Configure five subscription products in Bazaar Pishkhan with the exact SKUs and periods.
-2. Confirm whether each product renews automatically and document cancellation/refund terms in the app before checkout.
-3. Configure `BAZAAR_RSA_PUBLIC_KEY` (the matching Pishkhan app public key) and confirm the exact five subscription periods are selectable. Verify response fields and lifecycle behavior against a real Bazaar test purchase. The public Poolakey docs do not replace the merchant's current commercial/legal agreement.
-4. Apply \`schema.sql\` to an isolated D1 database and run integration tests.
-5. Add secure periodic/server-side refresh for renewals, cancellations, refunds and expiry.
-6. Keep \`BILLING_V2_ENABLED=false\` until all release blockers pass.
+1. Configure five **consumable in-app products**, not subscription products, in Bazaar Pishkhan with the exact product IDs and approved prices.
+2. Confirm that the five product IDs are unique and that the app's package name exactly matches the Pishkhan app.
+3. Configure \`BAZAAR_RSA_PUBLIC_KEY\` and Bazaar OAuth credentials as Worker secrets. Do not commit secrets.
+4. Apply \`schema.sql\` to an isolated D1 database and run Worker/Android tests.
+5. Connect the purchase flow to a real authenticated user session and the visible plan screen.
+6. Test purchase, server verification, consume, retry-after-consume-failure, repurchase, overlapping-term stacking, refund/reversal and account switching on a Bazaar-enabled physical device.
+7. Keep \`BILLING_V2_ENABLED=false\` until all release blockers pass.
 
-Do not submit the app to Bazaar or enable live payments based only on unit tests.
+Do not submit the app or enable live payments based only on unit tests.
