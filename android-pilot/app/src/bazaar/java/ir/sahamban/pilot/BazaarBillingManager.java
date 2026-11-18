@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import kotlin.Unit;
 
-/** CafeBazaar one-time product bridge; server validation precedes product consumption. */
+/** CafeBazaar subscription bridge; subscriptions are never consumed. */
 public final class BazaarBillingManager {
     public interface Listener {
         void onStatus(String message);
@@ -94,7 +94,7 @@ public final class BazaarBillingManager {
         if (busy) { status("یک عملیات فروشگاهی در حال اجراست."); return; }
         busy = true;
         Arrays.fill(priceMatches, false);
-        payment.getInAppSkuDetails(Arrays.asList(SahminoBillingCatalog.productIds()), callback -> {
+        payment.getSubscriptionSkuDetails(Arrays.asList(SahminoBillingCatalog.productIds()), callback -> {
             callback.getSkuDetailsSucceed(details -> {
                 if (destroyed) return Unit.INSTANCE;
                 for (int i = 0; i < SahminoBillingCatalog.size(); i++) {
@@ -107,7 +107,7 @@ public final class BazaarBillingManager {
                     priceMatches[i] = matches;
                     listener.onCatalogPrice(plan, price, matches);
                 }
-                payment.getPurchasedProducts(query -> {
+                payment.getSubscribedProducts(query -> {
                     query.querySucceed(purchases -> {
                         if (destroyed) return Unit.INSTANCE;
                         busy = false;
@@ -158,7 +158,7 @@ public final class BazaarBillingManager {
             return;
         }
         busy = true;
-        payment.purchaseProduct(activity.getActivityResultRegistry(),
+        payment.subscribeProduct(activity.getActivityResultRegistry(),
             new PurchaseRequest(plan.productId, serverOrderId, null), callback -> {
                 callback.purchaseFlowBegan(() -> {
                     status("صفحه پرداخت کافه‌بازار باز شد…");
@@ -193,22 +193,6 @@ public final class BazaarBillingManager {
                 });
                 return Unit.INSTANCE;
             });
-    }
-
-    /** Consume only after the trusted Worker has committed the order and entitlement. */
-    public void consumeAfterServerSettlement(PurchaseInfo purchase) {
-        if (destroyed || purchase == null) return;
-        payment.consumeProduct(purchase.getPurchaseToken(), callback -> {
-            callback.consumeSucceed(() -> {
-                status("تأیید سرور و مصرف محصول بازار با موفقیت انجام شد.");
-                return Unit.INSTANCE;
-            });
-            callback.consumeFailed(error -> {
-                status("اشتراک در سرور ثبت شده؛ مصرف محصول بازار در بازیابی بعدی دوباره تلاش می‌شود.");
-                return Unit.INSTANCE;
-            });
-            return Unit.INSTANCE;
-        });
     }
 
     private int indexOf(SahminoBillingCatalog.Plan plan) {
