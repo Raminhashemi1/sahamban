@@ -3,16 +3,16 @@
 // plan or account identity; those values come from the authenticated D1 order.
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const ORDER=/^ord_[a-f0-9]{32}$/;
-const TOKEN=/^[^\\s]{16,4096}$/;
+const TOKEN=/^[^\s]{16,4096}$/;
 const SKU=/^[A-Za-z0-9._-]{1,128}$/;
-const PACKAGE=/^[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+){1,}$/;
+const PACKAGE=/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+){1,}$/;
 function decodeBase64(value){
  if(typeof value!=='string'||!value||value.length>16384||!/^[A-Za-z0-9+/]+={0,2}$/.test(value))throw Error('INVALID_BASE64');
  const raw=atob(value);return Uint8Array.from(raw,c=>c.charCodeAt(0));
 }
 function publicKeyBytes(pem){
  if(typeof pem!=='string'||pem.length>8192)throw Error('INVALID_PUBLIC_KEY');
- const body=pem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\\s/g,'');
+ const body=pem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g,'');
  return decodeBase64(body);
 }
 function validReceipt(receipt,order,packageName){
