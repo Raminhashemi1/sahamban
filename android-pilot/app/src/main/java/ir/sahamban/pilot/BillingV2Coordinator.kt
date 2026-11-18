@@ -1,8 +1,6 @@
 package ir.sahamban.pilot
 
 import android.content.Context
-import java.text.NumberFormat
-import java.util.Locale
 import androidx.activity.ComponentActivity
 import ir.cafebazaar.poolakey.Connection
 import ir.cafebazaar.poolakey.ConnectionState
@@ -80,8 +78,8 @@ class BillingV2Coordinator(
         }
     }
 
-    data class PlanDetails(val sku: String, val localizedBazaarPrice: String,
-                           val tomanPrice: String, val title: String, val description: String)
+    data class PlanDetails(val sku: String, val displayPrice: String,
+                           val title: String, val description: String)
 
     fun loadPlanDetails(skus: List<String>, callback: (List<PlanDetails>?) -> Unit) {
         require(skus.size == 5 && skus.distinct().size == 5 &&
@@ -93,8 +91,9 @@ class BillingV2Coordinator(
         payment.getInAppSkuDetails(skus) {
             getSkuDetailsSucceed { details ->
                 val mapped = details.mapNotNull { detail ->
-                    val toman = rialPriceToToman(detail.price) ?: return@mapNotNull null
-                    PlanDetails(detail.sku, detail.price, toman, detail.title, detail.description)
+                    if (detail.price.isBlank() || detail.sku.isBlank()) return@mapNotNull null
+                    // Preserve Bazaar's localized IRR amount verbatim; do not silently convert currencies.
+                    PlanDetails(detail.sku, detail.price, detail.title, detail.description)
                 }
                 callback(mapped.takeIf { it.size == 5 && it.map(PlanDetails::sku).toSet() == skus.toSet() })
             }
