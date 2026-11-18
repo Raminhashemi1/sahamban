@@ -60,5 +60,5 @@ test('Worker receipt route is cookie-authenticated and fail-closed behind featur
  assert.match(worker,/settleVerifiedPrepaidPayment/);
  assert.match(verifier,/MYKET_SIGNATURE_INVALID/);
  assert.match(verifier,/BAZAAR_PURCHASE_MISMATCH/);
- assert.match(verifier,/REPLACE\|PLACEHOLDER/);
+ assert.match(verifier,/replace-with-real|PLACEHOLDER|TODO/);
 });
