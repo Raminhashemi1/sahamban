@@ -1,6 +1,7 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
+import {verifyAndSettleBazaarPurchase} from './bazaar-receipt-verification.mjs';
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
  * Read-only entitlement lookup and optional private-pilot pending-order
@@ -79,7 +80,7 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
@@ -87,15 +88,30 @@ export default {
   const isOrders=url.pathname==='/api/v1/me/orders';
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
   const isPrepaidOverview=url.pathname==='/api/v1/me/prepaid-overview';
-  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview)return send({error:'NOT_FOUND'},404,cors);
+  const isBazaarVerify=url.pathname==='/api/v1/me/prepaid-orders/verify-bazaar';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview&&!isBazaarVerify)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isBazaarVerify&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  if(isBazaarVerify){
+   if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+    return send({error:'JSON_REQUIRED'},415,cors);
+   const length=request.headers.get('Content-Length');
+   if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>8192))return send({error:'BODY_TOO_LARGE'},413,cors);
+   let body;
+   try{body=await request.json();}catch(_){return send({error:'INVALID_JSON'},400,cors);}
+   const response=await verifyAndSettleBazaarPurchase({
+    db:env?.SAHAMBAN_DB,env,subject,body,now:new Date(nowMs).toISOString()
+   });
+   const payload=await response.json();
+   return send(payload,response.status,cors);
+  }
   if(isPrepaidOverview){
    if(env?.PREPAID_ORDERS_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
    const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
