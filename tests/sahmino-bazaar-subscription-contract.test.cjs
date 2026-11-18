@@ -75,7 +75,7 @@ test('restoration is derived from the authenticated server entitlement, not Baza
  const overview=read('server/prepaid-account-overview.cjs');
  assert.match(client,/GET/);
  assert.ok(client.includes('/api/v1/me/prepaid-overview'));
- assert.match(client,/response\\.optBoolean\\("proEnabled", false\\)/);
+ assert.ok(client.includes('response.optBoolean("proEnabled", false)'));
  assert.match(activity,/onRestoredEvidence/);
  assert.match(activity,/orders\\.refreshEntitlement/);
  assert.match(overview,/proEnabled:active/);
