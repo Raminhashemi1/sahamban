@@ -230,6 +230,7 @@ export default {
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   // Cookie-authenticated Sahmino account routes. The internal user ID is
   // derived only from a validated, unrevoked OTP session in D1; never from input.
+  if(isPrepaidVerify&&!parseCookie(request,'sahmino_session'))return send({error:'NOT_AUTHENTICATED'},401,cors);
   if(isPrepaidOrders||isPrepaidOverview||isPrepaidVerify){
    const sessionCookie=parseCookie(request,'sahmino_session');
    if(sessionCookie){
@@ -254,7 +255,7 @@ export default {
        required.some(key=>!Object.prototype.hasOwnProperty.call(body,key))||
        typeof body.serverOrderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.serverOrderId))
       return send({error:'INVALID_RECEIPT'},400,cors);
-     if(typeof env?.BAZAAR_PACKAGE_NAME!=='string'||!env.BAZAAR_PACKAGE_NAME)
+     if(!env?.SAHAMBAN_DB||typeof env?.BAZAAR_PACKAGE_NAME!=='string'||!env.BAZAAR_PACKAGE_NAME)
       return send({error:'BAZAAR_VERIFIER_NOT_CONFIGURED'},503,cors);
      const order=await env.SAHAMBAN_DB.prepare(
       `SELECT id,user_id,plan_id,amount_rial,currency,state
