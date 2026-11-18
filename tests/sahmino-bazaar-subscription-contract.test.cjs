@@ -12,7 +12,7 @@ test('native billing boundary uses one-time Cafe Bazaar Poolakey products',()=>{
  const manifest=read('android-pilot/app/src/main/AndroidManifest.xml');
  for(const marker of ['purchaseFixedTermPlan','PaymentConfiguration','SecurityCheck.Disable','payment.connect',
    'payment.purchaseProduct','PurchaseRequest','payment.getPurchasedProducts',
-   'PurchaseState.PURCHASED','purchaseToken','originalJson','purchaseCanceled','purchaseFailed','querySucceed'])
+   'PurchaseState.PURCHASED','purchaseToken','originalJson','val serverOrderId = payload','purchaseCanceled','purchaseFailed','querySucceed'])
   assert.ok(manager.includes(marker),marker);
  assert.match(gradle,/com\.github\.cafebazaar\.Poolakey:poolakey:2\.3\.0/);
  assert.match(gradle,/org\.jetbrains\.kotlin\.android/);
