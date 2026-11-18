@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {PLANS,getPlan,nextExpiry}=require('../server/billing/catalog.cjs');
+const {PLANS,getPlan}=require('../server/billing/catalog.cjs');
 const {createOrder}=require('../server/billing/orders.cjs');
 
 test('Billing V2 defines exactly the five fixed-day IRR plans',()=>{
@@ -12,10 +12,8 @@ test('Billing V2 defines exactly the five fixed-day IRR plans',()=>{
  ]);
  assert.equal(getPlan('UNKNOWN'),null);
 });
-test('fixed-term extension adds exact 24-hour days to remaining access',()=>{
- assert.equal(nextExpiry(null,'2026-01-01T00:00:00.000Z',30),'2026-01-31T00:00:00.000Z');
- assert.equal(nextExpiry('2026-02-01T00:00:00.000Z','2026-01-01T00:00:00.000Z',30),'2026-03-03T00:00:00.000Z');
- assert.throws(()=>nextExpiry(null,'not-a-date',30));
+test('subscription expiry is not calculated locally',()=>{
+ assert.equal(require('../server/billing/catalog.cjs').nextExpiry,undefined);
 });
 test('order creation uses server catalog price and ignores client-supplied amount',async()=>{
  let sql='',values=[];
