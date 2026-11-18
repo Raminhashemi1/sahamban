@@ -15,7 +15,7 @@ function fakeDb(order,{batchChanges=1}={}){
  };
 }
 test('first verified in-app purchase atomically records payment and grants 30 days manually',async()=>{
- const db=fakeDb({id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,expires_at:null});
+ const db=fakeDb({id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,created_at:now,expires_at:null});
  const result=await settle(db,input);
  assert.deepEqual(result,{ok:true,restored:false,expiresAt:'2026-01-31T00:00:00.000Z',daysAdded:30,renewalMode:'MANUAL'});
  assert.equal(db.calls.length,1);assert.equal(db.calls[0].length,3);
@@ -33,7 +33,7 @@ test('same Bazaar purchase is idempotent and never grants days twice',async()=>{
  assert.equal(db.calls.length,0);
 });
 test('manual repurchase stacks days on top of current unexpired access',async()=>{
- const db=fakeDb({id:'order2',user_id:'u1',status:'CREATED',plan_id:input.planId,
+ const db=fakeDb({id:'order2',user_id:'u1',status:'CREATED',plan_id:input.planId,created_at:now,
   expires_at:'2026-02-01T00:00:00.000Z'});
  const result=await settle(db,{...input,orderId:'ord_'+'b'.repeat(32),tokenHash:'b'.repeat(64)});
  assert.equal(result.expiresAt,'2026-03-03T00:00:00.000Z');
