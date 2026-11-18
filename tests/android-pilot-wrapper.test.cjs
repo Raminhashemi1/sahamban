@@ -19,30 +19,22 @@ test('Android wrapper keeps HTTPS navigation and sensitive local resources restr
  assert.ok(!java.includes('addJavascriptInterface'));
 });
 
-test('market variants use separate store flavors, approved Sahmino identity and no production signing',()=>{
+test('Sahmino pilot targets CafeBazaar only and keeps production signing disabled',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/applicationId 'ir\.manahesab\.sahmino'/);
+ assert.match(build,/applicationId 'ir\\.manahesab\\.sahmino'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
+ assert.match(build,/bazaar\\s*\\{/);
+ assert.doesNotMatch(build,/myket\\s*\\{|myketImplementation|MYKET_IAB_PUBLIC_KEY|ir\\.myket:billing/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/compileBazaarDebugJavaWithJavac/);
- assert.match(wf,/compileMyketDebugJavaWithJavac/);
- assert.match(wf,/Compile-check both store variants/);
+ assert.doesNotMatch(wf,/compileMyketDebugJavaWithJavac|assembleMyketDebug|myket\\/debug/);
  assert.match(wf,/assembleBazaarDebug/);
- assert.match(wf,/assembleMyketDebug/);
- assert.match(wf,/actions\/upload-artifact@v4/);
+ assert.match(wf,/actions\\/upload-artifact@v4/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease/);
- assert.match(read('android-pilot/README.md'),/internal debug-only/);
- assert.match(build,/bazaar\s*\{/);
- assert.match(build,/myket\s*\{/);
+ assert.match(read('android-pilot/README.md'),/CafeBazaar only/);
  const bazaarUi=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
- const myketUi=read('android-pilot/app/src/myket/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  assert.match(bazaarUi,/پرداخت امن از طریق کافه‌بازار/);
  assert.match(bazaarUi,/خرید اشتراک از کافه‌بازار/);
- assert.match(myketUi,/پرداخت امن از طریق مایکت/);
- assert.match(myketUi,/خرید اشتراک از مایکت/);
- assert.match(build,/ir\.myket:billing:2\.2/);
- assert.match(build,/sahmino_pro_.*suffix\.toLowerCase\(\)/);
  assert.match(build,/BAZAAR_IAB_PUBLIC_KEY/);
- assert.match(build,/MYKET_IAB_PUBLIC_KEY/);
- assert.doesNotMatch(build,/com\.android\.vending/);
+ assert.doesNotMatch(build,/com\\.android\\.vending/);
 });
