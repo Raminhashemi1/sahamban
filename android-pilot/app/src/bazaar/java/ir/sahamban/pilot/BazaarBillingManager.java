@@ -42,7 +42,7 @@ public final class BazaarBillingManager {
         }
         // Match CafeBazaar's official Poolakey sample: verify the purchase signature locally.
         // The Worker independently verifies the provider receipt before entitlement settlement.
-        PaymentConfiguration config = new PaymentConfiguration(SecurityCheck.Enable(publicKey), true);
+        PaymentConfiguration config = new PaymentConfiguration(new SecurityCheck.Enable(publicKey), true);
         this.payment = new Payment(activity, config);
     }
 
