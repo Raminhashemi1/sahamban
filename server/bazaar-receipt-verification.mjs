@@ -50,7 +50,7 @@ async function verifyBazaarReceipt({env,packageName,productId,purchaseToken,orde
  const response=await fetchImpl(path,{method:'GET',headers:{'Accept':'application/json'}});
  if(!response.ok)throw Error('BAZAAR_RECEIPT_REJECTED');
  const receipt=await response.json();
- if(!receipt||receipt.purchaseState!==0||receipt.developerPayload!==orderId)
+ if(!receipt||receipt.purchaseState!==0||receipt.consumptionState!==0||\n   receipt.developerPayload!==orderId||typeof receipt.orderId!=='string'||!receipt.orderId)
   throw Error('BAZAAR_RECEIPT_NOT_VALID');
  return receipt;
 }
