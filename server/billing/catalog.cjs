@@ -8,16 +8,4 @@ const PLANS=Object.freeze([
 ]);
 const BY_ID=new Map(PLANS.map(p=>[p.id,p]));
 function getPlan(id){return BY_ID.get(id)||null;}
-function isoMs(value){
- if(typeof value!=='string')throw new TypeError('INVALID_UTC_TIME');
- const ms=Date.parse(value);
- if(!Number.isFinite(ms)||new Date(ms).toISOString()!==value)throw new TypeError('INVALID_UTC_TIME');
- return ms;
-}
-function nextExpiry(currentPaidUntil,now,days){
- const nowMs=isoMs(now);
- if(!Number.isInteger(days)||days<1||days>365)throw new TypeError('INVALID_TERM');
- const oldMs=currentPaidUntil?isoMs(currentPaidUntil):NaN;
- return new Date((Number.isFinite(oldMs)&&oldMs>nowMs?oldMs:nowMs)+days*86400000).toISOString();
-}
-module.exports=Object.freeze({PLANS,getPlan,nextExpiry});
+module.exports=Object.freeze({PLANS,getPlan});
