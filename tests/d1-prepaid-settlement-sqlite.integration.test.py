@@ -11,7 +11,7 @@ SOURCE = (ROOT / 'server' / 'prepaid-settlement.cjs').read_text(encoding='utf-8'
 
 def actual_sql(name):
     tick = chr(96)
-    match = re.search(r'const\\s+' + re.escape(name) + r'\\s*=\\s*' + tick +
+    match = re.search(r'const\s+' + re.escape(name) + r'\s*=\s*' + tick +
                       r'([^' + tick + r']*)' + tick + r';', SOURCE, re.S)
     if not match:
         raise AssertionError('Missing settlement SQL: ' + name)
