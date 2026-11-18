@@ -28,6 +28,17 @@ WHERE id=? AND state='PENDING' AND plan_id=? AND amount_rial=? AND currency='IRR
 AND EXISTS(SELECT 1 FROM sahmino_prepaid_payment_events e
  WHERE e.provider_name=? AND e.provider_event_id=? AND e.provider_payment_id=?
  AND e.order_id=sahmino_prepaid_subscription_orders.id AND e.event_type='PAYMENT_SETTLED')`;
+const CONTROL_INSERT_SQL=`INSERT INTO sahmino_bazaar_subscription_control
+(order_id,user_id,provider_payment_id,renewal_mode,consent_version,consent_at,
+ provider_auto_renewing,lifecycle_state,provider_paid_until,created_at,updated_at)
+SELECT o.id,o.user_id,o.provider_payment_id,'MANUAL',NULL,NULL,0,'VERIFIED',?, ?, ?
+FROM sahmino_prepaid_subscription_orders o
+WHERE o.id=? AND o.state='SETTLED' AND o.provider_name='cafebazaar'
+AND o.provider_payment_id=? AND EXISTS(
+ SELECT 1 FROM sahmino_prepaid_payment_events e
+ WHERE e.order_id=o.id AND e.provider_name='cafebazaar'
+ AND e.provider_payment_id=o.provider_payment_id AND e.event_type='PAYMENT_SETTLED'
+)`;
 const ENTITLEMENT_UPSERT_SQL=`WITH base AS (
  SELECT o.user_id
  FROM sahmino_prepaid_subscription_orders o
@@ -69,12 +80,13 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider,tok
   const statements=[
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
    db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,tokenEnvelope.version,tokenEnvelope.nonce,tokenEnvelope.ciphertext,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
-   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(orderId,providerName,providerPaymentId,providerPaidUntil,now)
+   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(orderId,providerName,providerPaymentId,providerPaidUntil,now),
+   db.prepare(CONTROL_INSERT_SQL).bind(providerPaidUntil,now,now,orderId,providerPaymentId)
   ];
   const results=await db.batch(statements);
-  if(!Array.isArray(results)||results.length!==3||results.some(x=>x?.success!==true))return {ok:false,reason:'SETTLEMENT_FAILED'};
+  if(!Array.isArray(results)||results.length!==4||results.some(x=>x?.success!==true))return {ok:false,reason:'SETTLEMENT_FAILED'};
   if(results.some(x=>x?.meta?.changes!==1))return {ok:false,reason:'SETTLEMENT_NOT_APPLIED'};
   return {ok:true,reason:'SETTLED',orderId,planId,paidUntil:effectivePaidUntil};
  }catch(_){return {ok:false,reason:'SETTLEMENT_FAILED'};}
 }
-module.exports=Object.freeze({settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL,bazaarExpiry});
+module.exports=Object.freeze({settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL,CONTROL_INSERT_SQL,bazaarExpiry});
