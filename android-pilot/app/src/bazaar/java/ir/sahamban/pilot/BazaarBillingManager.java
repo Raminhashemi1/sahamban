@@ -51,6 +51,8 @@ public final class BazaarBillingManager {
         }
     }
 
+    public boolean isConfigured() { return configured && payment != null; }
+
     public void connect() {
         if (destroyed || ready) return;
         if (!configured || payment == null) {
