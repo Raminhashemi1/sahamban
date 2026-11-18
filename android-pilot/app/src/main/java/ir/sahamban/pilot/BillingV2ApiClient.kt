@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 /** HTTPS-only adapter for authenticated Billing V2 Worker endpoints. */
 class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: String) {
     data class Order(val id: String, val planId: String, val days: Int)
-    data class Access(val planId: String, val expiresAt: String, val autoRenewing: Boolean)
+    data class Access(val planId: String, val expiresAt: String, val renewalMode: String)
 
     sealed interface Result<out T> {
         data class Success<T>(val value: T) : Result<T>
@@ -43,7 +43,7 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
             }, callback)
     }
 
-    fun verifySubscription(orderId: String, sku: String, purchaseToken: String,
+    fun verifyPurchase(orderId: String, sku: String, purchaseToken: String,
                            originalJson: String, dataSignature: String,
                            callback: (Result<Access>) -> Unit) {
         require(orderId.matches(Regex("^ord_[a-f0-9]{32}$")))
@@ -57,8 +57,8 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
             if (status == 200 && json.optString("status") == "ACTIVE") {
                 val plan = json.optString("planId")
                 val expires = json.optString("expiresAt")
-                if (plan.isNotBlank() && expires.isNotBlank())
-                    Result.Success(Access(plan, expires, json.optBoolean("autoRenewing")))
+                if (plan.isNotBlank() && expires.isNotBlank() && json.optString("renewalMode") == "MANUAL")
+                    Result.Success(Access(plan, expires, "MANUAL"))
                 else Result.Failure(502, "INVALID_ACCESS_RESPONSE")
             } else Result.Failure(status, json.optString("error", "VERIFY_FAILED"))
         }, callback)
