@@ -62,7 +62,7 @@ test('native order handoff and receipt verification use authenticated Worker end
      'proEnabled','AUTO_RENEW','onVerified']) assert.ok(client.includes(marker),marker);
  for(const marker of ['grantPro','consumeProduct','readNBytes','proEnabled = true']) assert.ok(!client.includes(marker),marker);
  for(const marker of ['orders.prepare(selectedPlanId','billing.subscribe(selectedPlanId, serverOrderId)',
-     'orders.verifyPurchase(evidence','plan.setEnabled(false)',
+     'orders.verifyPurchase(evidence','plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured())',
      '!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED','اشتراک Pro توسط سرور تأیید و فعال شد']) assert.ok(activity.includes(marker),marker);
  assert.ok(gradle.includes("SAHMINO_WORKER_BASE_URL', '\"\"'"));
  assert.ok(gradle.includes("SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'"));
