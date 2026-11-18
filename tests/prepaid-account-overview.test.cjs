@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const {prepaidAccountOverview,LOOKUP,HISTORY}=require('../server/prepaid-account-overview.cjs');
 const now='2026-11-12T10:00:00.000Z',subject='oidc|user:123';
 const account={user_id:'u1',account_status:'ACTIVE',payment_suspended:0,paid_until:'2027-02-12T10:00:00.000Z'};
-const item={id:'ord_abc',plan_id:'SAHAMBAN_PRO_3M',amount_rial:4500000,currency:'IRR',
+const item={id:'ord_abc',plan_id:'SAHAMBAN_PRO_30D',amount_rial:1500000,currency:'IRR',
  state:'SETTLED',created_at:now,settled_at:'2026-11-12T10:05:00.000Z'};
 function dbFor({user=account,orders=[item],error=false}={}){
  const calls=[];
