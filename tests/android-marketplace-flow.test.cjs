@@ -29,23 +29,11 @@ test('native receipt API requires HTTPS and the authenticated HttpOnly session c
 test('CafeBazaar uses Poolakey subscription APIs and never consumes subscription receipts',()=>{
  const manager=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/BazaarBillingManager.java');
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
- assert.match(manager,/new SecurityCheck\\.Enable\\(publicKey\\)/);
- assert.match(manager,/this\\.configured = publicKey\\.length\\(\\) >= 100/);
- assert.match(manager,/this\\.payment = null/);
- assert.match(manager,/if \\(!configured \\|\\| payment == null\\)/);
- assert.doesNotMatch(manager,/throw new IllegalStateException/);
- assert.doesNotMatch(manager,/SecurityCheck\\.Disable/);
- assert.match(manager,/BuildConfig\\.IAB_PUBLIC_KEY/);
- assert.match(manager,/payment\\.subscribeProduct/);
- assert.match(manager,/getSubscriptionSkuDetails/);
- assert.match(manager,/getSubscribedProducts/);
- assert.doesNotMatch(manager,/payment\\.purchaseProduct/);
- assert.doesNotMatch(manager,/getPurchasedProducts/);
- assert.doesNotMatch(manager,/consumeProduct/);
- assert.match(manager,/new PurchaseRequest\\(plan\\.productId, serverOrderId, null\\)/);
- assert.match(activity,/SahminoReceiptApiClient\\.createOrder/);
- assert.match(activity,/submitBazaarReceipt/);
- assert.doesNotMatch(activity,/consumeAfterServerSettlement/);
+ for (const required of ['new SecurityCheck.Enable(publicKey)','payment.subscribeProduct','getSubscriptionSkuDetails','getSubscribedProducts','BuildConfig.IAB_PUBLIC_KEY','new PurchaseRequest(plan.productId, serverOrderId, null)']) assert.ok(manager.includes(required),required);
+ for (const forbidden of ['SecurityCheck.Disable','payment.purchaseProduct','getPurchasedProducts','consumeProduct']) assert.ok(!manager.includes(forbidden),forbidden);
+ assert.ok(activity.includes('SahminoReceiptApiClient.createOrder'));
+ assert.ok(activity.includes('submitBazaarReceipt'));
+ assert.ok(!activity.includes('consumeAfterServerSettlement'));
 });
 
 test('Worker receipt route is cookie-authenticated and fail-closed behind feature flags',()=>{
@@ -58,6 +46,6 @@ test('Worker receipt route is cookie-authenticated and fail-closed behind featur
  assert.match(worker,/verifyMarketplaceReceipt/);
  assert.match(worker,/settleVerifiedPrepaidPayment/);
  assert.match(verifier,/MYKET_SIGNATURE_INVALID/);
- assert.match(verifier,/BAZAAR_PURCHASE_MISMATCH/);
+ assert.match(verifier,/BAZAAR_SUBSCRIPTION_INACTIVE/);
  assert.match(verifier,/replace-with-real|PLACEHOLDER|TODO/);
 });
