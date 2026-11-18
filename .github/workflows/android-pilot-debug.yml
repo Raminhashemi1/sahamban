@@ -5,7 +5,7 @@ on:
   push:
     paths:
       - 'android-pilot/**'
-      - 'tests/android-pilot-wrapper.test.cjs'
+      - 'tests/android-pilot-wrapper.test.cjs'\n      - 'tests/sahmino-bazaar-subscription-contract.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
 permissions:
   contents: read
@@ -38,7 +38,7 @@ jobs:
           javac -d /tmp/sahmino-price-check android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoStorePriceMatcher.java android-pilot/tests/SahminoStorePriceMatcherTest.java
           java -cp /tmp/sahmino-price-check ir.sahamban.pilot.SahminoStorePriceMatcherTest
       - name: Verify Bazaar-only flavor and five-plan catalog contract
-        run: node --test tests/android-pilot-wrapper.test.cjs tests/sahmino-subscription-ui-catalog.test.cjs
+        run: node --test tests/android-pilot-wrapper.test.cjs tests/sahmino-subscription-ui-catalog.test.cjs tests/sahmino-bazaar-subscription-contract.test.cjs
       - name: Validate embedded dashboard subscription JavaScript
         shell: bash
         run: node --check android-pilot/app/src/main/assets/sahmino-webview-ui.js
