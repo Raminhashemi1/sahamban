@@ -11,6 +11,7 @@ import java.util.concurrent.Executors
 class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: String) {
     data class Order(val id: String, val planId: String, val days: Int)
     data class Access(val planId: String, val expiresAt: String, val renewalMode: String)
+    data class Entitlement(val proEnabled: Boolean, val paidUntil: String?, val renewalMode: String?)
 
     sealed interface Result<out T> {
         data class Success<T>(val value: T) : Result<T>
@@ -24,6 +25,42 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
         val parsed = URL(baseUrl)
         require(parsed.protocol == "https" && parsed.userInfo == null &&
             parsed.query == null && parsed.fragment == null && bearerToken.isNotBlank())
+    }
+
+    /** Reload durable account entitlement; consumed Bazaar purchases are not restorable from store inventory. */
+    fun refreshEntitlement(callback: (Result<Entitlement>) -> Unit) {
+        executor.execute {
+            val result: Result<Entitlement> = try {
+                val base = URL(baseUrl)
+                val endpoint = URL(base, "/api/v1/me/entitlement")
+                require(endpoint.protocol == "https" && endpoint.host == base.host &&
+                    endpoint.port == base.port)
+                val connection = endpoint.openConnection() as HttpsURLConnection
+                try {
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 15000
+                    connection.setRequestProperty("Authorization", "Bearer $bearerToken")
+                    connection.setRequestProperty("Accept", "application/json")
+                    connection.setRequestProperty("Cache-Control", "no-store")
+                    val status = connection.responseCode
+                    val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+                    val json = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
+                    val body = JSONObject(json)
+                    if (status == 200 && body.optBoolean("proEnabled") &&
+                        body.optString("renewalMode") == "MANUAL") {
+                        val until = body.optString("paidUntil").takeIf { it.isNotBlank() }
+                        if (until != null) Result.Success(Entitlement(true, until, "MANUAL"))
+                        else Result.Failure(502, "INVALID_ENTITLEMENT_RESPONSE")
+                    } else if (status == 403) {
+                        Result.Success(Entitlement(false, body.optString("paidUntil").takeIf { it.isNotBlank() }, "MANUAL"))
+                    } else Result.Failure(status, body.optString("reason", "ENTITLEMENT_UNAVAILABLE"))
+                } finally { connection.disconnect() }
+            } catch (_: Exception) {
+                Result.Failure(0, "NETWORK_UNAVAILABLE")
+            }
+            main.post { callback(result) }
+        }
     }
 
     fun createOrder(planId: String, callback: (Result<Order>) -> Unit) {
