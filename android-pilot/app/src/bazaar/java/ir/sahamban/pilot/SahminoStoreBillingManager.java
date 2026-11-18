@@ -62,6 +62,11 @@ public final class SahminoStoreBillingManager implements AutoCloseable {
         }
     }
 
+    public void refreshAll() {
+        refreshSubscriptionCatalog();
+        refreshInventory();
+    }
+
     public void refreshSubscriptionCatalog() {
         if (!connected || closed) return;
         PaymentRxKt.getSubscriptionSkuDetails(payment, Arrays.asList(SahminoBillingCatalog.productIds()))
