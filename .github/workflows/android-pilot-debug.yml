@@ -1,5 +1,5 @@
-name: Sahmino Bazaar and Myket integration validation
-# Compile-check store variants only. Do not assemble or upload APKs before release readiness.
+name: Sahmino CafeBazaar integration validation
+# Compile-check the sole supported store flavor. Do not assemble or upload APKs before release readiness.
 on:
   workflow_dispatch:
   push:
@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/sahamban-java-check
-          javac -d /tmp/sahamban-java-check             android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java             android-pilot/tests/TrustedNavigationTest.java
+          javac -d /tmp/sahamban-java-check android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java android-pilot/tests/TrustedNavigationTest.java
           java -cp /tmp/sahamban-java-check ir.sahamban.pilot.TrustedNavigationTest
       - name: Verify five-plan billing catalog with Java
         shell: bash
@@ -31,29 +31,14 @@ jobs:
           mkdir -p /tmp/sahmino-billing-check
           javac -d /tmp/sahmino-billing-check android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoBillingCatalog.java android-pilot/tests/SahminoBillingCatalogTest.java
           java -cp /tmp/sahmino-billing-check ir.sahamban.pilot.SahminoBillingCatalogTest
-      - name: Enforce one-time purchase policy for manual renewal
-        shell: bash
-        run: |
-          set -euo pipefail
-          MANAGER=android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoStoreBillingManager.java
-          grep -q 'helper.launchPurchaseFlow(activity, plan.productId' "$MANAGER"
-          ! grep -q 'launchSubscriptionPurchaseFlow' "$MANAGER"
-          grep -q 'SahminoPurchaseEvidence.from(purchase)' "$MANAGER"
-          echo "Manual-renewal IAP policy: PASS"
-      - name: Verify signed purchase evidence extraction
-        shell: bash
-        run: |
-          mkdir -p /tmp/sahmino-evidence-check
-          javac -d /tmp/sahmino-evidence-check android-pilot/tests/fakes/ir/myket/billingclient/util/Purchase.java android-pilot/app/src/myket/java/ir/sahamban/pilot/SahminoPurchaseEvidence.java android-pilot/tests/SahminoPurchaseEvidenceTest.java
-          java -cp /tmp/sahmino-evidence-check ir.sahamban.pilot.SahminoPurchaseEvidenceTest
       - name: Verify IRR-only store price matching
         shell: bash
         run: |
           mkdir -p /tmp/sahmino-price-check
           javac -d /tmp/sahmino-price-check android-pilot/app/src/main/java/ir/sahamban/pilot/SahminoStorePriceMatcher.java android-pilot/tests/SahminoStorePriceMatcherTest.java
           java -cp /tmp/sahmino-price-check ir.sahamban.pilot.SahminoStorePriceMatcherTest
-      - name: Verify store-specific flavor configuration
-        run: node --test tests/android-pilot-wrapper.test.cjs
+      - name: Verify Bazaar-only flavor and five-plan catalog contract
+        run: node --test tests/android-pilot-wrapper.test.cjs tests/sahmino-subscription-ui-catalog.test.cjs
       - name: Validate embedded dashboard subscription JavaScript
         shell: bash
         run: node --check android-pilot/app/src/main/assets/sahmino-webview-ui.js
@@ -72,5 +57,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Compile-check both store variants (no APKs or artifacts)
-        run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac :app:compileMyketDebugJavaWithJavac
+      - name: Compile-check CafeBazaar flavor only (no APKs or artifacts)
+        run: gradle -p android-pilot --no-daemon :app:compileBazaarDebugJavaWithJavac
