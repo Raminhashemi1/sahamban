@@ -12,7 +12,7 @@ test('native billing boundary uses one-time Cafe Bazaar Poolakey products',()=>{
  for(const marker of ['purchaseFixedTermPlan','PaymentConfiguration','SecurityCheck.Disable','payment.connect',
    'payment.purchaseProduct','PurchaseRequest','payment.getPurchasedProducts',
    'PurchaseState.PURCHASED','purchaseToken','originalJson','dataSignature',
-   'serverOrderId','onReady']) assert.ok(manager.includes(marker),marker);
+   'purchaseCanceled','purchaseFailed','querySucceed']) assert.ok(manager.includes(marker),marker);
  assert.match(gradle,/com\.github\.cafebazaar\.Poolakey:poolakey:2\.2\.0/);
  assert.match(gradle,/org\.jetbrains\.kotlin\.android/);
  assert.match(settings,/jitpack\.io/);
@@ -26,7 +26,7 @@ test('native billing evidence cannot grant access and live checkout stays disabl
  assert.match(gradle,/SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'/);
 });
 
-test('server currently exposes only pending orders and no Bazaar receipt verification endpoint',()=>{
+test('server exposes Bazaar receipt verification behind a disabled-by-default feature flag',()=>{
  const worker=read('server/worker-api.mjs');
  assert.match(worker,/paymentsEnabled:false,checkoutEnabled:false/);
  assert.match(worker,/isPrepaidOrders/);
