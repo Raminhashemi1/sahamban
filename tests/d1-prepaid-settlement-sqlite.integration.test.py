@@ -44,8 +44,8 @@ def settle(db, oid=ORDER_ID, plan='SAHMINO_PRO_30D', amount=1500000,
            event='evt_1', payment='pay_1'):
     with db:
         event_result = db.execute(EVENT, ('cafebazaar', event, payment, now, oid, plan, amount))
-        order_result = db.execute(ORDER, (now, 'cafebazaar', payment, oid, plan, amount,
-                                          'cafebazaar', event, payment))
+        order_result = db.execute(ORDER, (now, 'cafebazaar', payment, 'v1', 'test-nonce', 'test-ciphertext',
+                                          oid, plan, amount, 'cafebazaar', event, payment))
         db.execute(ENTITLEMENT, (oid, 'cafebazaar', payment, valid_until, now))
         grant_changes = db.execute('SELECT changes()').fetchone()[0]
         if event_result.rowcount != 1 or order_result.rowcount != 1 or grant_changes != 1:
