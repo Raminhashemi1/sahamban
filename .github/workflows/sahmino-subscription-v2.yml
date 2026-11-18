@@ -1,0 +1,71 @@
+name: Sahmino subscription v2 validation
+
+on:
+  push:
+    branches:
+      - feat/android-subscription-preview-20261115
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  subscription-v2:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Check subscription module syntax
+        run: |
+          node --check server/prepaid-plans.cjs
+          node --check server/prepaid-orders-api.cjs
+          node --check server/prepaid-settlement.cjs
+          node --check server/prepaid-account-overview.cjs
+          node --check server/bazaar-subscription-verifier.cjs
+          node --check server/bazaar-token-vault.cjs
+          node --check server/bazaar-subscription-cancellation.cjs
+          node --check server/worker-api.mjs
+          node --check server/sms-otp-core.cjs
+          node --check server/sms-otp-service.cjs
+          node --check server/d1-sms-otp-repository.cjs
+      - name: Run subscription unit and authenticated Worker API tests
+        run: >
+          node --test
+          tests/prepaid-plans.test.cjs
+          tests/prepaid-orders-api.test.cjs
+          tests/prepaid-settlement.test.cjs
+          tests/prepaid-account-overview.test.cjs
+          tests/bazaar-subscription-verifier.test.cjs
+          tests/bazaar-token-vault.test.cjs
+          tests/bazaar-subscription-cancellation.test.cjs
+          tests/worker-api.test.cjs
+          tests/sahmino-subscription-ui-catalog.test.cjs
+          tests/sahmino-account-panel.test.cjs
+          tests/sahmino-sms-otp-core.test.cjs
+          tests/sahmino-sms-otp-service.test.cjs
+          tests/d1-sms-otp-session.test.cjs
+          tests/sahmino-bazaar-subscription-contract.test.cjs
+      - name: Run provider-neutral SMS OTP migration constraints
+        run: python tests/d1-sahmino-sms-otp-migration.test.py
+      - name: Run D1 SMS OTP runtime repository schema and atomicity tests
+        run: python tests/d1-sahmino-sms-otp-runtime.test.py
+      - name: Run legacy and additive v2 D1 migration constraints
+        run: python tests/d1-prepaid-migration.test.py
+      - name: Run standalone five-plan v2 schema regression tests
+        run: python tests/d1-sahmino-subscription-v2.test.py
+      - name: Run encrypted Bazaar token migration constraints
+        run: python tests/d1-bazaar-token-vault-migration.test.py
+      - name: Run explicit renewal consent order migration constraints
+        run: python tests/d1-sahmino-renewal-consent-migration.test.py
+      - name: Run Bazaar subscription consent and cancellation lifecycle constraints
+        run: python tests/d1-sahmino-bazaar-subscription-control-migration.test.py
+      - name: Run five-plan exact-day SQLite settlement integration
+        run: python tests/d1-prepaid-settlement-sqlite.integration.test.py

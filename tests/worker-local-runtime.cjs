@@ -39,6 +39,7 @@ async function main(){
  cli('--command',"INSERT OR IGNORE INTO sahamban_users(id,auth_subject,created_at,status) VALUES ('local-runtime-u1','"+ID+"','"+stamp+"','ACTIVE')");
  cli('--command',"INSERT OR REPLACE INTO subscription_entitlements(user_id,paid_until,suspended,auto_renew_cancelled,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,0,'"+stamp+"')");
  cli('--file','server/d1-prepaid-migration.sql');
+ cli('--file','server/d1-sahmino-subscription-v2.sql');
  cli('--command',"INSERT OR REPLACE INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at) VALUES ('local-runtime-u1','2100-01-01T00:00:00.000Z','"+stamp+"')");
  const tok=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  // Command-line var is a PUBLIC TEST VALUE, NOT an actual key or credential.
@@ -97,10 +98,10 @@ async function main(){
   }
   if(enablePrepaid){
    const create=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_6M'})});
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHMINO_PRO_60D'})});
    assert.equal(create.status,201);
-   assert.equal(create.data.order.planId,'SAHAMBAN_PRO_6M');
-   assert.equal(create.data.order.amountRial,8550000);
+   assert.equal(create.data.order.planId,'SAHMINO_PRO_60D');
+   assert.equal(create.data.order.amountRial,2850000);
    assert.equal(create.data.checkoutEnabled,false);
    assert.equal(create.data.proEnabled,false);
    assert.match(create.data.order.id,/^ord_[a-f0-9]{32}$/);
@@ -109,7 +110,7 @@ async function main(){
    assert.equal(pending.data.pending,true);
    assert.equal(pending.data.order.id,create.data.order.id);
    const duplicate=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_3M'})});
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHMINO_PRO_30D'})});
    assert.equal(duplicate.status,503);
    const tampered=await json('/api/v1/me/prepaid-orders',{token:tok,method:'POST',
     headers:{'Content-Type':'application/json'},body:JSON.stringify({planId:'SAHAMBAN_PRO_3M',amountRial:1})});

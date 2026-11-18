@@ -31,6 +31,8 @@ test('verified pilot JWT reads only account-bound entitlement via prepared D1 qu
  assert.deepEqual(storage.calls[1],['bound',subject]);
  assert.match(storage.calls[0][1],/WHERE u.auth_subject=\?/);
  assert.match(storage.calls[0][1],/LEFT JOIN prepaid_subscription_entitlements pe/);
+ assert.match(storage.calls[0][1],/LEFT JOIN sahmino_prepaid_subscription_entitlements v2/);
+ assert.match(storage.calls[0][1],/v2\.paid_until/);
 });
 test('missing/forged/expired/wrong issuer/wrong algorithm/long tokens all fail closed',async()=>{
  const worker=(await api()).default;
@@ -50,6 +52,7 @@ test('cross-origin CORS and query spoofing blocked before entitlement lookup',as
  const preflight=await worker.fetch(new Request('https://worker.example/api/v1/me/entitlement',{method:'OPTIONS',headers:{Origin:origin}}),env());
  assert.equal(preflight.status,204);
  assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),origin);
+ assert.equal(preflight.headers.get('Access-Control-Allow-Credentials'),'true');
 });
 test('no DB, suspended, expired, bad status, invalid expiration or DB failures deny paid access',async()=>{
  const worker=(await api()).default,token=await signedToken();
@@ -96,17 +99,17 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
  };}};}};
  const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
   method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
-  body:JSON.stringify({planId:'SAHAMBAN_PRO_6M'})
+  body:JSON.stringify({planId:'SAHMINO_PRO_60D'})
  }),{...env(storage),PREPAID_ORDERS_ENABLED:'true'});
  assert.equal(response.status,201);
  const body=await response.json();
- assert.equal(body.order.amountRial,8550000);
+ assert.equal(body.order.amountRial,2850000);
  assert.equal(body.checkoutEnabled,false);
  assert.equal(body.proEnabled,false);
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
- assert.deepEqual(calls[0].values.slice(1,3),['SAHAMBAN_PRO_6M',8550000]);
+ assert.deepEqual(calls[0].values.slice(1,3),['SAHMINO_PRO_60D',2850000]);
  assert.match(calls[0].values[3],/^\d{4}-\d{2}-\d{2}T/);
- assert.equal(calls[0].values[4],subject);
+ assert.equal(calls[0].values[4],'MANUAL');assert.equal(calls[0].values[5],null);assert.equal(calls[0].values[6],null);assert.equal(calls[0].values[7],subject);
  assert.match(calls[0].sql,/u\.auth_subject=\?/);
 });
 
@@ -148,4 +151,104 @@ test('prepaid overview route is disabled by default, private and read only',asyn
  assert.equal(info.autoRenew,false);
  assert.equal(info.orders.length,1);
  assert.equal(info.orders[0].amountRial,4500000);
+});
+
+test('OTP Worker routes remain disabled by default and reject untrusted origins',async()=>{
+ const worker=(await api()).default;
+ const request=new Request('https://worker.example/api/v1/auth/otp/request',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ });
+ const disabled=await worker.fetch(request,env());
+ assert.equal(disabled.status,404);
+ assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
+ const hostile=await worker.fetch(new Request('https://worker.example/api/v1/auth/otp/request',{
+  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ }),{...env(),SAHMINO_OTP_ENABLED:'true'});
+ assert.equal(hostile.status,403);
+});
+
+test('OTP route preflight permits only configured origin and required JSON/CSRF headers',async()=>{
+ const worker=(await api()).default;
+ const response=await worker.fetch(new Request('https://worker.example/api/v1/auth/logout',{
+  method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Headers':'content-type,x-sahmino-csrf'}
+ }),env());
+ assert.equal(response.status,204);
+ assert.match(response.headers.get('Access-Control-Allow-Headers'),/Content-Type/);
+ assert.match(response.headers.get('Access-Control-Allow-Headers'),/X-Sahmino-CSRF/);
+ const hostile=await worker.fetch(new Request('https://worker.example/api/v1/auth/logout',{
+  method:'OPTIONS',headers:{Origin:'https://evil.example'}
+ }),env());
+ assert.equal(hostile.status,403);
+});
+
+test('OTP routes fail closed when enabled without D1 or dedicated secrets',async()=>{
+ const worker=(await api()).default;
+ const response=await worker.fetch(new Request('https://worker.example/api/v1/auth/session',{
+  headers:{Origin:origin}
+ }),{...env(),SAHMINO_OTP_ENABLED:'true',SAHAMBAN_DB:undefined});
+ assert.equal(response.status,503);
+ assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
+});
+
+test('OTP request and verify routes reject oversized JSON bodies before provider or D1 work',async()=>{
+ const worker=(await api()).default;
+ const base={...env(),SAHMINO_OTP_ENABLED:'true',SAHMINO_OTP_VERIFIER_SECRET:'v'.repeat(48),SAHMINO_OTP_RATE_LIMIT_SECRET:'r'.repeat(48)};
+ for(const route of ['/api/v1/auth/otp/request','/api/v1/auth/otp/verify']){
+  const response=await worker.fetch(new Request('https://worker.example'+route,{
+   method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Content-Length':'257'},
+   body:' '.repeat(257)
+  }),base);
+  assert.equal(response.status,413);
+  assert.deepEqual(await response.json(),{error:'BODY_TOO_LARGE'});
+ }
+});
+
+
+test('CafeBazaar receipt verification is cookie-authenticated and disabled until consent and provider gates are ready',async()=>{
+ const worker=(await api()).default;
+ const noCookie=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders/verify',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Sahmino-CSRF':'1'},
+  body:JSON.stringify({})
+ }),{...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true',BAZAAR_SUBSCRIPTIONS_ENABLED:'true'});
+ assert.equal(noCookie.status,401);
+ const disabled=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders/verify',{
+  method:'POST',headers:{Origin:origin,Cookie:'sahmino_session='+'a'.repeat(64),'Content-Type':'application/json','X-Sahmino-CSRF':'1'},
+  body:JSON.stringify({})
+ }),{...env(),SAHMINO_OTP_ENABLED:'false',PREPAID_ORDERS_ENABLED:'true',BAZAAR_SUBSCRIPTIONS_ENABLED:'true'});
+ assert.equal(disabled.status,404);
+ const wrongMethod=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders/verify',{
+  method:'GET',headers:{Origin:origin,Cookie:'sahmino_session='+'a'.repeat(64)}
+ }),env());
+ assert.equal(wrongMethod.status,405);
+});
+
+test('Bazaar cancellation route is disabled by default and rejects unsupported methods',async()=>{
+ const worker=(await api()).default;
+ const disabled=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-subscription/cancel',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'}
+ }),{...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(disabled.status,404);
+ assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
+ const method=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-subscription/cancel',{
+  method:'GET',headers:{Origin:origin}
+ }),env());
+ assert.equal(method.status,405);
+});
+
+test('pilot prepaid order endpoint records versioned automatic-renew consent',async()=>{
+ const worker=(await api()).default,token=await signedToken(),calls=[];
+ const storage={prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {
+  async run(){return {success:true,meta:{changes:1}};},async first(){return null;}
+ };}};}};
+ const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
+  method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
+  body:JSON.stringify({planId:'SAHMINO_PRO_30D',renewalMode:'AUTO',consentVersion:'sahmino-auto-renew-v1'})
+ }),{...env(storage),PREPAID_ORDERS_ENABLED:'true',BAZAAR_AUTO_RENEW_ENABLED:'true'});
+ assert.equal(response.status,201);
+ const body=await response.json();
+ assert.equal(body.order.renewalMode,'AUTO');
+ assert.equal(body.order.consentVersion,'sahmino-auto-renew-v1');
+ assert.equal(body.order.consentAt,calls[0].values[6]);
+ assert.equal(calls[0].values[4],'AUTO');
+ assert.equal(calls[0].values[5],'sahmino-auto-renew-v1');
 });

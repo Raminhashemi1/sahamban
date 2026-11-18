@@ -5,8 +5,9 @@
 // when identity, DB state, UTC time, or entitlement data is invalid.
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const SQL=[
- 'SELECT u.id AS user_id, u.status AS account_status, e.paid_until AS paid_until',
+ 'SELECT u.id AS user_id, u.status AS account_status, COALESCE(v2.paid_until,e.paid_until) AS paid_until',
  'FROM sahamban_users u',
+ 'LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id',
  'LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=u.id',
  'WHERE u.auth_subject=? LIMIT 1'
 ].join(' ');

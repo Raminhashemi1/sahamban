@@ -2,17 +2,46 @@ plugins {
     id 'com.android.application'
 }
 
+
 android {
     namespace 'ir.sahamban.pilot'
     compileSdk 35
 
     defaultConfig {
-        // Temporary test-only identifier. Owner must approve final package ID.
-        applicationId 'ir.sahamban.pilot'
+        applicationId 'ir.manahesab.sahmino'
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '0.1.0-pilot'
+        versionCode 4
+        versionName '0.4.0-bazaar-only-preview'
+        // Explicitly disabled until authentication, sandbox and consent tests pass.
+        buildConfigField 'String', 'SAHMINO_WORKER_BASE_URL', '""'
+        buildConfigField 'boolean', 'SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'
+    }
+
+    buildFeatures { buildConfig true }
+
+    sourceSets {
+        main.java.exclude 'ir/sahamban/pilot/SubscriptionPreviewActivity.java'
+        main.java.exclude 'ir/sahamban/pilot/SahminoStoreBillingManager.java'
+        main.java.exclude 'ir/sahamban/pilot/SahminoPurchaseEvidence.java'
+    }
+
+    flavorDimensions 'store'
+    productFlavors {
+        bazaar {
+            dimension 'store'
+            manifestPlaceholders = [
+                marketApplicationId: 'com.farsitel.bazaar',
+                marketBindAddress: 'ir.cafebazaar.pardakht.InAppBillingService.BIND',
+                marketPermission: 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
+            ]
+            buildConfigField 'String', 'STORE_CHANNEL', '"CAFEBAZAAR"'
+            buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
+            buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
+            buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
+            buildConfigField 'String', 'SKU_180D', '"sahmino_pro_180d"'
+            buildConfigField 'String', 'SKU_365D', '"sahmino_pro_365d"'
+        }
     }
 
     compileOptions {
@@ -21,9 +50,14 @@ android {
     }
 
     buildTypes {
+        debug { }
         release {
-            // Never publish an unsigned/automatically debug-signed release.
             minifyEnabled false
         }
     }
+}
+
+dependencies {
+    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
+    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey-rx:2.2.0'
 }

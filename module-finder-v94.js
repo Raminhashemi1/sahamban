@@ -24,7 +24,7 @@
  };
  const finder=document.createElement('section');
  finder.className='sb94-finder';
- finder.setAttribute('aria-label','پیدا کردن ابزار سهام‌بان');
+ finder.setAttribute('aria-label','پیدا کردن ابزار سهمینو');
  const label=document.createElement('label');
  label.htmlFor='sb94ModuleSearch';
  label.textContent='کدام ابزار را لازم دارید؟';
@@ -57,7 +57,7 @@
    card.hidden=!match;if(match)count++;
   });
   clear.hidden=!query;
-  status.textContent=query?(count?count+' ابزار پیدا شد.':'ابزاری پیدا نشد؛ واژه دیگری امتحان کنید.'):'هر ۱۰ ابزار نمایش داده می‌شوند.';
+  status.textContent=query?(count?count+' ابزار پیدا شد.':'ابزاری پیدا نشد؛ واژه دیگری امتحان کنید.'):count.toLocaleString('fa-IR')+' ابزار نمایش داده می‌شود.';
  }
  input.addEventListener('input',filter);
  input.addEventListener('keydown',event=>{

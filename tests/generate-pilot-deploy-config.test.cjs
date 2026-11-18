@@ -20,11 +20,16 @@ test('manual release never triggers from push, requires approval and locked vari
  const s=fs.readFileSync('.github/workflows/cloudflare-pilot-deploy.yml','utf8');
  assert.match(s,/workflow_dispatch:/);
  assert.doesNotMatch(s,/\n  push:|\n  pull_request:/);
+ assert.ok(s.includes('appendFileSync(process.env.GITHUB_OUTPUT,"mode="+mode+"\\n")'));
+ assert.ok(s.includes('appendFileSync(process.env.GITHUB_OUTPUT,"v2_mode="+v2Mode+"\\n")'));
  for(const required of ['DEPLOY_PILOT_NO_PAYMENTS','environment: cloudflare-pilot',
   'secrets.CLOUDFLARE_API_TOKEN','vars.CLOUDFLARE_ACCOUNT_ID',
   'vars.SAHAMBAN_D1_DATABASE_ID','wrangler d1 execute','--remote',
-  'd1-prepaid-migration.sql','/user/tokens/verify',
-  "steps.schema.outputs.mode == 'first_install'",'Remote D1 has incomplete schema',
+  'd1-prepaid-migration.sql','d1-sahmino-subscription-v2.sql','/user/tokens/verify',
+  "steps.schema.outputs.mode == 'first_install'","steps.schema.outputs.v2_mode == 'install'",
+  'sahmino_prepaid_subscription_orders','sahmino_prepaid_subscription_entitlements',
+  'sahmino_prepaid_payment_events','sahmino_payment_intents',
+  'partial Sahmino v2 schema','Remote D1 has incomplete base schema',
   'Confirm live Worker rejects unauthenticated access and checkout',
   'wrangler deploy --config server/wrangler.deploy.toml'])assert.ok(s.includes(required),required);
 });

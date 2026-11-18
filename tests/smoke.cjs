@@ -48,7 +48,7 @@ test('Broker import is local-only with separate storage and offline Excel parser
 });
 test('App script and service worker version match',()=>{
  const v=html.match(/app\.js\?v=(\d+)/)?.[1];
- assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v150-13'));
+ assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.ok(sw.includes('sahamban-static-v150-14'));
  assert.ok(sw.includes('fundamental-evidence.js?v=150.5'));
  assert.ok(sw.includes('decision-support-ui-v129.js?v=129.18'));
  assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
@@ -151,7 +151,7 @@ test('Saved status rejects corrupted local portfolio',()=>{
  context.refreshPortfolioSaveState();
  assert.match(status.textContent,/ذخیره شده‌اند/);
 });
-test('Own cache cleanup never targets other apps',()=>assert.ok(sw.includes("k.startsWith('sahamban-static-')&&k!==CACHE")));
+test('Own cache cleanup retires legacy and current-brand generations without targeting other apps',()=>{assert.ok(sw.includes("k.startsWith('sahamban-static-')||k.startsWith('sahmino-static-')"));assert.ok(sw.includes('k!==CACHE'));});
 console.log('SUCCESS: '+count+' smoke checks');
 
 // Execute v53 weekend quote regression tests in the existing smoke CI workflow.

@@ -1,6 +1,134 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
+import bazaarVerifierModule from './bazaar-subscription-verifier.cjs';
+import prepaidSettlementModule from './prepaid-settlement.cjs';
+import bazaarCancellationModule from './bazaar-subscription-cancellation.cjs';
+import bazaarTokenVaultModule from './bazaar-token-vault.cjs';
+import otpServiceModule from './sms-otp-service.cjs';
+import otpRepositoryModule from './d1-sms-otp-repository.cjs';
+const {createSmsOtpService}=otpServiceModule;
+const {createD1SmsOtpRepository}=otpRepositoryModule;
+const {verifyBazaarSubscription}=bazaarVerifierModule;
+const {settleVerifiedPrepaidPayment}=prepaidSettlementModule;
+const {cancelBazaarSubscription}=bazaarCancellationModule;
+const {decryptPurchaseToken}=bazaarTokenVaultModule;
+
+function parseCookie(request,name){
+ const raw=request.headers.get('Cookie')||'';
+ for(const part of raw.split(';')){
+  const i=part.indexOf('=');
+  if(i<0||part.slice(0,i).trim()!==name)continue;
+  const value=part.slice(i+1).trim();
+  return /^[a-f0-9]{64}$/.test(value)?value:null;
+ }
+ return null;
+}
+function otpJson(request,body,status,origin,extraHeaders={}){
+ const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin',...extraHeaders};
+ if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
+ return new Response(JSON.stringify(body),{status,headers});
+}
+async function readSmallJson(request,maxBytes=1024){
+ const declared=request.headers.get('Content-Length');
+ if(declared!==null&&(!/^[0-9]+$/.test(declared)||Number(declared)>maxBytes))return {error:'BODY_TOO_LARGE',status:413};
+ if(!request.body)return {error:'INVALID_JSON',status:400};
+ const reader=request.body.getReader(),chunks=[];let size=0;
+ try{
+  while(true){
+   const {done,value}=await reader.read();if(done)break;
+   size+=value.byteLength;
+   if(size>maxBytes){await reader.cancel();return {error:'BODY_TOO_LARGE',status:413};}
+   chunks.push(value);
+  }
+ }catch(_){return {error:'INVALID_JSON',status:400};}
+ const bytes=new Uint8Array(size);let offset=0;
+ for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ try{return {body:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))};}
+ catch(_){return {error:'INVALID_JSON',status:400};}
+}
+function requestOriginAllowed(request,env){
+ const origin=request.headers.get('Origin');
+ return typeof env?.PWA_ORIGIN==='string'&&origin===env.PWA_ORIGIN&&/^https:\/\/[a-z0-9.-]+(?::[0-9]+)?$/i.test(env.PWA_ORIGIN);
+}
+async function keyedIpPseudonym(request,secret){
+ const ip=request.headers.get('CF-Connecting-IP');
+ if(typeof ip!=='string'||!ip||typeof secret!=='string'||encoder.encode(secret).length<32)return null;
+ const key=await crypto.subtle.importKey('raw',encoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+ const bytes=await crypto.subtle.sign('HMAC',key,encoder.encode(ip));
+ return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
+}
+function createSmsBindingAdapter(binding){
+ if(!binding||typeof binding.fetch!=='function')return null;
+ return {async sendOtp(payload){
+  const response=await binding.fetch('https://sms-provider.internal/send',{
+   method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':payload.idempotencyKey},
+   body:JSON.stringify(payload)
+  });
+  if(!response.ok)return {accepted:false};
+  let result;try{result=await response.json();}catch(_){return {accepted:false};}
+  return {accepted:result?.accepted===true,providerMessageId:typeof result?.messageId==='string'?result.messageId:null};
+ }};
+}
+async function handleOtpRoutes(request,env,url,nowMs){
+ const route=url.pathname,origin=request.headers.get('Origin');
+ const routes=['/api/v1/auth/otp/request','/api/v1/auth/otp/verify','/api/v1/auth/session','/api/v1/auth/logout'];
+ if(!routes.includes(route))return null;
+ if(env?.SAHMINO_OTP_ENABLED!=='true')return otpJson(request,{error:'FEATURE_DISABLED'},404,null);
+ if(!requestOriginAllowed(request,env))return otpJson(request,{error:'ORIGIN_NOT_ALLOWED'},403,null);
+ if(url.search)return otpJson(request,{error:'QUERY_NOT_ALLOWED'},400,origin);
+ if(!env?.SAHAMBAN_DB||!env?.SAHMINO_OTP_VERIFIER_SECRET||!env?.SAHMINO_OTP_RATE_LIMIT_SECRET)
+  return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
+ const cookie=parseCookie(request,'sahmino_session');
+ if(route==='/api/v1/auth/otp/request'){
+  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
+  const parsed=await readSmallJson(request,256);
+  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||typeof body.phone!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const adapter=createSmsBindingAdapter(env.SAHMINO_SMS_PROVIDER);
+  if(!adapter)return otpJson(request,{error:'SMS_PROVIDER_UNAVAILABLE'},503,origin);
+  const ipKey=await keyedIpPseudonym(request,env.SAHMINO_OTP_RATE_LIMIT_SECRET);
+  if(!ipKey)return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
+  const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
+  const result=await service.requestCode({phone:body.phone,ipKey});
+  return otpJson(request,result.ok?{challengeId:result.challengeId,expiresInSeconds:result.expiresInSeconds,resendAfterSeconds:result.resendAfterSeconds}:{error:result.error,retryAfterSeconds:result.retryAfterSeconds},result.status,origin);
+ }
+ if(route==='/api/v1/auth/otp/verify'){
+  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
+  const parsed=await readSmallJson(request,256);
+  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||typeof body.challengeId!=='string'||typeof body.code!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const adapter={async sendOtp(){return {accepted:false};}};
+  const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
+  const result=await service.verifyCode({challengeId:body.challengeId,code:body.code});
+  if(!result.ok)return otpJson(request,{error:result.error},result.status,origin);
+  return otpJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie});
+ }
+ if(route==='/api/v1/auth/session'){
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const clearCookie=repo.clearSessionCookie();
+  if(request.method!=='GET')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(!cookie)return otpJson(request,{authenticated:false},401,origin);
+  const active=await repo.findActiveSession(cookie,nowMs);
+  return active?otpJson(request,{authenticated:true,expiresAt:active.expiresAt},200,origin):otpJson(request,{authenticated:false},401,origin,{'Set-Cookie':clearCookie});
+ }
+ if(route==='/api/v1/auth/logout'){
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const clearCookie=repo.clearSessionCookie();
+  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('X-Sahmino-CSRF')!=='1')return otpJson(request,{error:'CSRF_REJECTED'},403,origin,{'Set-Cookie':clearCookie});
+  if(cookie)await repo.revokeSession(cookie,new Date(nowMs).toISOString());
+  return otpJson(request,{authenticated:false},200,origin,{'Set-Cookie':clearCookie});
+ }
+ return otpJson(request,{error:'NOT_FOUND'},404,origin);
+}
+
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
  * Read-only entitlement lookup and optional private-pilot pending-order
@@ -14,16 +142,22 @@ const TOKEN_ISSUER='sahamban-pilot',TOKEN_AUDIENCE='sahamban-api';
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const TOKEN_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
- CASE WHEN pe.paid_until IS NOT NULL AND (le.paid_until IS NULL OR pe.paid_until>le.paid_until) THEN pe.paid_until ELSE le.paid_until END AS paid_until,
+ CASE
+  WHEN v2.paid_until IS NOT NULL AND (pe.paid_until IS NULL OR v2.paid_until>pe.paid_until)
+       AND (le.paid_until IS NULL OR v2.paid_until>le.paid_until) THEN v2.paid_until
+  WHEN pe.paid_until IS NOT NULL AND (le.paid_until IS NULL OR pe.paid_until>le.paid_until) THEN pe.paid_until
+  ELSE le.paid_until
+ END AS paid_until,
  COALESCE(le.suspended,0) AS suspended,COALESCE(le.auto_renew_cancelled,0) AS auto_renew_cancelled
  FROM sahamban_users u
  LEFT JOIN subscription_entitlements le ON le.user_id=u.id
  LEFT JOIN prepaid_subscription_entitlements pe ON pe.user_id=u.id
+ LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
- if(origin)headers['Access-Control-Allow-Origin']=origin;
+ if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
  return new Response(JSON.stringify(body),{status,headers});
 }
 function fromBase64url(value){
@@ -79,21 +213,193 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Credentials':'true','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Sahmino-CSRF','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
+  const otpResponse=await handleOtpRoutes(request,env,url,nowMs);
+  if(otpResponse)return otpResponse;
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isOrders=url.pathname==='/api/v1/me/orders';
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
   const isPrepaidOverview=url.pathname==='/api/v1/me/prepaid-overview';
-  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview)return send({error:'NOT_FOUND'},404,cors);
+  const isPrepaidVerify=url.pathname==='/api/v1/me/prepaid-orders/verify';
+  const isPrepaidCancel=url.pathname==='/api/v1/me/prepaid-subscription/cancel';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview&&!isPrepaidVerify&&!isPrepaidCancel)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidVerify&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidCancel&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
+  // Cookie-authenticated Sahmino account routes. The internal user ID is
+  // derived only from a validated, unrevoked OTP session in D1; never from input.
+  if(isPrepaidVerify&&!parseCookie(request,'sahmino_session'))return send({error:'NOT_AUTHENTICATED'},401,cors);
+  if(isPrepaidOrders||isPrepaidOverview||isPrepaidVerify||isPrepaidCancel){
+   const sessionCookie=parseCookie(request,'sahmino_session');
+   if(sessionCookie){
+    if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
+     return send({error:'FEATURE_DISABLED'},404,cors);
+    if(!cors||origin!==allowed)return send({error:'ORIGIN_NOT_ALLOWED'},403);
+    const sessionRepo=createD1SmsOtpRepository(env?.SAHAMBAN_DB);
+    const activeSession=await sessionRepo.findActiveSession(sessionCookie,nowMs);
+    if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+    if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
+     return send({error:'CSRF_REJECTED'},403,cors);
+    if(isPrepaidCancel){
+     if(env?.BAZAAR_SUBSCRIPTIONS_ENABLED!=='true'||env?.BAZAAR_CANCELLATION_ENABLED!=='true')
+      return send({error:'FEATURE_DISABLED'},404,cors);
+     if(!env?.SAHAMBAN_DB||!env?.BAZAAR_TOKEN_ENCRYPTION_KEY||
+       !env?.BAZAAR_PACKAGE_NAME||!env?.BAZAAR_CLIENT_ID||!env?.BAZAAR_CLIENT_SECRET||!env?.BAZAAR_REFRESH_TOKEN)
+      return send({error:'BAZAAR_CANCELLATION_NOT_CONFIGURED'},503,cors);
+     const rows=await env.SAHAMBAN_DB.prepare(
+      `SELECT c.order_id,c.provider_payment_id,c.lifecycle_state,c.provider_auto_renewing,c.provider_paid_until,
+       o.plan_id,o.provider_token_version,o.provider_token_nonce,o.provider_token_ciphertext
+       FROM sahmino_bazaar_subscription_control c
+       JOIN sahmino_prepaid_subscription_orders o ON o.id=c.order_id
+       WHERE c.user_id=? AND c.provider_auto_renewing=1
+        AND c.lifecycle_state IN ('RENEWAL_ACTIVE','CANCELLATION_PENDING')
+       ORDER BY c.updated_at DESC,c.created_at DESC,c.order_id DESC LIMIT 1`
+     ).bind(activeSession.userId).first();
+     if(!rows)return send({error:'NO_ACTIVE_AUTO_RENEWAL'},409,cors);
+     const now=new Date(nowMs).toISOString();
+     const pending=await env.SAHAMBAN_DB.prepare(
+      `UPDATE sahmino_bazaar_subscription_control
+       SET lifecycle_state='CANCELLATION_PENDING',
+        cancellation_requested_at=COALESCE(cancellation_requested_at,?),updated_at=?
+       WHERE order_id=? AND user_id=? AND provider_auto_renewing=1
+        AND lifecycle_state IN ('RENEWAL_ACTIVE','CANCELLATION_PENDING')`
+     ).bind(now,now,rows.order_id,activeSession.userId).run();
+     if(pending?.success!==true||pending?.meta?.changes!==1)
+      return send({error:'CANCELLATION_STATE_CONFLICT'},409,cors);
+     let purchaseToken;
+     try{
+      purchaseToken=await decryptPurchaseToken({
+       version:rows.provider_token_version,nonce:rows.provider_token_nonce,ciphertext:rows.provider_token_ciphertext
+      },{secret:env.BAZAAR_TOKEN_ENCRYPTION_KEY,orderId:rows.order_id,providerPaymentId:rows.provider_payment_id});
+     }catch(_){
+      await env.SAHAMBAN_DB.prepare(
+       `UPDATE sahmino_bazaar_subscription_control SET lifecycle_state='REVIEW_REQUIRED',updated_at=?
+        WHERE order_id=? AND user_id=? AND lifecycle_state='CANCELLATION_PENDING'`
+      ).bind(now,rows.order_id,activeSession.userId).run();
+      return send({error:'TOKEN_DECRYPTION_FAILED'},503,cors);
+     }
+     const cancelled=await cancelBazaarSubscription({
+      packageName:env.BAZAAR_PACKAGE_NAME,planId:rows.plan_id,purchaseToken,
+      clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+      refreshToken:env.BAZAAR_REFRESH_TOKEN,fetchImpl:fetch
+     });
+     if(!cancelled.ok)return send({error:cancelled.reason,cancellationPending:true},503,cors);
+     const confirmed=await env.SAHAMBAN_DB.prepare(
+      `UPDATE sahmino_bazaar_subscription_control
+       SET lifecycle_state='CANCELLED',provider_auto_renewing=0,
+        cancellation_confirmed_at=?,updated_at=?
+       WHERE order_id=? AND user_id=? AND lifecycle_state='CANCELLATION_PENDING'`
+     ).bind(now,now,rows.order_id,activeSession.userId).run();
+     if(confirmed?.success!==true||confirmed?.meta?.changes!==1)
+      return send({error:'CANCELLATION_CONFIRMATION_NOT_RECORDED',cancellationPending:true},503,cors);
+     return send({status:'CANCELLED',renewalCancelled:true,accessUntil:rows.provider_paid_until||null},200,cors);
+    }
+    if(isPrepaidVerify){
+     if(env?.BAZAAR_SUBSCRIPTIONS_ENABLED!=='true')
+      return send({error:'FEATURE_DISABLED'},404,cors);
+     if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+      return send({error:'JSON_REQUIRED'},415,cors);
+     const parsed=await readSmallJson(request,20000);
+     if(parsed.error)return send({error:parsed.error},parsed.status,cors);
+     const body=parsed.body;
+     const required=['serverOrderId','orderId','purchaseToken','payload','packageName','productId','purchaseTime','purchaseState','originalJson','dataSignature'];
+     if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==required.length||
+       required.some(key=>!Object.prototype.hasOwnProperty.call(body,key))||
+       typeof body.serverOrderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.serverOrderId))
+      return send({error:'INVALID_RECEIPT'},400,cors);
+     if(!env?.SAHAMBAN_DB||typeof env?.BAZAAR_PACKAGE_NAME!=='string'||!env.BAZAAR_PACKAGE_NAME)
+      return send({error:'BAZAAR_VERIFIER_NOT_CONFIGURED'},503,cors);
+     const order=await env.SAHAMBAN_DB.prepare(
+      `SELECT id,user_id,plan_id,amount_rial,currency,state,renewal_mode,renewal_consent_version,renewal_consent_at
+       FROM sahmino_prepaid_subscription_orders
+       WHERE id=? AND user_id=? LIMIT 1`
+     ).bind(body.serverOrderId,activeSession.userId).first();
+     if(!order)return send({error:'ORDER_NOT_FOUND'},404,cors);
+     if(order.state!=='PENDING')return send({error:'ORDER_NOT_PENDING'},409,cors);
+     const checked=await verifyBazaarSubscription({
+      receipt:body,order,packageName:env.BAZAAR_PACKAGE_NAME,
+      clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+      refreshToken:env.BAZAAR_REFRESH_TOKEN,publicKey:env.BAZAAR_IAB_PUBLIC_KEY,
+      now:new Date(nowMs).toISOString(),fetchImpl:fetch
+     });
+     if(!checked.ok){
+      const unavailable=['BAZAAR_VERIFIER_NOT_CONFIGURED','BAZAAR_OAUTH_FAILED','BAZAAR_OAUTH_INVALID',
+       'BAZAAR_VALIDATION_FAILED','BAZAAR_VALIDATION_UNAVAILABLE'];
+      return send({error:checked.reason,proEnabled:false},unavailable.includes(checked.reason)?503:422,cors);
+     }
+     // Manual is the default. If Bazaar starts the SKU with auto-renew enabled,
+     // cancel it server-side before granting access, then revalidate provider state.
+     let verifiedPayment=checked.verified;
+     if(order.renewal_mode==='MANUAL'&&verifiedPayment.autoRenewing){
+      if(!env?.BAZAAR_TOKEN_ENCRYPTION_KEY)
+       return send({error:'TOKEN_ENCRYPTION_NOT_CONFIGURED',proEnabled:false},503,cors);
+      const cancelled=await cancelBazaarSubscription({
+       packageName:env.BAZAAR_PACKAGE_NAME,planId:order.plan_id,purchaseToken:verifiedPayment.purchaseToken,
+       clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+       refreshToken:env.BAZAAR_REFRESH_TOKEN,fetchImpl:fetch
+      });
+      if(!cancelled.ok)
+       return send({error:cancelled.reason,proEnabled:false,renewalCancellationPending:true},503,cors);
+      const rechecked=await verifyBazaarSubscription({
+       receipt:body,order,packageName:env.BAZAAR_PACKAGE_NAME,
+       clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+       refreshToken:env.BAZAAR_REFRESH_TOKEN,publicKey:env.BAZAAR_IAB_PUBLIC_KEY,
+       now:new Date(nowMs).toISOString(),fetchImpl:fetch
+      });
+      if(!rechecked.ok||rechecked.verified.autoRenewing!==false)
+       return send({error:'MANUAL_RENEWAL_CANCELLATION_NOT_CONFIRMED',proEnabled:false,renewalCancellationPending:true},503,cors);
+      verifiedPayment=rechecked.verified;
+     }
+     if(verifiedPayment.autoRenewing!==(order.renewal_mode==='AUTO'))
+      return send({error:'PROVIDER_RENEWAL_MODE_MISMATCH',proEnabled:false},409,cors);
+     const settled=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,body,{
+      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>verifiedPayment,
+      tokenEncryptionKey:env.BAZAAR_TOKEN_ENCRYPTION_KEY
+     });
+     if(!settled.ok)return send({error:settled.reason,proEnabled:false},503,cors);
+     return send({status:'SETTLED',proEnabled:true,autoRenew:order.renewal_mode==='AUTO',
+      orderId:settled.orderId,planId:settled.planId,paidUntil:settled.paidUntil},200,cors);
+    }
+    if(isPrepaidOverview){
+     const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
+      authenticatedUserId:activeSession.userId,now:new Date(nowMs).toISOString()
+     });
+     return send(result,result.status||503,cors);
+    }
+    if(request.method==='GET'){
+     const pending=await findPrepaidPendingOrder(env?.SAHAMBAN_DB,null,activeSession.userId);
+     return send(pending,pending.status||200,cors);
+    }
+    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+     return send({error:'JSON_REQUIRED'},415,cors);
+    const parsed=await readSmallJson(request,1024);
+    if(parsed.error)return send({error:parsed.error},parsed.status,cors);
+    const body=parsed.body;
+    if(!body||typeof body!=='object'||Array.isArray(body)||
+     Object.keys(body).some(k=>!['planId','renewalMode','consentVersion'].includes(k))||
+     typeof body.planId!=='string'||
+     (body.renewalMode!==undefined&&!['MANUAL','AUTO'].includes(body.renewalMode))||
+     (body.consentVersion!==undefined&&typeof body.consentVersion!=='string'))
+     return send({error:'INVALID_REQUEST'},400,cors);
+    if(body.renewalMode==='AUTO'&&env?.BAZAAR_AUTO_RENEW_ENABLED!=='true')
+     return send({error:'AUTO_RENEW_NOT_AVAILABLE'},409,cors);
+    const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
+     authenticatedUserId:activeSession.userId,planId:body.planId,
+     renewalMode:body.renewalMode||'MANUAL',consentVersion:body.consentVersion??null,now:new Date(nowMs).toISOString(),
+     makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
+      b=>b.toString(16).padStart(2,'0')).join(''))
+    });
+    return send(order,order.status||503,cors);
+   }
+  }
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
   if(isPrepaidOverview){
@@ -119,10 +425,16 @@ export default {
     let body;
     try{body=await request.json();}catch(_){return send({error:'INVALID_JSON'},400,cors);}
     if(!body||typeof body!=='object'||Array.isArray(body)||
-      Object.keys(body).length!==1||typeof body.planId!=='string')
+      Object.keys(body).some(k=>!['planId','renewalMode','consentVersion'].includes(k))||
+      typeof body.planId!=='string'||
+      (body.renewalMode!==undefined&&!['MANUAL','AUTO'].includes(body.renewalMode))||
+      (body.consentVersion!==undefined&&typeof body.consentVersion!=='string'))
      return send({error:'INVALID_REQUEST'},400,cors);
+    if(body.renewalMode==='AUTO'&&env?.BAZAAR_AUTO_RENEW_ENABLED!=='true')
+     return send({error:'AUTO_RENEW_NOT_AVAILABLE'},409,cors);
     const order=await createPrepaidOrder(env?.SAHAMBAN_DB,{
-     authenticatedSubject:subject,planId:body.planId,now:new Date(nowMs).toISOString(),
+     authenticatedSubject:subject,planId:body.planId,
+     renewalMode:body.renewalMode||'MANUAL',consentVersion:body.consentVersion??null,now:new Date(nowMs).toISOString(),
      makeOrderId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
       b=>b.toString(16).padStart(2,'0')).join(''))
     });
