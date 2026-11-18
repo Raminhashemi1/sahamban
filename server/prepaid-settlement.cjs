@@ -3,6 +3,7 @@
 // The entitlement expiry MUST come from Bazaar ValidateSubscription; plan days are
 // catalogue metadata and are never used to calculate paid_until locally.
 const {plan}=require('./prepaid-plans.cjs');
+const {encryptPurchaseToken}=require('./bazaar-token-vault.cjs');
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const ORDER=/^ord_[a-f0-9]{32}$/;
 function validUTC(v){
@@ -22,7 +23,7 @@ SELECT ?,?,?,o.id,'PAYMENT_SETTLED',?
 FROM sahmino_prepaid_subscription_orders o
 WHERE o.id=? AND o.state='PENDING' AND o.plan_id=? AND o.amount_rial=? AND o.currency='IRR'`;
 const ORDER_SQL=`UPDATE sahmino_prepaid_subscription_orders
-SET state='SETTLED',settled_at=?,provider_name=?,provider_payment_id=?
+SET state='SETTLED',settled_at=?,provider_name=?,provider_payment_id=?,provider_token_version=?,provider_token_nonce=?,provider_token_ciphertext=?
 WHERE id=? AND state='PENDING' AND plan_id=? AND amount_rial=? AND currency='IRR'
 AND EXISTS(SELECT 1 FROM sahmino_prepaid_payment_events e
  WHERE e.provider_name=? AND e.provider_event_id=? AND e.provider_payment_id=?
@@ -40,11 +41,13 @@ ON CONFLICT(user_id) DO UPDATE SET
   THEN sahmino_prepaid_subscription_entitlements.paid_until
   ELSE excluded.paid_until END,
  updated_at=excluded.updated_at`;
-async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}){
+async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider,tokenEncryptionKey}={}){
  if(!receipt||typeof receipt!=='object'||typeof verifyAtProvider!=='function')return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  let verified=false;try{verified=await verifyAtProvider(receipt);}catch(_){verified=false;}
  if(!verified||typeof verified!=='object'||Array.isArray(verified))return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
- const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency,validUntilTimestampMsec}=verified;
+ const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency,validUntilTimestampMsec,purchaseToken}=verified;
+ if(typeof tokenEncryptionKey!=='string'||!tokenEncryptionKey)return {ok:false,reason:'TOKEN_ENCRYPTION_NOT_CONFIGURED'};
+ if(typeof purchaseToken!=='string')return {ok:false,reason:'VERIFIED_TOKEN_MISSING'};
  if(![providerName,providerEventId,providerPaymentId].every(x=>typeof x==='string'&&ID.test(x))||
   typeof orderId!=='string'||!ORDER.test(orderId)||currency!=='IRR'||!Number.isSafeInteger(amountRial)||!validUTC(now))
   return {ok:false,reason:'INVALID_VERIFIED_PAYMENT'};
@@ -62,9 +65,10 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}
   if(lookup.plan_id!==planId||lookup.amount_rial!==amountRial||lookup.currency!=='IRR')return {ok:false,reason:'ORDER_MISMATCH'};
   const effectivePaidUntil=lookup.paid_until&&validUTC(lookup.paid_until)&&lookup.paid_until>providerPaidUntil
    ?lookup.paid_until:providerPaidUntil;
+  const tokenEnvelope=await encryptPurchaseToken(purchaseToken,{secret:tokenEncryptionKey,orderId,providerPaymentId});
   const statements=[
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
-   db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
+   db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,tokenEnvelope.version,tokenEnvelope.nonce,tokenEnvelope.ciphertext,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
    db.prepare(ENTITLEMENT_UPSERT_SQL).bind(orderId,providerName,providerPaymentId,providerPaidUntil,now)
   ];
   const results=await db.batch(statements);
