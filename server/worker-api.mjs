@@ -1,4 +1,5 @@
 import billingOrders from './billing/orders.cjs';
+import {verifyAndSettle} from './billing/bazaar.mjs';
 const {createOrder}=billingOrders;
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
@@ -100,13 +101,22 @@ export default {
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isBillingOrders=url.pathname==='/api/v2/billing/orders';
-  if(!isEntitlement&&!isBillingOrders)return send({error:'NOT_FOUND'},404,cors);
+  const isBillingVerify=url.pathname==='/api/v2/billing/verify';
+  if(!isEntitlement&&!isBillingOrders&&!isBillingVerify)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
-  if(isBillingOrders&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if((isBillingOrders||isBillingVerify)&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  if(isBillingVerify){
+   if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+    return send({error:'JSON_REQUIRED'},415,cors);
+   const parsed=await readJsonLimited(request,8192);
+   if(parsed.error)return send({error:parsed.error},parsed.error==='BODY_TOO_LARGE'?413:400,cors);
+   const result=await verifyAndSettle({db:env?.SAHAMBAN_DB,env,subject,body:parsed.body,now:new Date(nowMs).toISOString()});
+   return send(result.body,result.status,cors);
+  }
   if(isBillingOrders){
    if(env?.BILLING_V2_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
