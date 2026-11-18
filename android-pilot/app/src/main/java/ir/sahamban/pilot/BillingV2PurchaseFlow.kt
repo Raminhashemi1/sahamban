@@ -70,9 +70,14 @@ class BillingV2PurchaseFlow(
     }
 
     fun restore(callback: (List<Outcome>) -> Unit) {
-        // Bazaar inventory contains only unconsumed purchases. A previously consumed
-        // purchase must be restored from the account's durable server entitlement.
-        api.refreshEntitlement { entitlementResult ->
+        // Establish the store connection before reading inventory. Durable account
+        // entitlement is still fetched from the server, including already-consumed items.
+        bazaar.connect { connected ->
+            if (!connected) {
+                callback(listOf(Outcome.Failed("BAZAAR_CONNECTION_FAILED")))
+                return@connect
+            }
+            api.refreshEntitlement { entitlementResult ->
             val durable = when (entitlementResult) {
                 is BillingV2ApiClient.Result.Success ->
                     if (entitlementResult.value.proEnabled)
@@ -122,6 +127,7 @@ class BillingV2PurchaseFlow(
                         }
                     }
                 }
+            }
             }
         }
     }
