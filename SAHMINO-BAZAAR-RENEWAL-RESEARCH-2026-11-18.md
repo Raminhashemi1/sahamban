@@ -12,7 +12,7 @@ Record the renewal facts and implementation gaps before changing the payment lif
 - The only supported store channel is CafeBazaar. Myket, Google Play, direct website checkout and other providers remain out of scope.
 - Poolakey uses Subscription APIs: `getSubscriptionSkuDetails`, `subscribeProduct`, and `getSubscribedProducts`.
 - The Worker verifies each receipt against CafeBazaar Developer API and obtains `validUntilTimestampMsec` and `autoRenewing`.
-- The Worker currently rejects settlement when `autoRenewing !== false` with `AUTO_RENEW_POLICY_UNRESOLVED`.
+- The initial implementation rejected every `autoRenewing=true` receipt. The current branch has since replaced that blanket check with order-bound consent matching: MANUAL receipts are cancelled and revalidated before settlement; AUTO receipts require a versioned consent record and the provider flag to match. AUTO remains disabled by the `BAZAAR_AUTO_RENEW_ENABLED` rollout gate and is not exposed in the Android UI.
 - The database stores a SHA-256 digest of the purchase token as `provider_payment_id`; it does not store the raw purchase token needed to call the provider cancellation endpoint.
 - Entitlement settlement uses the provider-reported expiry and never computes expiry by adding the plan's day count. It also never shortens an already later `paid_until`.
 
@@ -44,3 +44,30 @@ These references establish that a cancellation API exists and that CafeBazaar ha
 ## Current decision
 
 No runtime code is changed by this note. The UI must not promise an automatic-renewal toggle or claim manual-only purchase is implemented. The current fail-closed rejection of auto-renewing receipts remains in place until the provider behavior and secure token lifecycle are verified.
+
+
+## Follow-up audit — current branch state (2026-11-18)
+
+The implementation has progressed beyond the baseline described in the original research bullets. Treat the bullets above as historical context where noted.
+
+### Implemented in the branch, not yet production-validated
+
+- Purchase tokens are encrypted with authenticated encryption before persistence; the digest remains the provider payment identifier.
+- The additive renewal-consent migration defaults old and new orders to MANUAL and requires a consent version plus server timestamp for AUTO.
+- Settlement compares the provider's `autoRenewing` value with the order's persisted renewal choice.
+- MANUAL purchases that arrive with provider auto-renew enabled call the provider cancellation endpoint and are revalidated. Entitlement is not granted unless the provider reports `autoRenewing=false`.
+- User cancellation of an AUTO subscription is behind `BAZAAR_CANCELLATION_ENABLED`; AUTO order creation is separately behind `BAZAAR_AUTO_RENEW_ENABLED`.
+- Cancellation confirmation now requires a follow-up provider lookup returning `autoRenewing=false`. A successful cancellation HTTP response alone is insufficient.
+- Android currently submits MANUAL only and does not show an AUTO consent control.
+
+### Remaining blockers (must not be inferred from mocked tests)
+
+1. No live CafeBazaar sandbox result in this repository proves immediate cancellation of a newly purchased subscription preserves the paid-through period. This must be verified in the Sahmino developer account.
+2. The code's entitlement upsert preserves the later of current and provider-reported expiry; it does not independently add plan duration to the remaining balance. Whether Bazaar's second subscription purchase returns a stacked expiry is unverified. The Sahmino stacking requirement is therefore not yet proven.
+3. Provider cancellation lookup consistency and exact paid-through behavior require sandbox observation. Until then, a transient provider state must remain pending/fail-closed.
+4. The CI run for head `396d823b3c389f0aace2b8bd46832ba2e03e46b5` is still queued; no test pass is claimed.
+5. The additive migrations have not been applied to the production D1 database. Do not apply them to production as part of this branch work.
+
+### Release gate
+
+Keep checkout disabled, `BAZAAR_AUTO_RENEW_ENABLED` unset/false, and `BAZAAR_CANCELLATION_ENABLED` unset/false until CI passes, all migrations are exercised in a non-production D1 database, and the Sandbox tests above are recorded. This note does not authorize deployment or merging to `main`.
