@@ -29,8 +29,8 @@ test('native receipt API requires HTTPS and the authenticated HttpOnly session c
 test('CafeBazaar uses Poolakey subscription APIs and never consumes subscription receipts',()=>{
  const manager=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/BazaarBillingManager.java');
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
- for (const required of ['new SecurityCheck.Enable(publicKey)','payment.subscribeProduct','getSubscriptionSkuDetails','getSubscribedProducts','BuildConfig.IAB_PUBLIC_KEY','new PurchaseRequest(plan.productId, serverOrderId, null)']) assert.ok(manager.includes(required),required);
- for (const forbidden of ['SecurityCheck.Disable','payment.purchaseProduct','getPurchasedProducts','consumeProduct']) assert.ok(!manager.includes(forbidden),forbidden);
+ for (const required of ['SecurityCheck.Disable.INSTANCE','payment.subscribeProduct','getSubscriptionSkuDetails','getSubscribedProducts','new PurchaseRequest(plan.productId, serverOrderId, null)']) assert.ok(manager.includes(required),required);
+ for (const forbidden of ['SecurityCheck.Enable','BuildConfig.IAB_PUBLIC_KEY','payment.purchaseProduct','getPurchasedProducts','consumeProduct']) assert.ok(!manager.includes(forbidden),forbidden);
  assert.ok(activity.includes('SahminoReceiptApiClient.createOrder'));
  assert.ok(activity.includes('submitBazaarReceipt'));
  assert.ok(!activity.includes('consumeAfterServerSettlement'));
