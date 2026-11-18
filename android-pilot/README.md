@@ -25,7 +25,7 @@ Sahmino's fixed-term Pro plans are being integrated as CafeBazaar subscription S
 
 - `getSubscriptionSkuDetails` for catalog details.
 - `subscribeProduct` to start the purchase.
-- `getSubscribedProducts` / `querySubscribeProduct` to restore/query subscriptions.
+- `getSubscribedProducts` to restore/query subscriptions.
 - `consumeProduct` must never be called for subscriptions.
 
 The server must validate the subscription with CafeBazaar Developer API and use the verified `validUntilTimestampMsec` as the provider expiry. The client callback or a locally calculated number of days must never activate Pro.
