@@ -2,7 +2,6 @@ plugins {
     id 'com.android.application'
 }
 
-def bazaarPublicKey = providers.gradleProperty('BAZAAR_IAB_PUBLIC_KEY').orElse('').get()
 
 android {
     namespace 'ir.sahamban.pilot'
@@ -34,7 +33,6 @@ android {
                 marketPermission: 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
             ]
             buildConfigField 'String', 'STORE_CHANNEL', '"CAFEBAZAAR"'
-            buildConfigField 'String', 'IAB_PUBLIC_KEY', '"' + bazaarPublicKey + '"'
             buildConfigField 'String', 'SKU_30D', '"sahmino_pro_30d"'
             buildConfigField 'String', 'SKU_60D', '"sahmino_pro_60d"'
             buildConfigField 'String', 'SKU_90D', '"sahmino_pro_90d"'
