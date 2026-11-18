@@ -9,15 +9,15 @@ function validExpiry(value,now){
  * Settle only against a provider-verified subscription response.
  * Provider expiry is authoritative; never calculate subscription expiry locally.
  */
-async function settle(db,{orderId,subject,planId,amountRial,bazaarOrderId,tokenHash,verifiedExpiresAt,autoRenewing,now}={}){
+async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,verifiedExpiresAt,autoRenewing,now}={}){
  const plan=getPlan(planId);
- if(!plan||amountRial!==plan.priceRial||!subject||!orderId||!bazaarOrderId||
+ if(!plan||!subject||!orderId||!bazaarOrderId||
    !tokenHash||!validExpiry(verifiedExpiresAt,now)||typeof autoRenewing!=='boolean')
   return {ok:false,error:'INVALID_VERIFIED_SUBSCRIPTION'};
  try{
-  const order=await db.prepare("SELECT o.id,o.user_id,o.status,o.plan_id,o.amount_rial,o.purchase_token_hash,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1").bind(orderId,subject).first();
+  const order=await db.prepare("SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1").bind(orderId,subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
-  if(order.plan_id!==planId||order.amount_rial!==amountRial)return {ok:false,error:'ORDER_MISMATCH'};
+  if(order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
   if(order.status==='PAID'){
    if(order.purchase_token_hash!==tokenHash)return {ok:false,error:'SUBSCRIPTION_TOKEN_MISMATCH'};
    const current=order.expires_at&&Date.parse(order.expires_at);
