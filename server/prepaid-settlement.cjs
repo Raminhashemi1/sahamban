@@ -28,19 +28,20 @@ const ENTITLEMENT_UPSERT_SQL=`WITH base AS (
  WHERE o.id=? AND o.state='SETTLED' AND o.provider_name=? AND o.provider_payment_id=?
 )
 INSERT INTO sahmino_prepaid_subscription_entitlements(user_id,paid_until,updated_at)
-SELECT user_id,strftime('%Y-%m-%dT%H:%M:%fZ',base_date,'+'||?||' days'),?
+SELECT user_id,CASE WHEN ? IS NOT NULL THEN ? ELSE strftime('%Y-%m-%dT%H:%M:%fZ',base_date,'+'||?||' days') END,?
 FROM base WHERE 1
 ON CONFLICT(user_id) DO UPDATE SET paid_until=excluded.paid_until,updated_at=excluded.updated_at`;
 async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}){
  if(!receipt||typeof receipt!=='object'||typeof verifyAtProvider!=='function')return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  let verified=false;try{verified=await verifyAtProvider(receipt);}catch(_){verified=false;}
  if(!verified||typeof verified!=='object'||Array.isArray(verified))return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
- const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency}=verified;
+ const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency,providerPaidUntil}=verified;
  if(![providerName,providerEventId,providerPaymentId].every(x=>typeof x==='string'&&ID.test(x))||
   typeof orderId!=='string'||!ORDER.test(orderId)||currency!=='IRR'||!Number.isSafeInteger(amountRial)||!validUTC(now))
   return {ok:false,reason:'INVALID_VERIFIED_PAYMENT'};
  let selected;try{selected=plan(planId);}catch(_){return {ok:false,reason:'INVALID_PLAN'};}
  if(selected.priceRial!==amountRial)return {ok:false,reason:'AMOUNT_MISMATCH'};
+ if(providerPaidUntil!==undefined&&(!validUTC(providerPaidUntil)||Date.parse(providerPaidUntil)<=Date.parse(now)))return {ok:false,reason:'INVALID_PROVIDER_EXPIRY'};
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function')return {ok:false,reason:'DATABASE_UNAVAILABLE'};
  try{
   const lookup=await db.prepare(`SELECT o.user_id,o.plan_id,o.amount_rial,o.currency,o.state,o.provider_name,o.provider_payment_id,e.paid_until
@@ -56,11 +57,11 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider}={}
   if(lookup.state!=='PENDING')return {ok:false,reason:'ORDER_NOT_PENDING'};
   if(lookup.plan_id!==planId||lookup.amount_rial!==amountRial||lookup.currency!=='IRR')return {ok:false,reason:'ORDER_MISMATCH'};
   const base=lookup.paid_until&&validUTC(lookup.paid_until)&&lookup.paid_until>now?lookup.paid_until:now;
-  const expectedPaidUntil=addDays(base,selected.days);
+  const expectedPaidUntil=providerPaidUntil||addDays(base,selected.days);
   const statements=[
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
    db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
-   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(now,now,orderId,providerName,providerPaymentId,selected.days,now)
+   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(now,now,orderId,providerName,providerPaymentId,providerPaidUntil??null,providerPaidUntil??null,selected.days,now)
   ];
   const results=await db.batch(statements);
   if(!Array.isArray(results)||results.length!==3||results.some(x=>x?.success!==true))return {ok:false,reason:'SETTLEMENT_FAILED'};
