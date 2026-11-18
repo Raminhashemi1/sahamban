@@ -9,7 +9,7 @@ This directory implements the subscription-specific billing domain.
 - Subscription tokens are never consumed.
 - Backend verifies through Bazaar's subscription-validation API, not the in-app-product validation route.
 - The provider's verified expiry is authoritative. Local code must never invent or extend a subscription period by adding plan days.
-- Order, user, SKU and server-side price must match before access can be granted.
+- Order, authenticated user, signed developer payload, SKU and provider receipt must match before access can be granted. Bazaar Pishkhan is the price authority; the app must display its confirmed localized price with an explicitly verified toman conversion.
 - The client callback is only evidence; it cannot activate access by itself.
 - Renewal state and expiry must be refreshed from the provider. Cancellation of auto-renewal does not immediately revoke already-paid access.
 
@@ -17,7 +17,7 @@ This directory implements the subscription-specific billing domain.
 
 1. Configure five subscription products in Bazaar Pishkhan with the exact SKUs and periods.
 2. Confirm whether each product renews automatically and document cancellation/refund terms in the app before checkout.
-3. Confirm the exact five subscription periods are actually selectable in Pishkhan; confirm response fields and lifecycle behavior against a real Bazaar test purchase. The public Poolakey docs do not replace the merchant's current commercial/legal agreement.
+3. Configure `BAZAAR_RSA_PUBLIC_KEY` (the matching Pishkhan app public key) and confirm the exact five subscription periods are selectable. Verify response fields and lifecycle behavior against a real Bazaar test purchase. The public Poolakey docs do not replace the merchant's current commercial/legal agreement.
 4. Apply \`schema.sql\` to an isolated D1 database and run integration tests.
 5. Add secure periodic/server-side refresh for renewals, cancellations, refunds and expiry.
 6. Keep \`BILLING_V2_ENABLED=false\` until all release blockers pass.
