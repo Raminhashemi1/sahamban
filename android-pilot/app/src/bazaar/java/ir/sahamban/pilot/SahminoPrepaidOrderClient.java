@@ -78,7 +78,9 @@ public final class SahminoPrepaidOrderClient implements AutoCloseable {
         }
     }
 
-    public void prepare(String planId, Callback callback) {
+    public void prepare(String planId, Callback callback) { prepare(planId, false, callback); }
+
+    public void prepare(String planId, boolean autoRenew, Callback callback) {
         if (callback == null) throw new IllegalArgumentException("callback required");
         if (!isConfigured() || SahminoBillingCatalog.byPlanId(planId) == null) {
             main.post(() -> callback.onFailure("ORDER_CLIENT_NOT_CONFIGURED"));
@@ -93,7 +95,10 @@ public final class SahminoPrepaidOrderClient implements AutoCloseable {
                     error = "NOT_AUTHENTICATED";
                 } else {
                     connection = openPost("/api/v1/me/prepaid-orders", cookie);
-                    byte[] body = new JSONObject().put("planId", planId).toString()
+                    JSONObject requestBody = new JSONObject().put("planId", planId)
+                            .put("renewalMode", autoRenew ? "AUTO" : "MANUAL");
+                    if (autoRenew) requestBody.put("consentVersion", "sahmino-auto-renew-v1");
+                    byte[] body = requestBody.toString()
                             .getBytes(StandardCharsets.UTF_8);
                     try (OutputStream out = connection.getOutputStream()) { out.write(body); }
                     int status = connection.getResponseCode();
@@ -107,7 +112,10 @@ public final class SahminoPrepaidOrderClient implements AutoCloseable {
                                 && planId.equals(order.optString("planId"))
                                 && order.optLong("amountRial", -1)
                                    == SahminoBillingCatalog.byPlanId(planId).priceRial
-                                && "IRR".equals(order.optString("currency"))) {
+                                && "IRR".equals(order.optString("currency"))
+                                && (autoRenew ? "AUTO" : "MANUAL").equals(order.optString("renewalMode"))
+                                && (autoRenew ? "sahmino-auto-renew-v1".equals(order.optString("consentVersion"))
+                                              : order.isNull("consentVersion")))) {
                             final String validId = id;
                             main.post(() -> callback.onPrepared(validId));
                             return;
@@ -216,7 +224,7 @@ public final class SahminoPrepaidOrderClient implements AutoCloseable {
                         String paidUntil = response.optString("paidUntil", "");
                         if ("SETTLED".equals(response.optString("status"))
                                 && response.optBoolean("proEnabled", false)
-                                && !response.optBoolean("autoRenew", true)
+                                && response.has("autoRenew")
                                 && evidence.payload.equals(response.optString("orderId"))
                                 && plan.planId.equals(response.optString("planId"))
                                 && paidUntil.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$")) {
