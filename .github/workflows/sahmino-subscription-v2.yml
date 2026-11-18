@@ -32,6 +32,7 @@ jobs:
           node --check server/bazaar-subscription-verifier.cjs
           node --check server/bazaar-token-vault.cjs
           node --check server/bazaar-subscription-cancellation.cjs
+          node --check server/bazaar-subscription-cancellation.cjs
           node --check server/worker-api.mjs
           node --check server/sms-otp-core.cjs
           node --check server/sms-otp-service.cjs
@@ -45,6 +46,7 @@ jobs:
           tests/prepaid-account-overview.test.cjs
           tests/bazaar-subscription-verifier.test.cjs
           tests/bazaar-token-vault.test.cjs
+          tests/bazaar-subscription-cancellation.test.cjs
           tests/bazaar-subscription-cancellation.test.cjs
           tests/worker-api.test.cjs
           tests/sahmino-subscription-ui-catalog.test.cjs
