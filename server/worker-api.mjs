@@ -14,9 +14,8 @@ const TOKEN_ISSUER='sahamban-pilot',TOKEN_AUDIENCE='sahamban-api';
 const SUBJECT=/^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,255}$/;
 const TOKEN_ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
- le.paid_until AS paid_until,COALESCE(le.suspended,0) AS suspended,
- COALESCE(le.auto_renew_cancelled,0) AS auto_renew_cancelled
- FROM sahamban_users u LEFT JOIN subscription_entitlements le ON le.user_id=u.id
+ ba.expires_at AS paid_until,COALESCE(ba.auto_renewing,0) AS auto_renewing
+ FROM sahamban_users u LEFT JOIN billing_access ba ON ba.user_id=u.id
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
@@ -81,12 +80,11 @@ async function lookupEntitlement(db,subject,nowMs){
   const row=await db.prepare(QUERY).bind(subject).first();
   if(!row||row.account_status!=='ACTIVE'||typeof row.user_id!=='string')return {state:'INACTIVE',http:403};
   if(row.paid_until===null)return {state:'NO_SUBSCRIPTION',http:403};
-  if((row.suspended!==0&&row.suspended!==1)||(row.auto_renew_cancelled!==0&&row.auto_renew_cancelled!==1))return {state:'UNAVAILABLE',http:503};
-  if(row.suspended===1)return {state:'PAYMENT_REVIEW_REQUIRED',http:403};
+  if(row.auto_renewing!==0&&row.auto_renewing!==1)return {state:'UNAVAILABLE',http:503};
   const until=parsePaidUntil(row.paid_until);
   if(until===null)return {state:'UNAVAILABLE',http:503};
   if(until<=nowMs)return {state:'EXPIRED',http:403};
-  return {state:'ACTIVE',http:200,paidUntil:row.paid_until,autoRenewCancelled:row.auto_renew_cancelled===1};
+  return {state:'ACTIVE',http:200,paidUntil:row.paid_until,autoRenewing:row.auto_renewing===1};
  }catch(_){return {state:'UNAVAILABLE',http:503};}
 }
 export default {
@@ -135,7 +133,7 @@ export default {
   }
   const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs);
   if(result.http!==200)return send({proEnabled:false,reason:result.state},result.http,cors);
-  return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,autoRenewCancelled:result.autoRenewCancelled},200,cors);
+  return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,autoRenewing:result.autoRenewing},200,cors);
  }
 };
 export {verifyPilotToken,lookupEntitlement};
