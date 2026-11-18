@@ -6,9 +6,9 @@ const read=p=>fs.readFileSync(p,'utf8');
 
 test('Poolakey adapter uses CafeBazaar subscription APIs only',()=>{
  const manager=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SahminoStoreBillingManager.java');
- assert.match(manager,/PaymentRx\.getSubscriptionSkuDetails/);
- assert.match(manager,/PaymentRx\.subscribeProduct/);
- assert.match(manager,/PaymentRx\.getSubscribedProducts/);
+ assert.match(manager,/PaymentRxKt\.getSubscriptionSkuDetails/);
+ assert.match(manager,/PaymentRxKt\.subscribeProduct/);
+ assert.match(manager,/PaymentRxKt\.getSubscribedProducts/);
  assert.match(manager,/new PurchaseRequest\(plan\.productId, serverOrderId, null\)/);
  assert.match(manager,/SecurityCheck\.Disable\.INSTANCE/);
  assert.doesNotMatch(manager,/consumeProduct|purchaseProduct|getInAppSkuDetails|getPurchasedProducts/);
