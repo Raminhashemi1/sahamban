@@ -21,7 +21,7 @@ class RenewalConsentMigration(unittest.TestCase):
   row=self.db.execute('SELECT renewal_mode,renewal_consent_version,renewal_consent_at FROM sahmino_prepaid_subscription_orders').fetchone()
   self.assertEqual(row,('MANUAL',None,None))
  def test_auto_requires_explicit_version_and_timestamp(self):
-  self.order(renewal_mode='AUTO',renewal_consent_version='sahmino-auto-v1',renewal_consent_at='2026-11-18T10:00:00.000Z')
+  self.order(renewal_mode='AUTO',renewal_consent_version='sahmino-auto-renew-v1',renewal_consent_at='2026-11-18T10:00:00.000Z')
   with self.assertRaises(sqlite3.IntegrityError):
    self.order(id='ord_'+'b'*32,renewal_mode='AUTO')
  def test_manual_rejects_attached_consent_and_invalid_modes(self):
