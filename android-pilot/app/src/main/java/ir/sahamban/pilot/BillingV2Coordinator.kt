@@ -35,7 +35,10 @@ class BillingV2Coordinator(
 
     private val payment = Payment(
         context.applicationContext,
-        PaymentConfiguration(localSecurityCheck = SecurityCheck.Disable)
+        PaymentConfiguration(
+            localSecurityCheck = SecurityCheck.Enable(rsaPublicKey = BuildConfig.BAZAAR_RSA_PUBLIC_KEY),
+            shouldSupportSubscription = true
+        )
     )
     private var connection: Connection? = null
 
