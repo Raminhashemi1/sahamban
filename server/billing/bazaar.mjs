@@ -108,6 +108,9 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
   return result.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:result.expiresAt,
    renewalMode:'MANUAL',daysAdded:result.daysAdded,restored:!!result.restored}}:
    {status:409,body:{error:result.error}};
- }catch(_){return {status:503,body:{error:'PURCHASE_VERIFICATION_UNAVAILABLE'}};}
+ }catch(error){
+  if(error?.message==='INAPP_PURCHASE_NOT_VALID')return {status:409,body:{error:'PURCHASE_NOT_VALID'}};
+  return {status:503,body:{error:'PURCHASE_VERIFICATION_UNAVAILABLE'}};
+ }
 }
 export {skuMap,verifyInAppPurchase,verifySignedPurchase};
