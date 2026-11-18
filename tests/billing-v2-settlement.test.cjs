@@ -45,9 +45,10 @@ test('a different purchase token cannot settle an already paid order',async()=>{
  assert.equal((await settle(db,input)).error,'ORDER_ALREADY_SETTLED');
  assert.equal(db.calls.length,0);
 });
-test('expired purchase window, invalid plan and partial database batch fail closed',async()=>{
+test('purchase predating the server order, invalid plan and partial database batch fail closed',async()=>{
  const order={id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,created_at:now,expires_at:null};
- assert.equal((await settle(fakeDb(order),{...input,purchaseTime:'2025-12-01T00:00:00.000Z'})).error,'INVALID_VERIFIED_PURCHASE');
+ assert.equal((await settle(fakeDb(order),{...input,purchaseTime:'2025-12-01T00:00:00.000Z'})).error,'PURCHASE_PRECEDES_ORDER');
+ assert.equal((await settle(fakeDb({...order,created_at:'not-a-date'}),input)).error,'ORDER_STATE_INVALID');
  assert.equal((await settle(fakeDb(order),{...input,planId:'UNKNOWN'})).error,'INVALID_VERIFIED_PURCHASE');
  assert.equal((await settle(fakeDb(order,{batchChanges:0}),input)).error,'SETTLEMENT_FAILED');
 });
