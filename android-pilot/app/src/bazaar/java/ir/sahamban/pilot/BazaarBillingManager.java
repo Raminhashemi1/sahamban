@@ -26,6 +26,7 @@ public final class BazaarBillingManager {
     private final ComponentActivity activity;
     private final Listener listener;
     private final Payment payment;
+    private final boolean configured;
     private Connection connection;
     private boolean ready;
     private boolean busy;
@@ -37,17 +38,25 @@ public final class BazaarBillingManager {
         this.activity = activity;
         this.listener = listener;
         String publicKey = BuildConfig.IAB_PUBLIC_KEY == null ? "" : BuildConfig.IAB_PUBLIC_KEY.trim();
-        if (publicKey.length() < 100 || publicKey.contains("PLACEHOLDER")) {
-            throw new IllegalStateException("CafeBazaar RSA public key is not configured");
+        this.configured = publicKey.length() >= 100 && !publicKey.contains("PLACEHOLDER")
+            && !publicKey.contains("replace-with-real");
+        if (configured) {
+            // Match CafeBazaar's official Poolakey sample: verify the purchase signature locally.
+            // The Worker independently verifies the provider receipt before entitlement settlement.
+            PaymentConfiguration config = new PaymentConfiguration(new SecurityCheck.Enable(publicKey), true);
+            this.payment = new Payment(activity, config);
+        } else {
+            // Missing publisher key must disable checkout, not crash the subscription screen.
+            this.payment = null;
         }
-        // Match CafeBazaar's official Poolakey sample: verify the purchase signature locally.
-        // The Worker independently verifies the provider receipt before entitlement settlement.
-        PaymentConfiguration config = new PaymentConfiguration(new SecurityCheck.Enable(publicKey), true);
-        this.payment = new Payment(activity, config);
     }
 
     public void connect() {
         if (destroyed || ready) return;
+        if (!configured || payment == null) {
+            status("کلید عمومی کافه‌بازار هنوز در تنظیمات نسخه آزمایشی ثبت نشده است؛ صفحه اشتراک قابل مشاهده است اما خرید غیرفعال می‌ماند.");
+            return;
+        }
         status("در حال اتصال به سرویس پرداخت کافه‌بازار…");
         try {
             connection = payment.connect(callback -> {
