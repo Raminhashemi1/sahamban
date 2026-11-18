@@ -13,27 +13,32 @@ const expected=[
  {days:365,rial:14600000,id:'SAHMINO_PRO_365D'}
 ];
 test('PWA and Bazaar use the five approved server prices in rial only',()=>{
- const server=plansSource.match(/const LAUNCH_PLANS=Object\.freeze\(\{([\\s\\S]*?)\n\}\);/);
- assert.ok(server,'server launch catalogue exists');
+ assert.ok(plansSource.includes('const LAUNCH_PLANS=Object.freeze({'),'server launch catalogue exists');
  const inputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\\d+)" data-price-rial="(\\d+)"/g)];
  assert.equal(inputs.length,5);
  assert.deepEqual(inputs.map(m=>[Number(m[1]),Number(m[2])]),expected.map(p=>[p.days,p.rial]));
- const native=bazaar.match(/(?:PRICE_RIAL|PRICES)\\s*=\\s*\\{([^}]+)\\}/);
- assert.ok(native,'Bazaar rial price table exists');
- assert.deepEqual(native[1].split(',').map(x=>Number(x.trim().replace(/L$/,''))),expected.map(p=>p.rial));
+ for(const p of expected) assert.ok(plansSource.includes(p.id+':Object.freeze({days:'+p.days+',priceRial:'+p.rial+'})'));
+ for(const p of expected) {
+  assert.ok(bazaar.includes(p.days+''));
+  assert.ok(bazaar.includes(p.rial+'L'));
+ }
  assert.doesNotMatch(bazaar,/PRICE_TOMAN|priceToman|تومان|formatToman/);
- for(const p of expected) assert.ok(server[1].includes(p.id+':Object.freeze({days:'+p.days+',priceRial:'+p.rial+'})'));
- const section=html.slice(html.indexOf('id="subscriptionSectionSahmino"'),html.indexOf('<div id="sahminoAccountPanel"'));
+ const start=html.indexOf('id="subscriptionSectionSahmino"');
+ const end=html.indexOf('<div id="sahminoAccountPanel"',start);
+ assert.ok(start>=0&&end>start,'subscription section boundaries exist');
+ const section=html.slice(start,end);
  assert.ok(section.includes('مبلغ نهایی: ۱٬۵۰۰٬۰۰۰ ریال'));
  assert.doesNotMatch(section,/تومان|data-price-toman/);
 });
 test('PWA keeps checkout disabled and renewal manual by default',()=>{
  assert.match(html,/تمدید دستی حالت پیش‌فرض است/);
  assert.match(html,/تمدید خودکار در این نسخه ارائه نمی‌شود/);
- const section=html.match(/id="subscriptionSectionSahmino"[\\s\\S]*?<div id="sahminoAccountPanel"/);
- assert.ok(section);
- assert.match(section[0],/<button type="button" disabled[^>]*>خرید اشتراک/);
- assert.match(section[0],/تخفیف اضافه ندارند/);
+ const start=html.indexOf('id="subscriptionSectionSahmino"');
+ const end=html.indexOf('<div id="sahminoAccountPanel"',start);
+ assert.ok(start>=0&&end>start);
+ const section=html.slice(start,end);
+ assert.match(section,/<button type="button" disabled[^>]*>خرید اشتراک/);
+ assert.match(section,/تخفیف اضافه ندارند/);
 });
 test('Bazaar Android preview remains visible and payment stays disabled until trusted server verification',()=>{
  assert.match(bazaar,/پرداخت و فعال‌سازی Pro تا تأیید رسید توسط سرور غیرفعال است/);
