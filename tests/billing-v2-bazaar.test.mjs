@@ -49,7 +49,7 @@ test('provider expiry and renewal flag become authoritative access data',async()
  };
  const db={prepare(q){return {bind(){return {first:async()=>({id:'order',plan_id:'SAHAMBAN_PRO_30D'})}}}},batch:async()=>[]};
  const result=await verifyAndSettle({db,env,subject:'user',body:validBody,now,fetcher});
- assert.match(validateUrl,/subscriptions\\/pro30\\/purchases\\/token-123/);
+ assert.ok(validateUrl.includes('/subscriptions/pro30/purchases/token-123/'), validateUrl);
  assert.equal(result.status,409); // The mocked D1 settlement is incomplete; provider verification succeeded.
 });
 test('expired provider entitlement fails closed',async()=>{
