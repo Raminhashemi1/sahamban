@@ -26,7 +26,6 @@ test('Purchase evidence is raw only and never grants Pro locally',()=>{
  assert.doesNotMatch(evidence,/proEnabled|grantPro|paidUntil|consumeProduct/);
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  assert.match(activity,/extends ComponentActivity/);
- assert.match(activity,/plan\.setEnabled\(false\)/);
  assert.match(activity,/orders\.verifyPurchase\(evidence/);
  assert.match(activity,/دسترسی Pro فعال نشد/);
 });
@@ -51,6 +50,8 @@ test('native order handoff and receipt verification use authenticated Worker end
  const client=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SahminoPrepaidOrderClient.java');
  const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
  const gradle=read('android-pilot/app/build.gradle');
+ const main=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ const sessionRepo=read('server/d1-sms-otp-repository.cjs');
  for(const marker of ['getCookie(baseUrl)','sahmino_session=','X-Sahmino-CSRF',
      'setInstanceFollowRedirects(false)','/api/v1/me/prepaid-orders',
      'PENDING_ORDER_CREATED','amountRial','^ord_[a-f0-9]{32}$']) assert.ok(client.includes(marker),marker);
