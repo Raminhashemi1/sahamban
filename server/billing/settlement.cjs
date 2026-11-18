@@ -11,7 +11,10 @@ function validIso(value){
  */
 async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchaseTime,now}={}){
  const plan=getPlan(planId),nowMs=Date.parse(now),purchaseMs=Date.parse(purchaseTime);
- if(!plan||!subject||!orderId||!bazaarOrderId||!tokenHash||
+ if(!plan||typeof subject!=='string'||subject.length<1||subject.length>256||
+   typeof orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(orderId)||
+   typeof bazaarOrderId!=='string'||bazaarOrderId.length<1||bazaarOrderId.length>256||
+   typeof tokenHash!=='string'||! /^[a-f0-9]{64}$/.test(tokenHash)||
    !validIso(now)||!validIso(purchaseTime)||!Number.isFinite(nowMs)||
    purchaseMs>nowMs+5*60*1000)
   return {ok:false,error:'INVALID_VERIFIED_PURCHASE'};
@@ -28,7 +31,7 @@ async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchas
   }
   if(order.status!=='CREATED')return {ok:false,error:'ORDER_NOT_PENDING'};
   const currentMs=order.expires_at===null?NaN:Date.parse(order.expires_at);
-  if(order.expires_at!==null&&!Number.isFinite(currentMs))return {ok:false,error:'ACCESS_STATE_INVALID'};
+  if(order.expires_at!==null&&!validIso(order.expires_at))return {ok:false,error:'ACCESS_STATE_INVALID'};
   const baseMs=Number.isFinite(currentMs)&&currentMs>nowMs?currentMs:nowMs;
   const expiresAt=new Date(baseMs+plan.days*24*60*60*1000).toISOString();
   // D1 batch is transactional. Each later statement is gated by changes()
