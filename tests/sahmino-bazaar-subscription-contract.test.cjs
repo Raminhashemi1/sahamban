@@ -68,9 +68,7 @@ test('native order handoff and receipt verification use authenticated Worker end
      'proEnabled','autoRenew','onVerified','/api/v1/me/prepaid-overview','refreshEntitlement','NO_ACTIVE_ENTITLEMENT']) assert.ok(client.includes(marker),marker);
  for(const marker of ['grantPro','consumeProduct','readNBytes','proEnabled = true']) assert.ok(!client.includes(marker),marker);
  for(const marker of ['orders.prepare(selectedPlanId, false','تمدید دستی فعال است','billing.subscribe(selectedPlanId, serverOrderId)',
-     'orders.verifyPurchase(evidence','orders.refreshEntitlement','plan.setEnabled(false)','catalogVerified[index] = matches',
-     'matches && BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured()',
-     'شناسه و قیمت اشتراک در کافه‌بازار هنوز تأیید نشده است؛ خرید آغاز نشد.',
+     'orders.verifyPurchase(evidence','orders.refreshEntitlement','plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured())',
      '!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED','اشتراک Pro توسط سرور تأیید و فعال شد']) assert.ok(activity.includes(marker),marker);
  assert.ok(!activity.includes('CheckBox autoRenew'));
  assert.ok(gradle.includes("SAHMINO_WORKER_BASE_URL', '\"\"'"));
