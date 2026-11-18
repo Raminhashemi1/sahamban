@@ -48,6 +48,7 @@ test('Worker enforces manual-default cancellation and versioned automatic-renew 
  assert.match(worker,/PROVIDER_RENEWAL_MODE_MISMATCH/);
  assert.match(worker,/renewalMode:body\.renewalMode\|\|'MANUAL'/);
  assert.match(worker,/consentVersion:body\.consentVersion\?\?null/);
+ assert.match(worker,/BAZAAR_AUTO_RENEW_ENABLED!=='true'/);
 });
 
 test('native order handoff and receipt verification use authenticated Worker endpoints',()=>{
@@ -66,9 +67,10 @@ test('native order handoff and receipt verification use authenticated Worker end
      'originalJson','dataSignature','purchaseState','status','SETTLED',
      'proEnabled','autoRenew','onVerified','/api/v1/me/prepaid-overview','refreshEntitlement','NO_ACTIVE_ENTITLEMENT']) assert.ok(client.includes(marker),marker);
  for(const marker of ['grantPro','consumeProduct','readNBytes','proEnabled = true']) assert.ok(!client.includes(marker),marker);
- for(const marker of ['orders.prepare(selectedPlanId, automaticRenewal','autoRenew.isChecked()','تمدید خودکار اختیاری','setChecked(false)','billing.subscribe(selectedPlanId, serverOrderId)',
+ for(const marker of ['orders.prepare(selectedPlanId, false','تمدید دستی فعال است','billing.subscribe(selectedPlanId, serverOrderId)',
      'orders.verifyPurchase(evidence','orders.refreshEntitlement','plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured())',
      '!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED','اشتراک Pro توسط سرور تأیید و فعال شد']) assert.ok(activity.includes(marker),marker);
+ assert.ok(!activity.includes('CheckBox autoRenew'));
  assert.ok(gradle.includes("SAHMINO_WORKER_BASE_URL', '\"\"'"));
  assert.ok(gradle.includes("SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'"));
 });
