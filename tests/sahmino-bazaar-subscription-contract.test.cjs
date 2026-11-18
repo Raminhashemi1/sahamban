@@ -77,7 +77,7 @@ test('restoration is derived from the authenticated server entitlement, not Baza
  assert.ok(client.includes('/api/v1/me/prepaid-overview'));
  assert.ok(client.includes('response.optBoolean("proEnabled", false)'));
  assert.match(activity,/onRestoredEvidence/);
- assert.match(activity,/orders\\.refreshEntitlement/);
+ assert.ok(activity.includes('orders.refreshEntitlement'));
  assert.match(overview,/proEnabled:active/);
  assert.match(overview,/authenticatedUserId/);
  assert.doesNotMatch(activity,/onRestoredEvidence[\\s\\S]{0,500}status\\.setText\\(".*دسترسی فعال نشد"\\);/);
