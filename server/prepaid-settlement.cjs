@@ -31,7 +31,8 @@ AND EXISTS(SELECT 1 FROM sahmino_prepaid_payment_events e
 const CONTROL_INSERT_SQL=`INSERT INTO sahmino_bazaar_subscription_control
 (order_id,user_id,provider_payment_id,renewal_mode,consent_version,consent_at,
  provider_auto_renewing,lifecycle_state,provider_paid_until,created_at,updated_at)
-SELECT o.id,o.user_id,o.provider_payment_id,'MANUAL',NULL,NULL,0,'VERIFIED',?, ?, ?
+SELECT o.id,o.user_id,o.provider_payment_id,o.renewal_mode,o.renewal_consent_version,o.renewal_consent_at,
+ ?,CASE WHEN o.renewal_mode='AUTO' THEN 'RENEWAL_ACTIVE' ELSE 'VERIFIED' END,?,?,?
 FROM sahmino_prepaid_subscription_orders o
 WHERE o.id=? AND o.state='SETTLED' AND o.provider_name='cafebazaar'
 AND o.provider_payment_id=? AND EXISTS(
@@ -56,7 +57,7 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider,tok
  if(!receipt||typeof receipt!=='object'||typeof verifyAtProvider!=='function')return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
  let verified=false;try{verified=await verifyAtProvider(receipt);}catch(_){verified=false;}
  if(!verified||typeof verified!=='object'||Array.isArray(verified))return {ok:false,reason:'PROVIDER_VERIFICATION_REQUIRED'};
- const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency,validUntilTimestampMsec,purchaseToken}=verified;
+ const {providerName,providerEventId,providerPaymentId,orderId,planId,amountRial,currency,validUntilTimestampMsec,purchaseToken,autoRenewing}=verified;
  if(typeof tokenEncryptionKey!=='string'||!tokenEncryptionKey)return {ok:false,reason:'TOKEN_ENCRYPTION_NOT_CONFIGURED'};
  if(typeof purchaseToken!=='string')return {ok:false,reason:'VERIFIED_TOKEN_MISSING'};
  if(![providerName,providerEventId,providerPaymentId].every(x=>typeof x==='string'&&ID.test(x))||
@@ -66,14 +67,20 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider,tok
  if(!providerPaidUntil)return {ok:false,reason:'INVALID_PROVIDER_EXPIRY'};
  let selected;try{selected=plan(planId);}catch(_){return {ok:false,reason:'INVALID_PLAN'};}
  if(selected.priceRial!==amountRial)return {ok:false,reason:'AMOUNT_MISMATCH'};
+ if(typeof autoRenewing!=='boolean')return {ok:false,reason:'PROVIDER_RENEWAL_STATE_REQUIRED'};
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function')return {ok:false,reason:'DATABASE_UNAVAILABLE'};
  try{
-  const lookup=await db.prepare(`SELECT o.user_id,o.plan_id,o.amount_rial,o.currency,o.state,e.paid_until
+  const lookup=await db.prepare(`SELECT o.user_id,o.plan_id,o.amount_rial,o.currency,o.state,o.renewal_mode,o.renewal_consent_version,o.renewal_consent_at,e.paid_until
    FROM sahmino_prepaid_subscription_orders o
    LEFT JOIN sahmino_prepaid_subscription_entitlements e ON e.user_id=o.user_id WHERE o.id=? LIMIT 1`).bind(orderId).first();
   if(!lookup)return {ok:false,reason:'ORDER_NOT_FOUND'};
   if(lookup.state!=='PENDING')return {ok:false,reason:'ORDER_NOT_PENDING'};
   if(lookup.plan_id!==planId||lookup.amount_rial!==amountRial||lookup.currency!=='IRR')return {ok:false,reason:'ORDER_MISMATCH'};
+  if(!['MANUAL','AUTO'].includes(lookup.renewal_mode)||
+   (lookup.renewal_mode==='AUTO'&&(!lookup.renewal_consent_version||!validUTC(lookup.renewal_consent_at)))||
+   (lookup.renewal_mode==='MANUAL'&&(lookup.renewal_consent_version!==null||lookup.renewal_consent_at!==null)))
+   return {ok:false,reason:'INVALID_RENEWAL_CONSENT'};
+  if(autoRenewing!==(lookup.renewal_mode==='AUTO'))return {ok:false,reason:'PROVIDER_RENEWAL_MODE_MISMATCH'};
   const effectivePaidUntil=lookup.paid_until&&validUTC(lookup.paid_until)&&lookup.paid_until>providerPaidUntil
    ?lookup.paid_until:providerPaidUntil;
   const tokenEnvelope=await encryptPurchaseToken(purchaseToken,{secret:tokenEncryptionKey,orderId,providerPaymentId});
@@ -81,7 +88,7 @@ async function settleVerifiedPrepaidPayment(db,receipt,{now,verifyAtProvider,tok
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
    db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,tokenEnvelope.version,tokenEnvelope.nonce,tokenEnvelope.ciphertext,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
    db.prepare(ENTITLEMENT_UPSERT_SQL).bind(orderId,providerName,providerPaymentId,providerPaidUntil,now),
-   db.prepare(CONTROL_INSERT_SQL).bind(providerPaidUntil,now,now,orderId,providerPaymentId)
+   db.prepare(CONTROL_INSERT_SQL).bind(autoRenewing?1:0,providerPaidUntil,now,now,orderId,providerPaymentId)
   ];
   const results=await db.batch(statements);
   if(!Array.isArray(results)||results.length!==4||results.some(x=>x?.success!==true))return {ok:false,reason:'SETTLEMENT_FAILED'};
