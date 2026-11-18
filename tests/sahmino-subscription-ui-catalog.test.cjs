@@ -14,9 +14,13 @@ const expected=[
 ];
 test('PWA and Bazaar use the five approved server prices in rial only',()=>{
  assert.ok(plansSource.includes('const LAUNCH_PLANS=Object.freeze({'),'server launch catalogue exists');
- const inputs=[...html.matchAll(/<input type="radio" name="sahminoPlanDays" value="(\\d+)" data-price-rial="(\\d+)"/g)];
+ const inputs=[...html.matchAll(/<input[^>]*name="sahminoPlanDays"[^>]*>/g)];
  assert.equal(inputs.length,5);
- assert.deepEqual(inputs.map(m=>[Number(m[1]),Number(m[2])]),expected.map(p=>[p.days,p.rial]));
+ const actual=inputs.map(([tag])=>[
+  Number(tag.match(/\\bvalue="(\\d+)"/)?.[1]),
+  Number(tag.match(/\\bdata-price-rial="(\\d+)"/)?.[1])
+ ]);
+ assert.deepEqual(actual,expected.map(p=>[p.days,p.rial]));
  for(const p of expected) assert.ok(plansSource.includes(p.id+':Object.freeze({days:'+p.days+',priceRial:'+p.rial+'})'));
  for(const p of expected) {
   assert.ok(bazaar.includes(p.days+''));
