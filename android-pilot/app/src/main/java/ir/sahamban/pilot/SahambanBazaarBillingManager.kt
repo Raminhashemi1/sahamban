@@ -23,7 +23,8 @@ class SahambanBazaarBillingManager(
 ) {
     data class Evidence(
         val productId: String,
-        val orderId: String,
+        val bazaarOrderId: String,
+        val serverOrderId: String,
         val purchaseToken: String,
         val packageName: String,
         val purchaseTime: Long,
@@ -55,16 +56,16 @@ class SahambanBazaarBillingManager(
         }
     }
 
-    fun purchaseFixedTermPlan(productId: String, opaqueServerOrderId: String, callback: (Result) -> Unit) {
+    fun purchaseFixedTermPlan(productId: String, serverOrderId: String, callback: (Result) -> Unit) {
         require(productId.matches(Regex("^[A-Za-z0-9._-]{1,100}$")))
-        require(opaqueServerOrderId.matches(Regex("^ord_[a-f0-9]{32}$")))
+        require(serverOrderId.matches(Regex("^ord_[a-f0-9]{32}$")))
         if (connection?.getState() != ConnectionState.Connected) {
             callback(Result.Failed("BAZAAR_NOT_CONNECTED"))
             return
         }
         payment.purchaseProduct(
             registry = activity.activityResultRegistry,
-            request = PurchaseRequest(productId = productId, payload = opaqueServerOrderId)
+            request = PurchaseRequest(productId = productId, payload = serverOrderId)
         ) {
             purchaseSucceed { info ->
                 val evidence = info.toEvidence()
@@ -117,11 +118,15 @@ class SahambanBazaarBillingManager(
     private fun PurchaseInfo.toEvidence(): Evidence? {
         if (purchaseState != PurchaseState.PURCHASED) return null
         if (purchaseToken.isBlank() || orderId.isBlank() || packageName.isBlank() ||
-            productId.isBlank() || originalJson.isBlank() ||
-            purchaseTime <= 0L) return null
+            productId.isBlank() || originalJson.isBlank() || purchaseTime <= 0L) return null
+        val serverOrderId = try {
+            org.json.JSONObject(originalJson).optString("developerPayload")
+        } catch (_: Exception) { "" }
+        if (!serverOrderId.matches(Regex("^ord_[a-f0-9]{32}$"))) return null
         return Evidence(
             productId = productId,
-            orderId = orderId,
+            bazaarOrderId = orderId,
+            serverOrderId = serverOrderId,
             purchaseToken = purchaseToken,
             packageName = packageName,
             purchaseTime = purchaseTime,
