@@ -29,7 +29,7 @@ android {
 
     buildTypes {
         debug {
-            // Checkout remains disabled until a trusted Bazaar receipt verifier is deployed.
+            // Keep live checkout disabled until production package, identity, SKU mapping and server secrets are verified.
             buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
         }
         release {
