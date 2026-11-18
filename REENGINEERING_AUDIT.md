@@ -40,9 +40,9 @@ The IDs above are server-side catalog keys, not Cafe Bazaar Product IDs. Actual 
 
 ## Remaining blockers
 
-1. The current branch contains a WebView test shell, but **does not contain a native Poolakey adapter**. A test file describing an expected Poolakey contract is not a working adapter.
-2. Actual Cafe Bazaar Product IDs for all five plans and their explicit server mapping are still needed.
-3. Trusted server-to-server validation of Bazaar receipts, including package/product/status/transaction checks and replay protection, is not yet connected.
+1. A native Kotlin Poolakey billing boundary has now been added to the Android pilot module. It connects to Bazaar, launches subscription purchases, and returns raw signed purchase evidence. It is not yet invoked from the WebView UI and does not itself verify receipts or grant Pro.
+2. Actual Cafe Bazaar Product IDs for all five plans and their explicit server mapping are still needed; no products should be created until the official app build is ready.
+3. Trusted server-to-server validation of Bazaar receipts, including package/product/status/transaction checks and replay protection, is not yet connected. The Worker currently has no receipt-verification endpoint.
 4. Refund/reversal processing and entitlement recovery on a real Bazaar-installed device remain outstanding.
 5. The Worker is a private pilot prototype; checkout and payments remain disabled.
 6. The D1 migration has not been applied to a production database. Review migration history before applying any schema changes to an existing database.
@@ -52,4 +52,4 @@ The IDs above are server-side catalog keys, not Cafe Bazaar Product IDs. Actual 
 - No non-payment application module was changed.
 - No production checkout was enabled.
 - No real transaction was made and no marketplace was contacted.
-- Do not merge/deploy until the native Bazaar adapter, trusted receipt verification, refund/recovery handling, dedicated CI, sandbox tests, and owner approval are complete.
+- Do not merge/deploy until the native Bazaar adapter is integrated into the app flow, trusted receipt verification and refund/recovery handling exist, Android CI passes, sandbox tests pass, and owner approval is obtained.
