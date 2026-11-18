@@ -55,7 +55,7 @@
 - Workflow اندروید فقط flavor بازار را compile-check می‌کند.
 - پنج پلن موجود و قیمت‌های ریالی آن‌ها دست‌نخورده باقی مانده‌اند.
 - primitive تسویه سرور اکنون `validUntilTimestampMsec` تأییدشده را می‌پذیرد و دیگر با `plan.days` تاریخ پایان را محاسبه نمی‌کند.
-- این تغییر هنوز به معنی وجود endpoint واقعی Bazaar verifier یا فعال بودن پرداخت نیست. این اتصال باید در مرحله بعد به Worker متصل و با sandbox آزمایش شود.
+- verifier امضای Poolakey، OAuth و ValidateSubscription بازار و route احراز‌شده Worker در شاخه پیاده‌سازی شده‌اند؛ همه feature flagها خاموش‌اند و تا تکمیل قرارداد تمدید دستی، آزمون دقیق CI و sandbox، خرید/تسویه عملیاتی فعال نیست.
 
 ## منابع فنی
 
