@@ -20,7 +20,7 @@ function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amo
 }
 test('Bazaar expiry parser accepts only a future exact millisecond timestamp',()=>{
  assert.equal(bazaarExpiry(expiry,now),'2026-12-22T10:00:00.000Z');
- assert.equal(bazaarExpiry(now?Date.parse(now):0,now),null);
+ assert.equal(bazaarExpiry(Date.parse(now),now),null);
  assert.equal(bazaarExpiry('2026-12-22',now),null);
  assert.equal(bazaarExpiry(Number.MAX_SAFE_INTEGER,now),null);
 });
@@ -34,8 +34,8 @@ test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
  assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2026-12-22T10:00:00.000Z'});
  const batch=db.calls.find(x=>x.batch).batch;assert.equal(batch.length,3);
  assert.match(batch[0].sql,/state='PENDING'/);assert.match(batch[1].sql,/state='PENDING'/);
- assert.match(batch[2].sql,/ON CONFLICT\\(user_id\\) DO UPDATE/);
- assert.doesNotMatch(batch[2].sql,/\+'\\|\+'\|\?\|\' days/);
+ assert.match(batch[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);
+ assert.doesNotMatch(batch[2].sql,/strftime|\+\|\|/);
  assert.deepEqual(batch[2].values,[orderId,'cafebazaar','pay-1','2026-12-22T10:00:00.000Z',now]);
 });
 test('existing later paid-through date is never shortened by a provider response',async()=>{
@@ -64,5 +64,5 @@ test('settlement SQL binds Bazaar verified expiry and a unique provider event',(
  assert.match(EVENT_SQL,/sahmino_prepaid_payment_events/);assert.match(EVENT_SQL,/state='PENDING'/);
  assert.match(ORDER_SQL,/provider_event_id/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);
  assert.match(ENTITLEMENT_UPSERT_SQL,/paid_until>excluded\.paid_until/);
- assert.doesNotMatch(ENTITLEMENT_UPSERT_SQL,/\+'\\|\+'\|\?\|\' days/);
+ assert.doesNotMatch(ENTITLEMENT_UPSERT_SQL,/strftime|\+\|\|/);
 });
