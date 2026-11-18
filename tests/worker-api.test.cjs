@@ -221,3 +221,16 @@ test('CafeBazaar receipt verification is cookie-authenticated and disabled until
  }),env());
  assert.equal(wrongMethod.status,405);
 });
+
+test('Bazaar cancellation route is disabled by default and rejects unsupported methods',async()=>{
+ const worker=(await api()).default;
+ const disabled=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-subscription/cancel',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'}
+ }),{...env(),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'});
+ assert.equal(disabled.status,404);
+ assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
+ const method=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-subscription/cancel',{
+  method:'GET',headers:{Origin:origin}
+ }),env());
+ assert.equal(method.status,405);
+});
