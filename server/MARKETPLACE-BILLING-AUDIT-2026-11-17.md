@@ -1,75 +1,69 @@
-# گزارش ممیزی عمیق اتصال پرداخت سهمینو — ۲۰۲۶-۱۱-۱۷
+# ممیزی معماری پرداخت سهمینو — اصلاحیه Bazaar-only و Subscription API
 
-## نتیجه اجرایی
+تاریخ بازبینی: ۲۰۲۶-۱۱-۱۸  
+شاخه کاری: `feat/android-subscription-preview-20261115`
 
-**پرداخت واقعی هنوز آماده فعال‌سازی نیست.** این ممیزی کد شاخه را بررسی کرده است؛ هیچ دسترسی به پنل ناشر مایکت/کافه‌بازار، دستگاه تست واردشده به حساب فروشگاه، کلیدهای اختصاصی سهمینو یا محیط Worker/D1 تولیدی در اختیار این بررسی نبوده است. بنابراین آزمون تراکنش واقعی یا تأیید تنظیمات پنل انجام نشده است.
+## تصمیم دامنه
 
-## ۱) SDK اندروید فروشگاه‌ها
+تنها کانال پرداخت مورد پشتیبانی سهمینو **کافه‌بازار** است. مایکت، گوگل‌پلی و وب‌سایت/درگاه مستقیم خارج از دامنه‌اند. هرگونه افزودن مجدد نیازمند تصمیم صریح و جدید مالک است.
 
-### مایکت
-- وابستگی `ir.myket:billing:2.2` و Maven رسمی `https://maven.myket.ir` در پروژه ثبت شده است.
-- `SahminoStoreBillingManager.java` فقط در flavor مایکت قرار دارد و اتصال، استعلام موجودی و قیمت، و استخراج رسید امضاشده را پیاده‌سازی می‌کند.
-- با این حال `SubscriptionPreviewActivity` هیچ دکمه خرید فعالی ندارد و callback مربوط به `onSignedPurchaseEvidence` را به مسیر سرور وصل نمی‌کند. متد `purchase` در Manager عملاً از UI فراخوانی نمی‌شود.
-- payload فعلی Manager یک مقدار تصادفی محلی است؛ با شناسه سفارش معلقی که سرور ساخته تطبیق داده نمی‌شود. برای جلوگیری از اتصال رسید به حساب اشتباه، باید ابتدا سفارش از سرور ایجاد و شناسه آن در developerPayload قرار گیرد.
-- کلاس `SahminoPurchaseEvidence` فیلدهای originalJson و signature را استخراج می‌کند، اما استخراج رسید به معنی اعتبارسنجی آن نیست.
+پیش‌نمایش پنج پلن و کاتالوگ مصوب حفظ می‌شوند:
+- ۳۰ روز: ۱٬۵۰۰٬۰۰۰ ریال
+- ۶۰ روز: ۲٬۸۵۰٬۰۰۰ ریال
+- ۹۰ روز: ۴٬۰۵۰٬۰۰۰ ریال
+- ۱۸۰ روز: ۷٬۶۵۰٬۰۰۰ ریال
+- ۳۶۵ روز: ۱۴٬۶۰۰٬۰۰۰ ریال
 
-### کافه‌بازار
-- وابستگی Poolakey در Gradle وجود دارد، اما در flavor بازار فقط صفحه پیش‌نمایش ساخته شده است.
-- هیچ کلاس اجرایی Poolakey، اتصال `Payment`، استعلام SKU، خرید `purchaseProduct`، بازیابی خرید یا `consumeProduct` در flavor بازار وجود ندارد.
-- صفحه بازار صراحتاً می‌گوید Poolakey هنوز وصل نشده است.
-- بنابراین بند اول برای مایکت «نیمه‌پیاده‌سازی» و برای بازار «پیاده‌سازی‌نشده» است؛ صرف وجود dependency به معنی اتصال SDK نیست.
+## اصلاح معماری SDK
 
-## ۲) اعتبارسنجی رسید سمت سرور
+این پنج محصول در مسیر Poolakey باید به‌عنوان Subscription SKU پیاده‌سازی شوند، نه خرید یک‌باره consumable:
 
-- `server/prepaid-settlement.cjs` فقط یک primitive تسویه عمومی است و تابع `verifyAtProvider` را از فراخواننده می‌گیرد؛ این تابع به‌تنهایی به هیچ فروشگاهی وصل نیست.
-- در `server/worker-api.mjs` هیچ endpoint دریافت رسید، اعتبارسنجی مایکت/بازار، یا اجرای settlement وجود ندارد.
-- مسیرهای موجود `/api/v1/me/prepaid-orders` فقط سفارش معلق می‌سازند/می‌خوانند و پاسخ آن‌ها `checkoutEnabled:false` و `proEnabled:false` است.
-- Worker در مستندات پروژه prototype و مستقرنشده معرفی شده است؛ فایل نمونه Wrangler نیز شناسه D1 واقعی ندارد.
-- پس در حال حاضر حتی رسیدی که اپ دریافت کند، راه امن و قابل‌دسترسی برای ارسال و تأیید و ثبت اتمیک entitlement ندارد.
+| عملیات | API صحیح Poolakey |
+|---|---|
+| دریافت جزئیات SKU | `getSubscriptionSkuDetails` |
+| شروع خرید | `subscribeProduct` |
+| بازیابی فهرست اشتراک‌ها | `getSubscribedProducts` |
+| استعلام یک اشتراک | `querySubscribeProduct` |
+| مصرف خرید | **ممنوع**؛ `consumeProduct` برای Subscription نیست |
 
-## ۳) کلیدها و شناسه‌های فروشگاهی
+مستندات رسمی Poolakey صریحاً میان `purchaseProduct` و `subscribeProduct` و نیز میان `getPurchasedProducts` و `getSubscribedProducts` تفکیک می‌کند. همچنین `consumeProduct` برای خرید محصول است و اشتراک‌ها قابل consume نیستند.
 
-- `android-pilot/app/build.gradle` کلیدهای `BAZAAR_IAB_PUBLIC_KEY` و `MYKET_IAB_PUBLIC_KEY` را از Gradle properties می‌خواند؛ در `android-pilot/gradle.properties` فعلی فقط تنظیمات عمومی Gradle وجود دارد و هیچ‌کدام از دو کلید تنظیم نشده‌اند.
-- کاتالوگ اندروید شناسه‌های `sahmino_pro_30d` تا `sahmino_pro_365d` را placeholder معرفی می‌کند؛ کد یا مستندی وجود ندارد که اثبات کند این SKUها در پنل هر دو فروشگاه ایجاد و فعال شده‌اند.
-- package name فعلی `ir.manahesab.sahmino` در Gradle است، اما تطبیق آن با برنامه ثبت‌شده در هر دو پنل قابل اثبات نیست.
-- کلید عمومی RSA محرمانه نیست، اما باید دقیقاً از پنل همان برنامه/همان فروشگاه گرفته شود؛ کلید نمونه یا کلید برنامه دیگر قابل استفاده نیست.
-- برای بازار، مستند Poolakey دو روش را می‌شناسد: بررسی محلی با کلید RSA یا غیرفعال‌کردن آن فقط در صورت استفاده از REST API بازار. مستند رسمی REST بازار مسیر OAuth و endpoint اعتبارسنجی خرید را نشان می‌دهد؛ بنابراین client secret و refresh token باید فقط در Secretهای Worker ذخیره شوند.
-- برای مایکت، SDK رسمی نمونه تأیید امضای RSA روی originalJson را با SHA1withRSA انجام می‌دهد و توصیه می‌کند originalJson/signature سمت سرور بررسی شوند. مستند عمومی بررسی‌شده قرارداد کامل API سمت سرور برای وضعیت refund/revoke را روشن نکرد؛ این مورد باید از مستندات/پشتیبانی پنل مایکت تأیید شود.
+## اعتبارسنجی سمت سرور و تاریخ انقضا
 
-## شواهد رسمی/فنی بررسی‌شده
+سرور باید پس از دریافت token و شواهد خرید، از CafeBazaar Developer API استفاده کند. endpoint اعتبارسنجی اشتراک در API v2 به شکل زیر مستند شده است:
 
-- Myket Android Billing SDK: https://github.com/myketstore/billing-sample-android
-- Myket Developer API repository (این API برای login/update/storage است و نباید با receipt verifier اشتباه شود): https://github.com/myketstore/myket-developer-api
-- Bazaar Poolakey: https://github.com/cafebazaar/Poolakey
-- Poolakey connection/security: https://github.com/cafebazaar/Poolakey/wiki/2.-Construction-and-Connection
-- Poolakey product purchase: https://github.com/cafebazaar/Poolakey/wiki/3.-Purchasing-a-Product
-- Poolakey consume/query: https://github.com/cafebazaar/Poolakey/wiki/5.-Consume-a-Purchased-Product
-- Bazaar Developer API example (OAuth + validate purchase): https://github.com/Geeksltd/CafeBazaar.DeveloperApi/blob/main/CafeBazaarDeveloperService.cs
+`GET /devapi/v2/api/applications/{packageName}/subscriptions/{subscriptionId}/purchases/{purchaseToken}/?access_token={accessToken}`
 
-## معماری لازم برای تکمیل امن
+- OAuth client secret و refresh token فقط در Secretهای محیط Worker نگهداری شوند؛ هرگز در APK، GitHub یا چت قرار نگیرند.
+- شناسه حساب از نشست احراز هویت‌شده سرور گرفته شود، نه از body کلاینت.
+- package name، SKU، purchase token، order payload، وضعیت خرید، شناسه تراکنش و عدم replay باید بررسی شوند.
+- تاریخ پایان اعتبار از فیلد `validUntilTimestampMsec` پاسخ تأییدشده Bazaar استخراج و ذخیره شود.
+- `plan.days` برای تعریف کاتالوگ و کنترل پلن است؛ نباید مبنای محاسبه تاریخ انقضای واقعی یک Subscription تأییدشده باشد.
+- اگر پاسخ بازار منقضی، ناقص، نامعتبر یا غیرقابل دسترسی باشد، اشتراک فعال نشود.
+- خرید مجدد نباید تاریخ اعتبار موجود را کوتاه کند؛ ledger و entitlement باید در یک تراکنش اتمیک ثبت شوند.
+- سفارش PENDING و callback کلاینت به‌تنهایی هیچ دسترسی Pro ایجاد نمی‌کنند.
 
-1. هر دو flavor باید از SDK همان فروشگاه استفاده کنند؛ هیچ انتخاب دستی کانال پرداخت داخل اپ وجود نداشته باشد.
-2. اپ با نشست احراز هویت‌شده ابتدا `POST /api/v1/me/prepaid-orders` را صدا بزند و شناسه سفارش سرور را به عنوان payload به SDK بدهد.
-3. اپ فقط شناسه محصول، شناسه سفارش، توکن/رسید و داده امضاشده را به endpoint رسید بفرستد؛ قیمت/مدت از کلاینت پذیرفته نشود.
-4. سرور مالکیت سفارش را با نشست کاربر تطبیق دهد، سپس برای Bazaar از REST API رسمی و برای Myket از اعتبارسنجی رسمی/امضای RSA طبق قرارداد تأییدشده استفاده کند.
-5. سرور packageName، SKU، purchaseState، payload/order binding، زمان، قیمت/واحد محصول پنل، شناسه تراکنش و عدم replay را بررسی کند.
-6. settlement و entitlement در D1 با ledger یکتا و اتمیک ثبت شوند. فقط بعد از commit موفق سرور، اپ محصول consumable را در فروشگاه consume کند؛ در شکست شبکه، امکان reconcile بدون از دست رفتن رسید باقی بماند.
-7. برای refund/revoke، مسیر notification/polling رسمی هر مارکت یا رویه reconciliation تأییدشده لازم است؛ صرف امضای رسید اولیه وضعیت دائمی دسترسی را اثبات نمی‌کند.
+## تمدید
 
-## مواردی که بدون مالک قابل تکمیل نیستند
+پیش‌فرض سهمینو تمدید دستی است. مستندات فنی عمومی Poolakey وجود API خرید/استعلام Subscription را نشان می‌دهد؛ اما رفتار دقیق محصول/پنل Bazaar برای خاموش‌کردن تمدید خودکار به‌صورت پیش‌فرض، رضایت opt-in و لغو بدون از دست رفتن دوره پرداخت‌شده باید در پنل ناشر و API رسمی تأیید شود. تا زمان احراز این قرارداد، UI نباید وعده تمدید خودکار بدهد و هیچ درخواست تمدیدی نباید بدون رضایت صریح ارسال شود.
 
-این موارد را نمی‌توان با تغییر کد یا حدس‌زدن تولید کرد:
-- کلید عمومی RSA مخصوص برنامه سهمینو در پنل مایکت.
-- کلید عمومی RSA مخصوص برنامه سهمینو در پنل کافه‌بازار.
-- تأیید package name و ایجاد/فعال‌سازی پنج SKU واقعی در هر دو پنل، با قیمت‌های دقیق ریالی مصوب.
-- اعتبارنامه سرور بازار (OAuth client ID، client secret و refresh token) و مجوز API اعتبارسنجی؛ این‌ها باید مستقیماً به‌صورت Cloudflare Worker Secrets تنظیم شوند، نه در GitHub یا چت.
-- مستند یا تأیید رسمی مایکت برای وضعیت refund/revoke و قرارداد اعتبارسنجی سمت سرور.
-- دسترسی به محیط آزمایشی فروشگاه و دستگاهی که حساب تست مایکت/بازار روی آن وارد شده باشد.
+## وضعیت کد پس از اصلاحات این مرحله
+
+- Gradle فقط flavor کافه‌بازار را نگه می‌دارد.
+- مخزن Maven مایکت و کلید مایکت از پیکربندی Android حذف شده‌اند.
+- کلاس‌های Android مربوط به مایکت و تست‌های وابسته حذف شده‌اند.
+- Workflow اندروید فقط flavor بازار را compile-check می‌کند.
+- پنج پلن موجود و قیمت‌های ریالی آن‌ها دست‌نخورده باقی مانده‌اند.
+- primitive تسویه سرور اکنون `validUntilTimestampMsec` تأییدشده را می‌پذیرد و دیگر با `plan.days` تاریخ پایان را محاسبه نمی‌کند.
+- این تغییر هنوز به معنی وجود endpoint واقعی Bazaar verifier یا فعال بودن پرداخت نیست. این اتصال باید در مرحله بعد به Worker متصل و با sandbox آزمایش شود.
+
+## منابع فنی
+
+- Poolakey official repository: https://github.com/cafebazaar/Poolakey
+- Poolakey subscription API: https://github.com/cafebazaar/Poolakey/wiki/4.-Subscribing-a-Product
+- Poolakey API reference: https://github.com/cafebazaar/Poolakey/blob/master/_autodocs/api-reference/payment.md
+- CafeBazaar Developer API sample — `ValidateSubscription` and OAuth token refresh: https://github.com/Geeksltd/CafeBazaar.DeveloperApi/blob/main/CafeBazaarDeveloperService.cs
 
 ## دروازه انتشار
 
-تا زمانی که build هر دو flavor، خرید موفق، لغو، شکست، بازیابی پس از نصب مجدد، رسید تکراری، انقضا، refund/revoke و consume پس از commit سرور روی دستگاه آزمایش نشده‌اند، پرداخت باید خاموش بماند.
-
-## وضعیت آزمون موجود
-
-Commit `7e42937298b6b3c6ef32542a4a6ac1a3991e9af2` آزمون workflow پنج‌پلن سرور را سبز کرده است. این آزمون‌ها کاتالوگ/منطق دامنه را پوشش می‌دهند؛ آزمون SDK اندروید یا تراکنش فروشگاهی واقعی نیستند.
+پرداخت همچنان خاموش است. پیش از فعال‌سازی باید adapter واقعی Poolakey، اتصال سفارش به payload، verifier سمت سرور Bazaar، restore، انقضا، لغو/تمدید، refund/revoke، تست replay و تست روی گوشی واقعی تکمیل شوند. هیچ merge به `main` یا deployment بدون تأیید جداگانه مالک انجام نشود.
