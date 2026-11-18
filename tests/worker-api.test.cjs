@@ -109,7 +109,7 @@ test('prepaid order route accepts only a plan ID and takes price and order ID fr
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
  assert.deepEqual(calls[0].values.slice(1,3),['SAHMINO_PRO_60D',2850000]);
  assert.match(calls[0].values[3],/^\d{4}-\d{2}-\d{2}T/);
- assert.equal(calls[0].values[4],subject);
+ assert.equal(calls[0].values[4],'MANUAL');assert.equal(calls[0].values[5],null);assert.equal(calls[0].values[6],null);assert.equal(calls[0].values[7],subject);
  assert.match(calls[0].sql,/u\.auth_subject=\?/);
 });
 
@@ -233,4 +233,18 @@ test('Bazaar cancellation route is disabled by default and rejects unsupported m
   method:'GET',headers:{Origin:origin}
  }),env());
  assert.equal(method.status,405);
+});
+
+test('OTP order endpoint persists explicit auto-renew consent only when versioned consent is supplied',async()=>{
+ const worker=(await api()).default,token=await signedToken(),calls=[];
+ const storage={prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {
+  async run(){return {success:true,meta:{changes:1}};},async first(){return null;}
+ };}};}};
+ const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
+  method:'POST',headers:{Origin:origin,Cookie:'sahmino_session='+'a'.repeat(64),'Content-Type':'application/json','X-Sahmino-CSRF':'1'},
+  body:JSON.stringify({planId:'SAHMINO_PRO_30D',renewalMode:'AUTO',consentVersion:'sahmino-auto-renew-v1'})
+ }),{...env(storage),SAHMINO_OTP_ENABLED:'true',PREPAID_ORDERS_ENABLED:'true'});
+ // This test's fake OTP session store is not installed; authentication must fail closed.
+ assert.equal(response.status,401);
+ assert.equal(calls.length,0);
 });
