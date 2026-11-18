@@ -24,7 +24,9 @@ class BillingV2Coordinator(
         val orderId: String,
         val bazaarOrderId: String,
         val purchaseToken: String,
-        val packageName: String
+        val packageName: String,
+        val originalJson: String,
+        val dataSignature: String
     )
 
     sealed interface PurchaseResult {
@@ -114,8 +116,8 @@ class BillingV2Coordinator(
     private fun PurchaseInfo.toEvidence(): PurchaseEvidence? {
         if (purchaseState != PurchaseState.PURCHASED) return null
         if (purchaseToken.isBlank() || orderId.isBlank() || packageName.isBlank() ||
-            productId.isBlank() || payload.isBlank()) return null
+            productId.isBlank() || payload.isBlank() || originalJson.isBlank() || dataSignature.isBlank()) return null
         if (!payload.matches(Regex("^ord_[a-f0-9]{32}$"))) return null
-        return PurchaseEvidence(productId, payload, orderId, purchaseToken, packageName)
+        return PurchaseEvidence(productId, payload, orderId, purchaseToken, packageName, originalJson, dataSignature)
     }
 }
