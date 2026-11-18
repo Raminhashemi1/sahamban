@@ -64,7 +64,7 @@ test('Bazaar: refreshes OAuth token then validates subscription using subscripti
   assert.equal(result.planId,order.plan_id);
   assert.equal(calls.length,2);
   assert.match(calls[0].url,/pardakht\.cafebazaar\.ir\/devapi\/v2\/auth\/token/);
-  assert.match(calls[1].url,/subscriptions\\/bazaar_30d\\/purchases/);
+  assert.ok(calls[1].url.includes('/subscriptions/bazaar_30d/purchases/'));
   assert.equal(result.providerPaidUntil,new Date(now+30*86400000).toISOString());
   assert.match(calls[1].url,/access-token/);
  }finally{globalThis.fetch=originalFetch;}
