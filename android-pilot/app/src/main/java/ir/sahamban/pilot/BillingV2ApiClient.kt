@@ -43,12 +43,14 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
     }
 
     fun verifySubscription(orderId: String, sku: String, purchaseToken: String,
+                           originalJson: String, dataSignature: String,
                            callback: (Result<Access>) -> Unit) {
         require(orderId.matches(Regex("^ord_[a-f0-9]{32}$")))
         require(sku.matches(Regex("^[A-Za-z0-9._-]{1,100}$")))
-        require(purchaseToken.length in 8..4096)
+        require(purchaseToken.length in 8..4096 && originalJson.length in 1..8192 && dataSignature.length in 1..4096)
         request("/api/v2/billing/verify",
-            JSONObject().put("orderId", orderId).put("sku", sku).put("token", purchaseToken)) { status, json ->
+            JSONObject().put("orderId", orderId).put("sku", sku).put("token", purchaseToken)
+                .put("originalJson", originalJson).put("dataSignature", dataSignature)) { status, json ->
             if (status == 200 && json.optString("status") == "ACTIVE") {
                 val plan = json.optString("planId")
                 val expires = json.optString("expiresAt")
