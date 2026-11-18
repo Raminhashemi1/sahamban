@@ -60,11 +60,25 @@ test('native order handoff and receipt verification use authenticated Worker end
  assert.match(sessionRepo,/HttpOnly; Secure; SameSite=None/);
  for(const marker of ['/api/v1/me/prepaid-orders/verify','serverOrderId','purchaseToken',
      'originalJson','dataSignature','purchaseState','status','SETTLED',
-     'proEnabled','AUTO_RENEW','onVerified']) assert.ok(client.includes(marker),marker);
+     'proEnabled','AUTO_RENEW','onVerified','/api/v1/me/prepaid-overview','refreshEntitlement','NO_ACTIVE_ENTITLEMENT']) assert.ok(client.includes(marker),marker);
  for(const marker of ['grantPro','consumeProduct','readNBytes','proEnabled = true']) assert.ok(!client.includes(marker),marker);
  for(const marker of ['orders.prepare(selectedPlanId','billing.subscribe(selectedPlanId, serverOrderId)',
-     'orders.verifyPurchase(evidence','plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured())',
+     'orders.verifyPurchase(evidence','orders.refreshEntitlement','plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured())',
      '!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED','اشتراک Pro توسط سرور تأیید و فعال شد']) assert.ok(activity.includes(marker),marker);
  assert.ok(gradle.includes("SAHMINO_WORKER_BASE_URL', '\"\"'"));
  assert.ok(gradle.includes("SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'"));
+});
+
+test('restoration is derived from the authenticated server entitlement, not Bazaar inventory alone',()=>{
+ const client=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SahminoPrepaidOrderClient.java');
+ const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
+ const overview=read('server/prepaid-account-overview.cjs');
+ assert.match(client,/GET/);
+ assert.match(client,/api\\/v1\\/me\\/prepaid-overview/);
+ assert.match(client,/response\\.optBoolean\\("proEnabled", false\\)/);
+ assert.match(activity,/onRestoredEvidence/);
+ assert.match(activity,/orders\\.refreshEntitlement/);
+ assert.match(overview,/proEnabled:active/);
+ assert.match(overview,/authenticatedUserId/);
+ assert.doesNotMatch(activity,/onRestoredEvidence[\\s\\S]{0,500}status\\.setText\\(".*دسترسی فعال نشد"\\);/);
 });
