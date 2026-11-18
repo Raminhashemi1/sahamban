@@ -53,7 +53,7 @@ test('product validation calls Bazaar in-app purchase endpoint and rejects consu
  await assert.rejects(()=>verifyInAppPurchase(env,{sku:'pro30',token:'token-123',nowMs:Date.parse(now)},bad));
 });
 test('manual purchase is verified then settles fixed duration with no auto-renewal',async()=>{
- const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',user_id:'u1',expires_at:null});
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',user_id:'u1',created_at:now,expires_at:null});
  const fetcher=async u=>{
   if(String(u).includes('/auth/token/'))return new Response(JSON.stringify({access_token:'access'}),{status:200});
   return new Response(JSON.stringify(receipt),{status:200});
