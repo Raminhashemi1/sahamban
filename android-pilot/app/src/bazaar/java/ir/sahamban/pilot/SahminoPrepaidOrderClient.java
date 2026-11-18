@@ -127,6 +127,54 @@ public final class SahminoPrepaidOrderClient implements AutoCloseable {
         });
     }
 
+    /** Restores access from the authenticated server entitlement, never from local store inventory. */
+    public void refreshEntitlement(VerifyCallback callback) {
+        if (callback == null) throw new IllegalArgumentException("callback required");
+        if (!isConfigured()) {
+            main.post(() -> callback.onFailure("ORDER_CLIENT_NOT_CONFIGURED"));
+            return;
+        }
+        executor.execute(() -> {
+            String error = "ENTITLEMENT_UNAVAILABLE";
+            HttpURLConnection connection = null;
+            try {
+                String cookie = sessionCookie();
+                if (cookie == null) {
+                    error = "NOT_AUTHENTICATED";
+                } else {
+                    connection = (HttpURLConnection) new URL(baseUrl + "/api/v1/me/prepaid-overview").openConnection();
+                    connection.setInstanceFollowRedirects(false);
+                    connection.setConnectTimeout(10000);
+                    connection.setReadTimeout(10000);
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("Origin", PWA_ORIGIN);
+                    connection.setRequestProperty("Cookie", cookie);
+                    connection.setRequestProperty("Accept", "application/json");
+                    int status = connection.getResponseCode();
+                    if (status == 200) {
+                        JSONObject response = new JSONObject(new String(
+                                readBounded(connection.getInputStream(), 16384), StandardCharsets.UTF_8));
+                        String paidUntil = response.optString("paidUntil", "");
+                        if (response.optBoolean("proEnabled", false)
+                                && paidUntil.matches("^\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}(?:\\\\.\\\\d{1,3})?Z$")) {
+                            main.post(() -> callback.onVerified(paidUntil));
+                            return;
+                        }
+                        error = "NO_ACTIVE_ENTITLEMENT";
+                    } else if (status == 401 || status == 403) {
+                        error = "NOT_AUTHENTICATED";
+                    }
+                }
+            } catch (Exception ignored) {
+                error = "ENTITLEMENT_UNAVAILABLE";
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+            final String failure = error;
+            main.post(() -> callback.onFailure(failure));
+        });
+    }
+
     /** Sends raw Bazaar evidence; only a verified SETTLED response confirms Pro. */
     public void verifyPurchase(SahminoPurchaseEvidence evidence, VerifyCallback callback) {
         if (callback == null) throw new IllegalArgumentException("callback required");
