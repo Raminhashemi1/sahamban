@@ -27,9 +27,11 @@ test('market variants use separate store flavors, approved Sahmino identity and 
  assert.match(wf,/compileBazaarDebugJavaWithJavac/);
  assert.match(wf,/compileMyketDebugJavaWithJavac/);
  assert.match(wf,/Compile-check both store variants/);
+ assert.match(wf,/assembleBazaarDebug/);
+ assert.match(wf,/assembleMyketDebug/);
+ assert.match(wf,/actions\/upload-artifact@v4/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease/);
- assert.doesNotMatch(wf,/upload-artifact|assembleBazaarDebug|assembleMyketDebug/);
- assert.match(read('android-pilot/README.md'),/does NOT assemble/);
+ assert.match(read('android-pilot/README.md'),/internal debug-only/);
  assert.match(build,/bazaar\s*\{/);
  assert.match(build,/myket\s*\{/);
  assert.match(build,/ir\.myket:billing:2\.2/);
