@@ -4,6 +4,7 @@
 - Application ID configured in Gradle: `ir.manahesab.sahmino`.
 - Internal source namespace: `ir.sahamban.pilot`.
 - Publisher registration for this package in either store is not yet verified.
+- Both store flavors intentionally use the same application ID because each publisher must install the same registered app identity. Installing the second APK replaces the first; the two store APKs cannot be installed side by side. Uninstall the current pilot before installing the other flavor. Do not add a debug application ID suffix for store billing tests, because that changes the package identity expected by the publisher.
 
 ## Scope and approved catalogue
 Only CafeBazaar and Myket are in this Android integration. ZarinPal and Google Play are excluded. Renewal defaults to manual; no auto-renewal is exposed by these one-time purchase flows.
@@ -55,11 +56,11 @@ The current default product IDs are placeholders, not confirmed store-created pr
 4. Resolve authenticated session cookie behavior: the current GitHub Pages PWA origin and a `workers.dev` API are cross-site. Confirm a reliable same-site custom domain or approve a secure native session-exchange design; do not weaken cookie policy as a shortcut.
 5. Confirm both stores' current policies and API contracts for fixed-duration digital entitlements, one-time consumable repurchase, and consume timing.
 6. Confirm Myket refund/revoke reconciliation and CafeBazaar refund/void lifecycle handling.
-7. Build and inspect distributable debug APKs, then run sandbox purchases (success, cancel, decline, restore, retry, duplicate/replay, wrong account/SKU/package, network loss, consume failure, refund) on physical devices.
+7. Build and inspect debug APKs, then run sandbox purchases (success, cancel, decline, restore, retry, duplicate/replay, wrong account/SKU/package, network loss, consume failure, refund) on physical devices.
 8. Configure permanent release signing securely; complete store listing, privacy/support material, and publisher review.
 
 ## CI status and safety
 
-The latest observed GitHub Actions run `44240549816` succeeded at commit `f892920d57b52505aa7aac8fa218ef7b41cca5b8`. It ran Java/source contract tests and Gradle `compileBazaarDebugJavaWithJavac` plus `compileMyketDebugJavaWithJavac`. A subsequent workflow change now additionally assembles internal debug APKs and uploads them for seven days for physical-device testing; that new APK workflow has not yet completed. Neither run deploys the Worker or tests purchases.
+GitHub Actions run `44241041761` succeeded at commit `41981064297b80a7da3dc0f0bf0218f62d9c2d9b`. It compiled both store variants, assembled both debug APKs and uploaded the ZIP artifact for seven days. Inspection of the downloaded APK DEX confirms Poolakey/CafeBazaar billing classes only in the Bazaar APK and Myket billing classes only in the Myket APK. This does not deploy the Worker or validate publisher credentials, package registration, product IDs, or actual purchases.
 
 The workflow produces **internal debug-only** APK artifacts for device validation; never upload them to either store. No live payment is enabled by this documentation; release remains blocked until all publisher, deployment, session, and device acceptance checks pass.
