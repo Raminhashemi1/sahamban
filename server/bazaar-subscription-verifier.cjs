@@ -6,6 +6,7 @@ const ORDER=/^ord_[a-f0-9]{32}$/;
 const TOKEN=/^[^\s]{16,4096}$/;
 const SKU=/^[A-Za-z0-9._-]{1,128}$/;
 const PACKAGE=/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+){1,}$/;
+const SKU_BY_PLAN=Object.freeze({SAHMINO_PRO_30D:'sahmino_pro_30d',SAHMINO_PRO_60D:'sahmino_pro_60d',SAHMINO_PRO_90D:'sahmino_pro_90d',SAHMINO_PRO_180D:'sahmino_pro_180d',SAHMINO_PRO_365D:'sahmino_pro_365d'});
 function decodeBase64(value){
  if(typeof value!=='string'||!value||value.length>16384||!/^[A-Za-z0-9+/]+={0,2}$/.test(value))throw Error('INVALID_BASE64');
  const raw=atob(value);return Uint8Array.from(raw,c=>c.charCodeAt(0));
