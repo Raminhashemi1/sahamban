@@ -47,7 +47,8 @@ async function verifyBazaarSubscription({receipt,order,packageName,clientId,clie
   typeof clientId!=='string'||!clientId||typeof clientSecret!=='string'||!clientSecret||
   typeof refreshToken!=='string'||!refreshToken||typeof publicKey!=='string'||!publicKey||
   !Number.isFinite(Date.parse(now)))return {ok:false,reason:'BAZAAR_VERIFIER_NOT_CONFIGURED'};
- const productId=SKU_BY_PLAN[order.plan_id];\n if(!validReceipt(receipt,order,packageName,productId))return {ok:false,reason:'RECEIPT_ORDER_MISMATCH'};
+ const productId=SKU_BY_PLAN[order.plan_id];
+ if(!validReceipt(receipt,order,packageName,productId))return {ok:false,reason:'RECEIPT_ORDER_MISMATCH'};
  if(!await verifyBazaarSignature(receipt,publicKey))return {ok:false,reason:'RECEIPT_SIGNATURE_INVALID'};
  try{
   const form=new URLSearchParams({grant_type:'refresh_token',client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken});
