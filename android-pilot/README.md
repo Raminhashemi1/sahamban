@@ -42,7 +42,7 @@ The five current SKU strings are provisional mappings only. They must be reconci
 
 ## Work still required — purchases remain disabled
 
-1. Implement the Poolakey subscription-specific API adapter and receipt-evidence extraction.
+1. The Poolakey subscription adapter and raw receipt-evidence extraction are now wired; compile/SDK verification remains pending.
 2. Create an authenticated server order before launching Bazaar's subscription flow; bind the server order ID in the Poolakey payload.
 3. Send the Bazaar subscription purchase token and order evidence to the authenticated Worker.
 4. Verify the purchase server-to-server through Bazaar's OAuth Developer API.
