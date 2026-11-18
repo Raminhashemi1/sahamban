@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test private pilot security rules
-        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs
+        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-bazaar.test.mjs
       - name: Install pinned Wrangler CLI for offline build
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
