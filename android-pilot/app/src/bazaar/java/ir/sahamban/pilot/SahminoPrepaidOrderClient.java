@@ -5,6 +5,7 @@ import android.os.Looper;
 import android.webkit.CookieManager;
 import org.json.JSONObject;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -75,7 +76,14 @@ public final class SahminoPrepaidOrderClient implements AutoCloseable {
                     int status = connection.getResponseCode();
                     if (status == 201) {
                         try (InputStream in = connection.getInputStream()) {
-                            byte[] bytes = in.readNBytes(8192);
+                            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                            byte[] chunk = new byte[1024];
+                            int n;
+                            while ((n = in.read(chunk)) != -1) {
+                                if (buffer.size() + n > 8192) throw new IllegalStateException("RESPONSE_TOO_LARGE");
+                                buffer.write(chunk, 0, n);
+                            }
+                            byte[] bytes = buffer.toByteArray();
                             JSONObject response = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
                             JSONObject order = response.optJSONObject("order");
                             String id = order == null ? "" : order.optString("id", "");
