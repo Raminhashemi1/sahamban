@@ -25,6 +25,7 @@ class PrepaidD1MigrationTests(unittest.TestCase):
  def test_only_five_approved_plan_price_pairs_are_allowed(self):
   for i,(plan,price) in enumerate(PLANS):
    self.insert_order("valid"+str(i),plan,price)
+   self.db.execute("UPDATE prepaid_subscription_orders SET state='CANCELLED' WHERE id=?",("valid"+str(i),))
   for i,(plan,price) in enumerate(PLANS):
    with self.assertRaises(sqlite3.IntegrityError):
     self.insert_order("bad"+str(i),plan,price+1)
