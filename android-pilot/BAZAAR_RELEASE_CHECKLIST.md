@@ -7,7 +7,7 @@ Do not enable checkout or submit the app until every item is completed.
 - [ ] Create five **consumable in-app products**, not Subscription products, for the 30, 60, 90, 180 and 365-day access plans.
 - [ ] Record the exact five Product IDs and map them to the internal plan IDs in \`BAZAAR_SKU_MAP\`.
 - [ ] Confirm the five products are configured as consumable and have the approved prices.
-- [ ] Confirm Bazaar returns localized Rial price strings; app display must convert the amount to Toman (divide by 10) and label it تومان.
+- [ ] Confirm Bazaar returns the approved localized Rial (IRR) price string; preserve it verbatim and do not convert it to Toman.
 - [ ] Confirm user-facing text says every term is renewed only by a new explicit purchase; no automatic debit.
 
 ## Trusted server
@@ -30,5 +30,5 @@ Do not enable checkout or submit the app until every item is completed.
 ## Release gates
 - [ ] Run D1 migration, Worker tests and Android debug build on the exact PR head.
 - [ ] Test purchase, verification, consume, consume failure/retry, repurchase, refund/reversal, network loss, account switching, reinstall and entitlement reload on a Bazaar-enabled physical device.
-- [ ] Confirm price display in Toman and disclose manual-renewal and refund terms before checkout.
+- [ ] Confirm price display in Rial (IRR) and disclose manual-renewal and refund terms before checkout.
 - [ ] Keep checkout disabled until all gates pass.
