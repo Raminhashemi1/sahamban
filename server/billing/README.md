@@ -3,7 +3,7 @@
 This directory implements the subscription-specific billing domain.
 
 - Five Bazaar subscription SKUs: 30/60/90/180/365-day billing periods.
-- Price catalog is integer IRR (never toman); the matching prices must also be configured in Bazaar Pishkhan.
+- Final customer-facing prices must be shown in toman. Product prices and exact billing periods must be configured and confirmed in Bazaar Pishkhan; do not invent or hardcode unapproved prices.
 - Android checkout uses Poolakey \`subscribeProduct\`, not \`purchaseProduct\`.
 - Restore uses \`getSubscribedProducts\`, not \`getPurchasedProducts\`.
 - Subscription tokens are never consumed.
@@ -17,7 +17,7 @@ This directory implements the subscription-specific billing domain.
 
 1. Configure five subscription products in Bazaar Pishkhan with the exact SKUs and periods.
 2. Confirm whether each product renews automatically and document cancellation/refund terms in the app before checkout.
-3. Confirm the exact response fields and lifecycle behavior against a real Bazaar test purchase using the developer account. The public Poolakey docs describe the client SDK; they do not replace the merchant's current commercial/legal agreement.
+3. Confirm the exact five subscription periods are actually selectable in Pishkhan; confirm response fields and lifecycle behavior against a real Bazaar test purchase. The public Poolakey docs do not replace the merchant's current commercial/legal agreement.
 4. Apply \`schema.sql\` to an isolated D1 database and run integration tests.
 5. Add secure periodic/server-side refresh for renewals, cancellations, refunds and expiry.
 6. Keep \`BILLING_V2_ENABLED=false\` until all release blockers pass.
