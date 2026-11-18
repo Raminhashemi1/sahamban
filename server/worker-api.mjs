@@ -280,7 +280,8 @@ export default {
      if(checked.verified.autoRenewing!==false)
       return send({error:'AUTO_RENEW_POLICY_UNRESOLVED',proEnabled:false},409,cors);
      const settled=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,body,{
-      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>checked.verified
+      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>checked.verified,
+      tokenEncryptionKey:env.BAZAAR_TOKEN_ENCRYPTION_KEY
      });
      if(!settled.ok)return send({error:settled.reason,proEnabled:false},503,cors);
      return send({status:'SETTLED',proEnabled:true,autoRenew:false,
