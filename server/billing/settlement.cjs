@@ -30,10 +30,13 @@ async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchas
   if(order.expires_at!==null&&!Number.isFinite(currentMs))return {ok:false,error:'ACCESS_STATE_INVALID'};
   const baseMs=Number.isFinite(currentMs)&&currentMs>nowMs?currentMs:nowMs;
   const expiresAt=new Date(baseMs+plan.days*24*60*60*1000).toISOString();
+  // D1 batch is transactional. Each later statement is gated by changes()
+  // from the immediately preceding write, so a concurrent/replayed settlement
+  // cannot extend access when the order transition did not win.
   const result=await db.batch([
    db.prepare("UPDATE billing_orders SET status='PAID',paid_at=?,bazaar_product_id=?,bazaar_order_id=?,purchase_token_hash=? WHERE id=? AND status='CREATED'").bind(purchaseTime,planId,bazaarOrderId,tokenHash,orderId),
-   db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) VALUES(?,?,0,?) ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,expiresAt,now),
-   db.prepare("INSERT INTO billing_events(event_id,order_id,event_type,created_at) VALUES(?,?,'PURCHASE_VERIFIED',?)").bind(tokenHash,orderId,now)
+   db.prepare("INSERT INTO billing_events(event_id,order_id,event_type,created_at) SELECT ?,?,'PURCHASE_VERIFIED',? WHERE changes()=1").bind(tokenHash,orderId,now),
+   db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) SELECT ?,?,0,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,expiresAt,now)
   ]);
   if(!Array.isArray(result)||result.length!==3||result.some(x=>x?.success!==true||x?.meta?.changes!==1))
    return {ok:false,error:'SETTLEMENT_FAILED'};
