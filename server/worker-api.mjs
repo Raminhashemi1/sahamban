@@ -1,10 +1,14 @@
 import {createPilotPendingOrder,findPilotPendingOrder} from './pilot-orders-api.mjs';
 import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.mjs';
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
+import bazaarVerifierModule from './bazaar-subscription-verifier.cjs';
+import prepaidSettlementModule from './prepaid-settlement.cjs';
 import otpServiceModule from './sms-otp-service.cjs';
 import otpRepositoryModule from './d1-sms-otp-repository.cjs';
 const {createSmsOtpService}=otpServiceModule;
 const {createD1SmsOtpRepository}=otpRepositoryModule;
+const {verifyBazaarSubscription}=bazaarVerifierModule;
+const {settleVerifiedPrepaidPayment}=prepaidSettlementModule;
 
 function parseCookie(request,name){
  const raw=request.headers.get('Cookie')||'';
@@ -215,16 +219,18 @@ export default {
   const isOrders=url.pathname==='/api/v1/me/orders';
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
   const isPrepaidOverview=url.pathname==='/api/v1/me/prepaid-overview';
-  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview)return send({error:'NOT_FOUND'},404,cors);
+  const isPrepaidVerify=url.pathname==='/api/v1/me/prepaid-orders/verify';
+  if(!isEntitlement&&!isOrders&&!isPrepaidOrders&&!isPrepaidOverview&&!isPrepaidVerify)return send({error:'NOT_FOUND'},404,cors);
   if(isEntitlement&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOrders&&request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(isPrepaidOverview&&request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+  if(isPrepaidVerify&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
   // Cookie-authenticated Sahmino account routes. The internal user ID is
   // derived only from a validated, unrevoked OTP session in D1; never from input.
-  if(isPrepaidOrders||isPrepaidOverview){
+  if(isPrepaidOrders||isPrepaidOverview||isPrepaidVerify){
    const sessionCookie=parseCookie(request,'sahmino_session');
    if(sessionCookie){
     if(env?.SAHMINO_OTP_ENABLED!=='true'||env?.PREPAID_ORDERS_ENABLED!=='true')
@@ -235,6 +241,50 @@ export default {
     if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
     if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
      return send({error:'CSRF_REJECTED'},403,cors);
+    if(isPrepaidVerify){
+     if(env?.BAZAAR_SUBSCRIPTIONS_ENABLED!=='true')
+      return send({error:'FEATURE_DISABLED'},404,cors);
+     if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+      return send({error:'JSON_REQUIRED'},415,cors);
+     const parsed=await readSmallJson(request,20000);
+     if(parsed.error)return send({error:parsed.error},parsed.status,cors);
+     const body=parsed.body;
+     const required=['serverOrderId','orderId','purchaseToken','payload','packageName','productId','purchaseTime','purchaseState','originalJson','dataSignature'];
+     if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==required.length||
+       required.some(key=>!Object.prototype.hasOwnProperty.call(body,key))||
+       typeof body.serverOrderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.serverOrderId))
+      return send({error:'INVALID_RECEIPT'},400,cors);
+     if(typeof env?.BAZAAR_PACKAGE_NAME!=='string'||!env.BAZAAR_PACKAGE_NAME)
+      return send({error:'BAZAAR_VERIFIER_NOT_CONFIGURED'},503,cors);
+     const order=await env.SAHAMBAN_DB.prepare(
+      `SELECT id,user_id,plan_id,amount_rial,currency,state
+       FROM sahmino_prepaid_subscription_orders
+       WHERE id=? AND user_id=? LIMIT 1`
+     ).bind(body.serverOrderId,activeSession.userId).first();
+     if(!order)return send({error:'ORDER_NOT_FOUND'},404,cors);
+     if(order.state!=='PENDING')return send({error:'ORDER_NOT_PENDING'},409,cors);
+     const checked=await verifyBazaarSubscription({
+      receipt:body,order,packageName:env.BAZAAR_PACKAGE_NAME,
+      clientId:env.BAZAAR_CLIENT_ID,clientSecret:env.BAZAAR_CLIENT_SECRET,
+      refreshToken:env.BAZAAR_REFRESH_TOKEN,publicKey:env.BAZAAR_IAB_PUBLIC_KEY,
+      now:new Date(nowMs).toISOString(),fetchImpl:fetch
+     });
+     if(!checked.ok){
+      const unavailable=['BAZAAR_VERIFIER_NOT_CONFIGURED','BAZAAR_OAUTH_FAILED','BAZAAR_OAUTH_INVALID',
+       'BAZAAR_VALIDATION_FAILED','BAZAAR_VALIDATION_UNAVAILABLE'];
+      return send({error:checked.reason,proEnabled:false},unavailable.includes(checked.reason)?503:422,cors);
+     }
+     // Subscription SKUs may renew automatically. Until the manual-default
+     // cancellation/consent contract is implemented, do not settle an auto-renewing purchase.
+     if(checked.verified.autoRenewing!==false)
+      return send({error:'AUTO_RENEW_POLICY_UNRESOLVED',proEnabled:false},409,cors);
+     const settled=await settleVerifiedPrepaidPayment(env.SAHAMBAN_DB,body,{
+      now:new Date(nowMs).toISOString(),verifyAtProvider:async()=>checked.verified
+     });
+     if(!settled.ok)return send({error:settled.reason,proEnabled:false},503,cors);
+     return send({status:'SETTLED',proEnabled:true,autoRenew:false,
+      orderId:settled.orderId,planId:settled.planId,paidUntil:settled.paidUntil},200,cors);
+    }
     if(isPrepaidOverview){
      const result=await prepaidAccountOverview(env?.SAHAMBAN_DB,{
       authenticatedUserId:activeSession.userId,now:new Date(nowMs).toISOString()
