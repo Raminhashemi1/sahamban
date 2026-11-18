@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -7,23 +8,37 @@ android {
     compileSdk 35
 
     defaultConfig {
-        // Temporary test-only identifier. Owner must approve final package ID.
+        // Temporary internal-test identifier; never publish this package as the final app.
         applicationId 'ir.sahamban.pilot'
         minSdk 26
         targetSdk 35
         versionCode 1
         versionName '0.1.0-pilot'
+        buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '""'
+        buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
     }
+
+    buildFeatures { buildConfig true }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    kotlinOptions { jvmTarget = '17' }
 
     buildTypes {
+        debug {
+            // Checkout remains disabled until a trusted Bazaar receipt verifier is deployed.
+            buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
+        }
         release {
-            // Never publish an unsigned/automatically debug-signed release.
             minifyEnabled false
+            buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
         }
     }
+}
+
+dependencies {
+    implementation 'com.github.cafebazaar.Poolakey:poolakey:2.2.0'
+    implementation 'androidx.activity:activity-ktx:1.10.1'
 }
