@@ -46,18 +46,23 @@ Worker secrets:
 - `MYKET_IAB_PUBLIC_KEY`.
 - `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`, `BAZAAR_REFRESH_TOKEN`.
 
-**How product IDs are obtained:** first register the app/package in each store's developer console and upload a build if that console requires it to unlock in-app products. Then, inside that app's in-app products section, create five products and enter a unique product ID/SKU for each one yourself. The store does not automatically create these five IDs when the APK is uploaded. Save each ID exactly as entered; IDs are normally immutable after product creation. Use the exact same strings in that store's Gradle properties and Worker variables. Bazaar and Myket each have their own separate product catalogue, so create/configure five products in each store (ten entries total). The current `sahmino_pro_30d` etc. values in Gradle are fallback placeholders only, not IDs issued by either store. Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until the deployment and acceptance gates below pass.
+**Product ID timing — not a current development prerequisite:** No store product IDs are expected at the present pre-upload debugging stage. The fallback values such as `sahmino_pro_30d` are development placeholders only. Before upload, continue with source/contract tests, local build checks, and mocked receipt-verification tests without enabling real purchases. After the app is registered in each publisher console and that console permits in-app product creation, create the five products there, record the exact IDs and store prices, then replace the placeholders in the Android Gradle properties and Worker variables. Bazaar and Myket maintain separate product catalogues. Do not block the current integration-debugging phase on these future publisher-console values. Keep `SAHMINO_OTP_ENABLED` and `PREPAID_ORDERS_ENABLED` false until server deployment and end-to-end acceptance pass.
 
-## Release blockers
+## Work sequence and release gates
 
-1. Register/verify the exact package ID and create all five products in each publisher console; supply their actual IDs and displayed prices.
-2. Obtain the public verification keys, CafeBazaar API credentials/permissions, and approved test accounts.
-3. Deploy the Worker and apply the real D1 migrations/bindings. No production deployment or D1 migration is claimed by this branch.
-4. Resolve authenticated session cookie behavior: the current GitHub Pages PWA origin and a `workers.dev` API are cross-site. Confirm a reliable same-site custom domain or approve a secure native session-exchange design; do not weaken cookie policy as a shortcut.
-5. Confirm both stores' current policies and API contracts for fixed-duration digital entitlements, one-time consumable repurchase, and consume timing.
-6. Confirm Myket refund/revoke reconciliation and CafeBazaar refund/void lifecycle handling.
-7. Build and inspect debug APKs, then run sandbox purchases (success, cancel, decline, restore, retry, duplicate/replay, wrong account/SKU/package, network loss, consume failure, refund) on physical devices.
-8. Configure permanent release signing securely; complete store listing, privacy/support material, and publisher review.
+### Current phase — pre-upload payment integration debugging
+1. Fix and test both store-specific Android adapters and their UI/channel selection.
+2. Verify server order creation, authoritative plan/amount mapping, receipt validation contracts, idempotent settlement, entitlement extension, and consume-after-settlement behavior using automated tests and mocked provider responses.
+3. Verify failure paths: cancellation, declined/unverified receipt, wrong SKU/package/payload, duplicate/replay, timeout, retry, and no entitlement on failure.
+4. Build both debug flavors and validate installation/channel-specific UI. Real store checkout is not claimed before publisher registration and store test setup.
+5. Keep production payment flags disabled. Do not require real store product IDs in this phase.
+
+### Later phase — after integration debugging
+6. Register/upload the app in each publisher console as required by that store.
+7. Create the five real products separately in each store, record exact product IDs and displayed prices, and configure Android/Worker values and provider credentials.
+8. Deploy the Worker and apply reviewed D1 migrations/bindings; resolve the PWA/API same-site session design.
+9. Run store sandbox/test purchases and physical-device acceptance for both stores, including refund/revoke and recovery.
+10. Configure permanent release signing, prepare official release builds, upload for publisher review, and publish only after owner approval.
 
 ## CI status and safety
 
