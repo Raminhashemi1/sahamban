@@ -27,7 +27,9 @@ test('Sahmino pilot targets CafeBazaar only and keeps production signing disable
  assert.doesNotMatch(build,/myket\\s*\\{|myketImplementation|MYKET_IAB_PUBLIC_KEY|ir\\.myket:billing/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/compileBazaarDebugJavaWithJavac/);
- assert.doesNotMatch(wf,/compileMyketDebugJavaWithJavac|assembleMyketDebug|myket\\/debug/);
+ assert.ok(!wf.includes('compileMyketDebugJavaWithJavac'));
+ assert.ok(!wf.includes('assembleMyketDebug'));
+ assert.ok(!wf.includes('myket/debug'));
  assert.match(wf,/assembleBazaarDebug/);
  assert.match(wf,/actions\\/upload-artifact@v4/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease/);
