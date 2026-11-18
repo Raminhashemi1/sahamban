@@ -243,7 +243,7 @@ test('pilot prepaid order endpoint records versioned automatic-renew consent',as
  const response=await worker.fetch(new Request('https://worker.example/api/v1/me/prepaid-orders',{
   method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
   body:JSON.stringify({planId:'SAHMINO_PRO_30D',renewalMode:'AUTO',consentVersion:'sahmino-auto-renew-v1'})
- }),{...env(storage),PREPAID_ORDERS_ENABLED:'true'});
+ }),{...env(storage),PREPAID_ORDERS_ENABLED:'true',BAZAAR_AUTO_RENEW_ENABLED:'true'});
  assert.equal(response.status,201);
  const body=await response.json();
  assert.equal(body.order.renewalMode,'AUTO');
