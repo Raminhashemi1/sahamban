@@ -69,10 +69,13 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             + "تمدید دستی حالت پیش‌فرض است؛ تمدید خودکار در این نسخه ارائه نمی‌شود.\n"
             + "کانال انتشار: کافه‌بازار\n" + storeStatus
             + "\nقیمت فروشگاه: " + (verifiedPrices[indexForDays(selectedDays)] ? "مطابقت دارد" : "هنوز تأیید نشده")
-            + "\nخرید فقط با سفارش سرور و تأیید مستقل API بازار انجام می‌شود.");
+            + "\nآدرس API: " + (BuildConfig.API_BASE_URL != null && BuildConfig.API_BASE_URL.startsWith("https://") ? "تنظیم شده" : "تنظیم نشده")
+            + "\nکلید عمومی بازار: " + (billing != null && billing.isConfigured() ? "تنظیم شده" : "تنظیم نشده")
+            + "\nخرید فقط پس از تأیید قیمت فروشگاه و اتصال امن سرور فعال می‌شود.");
         if (paymentButton != null) {
             paymentButton.setEnabled(verifiedPrices[indexForDays(selectedDays)]
-                && BuildConfig.API_BASE_URL != null && !BuildConfig.API_BASE_URL.isEmpty());
+                && BuildConfig.API_BASE_URL != null && BuildConfig.API_BASE_URL.startsWith("https://")
+                && billing != null && billing.isConfigured());
         }
     }
 
@@ -155,7 +158,15 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
         paymentButton.setOnClickListener(v -> beginPurchase());
         root.addView(paymentButton);
         Button refresh = choice("بررسی قیمت و بازیابی خریدهای فروشگاه");
-        refresh.setOnClickListener(v -> { if (billing != null) billing.refreshInventory(); });
+        refresh.setEnabled(true);
+        refresh.setOnClickListener(v -> {
+            if (billing == null) {
+                storeStatus = "سرویس پرداخت هنوز آماده نشده است.";
+                renderChoices();
+            } else {
+                billing.refreshInventory();
+            }
+        });
         root.addView(refresh);
         Button back = choice("بازگشت به سهمینو");
         back.setOnClickListener(v -> finish());
