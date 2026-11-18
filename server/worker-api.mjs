@@ -3,8 +3,9 @@ import {verifyAndSettle} from './billing/bazaar.mjs';
 const {createOrder}=billingOrders;
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
- * Read-only entitlement lookup and optional private-pilot pending-order
- * records. NO checkout, payment verification, enrollment, login or banking.
+ * Private-pilot entitlement lookup and gated Billing V2 subscription endpoints.
+ * Checkout remains disabled by default; production identity and merchant configuration
+ * are required before any live payment flow can be enabled.
  * Environment: SAHAMBAN_DB (private D1 binding), AUTH_HMAC_SECRET (secret),
  * PWA_ORIGIN (exact origin, e.g. https://raminhashemi1.github.io).
  * The short-lived HMAC token is for a controlled private pilot, not a
