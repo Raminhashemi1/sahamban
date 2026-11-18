@@ -56,7 +56,7 @@ async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now()},fetcher=fetc
  if(!receipt||receipt.kind!=='androidpublisher#productPurchase'||
     receipt.purchaseState!==0||receipt.consumptionState!==0||
     !Number.isSafeInteger(purchaseTimeMs)||purchaseTimeMs<=0||
-    purchaseTimeMs>nowMs+5*60*1000||nowMs-purchaseTimeMs>24*60*60*1000)
+    purchaseTimeMs>nowMs+5*60*1000)
    throw Error('INAPP_PURCHASE_NOT_VALID');
  return {receipt,purchaseTime:new Date(purchaseTimeMs).toISOString()};
 }
@@ -74,11 +74,12 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  const planId=PLAN_IDS.find(id=>mapping[id]===body.sku);
  if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
-  const order=await db.prepare("SELECT id,plan_id,status FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
+  const order=await db.prepare("SELECT id,plan_id,status,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
   await verifySignedPurchase(env,body);
   const verified=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,nowMs:Date.parse(now)},fetcher);
+  if(Date.parse(verified.purchaseTime)<Date.parse(order.created_at)-5*60*1000)return {status:409,body:{error:'PURCHASE_PRECEDES_ORDER'}};
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
   const result=await settle(db,{orderId:body.orderId,subject,planId,
