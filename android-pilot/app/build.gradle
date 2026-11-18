@@ -13,6 +13,9 @@ android {
         targetSdk 35
         versionCode 4
         versionName '0.4.0-bazaar-only-preview'
+        // Explicitly disabled until authentication, sandbox and consent tests pass.
+        buildConfigField 'String', 'SAHMINO_WORKER_BASE_URL', '""'
+        buildConfigField 'boolean', 'SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'
     }
 
     buildFeatures { buildConfig true }
