@@ -47,10 +47,13 @@ test('provider expiry and renewal flag become authoritative access data',async()
    validUntilTimestampMsec:Date.parse('2026-02-01T00:00:00.000Z'),
    autoRenewing:true,orderId:'bazaar-order'}),{status:200});
  };
- const db={prepare(q){return {bind(){return {first:async()=>({id:'order',plan_id:'SAHAMBAN_PRO_30D'})}}}},batch:async()=>[]};
+ const db={prepare(q){return {bind(){return {first:async()=>({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED'})},run:async()=>({success:true,meta:{changes:1}})}}},batch:async statements=>statements.map(()=>({success:true,meta:{changes:1}}))};
  const result=await verifyAndSettle({db,env,subject:'user',body:validBody,now,fetcher});
  assert.ok(validateUrl.includes('/subscriptions/pro30/purchases/token-123/'), validateUrl);
- assert.equal(result.status,409); // The mocked D1 settlement is incomplete; provider verification succeeded.
+ assert.equal(result.status,200);
+ assert.equal(result.body.status,'ACTIVE');
+ assert.equal(result.body.expiresAt,'2026-02-01T00:00:00.000Z');
+ assert.equal(result.body.autoRenewing,true);
 });
 test('expired provider entitlement fails closed',async()=>{
  const now='2026-01-01T00:00:00.000Z';
