@@ -23,14 +23,14 @@ test('PWA and Bazaar use the five approved server prices in rial only',()=>{
  assert.deepEqual(native[1].split(',').map(x=>Number(x.trim().replace(/L$/,''))),expected.map(p=>p.rial));
  assert.doesNotMatch(bazaar,/PRICE_TOMAN|priceToman|تومان|formatToman/);
  for(const p of expected) assert.ok(server[1].includes(p.id+':Object.freeze({days:'+p.days+',priceRial:'+p.rial+'})'));
- const section=html.slice(html.indexOf('<section class="card" id="subscriptionSectionSahmino"'),html.indexOf('<div id="sahminoAccountPanel"'));
+ const section=html.slice(html.indexOf('id="subscriptionSectionSahmino"'),html.indexOf('<div id="sahminoAccountPanel"'));
  assert.ok(section.includes('مبلغ نهایی: ۱٬۵۰۰٬۰۰۰ ریال'));
  assert.doesNotMatch(section,/تومان|data-price-toman/);
 });
 test('PWA keeps checkout disabled and renewal manual by default',()=>{
  assert.match(html,/تمدید دستی حالت پیش‌فرض است/);
  assert.match(html,/تمدید خودکار در این نسخه ارائه نمی‌شود/);
- const section=html.match(/<section class="card" id="subscriptionSectionSahmino"[\\s\\S]*?<div id="sahminoAccountPanel"/);
+ const section=html.match(/id="subscriptionSectionSahmino"[\\s\\S]*?<div id="sahminoAccountPanel"/);
  assert.ok(section);
  assert.match(section[0],/<button type="button" disabled[^>]*>خرید اشتراک/);
  assert.match(section[0],/تخفیف اضافه ندارند/);
