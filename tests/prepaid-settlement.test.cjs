@@ -45,7 +45,7 @@ test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
 test('existing later paid-through date is never shortened by a provider response',async()=>{
  const later='2027-01-10T10:00:00.000Z';
  const db=dbFor({row:{user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,
- currency:'IRR',state:'PENDING',paid_until:later}});
+ currency:'IRR',state:'PENDING',renewal_mode:'MANUAL',renewal_consent_version:null,renewal_consent_at:null,paid_until:later}});
  const out=await settleVerifiedPrepaidPayment(db,payment,{now,verifyAtProvider,tokenEncryptionKey});
  assert.equal(out.paidUntil,later);
 });
@@ -67,7 +67,7 @@ test('settlement fails closed on malformed data, DB errors and partial results',
 test('settlement SQL binds Bazaar verified expiry and a unique provider event',()=>{
  assert.match(EVENT_SQL,/sahmino_prepaid_payment_events/);assert.match(EVENT_SQL,/state='PENDING'/);
  assert.match(ORDER_SQL,/provider_event_id/);assert.match(ORDER_SQL,/provider_token_ciphertext/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);assert.match(CONTROL_INSERT_SQL,/o\.renewal_mode/);
- assert.match(ENTITLEMENT_UPSERT_SQL,/paid_until>excluded\.paid_until/);assert.match(CONTROL_INSERT_SQL,/'MANUAL',NULL,NULL,0,'VERIFIED'/);
+ assert.match(ENTITLEMENT_UPSERT_SQL,/paid_until>excluded\.paid_until/);assert.match(CONTROL_INSERT_SQL,/CASE WHEN o\.renewal_mode='AUTO' THEN 'RENEWAL_ACTIVE' ELSE 'VERIFIED' END/);
  assert.doesNotMatch(ENTITLEMENT_UPSERT_SQL,/strftime|\+\|\|/);
 });
 
