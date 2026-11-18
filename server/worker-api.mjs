@@ -122,10 +122,10 @@ export default {
     return send({error:'JSON_REQUIRED'},415,cors);
    const length=request.headers.get('Content-Length');
    if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>8192))return send({error:'BODY_TOO_LARGE'},413,cors);
-   let body;
-   try{body=await request.json();}catch(_){return send({error:'INVALID_JSON'},400,cors);}
+   const parsed=await readJsonLimited(request,8192);
+   if(parsed.error)return send({error:parsed.error},parsed.error==='BODY_TOO_LARGE'?413:400,cors);
    const response=await verifyAndSettleBazaarPurchase({
-    db:env?.SAHAMBAN_DB,env,subject,body,now:new Date(nowMs).toISOString()
+    db:env?.SAHAMBAN_DB,env,subject,body:parsed.body,now:new Date(nowMs).toISOString()
    });
    const payload=await response.json();
    return send(payload,response.status,cors);
