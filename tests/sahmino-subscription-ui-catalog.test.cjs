@@ -36,6 +36,6 @@ test('PWA keeps checkout disabled and renewal manual by default',()=>{
  assert.match(section[0],/تخفیف اضافه ندارند/);
 });
 test('Bazaar Android preview remains visible and payment stays disabled until trusted server verification',()=>{
- assert.match(bazaar,/پرداخت غیرفعال است/);
- assert.match(bazaar,/اعتبارسنجی رسید سمت سرور هنوز تکمیل نشده است/);
+ assert.match(bazaar,/پرداخت و فعال‌سازی Pro تا اتصال اعتبارسنجی سرور غیرفعال است/);
+ assert.match(bazaar,/اعتبارسنجی سرور غیرفعال است/);
 });
