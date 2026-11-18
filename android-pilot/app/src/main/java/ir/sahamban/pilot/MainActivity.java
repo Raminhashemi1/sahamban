@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Bundle;
+import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -34,6 +35,13 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         webView = new WebView(this);
         setContentView(webView);
+        // OTP sessions are host-only, HttpOnly, Secure and SameSite=None on the
+        // separate Worker origin. WebView disables third-party cookies by default;
+        // this is required for the PWA's credentialed cross-origin Worker requests.
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true); // Required by the existing PWA.
         settings.setDomStorageEnabled(true); // Separate from Chrome's local storage.
@@ -54,7 +62,6 @@ public final class MainActivity extends Activity {
                     return true;
                 }
                 if (TrustedNavigation.isInternal(target.toString())) return false;
-                // Never execute intent:, javascript:, file:, data:, or cleartext links.
                 if ("https".equalsIgnoreCase(target.getScheme())) {
                     Intent browser = new Intent(Intent.ACTION_VIEW, target);
                     browser.addCategory(Intent.CATEGORY_BROWSABLE);
@@ -71,7 +78,6 @@ public final class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 if (!TrustedNavigation.isInternal(url)) return;
-                // Safe UI-only decoration of the existing page; no native JS bridge.
                 try (InputStream stream = getAssets().open("sahmino-webview-ui.js");
                      Scanner scanner = new Scanner(stream, "UTF-8").useDelimiter("\\A")) {
                     if (scanner.hasNext()) view.evaluateJavascript(scanner.next(), null);
@@ -93,7 +99,7 @@ public final class MainActivity extends Activity {
                 fileCallback = callback;
                 Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 picker.addCategory(Intent.CATEGORY_OPENABLE);
-                picker.setType("*/*"); // PWA validates imported file content itself.
+                picker.setType("*/*");
                 try {
                     startActivityForResult(picker, PICK_FILE);
                 } catch (ActivityNotFoundException ignored) {
