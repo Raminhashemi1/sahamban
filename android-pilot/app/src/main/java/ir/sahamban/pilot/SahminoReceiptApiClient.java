@@ -37,17 +37,18 @@ public final class SahminoReceiptApiClient {
     }
 
     public static boolean submitMyketReceipt(Context context, String orderId,
-            SahminoPurchaseEvidence evidence) throws IOException {
-        if (evidence == null || evidence.originalJson == null || evidence.signature == null
-                || !orderId.equals(evidence.developerPayload)) {
+            String developerPayload, String originalJson, String signature) throws IOException {
+        if (originalJson == null || originalJson.isEmpty() || originalJson.length() > 16384
+                || signature == null || signature.isEmpty() || signature.length() > 8192
+                || !orderId.equals(developerPayload)) {
             throw new IOException("رسید مایکت به سفارش سرور متصل نیست.");
         }
         JSONObject body = new JSONObject();
         try {
             body.put("provider", "MYKET");
             body.put("orderId", checkedOrderId(orderId));
-            body.put("originalJson", evidence.originalJson);
-            body.put("signature", evidence.signature);
+            body.put("originalJson", originalJson);
+            body.put("signature", signature);
         } catch (org.json.JSONException ex) { throw new IOException("رسید مایکت نامعتبر است.", ex); }
         JSONObject result = request(context, "POST", "/api/v1/me/prepaid-receipts", body);
         return "SETTLED".equals(result.optString("status"));
