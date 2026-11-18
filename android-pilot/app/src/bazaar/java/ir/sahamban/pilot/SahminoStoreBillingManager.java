@@ -10,7 +10,7 @@ import ir.cafebazaar.poolakey.config.SecurityCheck;
 import ir.cafebazaar.poolakey.entity.PurchaseInfo;
 import ir.cafebazaar.poolakey.entity.SkuDetails;
 import ir.cafebazaar.poolakey.request.PurchaseRequest;
-import ir.cafebazaar.poolakey.rx.PaymentRx;
+import ir.cafebazaar.poolakey.rx.PaymentRxKt;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,7 +48,7 @@ public final class SahminoStoreBillingManager implements AutoCloseable {
     public void connect() {
         if (closed || connection != null) return;
         listener.onStatus("در حال اتصال به کافه‌بازار…");
-        connection = PaymentRx.connect(payment).subscribe(this::onConnection,
+        connection = PaymentRxKt.connect(payment).subscribe(this::onConnection,
             error -> postStatus("اتصال به کافه‌بازار ناموفق بود؛ پرداخت غیرفعال است."));
     }
 
@@ -64,7 +64,7 @@ public final class SahminoStoreBillingManager implements AutoCloseable {
 
     public void refreshSubscriptionCatalog() {
         if (!connected || closed) return;
-        PaymentRx.getSubscriptionSkuDetails(payment, Arrays.asList(SahminoBillingCatalog.productIds()))
+        PaymentRxKt.getSubscriptionSkuDetails(payment, Arrays.asList(SahminoBillingCatalog.productIds()))
             .subscribe(details -> {
                 for (SkuDetails detail : details) {
                     SahminoBillingCatalog.Plan plan = SahminoBillingCatalog.byProductId(detail.getSku());
@@ -79,7 +79,7 @@ public final class SahminoStoreBillingManager implements AutoCloseable {
     /** Restore/query is evidence discovery only; the server must re-verify each token. */
     public void refreshInventory() {
         if (!connected || closed) return;
-        PaymentRx.getSubscribedProducts(payment).subscribe(purchases -> {
+        PaymentRxKt.getSubscribedProducts(payment).subscribe(purchases -> {
             if (purchases == null || purchases.isEmpty()) {
                 postStatus("اشتراک بازیابی‌شده‌ای در حساب بازار پیدا نشد.");
                 return;
@@ -106,7 +106,7 @@ public final class SahminoStoreBillingManager implements AutoCloseable {
             return false;
         }
         PurchaseRequest request = new PurchaseRequest(plan.productId, serverOrderId, null);
-        PaymentRx.subscribeProduct(payment, activity.getActivityResultRegistry(), request)
+        PaymentRxKt.subscribeProduct(payment, activity.getActivityResultRegistry(), request)
             .subscribe(purchase -> {
                 SahminoPurchaseEvidence evidence = SahminoPurchaseEvidence.from(purchase);
                 if (evidence == null || !serverOrderId.equals(evidence.payload)
