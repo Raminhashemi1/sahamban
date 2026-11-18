@@ -1,7 +1,6 @@
 import settlement from './settlement.cjs';
 const {settle}=settlement;
 const PLAN_IDS=['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D','SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D'];
-const PRICES={SAHAMBAN_PRO_30D:1500000,SAHAMBAN_PRO_60D:2850000,SAHAMBAN_PRO_90D:4050000,SAHAMBAN_PRO_180D:7650000,SAHAMBAN_PRO_365D:14600000};
 function skuMap(raw){
  try{
   const v=JSON.parse(raw);
@@ -54,13 +53,13 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  const planId=PLAN_IDS.find(id=>mapping[id]===body.sku);
  if(!planId)return {status:400,body:{error:'UNKNOWN_SUBSCRIPTION_SKU'}};
  try{
-  const order=await db.prepare("SELECT id,plan_id,amount_rial,status FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
+  const order=await db.prepare("SELECT id,plan_id,status FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
-  if(order.plan_id!==planId||order.amount_rial!==PRICES[planId])return {status:409,body:{error:'ORDER_MISMATCH'}};
+  if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
   const verified=await verifySubscription(env,{sku:body.sku,token:body.token,orderId:body.orderId,nowMs:Date.parse(now)},fetcher);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
-  const result=await settle(db,{orderId:body.orderId,subject,planId,amountRial:PRICES[planId],
+  const result=await settle(db,{orderId:body.orderId,subject,planId,
    bazaarOrderId:verified.receipt.orderId||tokenHash,tokenHash,
    verifiedExpiresAt:verified.expiresAt,autoRenewing:verified.autoRenewing,now});
   return result.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:result.expiresAt,
