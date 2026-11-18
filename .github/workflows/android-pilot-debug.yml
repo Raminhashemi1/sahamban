@@ -5,7 +5,8 @@ on:
   push:
     paths:
       - 'android-pilot/**'
-      - 'tests/android-pilot-wrapper.test.cjs'\n      - 'tests/sahmino-bazaar-subscription-contract.test.cjs'
+      - 'tests/android-pilot-wrapper.test.cjs'
+      - 'tests/sahmino-bazaar-subscription-contract.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
 permissions:
   contents: read
