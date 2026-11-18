@@ -12,7 +12,7 @@ const verifyAtProvider=async receipt=>receipt.signatureValid===true?{
  validUntilTimestampMsec:receipt.validUntilTimestampMsec,purchaseToken:receipt.purchaseToken
 }:false;
 const payment={signatureValid:true,providerName:'cafebazaar',providerEventId:'evt-1',
- providerPaymentId:'pay-1',orderId,planId:'SAHMINO_PRO_30D',amountRial:1500000,
+ providerPaymentId:'b'.repeat(64),orderId,planId:'SAHMINO_PRO_30D',amountRial:1500000,
  currency:'IRR',validUntilTimestampMsec:expiry,purchaseToken:'bazaar-purchase-token-123456789'};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,
  currency:'IRR',state:'PENDING',paid_until:null},results}={}){
@@ -38,7 +38,7 @@ test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
  assert.match(batch[0].sql,/state='PENDING'/);assert.match(batch[1].sql,/state='PENDING'/);
  assert.match(batch[2].sql,/ON CONFLICT\(user_id\) DO UPDATE/);
  assert.doesNotMatch(batch[2].sql,/strftime|\+\|\|/);
- const orderCall=db.calls.find(x=>x.sql===ORDER_SQL);assert.equal(orderCall.values.length,12);assert.equal(orderCall.values[2],'v1');assert.ok(orderCall.values[3]);assert.ok(orderCall.values[4]);
+ const orderCall=db.calls.find(x=>x.sql===ORDER_SQL);assert.equal(orderCall.values.length,12);assert.equal(orderCall.values[3],'v1');assert.ok(orderCall.values[4]);assert.ok(orderCall.values[5]);
  const entitlementCall=db.calls.find(x=>x.sql===ENTITLEMENT_UPSERT_SQL);assert.deepEqual(entitlementCall.values,[orderId,'cafebazaar','pay-1','2026-12-22T10:00:00.000Z',now]);
 });
 test('existing later paid-through date is never shortened by a provider response',async()=>{
