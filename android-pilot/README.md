@@ -60,6 +60,6 @@ The current default product IDs are placeholders, not confirmed store-created pr
 
 ## CI status and safety
 
-The latest observed GitHub Actions run `44240549816` succeeded at commit `f892920d57b52505aa7aac8fa218ef7b41cca5b8`. It ran Java/source contract tests and Gradle `compileBazaarDebugJavaWithJavac` plus `compileMyketDebugJavaWithJavac`. It did **not** assemble APKs, inspect packaged SDK contents, deploy the Worker, or test purchases.
+The latest observed GitHub Actions run `44240549816` succeeded at commit `f892920d57b52505aa7aac8fa218ef7b41cca5b8`. It ran Java/source contract tests and Gradle `compileBazaarDebugJavaWithJavac` plus `compileMyketDebugJavaWithJavac`. A subsequent workflow change now additionally assembles internal debug APKs and uploads them for seven days for physical-device testing; that new APK workflow has not yet completed. Neither run deploys the Worker or tests purchases.
 
 Do not upload debug builds to either store. No live payment is enabled by this documentation; release remains blocked until all publisher, deployment, session, and device acceptance checks pass.
