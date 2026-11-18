@@ -43,3 +43,23 @@ test('Worker fails closed while Bazaar automatic renewal is not reconciled with 
  assert.match(worker,/autoRenewing!==false/);
  assert.match(worker,/AUTO_RENEW_POLICY_UNRESOLVED/);
 });
+
+test('native Bazaar order handoff requires authenticated Worker order and disabled checkout',()=>{
+ const client=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SahminoPrepaidOrderClient.java');
+ const activity=read('android-pilot/app/src/bazaar/java/ir/sahamban/pilot/SubscriptionPreviewActivity.java');
+ const gradle=read('android-pilot/app/build.gradle');
+ for(const marker of ['getCookie(baseUrl)','sahmino_session=','X-Sahmino-CSRF',
+     'setInstanceFollowRedirects(false)','/api/v1/me/prepaid-orders',
+     'PENDING_ORDER_CREATED','amountRial','^ord_[a-f0-9]{32}$']){
+   assert.ok(client.includes(marker),marker);
+ }
+ for(const marker of ['grantPro','consumeProduct','readNBytes']){
+   assert.ok(!client.includes(marker),marker);
+ }
+ for(const marker of ['orders.prepare(selectedPlanId','billing.subscribe(selectedPlanId, serverOrderId)',
+     'plan.setEnabled(false)','!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED']){
+   assert.ok(activity.includes(marker),marker);
+ }
+ assert.ok(gradle.includes("SAHMINO_WORKER_BASE_URL', '\"\"'"));
+ assert.ok(gradle.includes("SAHMINO_BAZAAR_PURCHASES_ENABLED', 'false'"));
+});
