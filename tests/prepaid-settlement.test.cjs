@@ -9,13 +9,13 @@ const verifyAtProvider=async receipt=>receipt.signatureValid===true?{
  providerName:receipt.providerName,providerEventId:receipt.providerEventId,
  providerPaymentId:receipt.providerPaymentId,orderId:receipt.orderId,
  planId:receipt.planId,amountRial:receipt.amountRial,currency:receipt.currency,
- validUntilTimestampMsec:receipt.validUntilTimestampMsec,purchaseToken:receipt.purchaseToken
+ validUntilTimestampMsec:receipt.validUntilTimestampMsec,purchaseToken:receipt.purchaseToken,autoRenewing:receipt.autoRenewing===true
 }:false;
 const payment={signatureValid:true,providerName:'cafebazaar',providerEventId:'evt-1',
  providerPaymentId:'b'.repeat(64),orderId,planId:'SAHMINO_PRO_30D',amountRial:1500000,
- currency:'IRR',validUntilTimestampMsec:expiry,purchaseToken:'bazaar-purchase-token-123456789'};
+ currency:'IRR',validUntilTimestampMsec:expiry,purchaseToken:'bazaar-purchase-token-123456789',autoRenewing:false};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,
- currency:'IRR',state:'PENDING',paid_until:null},results}={}){
+ currency:'IRR',state:'PENDING',renewal_mode:'MANUAL',renewal_consent_version:null,renewal_consent_at:null,paid_until:null},results}={}){
  const calls=[];return {calls,prepare(sql){calls.push({sql,values:null});return {
   bind(...values){calls.at(-1).values=values;return {sql,async first(){return row;}};}
  };},async batch(stmts){calls.push({batch:stmts});return results||[0,1,2,3].map(()=>({success:true,meta:{changes:1}}));}};
@@ -40,7 +40,7 @@ test('valid settlement uses Bazaar expiry, not plan-day arithmetic',async()=>{
  assert.doesNotMatch(batch[2].sql,/strftime|\+\|\|/);
  const orderCall=db.calls.find(x=>x.sql===ORDER_SQL);assert.equal(orderCall.values.length,12);assert.equal(orderCall.values[3],'v1');assert.ok(orderCall.values[4]);assert.ok(orderCall.values[5]);
  const entitlementCall=db.calls.find(x=>x.sql===ENTITLEMENT_UPSERT_SQL);assert.deepEqual(entitlementCall.values,[orderId,'cafebazaar','b'.repeat(64),'2026-12-22T10:00:00.000Z',now]);
- const controlCall=db.calls.find(x=>x.sql===CONTROL_INSERT_SQL);assert.deepEqual(controlCall.values,['2026-12-22T10:00:00.000Z',now,now,orderId,'b'.repeat(64)]);
+ const controlCall=db.calls.find(x=>x.sql===CONTROL_INSERT_SQL);assert.deepEqual(controlCall.values,[0,'2026-12-22T10:00:00.000Z',now,now,orderId,'b'.repeat(64)]);
 });
 test('existing later paid-through date is never shortened by a provider response',async()=>{
  const later='2027-01-10T10:00:00.000Z';
@@ -66,7 +66,25 @@ test('settlement fails closed on malformed data, DB errors and partial results',
 });
 test('settlement SQL binds Bazaar verified expiry and a unique provider event',()=>{
  assert.match(EVENT_SQL,/sahmino_prepaid_payment_events/);assert.match(EVENT_SQL,/state='PENDING'/);
- assert.match(ORDER_SQL,/provider_event_id/);assert.match(ORDER_SQL,/provider_token_ciphertext/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);
+ assert.match(ORDER_SQL,/provider_event_id/);assert.match(ORDER_SQL,/provider_token_ciphertext/);assert.match(ENTITLEMENT_UPSERT_SQL,/sahmino_prepaid_subscription_orders/);assert.match(CONTROL_INSERT_SQL,/o\.renewal_mode/);
  assert.match(ENTITLEMENT_UPSERT_SQL,/paid_until>excluded\.paid_until/);assert.match(CONTROL_INSERT_SQL,/'MANUAL',NULL,NULL,0,'VERIFIED'/);
  assert.doesNotMatch(ENTITLEMENT_UPSERT_SQL,/strftime|\+\|\|/);
+});
+
+test('automatic renewal settles only with persisted versioned consent and provider auto-renewing true',async()=>{
+ const autoPayment={...payment,autoRenewing:true};
+ const row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',state:'PENDING',
+  renewal_mode:'AUTO',renewal_consent_version:'sahmino-auto-renew-v1',renewal_consent_at:now,paid_until:null};
+ const db=dbFor({row}),out=await settleVerifiedPrepaidPayment(db,autoPayment,{now,verifyAtProvider,tokenEncryptionKey});
+ assert.equal(out.ok,true);
+ const control=db.calls.find(x=>x.sql===CONTROL_INSERT_SQL);
+ assert.deepEqual(control.values,[1,'2026-12-22T10:00:00.000Z',now,now,orderId,'b'.repeat(64)]);
+ assert.match(CONTROL_INSERT_SQL,/RENEWAL_ACTIVE/);
+});
+test('provider renewal mode must match the order and recorded consent',async()=>{
+ const auto={...payment,autoRenewing:true};
+ assert.equal((await settleVerifiedPrepaidPayment(dbFor(),auto,{now,verifyAtProvider,tokenEncryptionKey})).reason,'PROVIDER_RENEWAL_MODE_MISMATCH');
+ const invalid=dbFor({row:{user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',
+  state:'PENDING',renewal_mode:'AUTO',renewal_consent_version:null,renewal_consent_at:null,paid_until:null}});
+ assert.equal((await settleVerifiedPrepaidPayment(invalid,auto,{now,verifyAtProvider,tokenEncryptionKey})).reason,'INVALID_RENEWAL_CONSENT');
 });
