@@ -39,6 +39,18 @@ async function cancelBazaarSubscription({packageName,planId,purchaseToken,client
   if(body&&typeof body==='object'&&(typeof body.error==='string'&&body.error||
     typeof body.error_description==='string'&&body.error_description))
    return {ok:false,reason:'BAZAAR_CANCELLATION_REJECTED'};
+  // A successful cancel request is not sufficient evidence by itself.
+  // Re-read the subscription from Bazaar and require autoRenewing=false.
+  const verifyUrl='https://pardakht.cafebazaar.ir/devapi/v2/api/applications/'+encodeURIComponent(packageName)+
+   '/subscriptions/'+encodeURIComponent(SKU_BY_PLAN[planId])+'/purchases/'+encodeURIComponent(purchaseToken)+
+   '/?access_token='+encodeURIComponent(credentials.access_token);
+  const verification=await fetchImpl(verifyUrl,{method:'GET',headers:{'Accept':'application/json'}});
+  if(!verification?.ok)return {ok:false,reason:'BAZAAR_CANCELLATION_CONFIRMATION_UNAVAILABLE'};
+  const state=await verification.json();
+  if(!state||typeof state.autoRenewing!=='boolean')
+   return {ok:false,reason:'BAZAAR_CANCELLATION_CONFIRMATION_INVALID'};
+  if(state.autoRenewing!==false)
+   return {ok:false,reason:'BAZAAR_CANCELLATION_NOT_CONFIRMED'};
   return {ok:true,reason:'CANCELLED'};
  }catch(_){return {ok:false,reason:'BAZAAR_CANCELLATION_UNAVAILABLE'};}
 }
