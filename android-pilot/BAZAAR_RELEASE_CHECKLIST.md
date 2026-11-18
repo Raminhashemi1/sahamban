@@ -6,7 +6,15 @@ Do not enable checkout or submit the app until every item is completed.
 - [ ] Confirm the final Android applicationId/package name registered in Bazaar.
 - [ ] Create five **consumable in-app products**, not Subscription products, for the 30, 60, 90, 180 and 365-day access plans.
 - [ ] Record the exact five Product IDs and map them to the internal plan IDs in \`BAZAAR_SKU_MAP\`.
-- [ ] Confirm the five products are configured as consumable and have the approved prices.
+- [ ] Confirm the five products are configured as consumable and have the exact approved Rial prices:
+
+| Internal plan | Bazaar price (IRR) |
+|---|---:|
+| `SAHAMBAN_PRO_30D` | 1,500,000 |
+| `SAHAMBAN_PRO_60D` | 2,850,000 |
+| `SAHAMBAN_PRO_90D` | 4,050,000 |
+| `SAHAMBAN_PRO_180D` | 7,650,000 |
+| `SAHAMBAN_PRO_365D` | 14,600,000 |
 - [ ] Confirm Bazaar returns the approved localized Rial (IRR) price string; preserve it verbatim and do not convert it to Toman.
 - [ ] Confirm user-facing text says every term is renewed only by a new explicit purchase; no automatic debit.
 
