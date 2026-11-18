@@ -41,7 +41,7 @@ public final class SubscriptionPreviewActivity extends ComponentActivity {
             plan.setAllCaps(false);
             plan.setText(DAYS[i] + " روز — " + format.format(PRICES[i]) + " ریال");
             final String selectedPlanId = SahminoBillingCatalog.at(i).planId;
-            plan.setEnabled(false); // Remains disabled until production and sandbox gates are approved.
+            plan.setEnabled(BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED && orders.isConfigured()); // Explicit opt-in plus HTTPS Worker configuration required.
             plan.setOnClickListener(v -> orders.prepare(selectedPlanId, new SahminoPrepaidOrderClient.Callback() {
                 @Override public void onPrepared(String serverOrderId) {
                     if (!BuildConfig.SAHMINO_BAZAAR_PURCHASES_ENABLED || billing == null) {
