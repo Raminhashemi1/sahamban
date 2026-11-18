@@ -125,17 +125,33 @@
   }
   return inspected.count;
  }
+  function createSyntheticSnapshot(){
+   return {format:FORMAT,schema:SCHEMA,createdAt:new Date().toISOString(),items:{
+    'sahamban-v1':JSON.stringify({symbol:'نماد-ساختگی-آزمایش',aStop:'100',aTarget:'200'})
+   }};
+  }
  function mount(win){
   const doc=win.document,byId=id=>doc.getElementById(id),status=s=>{byId('sb148Status').textContent=s;};
   let pending=null,generation=0;
-  byId('sb148Export').addEventListener('click',()=>{
+  async function saveDocument(snapshot,filename){
+   const client=win.SahambanBackupExportClient;
+   if(!client)throw Error('ماژول امن خروجی فایل بارگذاری نشده است.');
+   const result=await client.save(win,filename,JSON.stringify(snapshot,null,2));
+   return client.message(result,filename);
+  }
+  byId('sb148Export').addEventListener('click',async()=>{
    try{
-    const snapshot=createSnapshot(win.localStorage),encoded=JSON.stringify(snapshot,null,2);
-    const url=win.URL.createObjectURL(new Blob([encoded],{type:'application/json;charset=utf-8'}));
-    const a=doc.createElement('a');a.href=url;a.download='sahamban-local-backup-v1.json';doc.body.append(a);a.click();a.remove();
-    win.setTimeout(()=>win.URL.revokeObjectURL(url),1000);
-    status('پشتیبان محلی آماده دانلود شد؛ فایل JSON رمزگذاری نشده است. شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
+    const snapshot=createSnapshot(win.localStorage);
+    const result=await saveDocument(snapshot,'sahamban-local-backup-v1.json');
+    status(result+' فایل JSON رمزگذاری نشده است؛ شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
    }catch(e){status('پشتیبان‌گیری ناموفق: '+e.message);}
+  });
+  const syntheticButton=byId('sb148SyntheticExport');
+  if(syntheticButton)syntheticButton.addEventListener('click',async()=>{
+   try{
+    const result=await saveDocument(createSyntheticSnapshot(),'sahamban-local-backup-v1.json');
+    status('آزمون فقط با داده ساختگی: '+result+' هیچ داده‌ای از حافظه محلی خوانده یا تغییر داده نشد.');
+   }catch(e){status('آزمون پشتیبان ساختگی ناموفق: '+e.message);}
   });
   byId('sb148File').addEventListener('change',async()=>{
    const stamp=++generation;pending=null;byId('sb148Restore').disabled=true;
@@ -158,5 +174,5 @@
    }catch(e){status(e.message);}
   });
  }
- return {FORMAT,SCHEMA,KEYS,createSnapshot,inspectSnapshot,restoreSnapshot,validateOne,mount};
+ return {FORMAT,SCHEMA,KEYS,createSnapshot,createSyntheticSnapshot,inspectSnapshot,restoreSnapshot,validateOne,mount};
 });
