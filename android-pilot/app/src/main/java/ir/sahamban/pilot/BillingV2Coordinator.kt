@@ -14,8 +14,8 @@ import ir.cafebazaar.poolakey.entity.PurchaseState
 import ir.cafebazaar.poolakey.request.PurchaseRequest
 
 /**
- * Cafe Bazaar recurring subscription adapter. Subscriptions are never consumed.
- * It only returns purchase evidence. The trusted server owns verification and access grants.
+ * Cafe Bazaar consumable in-app purchase adapter for manually renewed time plans.
+ * The trusted server verifies and grants access before a purchase token is consumed.
  */
 class BillingV2Coordinator(
     context: Context,
@@ -65,7 +65,7 @@ class BillingV2Coordinator(
             callback(PurchaseResult.Failure("BAZAAR_CONNECTION_REQUIRED"))
             return
         }
-        payment.subscribeProduct(
+        payment.purchaseProduct(
             registry = activity.activityResultRegistry,
             request = PurchaseRequest(productId = sku, payload = orderId)
         ) {
@@ -90,7 +90,7 @@ class BillingV2Coordinator(
             callback(null)
             return
         }
-        payment.getSubscriptionSkuDetails(skus) {
+        payment.getInAppSkuDetails(skus) {
             getSkuDetailsSucceed { details ->
                 val mapped = details.mapNotNull { detail ->
                     val toman = rialPriceToToman(detail.price) ?: return@mapNotNull null
@@ -107,9 +107,22 @@ class BillingV2Coordinator(
             callback(null)
             return
         }
-        payment.getSubscribedProducts {
+        payment.getPurchasedProducts {
             querySucceed { purchases -> callback(purchases.mapNotNull { it.toEvidence() }) }
             queryFailed { callback(null) }
+        }
+    }
+
+    /** Consume only after the server confirms durable entitlement settlement. */
+    fun consumeAfterSettlement(purchaseToken: String, callback: (Boolean) -> Unit) {
+        require(purchaseToken.length in 8..4096)
+        if (connection?.getState() != ConnectionState.Connected) {
+            callback(false)
+            return
+        }
+        payment.consumeProduct(purchaseToken) {
+            consumeSucceed { callback(true) }
+            consumeFailed { callback(false) }
         }
     }
 
