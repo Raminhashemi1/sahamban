@@ -83,3 +83,19 @@ test('verification rejects unauthenticated, malformed and wrong-account orders b
  assert.equal((await verifyAndSettle({...base,body:{...validBody,extra:true},subject:'u'})).status,400);
  assert.equal(calls,0);
 });
+
+test('replayed settled purchase remains idempotent after Bazaar marks the consumable as consumed',async()=>{
+ const tokenHash=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(validBody.token))).toString('hex');
+ const expiresAt='2026-01-31T00:00:00.000Z';
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',user_id:'u1',
+  created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
+ let providerCalls=0;
+ const fetcher=async()=>{providerCalls++;throw Error('A settled replay must not need another Bazaar validation call');};
+ const result=await verifyAndSettle({db,env,subject:'user',body:validBody,now,fetcher});
+ assert.equal(result.status,200);
+ assert.equal(result.body.status,'ACTIVE');
+ assert.equal(result.body.expiresAt,expiresAt);
+ assert.equal(result.body.daysAdded,0);
+ assert.equal(result.body.restored,true);
+ assert.equal(providerCalls,0);
+});
