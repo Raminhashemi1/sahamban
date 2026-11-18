@@ -13,6 +13,7 @@ public final class SahminoPurchaseEvidence {
     public final String originalJson;
     public final String dataSignature;
     public final long purchaseTime;
+    public final int purchaseState;
 
     private SahminoPurchaseEvidence(PurchaseInfo purchase) {
         orderId = purchase.getOrderId();
@@ -23,6 +24,7 @@ public final class SahminoPurchaseEvidence {
         originalJson = purchase.getOriginalJson();
         dataSignature = purchase.getDataSignature();
         purchaseTime = purchase.getPurchaseTime();
+        purchaseState = 0; // from() accepts only PurchaseState.PURCHASED
     }
 
     public static SahminoPurchaseEvidence from(PurchaseInfo purchase) {
