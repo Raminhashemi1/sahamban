@@ -20,13 +20,12 @@ FROM sahamban_users u
 LEFT JOIN sahmino_prepaid_subscription_entitlements v2 ON v2.user_id=u.id
 LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=u.id
 LEFT JOIN subscription_entitlements le ON le.user_id=u.id
-LEFT JOIN (
- SELECT c1.* FROM sahmino_bazaar_subscription_control c1
- WHERE c1.updated_at=(
-  SELECT MAX(c2.updated_at) FROM sahmino_bazaar_subscription_control c2
-  WHERE c2.user_id=c1.user_id
+LEFT JOIN sahmino_bazaar_subscription_control bc
+ ON bc.order_id=(
+  SELECT c2.order_id FROM sahmino_bazaar_subscription_control c2
+  WHERE c2.user_id=u.id
+  ORDER BY c2.updated_at DESC,c2.created_at DESC,c2.order_id DESC LIMIT 1
  )
-) bc ON bc.user_id=u.id
 WHERE u.auth_subject=? LIMIT 1`;
 const LOOKUP_USER=LOOKUP.replace('WHERE u.auth_subject=?','WHERE u.id=?');
 const HISTORY=`SELECT id,plan_id,amount_rial,currency,state,created_at,settled_at FROM (
