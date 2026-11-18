@@ -50,7 +50,7 @@ test('existing later paid-through date is never shortened by a provider response
  assert.equal(out.paidUntil,later);
 });
 test('expired or malformed Bazaar expiry is rejected before DB writes',async()=>{
- for(const value of [Date.parse(now),Date.parse('2026-02-30T00:00:00Z'),0,'not-a-time']){
+ for(const value of [Date.parse(now),Number.MAX_SAFE_INTEGER,0,'not-a-time']){
   const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,{...payment,validUntilTimestampMsec:value},{now,verifyAtProvider,tokenEncryptionKey});
   assert.equal(out.reason,'INVALID_PROVIDER_EXPIRY');assert.equal(db.calls.length,0);
  }
