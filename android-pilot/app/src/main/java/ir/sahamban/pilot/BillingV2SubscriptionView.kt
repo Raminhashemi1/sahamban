@@ -11,8 +11,6 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import java.text.NumberFormat
-import java.util.Locale
 
 /**
  * Standalone native subscription selector for the Sahmino Billing V2 module.
@@ -30,20 +28,20 @@ class BillingV2SubscriptionView(
     private data class Plan(
         val id: String,
         val days: Int,
-        val title: String,
-        val priceRial: Long
+        val title: String
     )
 
     private val plans = listOf(
-        Plan("SAHAMBAN_PRO_30D", 30, "حرفه‌ای ۳۰ روزه", 1_500_000L),
-        Plan("SAHAMBAN_PRO_60D", 60, "حرفه‌ای ۶۰ روزه", 2_850_000L),
-        Plan("SAHAMBAN_PRO_90D", 90, "حرفه‌ای ۹۰ روزه", 4_050_000L),
-        Plan("SAHAMBAN_PRO_180D", 180, "حرفه‌ای ۱۸۰ روزه", 7_650_000L),
-        Plan("SAHAMBAN_PRO_365D", 365, "حرفه‌ای یک‌ساله", 14_600_000L)
+        Plan("SAHAMBAN_PRO_30D", 30, "حرفه‌ای ۳۰ روزه"),
+        Plan("SAHAMBAN_PRO_60D", 60, "حرفه‌ای ۶۰ روزه"),
+        Plan("SAHAMBAN_PRO_90D", 90, "حرفه‌ای ۹۰ روزه"),
+        Plan("SAHAMBAN_PRO_180D", 180, "حرفه‌ای ۱۸۰ روزه"),
+        Plan("SAHAMBAN_PRO_365D", 365, "حرفه‌ای یک‌ساله")
     )
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val actionButtons = mutableListOf<Button>()
+    private val planPriceViews = mutableMapOf<String, TextView>()
     private lateinit var statusView: TextView
     private var busy = false
 
@@ -76,10 +74,11 @@ class BillingV2SubscriptionView(
                 }
             }
             card.addView(text(plan.title, 18f, true))
-            card.addView(text(
-                "${NumberFormat.getIntegerInstance(Locale("fa", "IR")).format(plan.priceRial)} ریال",
-                16f, true
-            ).apply { setPadding(0, dp(8), 0, dp(10)) })
+            val price = text("در حال دریافت قیمت فروشگاه…", 16f, true).apply {
+                setPadding(0, dp(8), 0, dp(10))
+            }
+            planPriceViews[plan.id] = price
+            card.addView(price)
             val buy = Button(context).apply {
                 text = "خرید پلن ${plan.days} روزه"
                 isAllCaps = false
@@ -111,6 +110,27 @@ class BillingV2SubscriptionView(
         statusView = text("وضعیت اشتراک پس از بررسی فروشگاه نمایش داده می‌شود.", 14f, false)
         statusView.setPadding(0, dp(16), 0, 0)
         content.addView(statusView)
+
+        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            planPriceViews.values.forEach {
+                it.text = "قیمت نهایی پس از فعال‌سازی پرداخت از فروشگاه دریافت می‌شود."
+            }
+            statusView.text = "پرداخت در این نسخه غیرفعال است؛ هیچ خریدی انجام نمی‌شود."
+        } else {
+            purchaseFlow.loadPlanDetails { prices ->
+                mainHandler.post {
+                    if (prices == null) {
+                        planPriceViews.values.forEach { it.text = "قیمت فروشگاه در دسترس نیست." }
+                        actionButtons.forEach { it.isEnabled = false }
+                        statusView.text = "قیمت پلن‌ها از فروشگاه دریافت نشد؛ امکان خرید موقتاً غیرفعال است."
+                    } else {
+                        prices.forEach { (planId, displayPrice) ->
+                            planPriceViews[planId]?.text = displayPrice
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun beginPurchase(plan: Plan) {
