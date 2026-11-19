@@ -80,3 +80,8 @@ The host `MainActivity` still does not wire the billing purchase flow into Sahmi
 `BillingV2ApiClient` now accepts a native `BillingV2TokenProvider` instead of a fixed bearer-token string. The provider must read the current access token from Sahmino's already-authenticated native account session and invoke its callback exactly once; return `null` when signed out. The client requests a fresh token for every Worker call, rejects blank/oversized/whitespace-containing tokens, and reports `NOT_AUTHENTICATED` without making a network request when no session exists.
 
 The token must remain inside native code. Do not pass it to PWA JavaScript, local storage, URL parameters, logs, or a hard-coded pilot-token generator. The current pilot `MainActivity` does not yet have Sahmino's commercial session provider and therefore must not instantiate the purchase flow. This interface is an integration seam, not a claim that commercial login is already connected.
+
+
+## Rebuild checkpoint — current integration head
+
+The current integration branch includes the native `BillingV2TokenProvider` injection seam and the latest passing dual-store validation. This documentation-only checkpoint intentionally triggers the Android workflow so both Bazaar and Myket debug APKs are rebuilt from the exact current source head. These outputs remain unsigned test artifacts; they are not store-ready release packages.
