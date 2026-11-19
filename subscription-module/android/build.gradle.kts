@@ -49,6 +49,6 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    bazaarImplementation("com.github.cafebazaar.Poolakey:poolakey:2.3.0")
-    myketImplementation("ir.myket:billing:2.2")
+    add("bazaarImplementation", "com.github.cafebazaar.Poolakey:poolakey:2.3.0")
+    add("myketImplementation", "ir.myket:billing:2.2")
 }
