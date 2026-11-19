@@ -2,18 +2,45 @@ import { createBillingOrder } from '../server/order-service.mjs';
 import { getBillingEntitlement } from '../server/entitlement-service.mjs';
 import { settleVerifiedPurchase } from '../server/settlement-service.mjs';
 
-const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 
 function json(body, status = 200, cors = {}) {
   return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...cors } });
 }
 
 async function readJsonObject(request, maxBytes = 4096) {
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > maxBytes) {
-    return { ok: false, error: 'BODY_TOO_LARGE' };
+  if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
+    return { ok: false, error: 'JSON_REQUIRED' };
   }
+  if (!request.body) return { ok: false, error: 'INVALID_JSON' };
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
   try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return { ok: false, error: 'BODY_TOO_LARGE' };
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return { ok: false, error: 'INVALID_JSON' };
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    const raw = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
     const value = JSON.parse(raw);
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return { ok: false, error: 'INVALID_BODY' };
@@ -46,11 +73,7 @@ export function createBillingRouter({
   providerVerifiers = {},
   allowedOrigin
 }) {
-  if (!db || typeof authenticateRequest !== 'function' ||
-      typeof resolveStore !== 'function' || !productMaps ||
-      typeof allowedOrigin !== 'string' || !/^https:\/\//.test(allowedOrigin)) {
-    throw new TypeError('BILLING_ROUTER_DEPENDENCY_MISSING');
-  }
+  let parsedOrigin;\n  try { parsedOrigin = new URL(allowedOrigin); } catch { parsedOrigin = null; }\n  if (!db || typeof authenticateRequest !== 'function' ||\n      typeof resolveStore !== 'function' || !productMaps ||\n      typeof allowedOrigin !== 'string' || !parsedOrigin ||\n      parsedOrigin.protocol !== 'https:' || parsedOrigin.origin !== allowedOrigin ||\n      parsedOrigin.username || parsedOrigin.password || parsedOrigin.search || parsedOrigin.hash) {\n    throw new TypeError('BILLING_ROUTER_DEPENDENCY_MISSING');\n  }
 
   return async function handleBillingRequest(request) {
     const url = new URL(request.url);
@@ -99,7 +122,7 @@ export function createBillingRouter({
     if (request.method === 'POST' && url.pathname === '/api/v2/billing/verify') {
       const body = await readJsonObject(request, 24_576);
       if (!body.ok) {
-        const status = body.error === 'BODY_TOO_LARGE' ? 413 : 400;
+        const status = body.error === 'BODY_TOO_LARGE' ? 413 : body.error === 'JSON_REQUIRED' ? 415 : 400;
         return json({ ok: false, error: body.error }, status, cors);
       }
       const value = body.value;
