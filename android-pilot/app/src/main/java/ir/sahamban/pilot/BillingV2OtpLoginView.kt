@@ -90,7 +90,7 @@ class BillingV2OtpLoginView(
             when (result) {
                 is BillingV2NativeOtpClient.Result.Success -> {
                     setBusy(false, "ورود موفق بود.")
-                    onAuthenticated()
+                    onAuthenticated.onAuthenticated()
                 }
                 is BillingV2NativeOtpClient.Result.Failure -> setBusy(false, messageFor(result.code))
             }
