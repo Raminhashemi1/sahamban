@@ -149,3 +149,18 @@ On branch `feat/billing-v2-otp-session-bridge`, commit `fdba34e7ae44b1b67cd82deb
 - Store account access/device test accounts for end-to-end sandbox or controlled live validation.
 
 Do not add placeholder identifiers as if they were real, do not enable checkout, and do not mark release-ready until the configuration and acceptance checklist are verified.
+
+
+## Native subscription host composition — 2026-11-19
+
+The authenticated Android host now exposes a native “اشتراک سهمینو” entry after the OTP session check succeeds. The entry composes the flavor-specific Bazaar/Myket coordinator, native cookie-session provider, HTTPS Billing API client, purchase orchestration, and five-plan selector. Returning from the selector leaves the authenticated PWA session in place; logout still revokes the server session through the OTP client.
+
+The host fails closed unless the owner supplies the exact published package ID and five distinct store product IDs at build time:
+- `SAHAMBAN_EXPECTED_PACKAGE_NAME`
+- `SAHAMBAN_SKU_PRO_30D`
+- `SAHAMBAN_SKU_PRO_60D`
+- `SAHAMBAN_SKU_PRO_90D`
+- `SAHAMBAN_SKU_PRO_180D`
+- `SAHAMBAN_SKU_PRO_365D`
+
+These are identifiers, not secrets. Do not guess or substitute example SKUs. The purchase feature flag remains compile-time false in debug and release configurations, so the screen can be exercised without opening checkout. The temporary package ID, store credentials, Worker deployment, D1 migrations, production identity provider, refund/revocation process, and physical-device acceptance remain release blockers. A successful compile or visible selector is not evidence of a real store purchase.
