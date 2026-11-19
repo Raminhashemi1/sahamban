@@ -25,7 +25,12 @@ function makeDb({ order, batchResult } = {}) {
     },
     batch: async (statements) => {
       calls.push(statements);
-      return batchResult ?? statements.map(() => ({ success: true, meta: { changes: 1 } }));
+      return batchResult ?? [
+        { success: true, meta: { changes: 1 } },
+        { success: true, meta: { changes: 1 } },
+        { success: true, meta: { changes: 1 } },
+        { success: true, meta: { changes: 0 }, results: [{ expires_at: '2027-01-31T00:00:00.000Z' }] }
+      ];
     }
   };
 }
@@ -65,13 +70,14 @@ test('settlement rejects store, product, or amount mismatch', async () => {
   assert.equal(db.calls.length, 0);
 });
 
-test('settlement requires a single successful conditional D1 batch', async () => {
+test('settlement requires every write in one successful conditional D1 batch', async () => {
   const db = makeDb({
     order,
     batchResult: [
       { success: true, meta: { changes: 0 } },
       { success: true, meta: { changes: 0 } },
-      { success: true, meta: { changes: 0 } }
+      { success: true, meta: { changes: 0 } },
+      { success: true, meta: { changes: 0 }, results: [] }
     ]
   });
   const result = await settleVerifiedPurchase(db, {
@@ -81,10 +87,10 @@ test('settlement requires a single successful conditional D1 batch', async () =>
   });
   assert.equal(result.error, 'SETTLEMENT_FAILED');
   assert.equal(db.calls.length, 1);
-  assert.equal(db.calls[0].length, 3);
+  assert.equal(db.calls[0].length, 4);
 });
 
-test('settlement returns paid state only when all batch statements changed one row', async () => {
+test('settlement returns the entitlement read from inside the atomic batch', async () => {
   const db = makeDb({ order });
   const result = await settleVerifiedPurchase(db, {
     orderId: 'order-1', authenticatedUserId: 'user-1',
@@ -93,5 +99,7 @@ test('settlement returns paid state only when all batch statements changed one r
   });
   assert.equal(result.ok, true);
   assert.equal(result.status, 'PAID');
-  assert.equal(result.expiresAt, null);
+  assert.equal(result.expiresAt, '2027-01-31T00:00:00.000Z');
+  assert.equal(db.calls[0].length, 4);
+  assert.match(db.calls[0][2].sql, /EXISTS\s*\(\s*SELECT 1 FROM billing_events/);
 });
