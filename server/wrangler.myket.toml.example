@@ -1,0 +1,21 @@
+# Example only. Keep checkout disabled until production authentication and tests pass.
+name = "sahmino-billing-myket"
+main = "worker-api.mjs"
+compatibility_date = "2026-06-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "SAHAMBAN_DB"
+database_name = "REPLACE_WITH_SHARED_SAHMINO_D1_NAME"
+database_id = "REPLACE_WITH_SAME_PRODUCTION_D1_ID_IN_BOTH_CONFIGS"
+
+[vars]
+BILLING_V2_ENABLED = "false"
+BILLING_STORE = "MYKET"
+PWA_ORIGIN = "https://REPLACE_WITH_EXACT_PRODUCTION_PWA_ORIGIN"
+MYKET_PACKAGE_NAME = "REPLACE_WITH_REAL_APPLICATION_ID"
+MYKET_SKU_MAP = '{"SAHAMBAN_PRO_30D":"REPLACE_MYKET_SKU_30D","SAHAMBAN_PRO_60D":"REPLACE_MYKET_SKU_60D","SAHAMBAN_PRO_90D":"REPLACE_MYKET_SKU_90D","SAHAMBAN_PRO_180D":"REPLACE_MYKET_SKU_180D","SAHAMBAN_PRO_365D":"REPLACE_MYKET_SKU_365D"}'
+
+# Set these as Worker secrets; never commit values:
+# wrangler secret put AUTH_HMAC_SECRET --config wrangler.myket.toml
+# wrangler secret put MYKET_PUBLIC_KEY --config wrangler.myket.toml
