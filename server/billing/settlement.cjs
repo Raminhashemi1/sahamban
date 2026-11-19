@@ -22,14 +22,14 @@ async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchas
   const order=await db.prepare("SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1").bind(orderId,subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
   if(order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
-  if(!validIso(order.created_at))return {ok:false,error:'ORDER_STATE_INVALID'};
-  if(purchaseMs<Date.parse(order.created_at)-5*60*1000)return {ok:false,error:'PURCHASE_PRECEDES_ORDER'};
   if(order.status==='PAID'){
    if(order.purchase_token_hash!==tokenHash)return {ok:false,error:'ORDER_ALREADY_SETTLED'};
    if(!validIso(order.expires_at))return {ok:false,error:'ACCESS_STATE_INVALID'};
    return {ok:true,restored:true,expiresAt:order.expires_at,daysAdded:0,renewalMode:'MANUAL'};
   }
   if(order.status!=='CREATED')return {ok:false,error:'ORDER_NOT_PENDING'};
+  if(!validIso(order.created_at))return {ok:false,error:'ORDER_STATE_INVALID'};
+  if(purchaseMs<Date.parse(order.created_at)-5*60*1000)return {ok:false,error:'PURCHASE_PRECEDES_ORDER'};
   if(order.expires_at!==null&&!validIso(order.expires_at))return {ok:false,error:'ACCESS_STATE_INVALID'};
   // D1 batch is transactional. Each later statement is gated by changes()
   // from the immediately preceding write, so a concurrent/replayed settlement
@@ -62,8 +62,6 @@ async function settleMyket(db,{orderId,subject,planId,storeOrderId,tokenHash,pur
   const order=await db.prepare("SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1").bind(orderId,subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
   if(order.store!=='MYKET'||order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
-  if(!validIso(order.created_at))return {ok:false,error:'ORDER_STATE_INVALID'};
-  if(purchaseMs<Date.parse(order.created_at)-5*60*1000)return {ok:false,error:'PURCHASE_PRECEDES_ORDER'};
   if(order.status==='PAID'){
    if(order.purchase_token_hash!==tokenHash||order.store_order_id!==storeOrderId)
     return {ok:false,error:'ORDER_ALREADY_SETTLED'};
@@ -71,6 +69,8 @@ async function settleMyket(db,{orderId,subject,planId,storeOrderId,tokenHash,pur
    return {ok:true,restored:true,expiresAt:order.expires_at,daysAdded:0,renewalMode:'MANUAL'};
   }
   if(order.status!=='CREATED')return {ok:false,error:'ORDER_NOT_PENDING'};
+  if(!validIso(order.created_at))return {ok:false,error:'ORDER_STATE_INVALID'};
+  if(purchaseMs<Date.parse(order.created_at)-5*60*1000)return {ok:false,error:'PURCHASE_PRECEDES_ORDER'};
   if(order.expires_at!==null&&!validIso(order.expires_at))return {ok:false,error:'ACCESS_STATE_INVALID'};
   const result=await db.batch([
    db.prepare("UPDATE billing_orders SET status='PAID',paid_at=?,store_order_id=?,purchase_token_hash=? WHERE id=? AND status='CREATED' AND store='MYKET' AND store_product_id IS NOT NULL").bind(purchaseTime,storeOrderId,tokenHash,orderId),
