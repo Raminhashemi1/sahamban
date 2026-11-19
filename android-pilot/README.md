@@ -75,11 +75,17 @@ The APK artifact is available for seven days. It is an unsigned debug/test artif
 
 The host `MainActivity` still does not wire the billing purchase flow into Sahmino's real UI/session. The commercial session-token provider and production package identity are not available in this pilot. Do not hard-code credentials or enable the billing feature gate to bypass those blockers.
 
+## Native OTP cookie-session bridge
+
+`BillingV2CookieSessionProvider` reads only the `sahmino_session` cookie for the configured HTTPS Worker origin from Android's native `CookieManager` and sends it directly from native `HttpsURLConnection` with the configured exact `SAHAMBAN_PWA_ORIGIN` and `X-Sahmino-CSRF: 1`. `BillingV2ApiClient` accepts only this three-header allowlist, resolves it afresh for every request, and never adds an Authorization bearer token. The cookie is not passed into PWA JavaScript, local storage, logs, or URLs. Configure `SAHAMBAN_WORKER_BASE_URL` and `SAHAMBAN_PWA_ORIGIN` consistently with Worker `PWA_ORIGIN`.
+
+This is an integration seam, not proof that WebView has accepted or persisted the cross-site Worker cookie. Android's third-party-cookie policy can prevent a GitHub Pages PWA from storing a cookie set by a different Worker origin. Do not broadly enable third-party cookies as a workaround without a reviewed origin/cookie policy. Physical-device validation must confirm OTP login, cookie availability to native `CookieManager`, logout/revocation, app restart, and account switching. If the cookie is unavailable, the provider fails closed. `MainActivity` still does not instantiate the purchase flow, and checkout remains disabled.
+
 ## Authenticated session integration contract
 
-`BillingV2ApiClient` now accepts a native `BillingV2TokenProvider` instead of a fixed bearer-token string. The provider must read the current access token from Sahmino's already-authenticated native account session and invoke its callback exactly once; return `null` when signed out. The client requests a fresh token for every Worker call, rejects blank/oversized/whitespace-containing tokens, and reports `NOT_AUTHENTICATED` without making a network request when no session exists.
+`BillingV2ApiClient` now accepts a native `BillingV2AuthProvider`; the OTP implementation supplies the cookie, exact PWA origin, and CSRF marker as native request headers. It reports `NOT_AUTHENTICATED` without making a network request when no valid session cookie is available. The earlier bearer-token provider contract has been superseded by this shared OTP cookie-session contract.
 
-The token must remain inside native code. Do not pass it to PWA JavaScript, local storage, URL parameters, logs, or a hard-coded pilot-token generator. The current pilot `MainActivity` does not yet have Sahmino's commercial session provider and therefore must not instantiate the purchase flow. This interface is an integration seam, not a claim that commercial login is already connected.
+Session credentials must remain inside native code. Do not pass them to PWA JavaScript, local storage, URL parameters, logs, or a hard-coded pilot-token generator. The current pilot `MainActivity` does not yet instantiate the provider or purchase flow; store SKU configuration, Worker deployment configuration, and physical cookie validation remain prerequisites.
 
 
 ## Rebuild checkpoint — current integration head
