@@ -162,7 +162,7 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
                     CookieManager.getInstance().setCookie(workerBaseUrl,
                         "sahmino_session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0") {
                         CookieManager.getInstance().flush()
-                        callback(Result.Success(true))
+                        callback.onResult(Result.Success(true))
                     }
                 } else callback.onResult(Result.Failure(0, "LOGOUT_UNAVAILABLE"))
             }
