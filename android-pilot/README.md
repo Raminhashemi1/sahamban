@@ -75,3 +75,6 @@ https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977
 That APK build predates later changes on the integration branch. A fresh Android build is triggered by this README revision so the artifacts correspond to the current source revision. Until that build finishes, do not treat the older APKs as current.
 
 The remaining host-app integration blocker is the absence of a production commercial account/session-token provider. Do not add a hard-coded pilot token or enable `SAHAMBAN_BILLING_ENABLED` to bypass that dependency.
+
+
+Latest dual-store build checkpoint (2026-11-19): a rerun of the Android workflow completed successfully for commit `75d09eba`, producing both Bazaar and Myket debug APKs. The integration branch has advanced since that commit, so those APKs are a successful build artifact but are not the final binaries for the current branch. Rebuild the latest branch head before acceptance.
