@@ -1,55 +1,56 @@
 # Development status
 
 ## Decisions
-- Product: one Sahmino app/product, distributed through Cafe Bazaar and Myket.
-- Preferred architecture: one shared source tree with store-specific build configurations/adapters if this is the most reliable path after checking host-app constraints.
-- Payment routing: Bazaar listing uses Bazaar billing; Myket listing uses Myket billing.
-- Shared account and server-side entitlement across both distributions.
-- Currency: all plan amounts are IRR (ریال).
-- Purchase model: one-time manually renewed duration plans; no automatic recurring charge assumed.
-- Legacy subscription code is not reused.
+- Product: one Sahmino app/product distributed through Cafe Bazaar and Myket.
+- Shared application source and shared subscription backend.
+- Bazaar distribution uses Bazaar billing only; Myket distribution uses Myket billing only.
+- Store-specific SDK adapters/build configuration are isolated where required.
+- Shared account identity and server-side entitlement across both distributions.
+- All plan amounts are IRR (ریال), never toman.
+- Manual one-time duration purchases; no automatic recurring charge assumed.
+- Legacy subscription implementation is not reused.
 
-## Milestones
+## Recorded implementation
+This work is saved on the isolated branch `feature/sahmino-subscriptions-independent`.
+The repository default branch `main` has not been changed.
 
-### M1 — Independent domain foundation
-- Defined the five canonical plan IDs, durations, and IRR prices.
-- Defined provider-neutral billing concepts.
-- Drafted initial D1 tables for store SKU mapping, orders, entitlements, and events.
-- Added domain tests for plan prices and renewal date calculation.
-- Status: initial implementation exists; needs integration/runtime review.
+### Documentation and decisions
+- `subscription-module/README.md`
+- `subscription-module/STORE_INTEGRATION_CONTRACT.md`
+- `subscription-module/STATUS.md`
+- `subscription-module/PLAN_CATALOG.json`
 
-### M2 — Order and settlement foundation
-- Added server-side order creation policy: user identity comes from verified auth, while price/duration/SKU are resolved server-side.
-- Added settlement service contract and idempotency requirements.
-- Added API contract for plans, current entitlement, order creation, and purchase verification.
-- Status: service-level implementation exists; D1 atomicity and SQL date arithmetic require dedicated integration tests before production.
+### Domain and database foundation
+- `subscription-module/core/domain.mjs`: canonical plan lookup and renewal date calculation.
+- `subscription-module/core/provider-contract.md`: vendor-neutral store adapter contract.
+- `subscription-module/server/schema.sql`: store SKU mapping, orders, entitlements, and event history tables.
 
-### M3 — Android purchase orchestration
-- Added provider-neutral Android billing interface.
-- Added coordinator flow: create order, launch store purchase, submit evidence, wait for backend settlement, then consume.
-- Added recovery path for owned purchases.
-- Status: source outline exists; not yet compiled against the actual Android host app or SDKs.
+### Android foundation
+- `subscription-module/android/StoreBillingProvider.kt`: provider-neutral Kotlin billing interface.
+- `subscription-module/android/FLAVOR_BUILD_GUIDE.md`: one shared product/source tree with store-specific distribution build configurations.
 
-### M4 — Store distribution architecture
-- Documented a shared source tree with separate Bazaar and Myket Gradle flavors/source sets as a candidate architecture.
-- Added a provider factory outline and flavor build guide.
-- Status: example only; must be reconciled with the host app Gradle version, package identity, signing, and each store's publication requirements.
+## Fixed plan catalog
+| Plan | Days | Price (IRR) |
+|---|---:|---:|
+| sahmino_30d | 30 | 1,500,000 |
+| sahmino_60d | 60 | 2,850,000 |
+| sahmino_90d | 90 | 4,050,000 |
+| sahmino_180d | 180 | 7,650,000 |
+| sahmino_365d | 365 | 14,600,000 |
 
-### M5 — Server services
-- Added initial order creation and entitlement lookup service modules.
-- Added a verifier registry boundary for distinct Bazaar and Myket trusted verifiers.
-- Status: not yet wired to deployed Cloudflare Worker routes or production authentication.
+## Important accuracy note
+Additional prototypes were generated in the ChatGPT workspace (order service, settlement prototype, purchase coordinator, verifier registry, and example Gradle configuration). They are not yet committed as production-ready code. Before committing those prototypes, they must be reconciled with this branch, reviewed for correctness, and tested in the actual host runtime. In particular, SQL atomicity/date arithmetic and Kotlin/Gradle compilation must be validated.
 
 ## Not completed / release blockers
-- Confirm exact host Android app structure, Gradle plugin, Kotlin version, min/target SDK, and applicationId.
-- Confirm current official Bazaar and Myket SDK coordinates and pin versions.
-- Implement actual Bazaar and Myket SDK adapters.
-- Implement store-specific server-side receipt/token verification using current official APIs.
-- Bind verified app user identity to order creation and verification endpoints.
-- Complete D1 migration and test atomic/idempotent settlement under concurrent requests.
-- Handle refund, revocation, cancellation, pending purchases, and restore/recovery according to each store.
-- Build both distribution artifacts and test on devices/accounts from both stores.
-- Verify policy compatibility for one product/package distributed in both stores.
+- Inspect actual host Android project structure and build tool versions.
+- Pin official, compatible Bazaar and Myket SDK versions.
+- Implement concrete store SDK adapters.
+- Implement trusted server-side verification separately for each store.
+- Wire authentication and API routes in the deployed backend.
+- Run D1 migration and concurrency/idempotency tests.
+- Handle pending, refunded, revoked, restored, and duplicate purchases.
+- Build and test both distribution artifacts on real devices/store test accounts.
+- Verify package identity, signing, and each store's publication policy.
 
-## Change log
-- Initial independent subscription work recorded on branch `feature/sahmino-subscriptions-independent`.
+## Rule for future work
+At the end of each completed, reviewed milestone, commit the files to this feature branch and update this status file. Do not commit unfinished or untested prototypes as production-ready. Never push subscription work directly to `main`.
