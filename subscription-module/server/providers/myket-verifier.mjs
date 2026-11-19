@@ -50,7 +50,7 @@ export async function verifyMyketPurchase({
   config,
   cryptoImpl = globalThis.crypto
 }) {
-  if (!order || order.store !== 'MYKET' || order.status !== 'CREATED') {
+  if (!order || order.store !== 'MYKET' || !['CREATED', 'PAID'].includes(order.status)) {
     return { verified: false, reason: 'ORDER_NOT_PAYABLE' };
   }
   if (!config || typeof config.publicKeyBase64 !== 'string' ||
