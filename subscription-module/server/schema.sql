@@ -57,3 +57,8 @@ CREATE TABLE IF NOT EXISTS billing_events (
 );
 CREATE INDEX IF NOT EXISTS idx_billing_events_order_created
   ON billing_events(order_id, created_at);
+
+-- A verified purchase may settle an order only once.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_events_order_verified
+  ON billing_events(order_id)
+  WHERE event_type = 'PURCHASE_VERIFIED';
