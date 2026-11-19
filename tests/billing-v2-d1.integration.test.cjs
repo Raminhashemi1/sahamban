@@ -17,7 +17,7 @@ function setup({beforeBatch}={}){
  let hook=beforeBatch;
  const adapter={
   prepare(sql){
-   return {bind(...values){return {
+   return {bind(...values){return {sql,values,
     first:async()=>sqlite.prepare(sql).get(...values)||null,
     run:async()=>{const result=sqlite.prepare(sql).run(...values);return {success:true,meta:{changes:Number(result.changes)}};}
    }}};
