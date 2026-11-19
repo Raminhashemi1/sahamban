@@ -95,7 +95,7 @@ test('reversal fails closed if any atomic batch statement fails', async () => {
 test('same authenticated provider reversal event is idempotent', async () => {
   const db = makeDb({
     currentOrder: { ...order, status: 'REVERSED' },
-    priorEvent: { provider_event_id: 'BAZAAR:refund-event-1' }
+    priorEvent: { provider_event_id: 'BAZAAR:refund-event-1', payload_hash: 'b'.repeat(64) }
   });
   const result = await reverseVerifiedPurchase(db, {
     orderId: 'order-1', authenticatedUserId: 'user-1',
@@ -103,5 +103,18 @@ test('same authenticated provider reversal event is idempotent', async () => {
   });
   assert.equal(result.ok, true);
   assert.equal(result.alreadyReversed, true);
+  assert.equal(db.calls.length, 0);
+});
+
+test('same provider event ID with a different payload hash is rejected', async () => {
+  const db = makeDb({
+    currentOrder: { ...order, status: 'REVERSED' },
+    priorEvent: { provider_event_id: 'BAZAAR:refund-event-1', payload_hash: 'c'.repeat(64) }
+  });
+  const result = await reverseVerifiedPurchase(db, {
+    orderId: 'order-1', authenticatedUserId: 'user-1',
+    verifiedReversal: reversal
+  });
+  assert.equal(result.error, 'ORDER_ALREADY_REVERSED');
   assert.equal(db.calls.length, 0);
 });
