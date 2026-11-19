@@ -156,3 +156,37 @@ test('verify route rejects client-selected provider and extra fields', async () 
   assert.equal(response.status, 400);
   assert.equal((await response.json()).error, 'INVALID_VERIFY_REQUEST');
 });
+
+
+test('Worker rejects a non-exact PWA origin configuration', () => {
+  assert.throws(() => setup({ allowedOrigin: 'https://app.example/path' }), /BILLING_ROUTER_DEPENDENCY_MISSING/);
+  assert.throws(() => setup({ allowedOrigin: 'http://app.example' }), /BILLING_ROUTER_DEPENDENCY_MISSING/);
+});
+
+test('Worker rejects query strings and non-JSON request bodies', async () => {
+  const { handler } = setup();
+  const query = await handler(request('/api/v2/billing/orders?amount=1', {
+    method: 'POST', body: { planId: 'SAHAMBAN_PRO_30D' }
+  }));
+  assert.equal(query.status, 400);
+  assert.equal((await query.json()).error, 'QUERY_NOT_ALLOWED');
+
+  const wrongType = await handler(new Request('https://worker.example/api/v2/billing/orders', {
+    method: 'POST',
+    headers: { Origin: 'https://app.example', 'content-type': 'text/plain' },
+    body: '{"planId":"SAHAMBAN_PRO_30D"}'
+  }));
+  assert.equal(wrongType.status, 415);
+  assert.equal((await wrongType.json()).error, 'JSON_REQUIRED');
+});
+
+test('Worker enforces the JSON byte limit while streaming the request body', async () => {
+  const { handler } = setup();
+  const response = await handler(new Request('https://worker.example/api/v2/billing/verify', {
+    method: 'POST',
+    headers: { Origin: 'https://app.example', 'content-type': 'application/json' },
+    body: JSON.stringify({ orderId: 'x', purchaseToken: 'a'.repeat(25_000) })
+  }));
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error, 'BODY_TOO_LARGE');
+});
