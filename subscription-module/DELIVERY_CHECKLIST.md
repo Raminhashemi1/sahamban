@@ -41,7 +41,12 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - This branch: dual-store Billing V2 Node tests passed in [run 44530625740](https://github.com/Raminhashemi1/sahamban/actions/runs/44530625740).
 - Latest dual-store CI including end-to-end Myket flow, Worker routing, Bazaar regression and fresh/migrated D1 schema tests passed in [run 44531003318](https://github.com/Raminhashemi1/sahamban/actions/runs/44531003318).
 
-## Integration review\n\n- Supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) targets the existing Billing V2 branch from PR #187. It is not merged.\n- PR #188 must be reviewed and merged into PR #187's branch before the combined Billing V2 work is considered for \\`main\\`.\n\n## Safety
+## Integration review
+
+- Supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) targets the existing Billing V2 branch from PR #187. It is not merged.
+- PR #188 must be reviewed and merged into PR #187's branch before the combined Billing V2 work is considered for \`main\`.
+
+## Safety
 
 - No production deployment or D1 migration was performed.
 - No store credentials or signing keys were committed.
