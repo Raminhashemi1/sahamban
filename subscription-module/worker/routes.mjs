@@ -228,7 +228,7 @@ export function createBillingRouter({
 
     const body = await readJsonObject(request);
     if (!body.ok) {
-      const status = body.error === 'BODY_TOO_LARGE' ? 413 : 400;
+      const status = body.error === 'BODY_TOO_LARGE' ? 413 : body.error === 'JSON_REQUIRED' ? 415 : 400;
       return json({ ok: false, error: body.error }, status, cors);
     }
     if (Object.keys(body.value).length !== 1 ||
