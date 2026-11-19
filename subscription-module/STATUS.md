@@ -52,6 +52,13 @@
 - GitHub Actions runs 44520669827, 44520675896, and 44520684135 completed successfully for the backend service commits. These are service-level tests using a fake D1 interface; they do not prove live D1 behavior or production authentication.
 - Status: service prototypes and tests committed; Worker routing, trusted commercial auth, store verification, and atomic settlement remain unimplemented.
 
+### M6 — Verified settlement service
+- Added `server/settlement-service.mjs` as an internal-only primitive: it accepts only normalized evidence from a trusted server-side store adapter, binds it to the authenticated user/order/store/product/IRR amount, and rejects mismatches.
+- D1 settlement uses a transactional batch: conditional CREATED→PAID transition, one PURCHASE_VERIFIED event per order (partial unique index), and entitlement upsert using the later of current expiry or settlement time plus the catalog duration.
+- Added conditional `changes() = 1` gates between batch statements so a failed state transition cannot create an event or extend entitlement.
+- Added settlement guard tests for unverified evidence, wrong user, amount mismatch, and unsuccessful D1 batch.
+- Important: tests use a fake D1 adapter and do not establish real D1 concurrency/transaction behavior. Provider verification adapters, reversal/refund handling, and live integration remain outstanding.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
