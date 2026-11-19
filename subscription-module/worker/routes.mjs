@@ -104,9 +104,7 @@ export function createBillingRouter({
       }
       const value = body.value;
       if (typeof value.orderId !== 'string' || !value.orderId ||
-          typeof value.originalJson !== 'string' ||
-          typeof value.signature !== 'string' ||
-          Object.keys(value).some((key) => !['orderId', 'originalJson', 'signature'].includes(key))) {
+          Object.keys(value).some((key) => !['orderId', 'originalJson', 'signature', 'purchaseToken'].includes(key))) {
         return json({ ok: false, error: 'INVALID_VERIFY_REQUEST' }, 400, cors);
       }
 
@@ -129,12 +127,27 @@ export function createBillingRouter({
       if (typeof verifier !== 'function') {
         return json({ ok: false, error: 'STORE_VERIFIER_NOT_CONFIGURED' }, 503, cors);
       }
+      const expectedKeys = order.store === 'MYKET'
+        ? ['orderId', 'originalJson', 'signature']
+        : ['orderId', 'purchaseToken'];
+      if (Object.keys(value).length !== expectedKeys.length ||
+          expectedKeys.some((key) => !(key in value)) ||
+          (order.store === 'MYKET' &&
+            (typeof value.originalJson !== 'string' || typeof value.signature !== 'string')) ||
+          (order.store === 'BAZAAR' &&
+            (typeof value.purchaseToken !== 'string' || !value.purchaseToken))) {
+        return json({ ok: false, error: 'INVALID_VERIFY_REQUEST' }, 400, cors);
+      }
 
       let verifiedPurchase;
       try {
+        const evidence = order.store === 'MYKET'
+          ? { originalJson: value.originalJson, signature: value.signature }
+          : { purchaseToken: value.purchaseToken };
         verifiedPurchase = await verifier({
           order,
-          evidence: { originalJson: value.originalJson, signature: value.signature }
+          evidence,
+          allowConsumed: order.status === 'PAID'
         });
       } catch {
         return json({ ok: false, error: 'STORE_VERIFICATION_UNAVAILABLE' }, 503, cors);
