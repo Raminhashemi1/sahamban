@@ -121,8 +121,11 @@ export default {
   if((isBillingOrders||isBillingVerify)&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
+  const cookieHeader=request.headers.get('Cookie')||'';
+  const hasSessionCookie=cookieHeader.split(';').some(part=>part.trim().startsWith('sahmino_session='));
   const sessionCookie=parseCookie(request,'sahmino_session');
   let subject=null,userId=null;
+  if(hasSessionCookie&&!sessionCookie)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
   if(sessionCookie){
    if(env?.SAHMINO_OTP_ENABLED!=='true'||!cors||origin!==allowed)
     return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
