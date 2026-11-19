@@ -35,3 +35,9 @@ jobs:
           gradle-version: '8.13'
       - name: Compile Bazaar and Myket release flavors
         run: gradle -p subscription-module/android assembleBazaarRelease assembleMyketRelease
+      - name: Upload store-specific Android libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahmino-billing-android-aar
+          path: subscription-module/android/build/outputs/aar/*.aar
+          if-no-files-found: error
