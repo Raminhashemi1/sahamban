@@ -21,7 +21,7 @@ class BillingV2SubscriptionHost(
         "SAHAMBAN_PRO_365D" to BuildConfig.SAHAMBAN_SKU_PRO_365D
     )
     private val expectedPackage = BuildConfig.SAHAMBAN_EXPECTED_PACKAGE_NAME
-    private val configured = expectedPackage.matches(Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$")) &&
+    private val configured = expectedPackage == BuildConfig.APPLICATION_ID && expectedPackage.matches(Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$")) &&
         skuByPlan.values.all { it.matches(Regex("^[A-Za-z0-9._-]{1,100}$")) } &&
         skuByPlan.values.toSet().size == 5
 
