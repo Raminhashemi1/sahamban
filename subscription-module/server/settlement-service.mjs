@@ -56,8 +56,9 @@ export async function settleVerifiedPurchase(db, {
       return { ok: false, error: 'INVALID_EVENT_ID' };
     }
 
-    // D1 batch is transactional. The partial unique event index makes the
-    // settlement one-shot; if any statement fails, the batch rolls back.
+    // D1 batch is transactional. The conditional state transition is the
+    // concurrency gate; the unique event index is the durable one-shot guard.
+    // Every dependent write is gated by the event inserted in this same batch.
     const results = await db.batch([
       db.prepare(`
         UPDATE billing_orders
@@ -98,32 +99,40 @@ export async function settleVerifiedPurchase(db, {
         FROM billing_orders
         WHERE id = ? AND user_id = ? AND store = ? AND status = 'PAID'
           AND store_order_id = ? AND purchase_token_hash = ? AND paid_at = ?
-          AND changes() = 1
+          AND EXISTS (
+            SELECT 1 FROM billing_events
+            WHERE event_id = ? AND order_id = billing_orders.id
+              AND event_type = 'PURCHASE_VERIFIED'
+          )
         ON CONFLICT(user_id) DO UPDATE SET
           expires_at = excluded.expires_at,
           auto_renewing = 0,
           updated_at = excluded.updated_at
       `).bind(now, now, now, orderId, authenticatedUserId, store,
-        storeOrderId, purchaseTokenHash.toLowerCase(), now)
+        storeOrderId, purchaseTokenHash.toLowerCase(), now, eventId),
+
+      // Read the committed entitlement inside the same atomic batch. This
+      // avoids reporting failure after a successful commit if a later read fails.
+      db.prepare(`
+        SELECT expires_at FROM billing_access WHERE user_id = ? LIMIT 1
+      `).bind(authenticatedUserId)
     ]);
 
-    if (!Array.isArray(results) || results.length !== 3 ||
+    if (!Array.isArray(results) || results.length !== 4 ||
         results.some((result) => result?.success !== true) ||
         results[0]?.meta?.changes !== 1 ||
         results[1]?.meta?.changes !== 1 ||
-        results[2]?.meta?.changes !== 1) {
+        results[2]?.meta?.changes !== 1 ||
+        !Array.isArray(results[3]?.results) ||
+        typeof results[3].results[0]?.expires_at !== 'string') {
       return { ok: false, error: 'SETTLEMENT_FAILED' };
     }
-
-    const access = await db.prepare(`
-      SELECT expires_at FROM billing_access WHERE user_id = ? LIMIT 1
-    `).bind(authenticatedUserId).first();
 
     return {
       ok: true,
       orderId,
       status: 'PAID',
-      expiresAt: access?.expires_at ?? null
+      expiresAt: results[3].results[0].expires_at
     };
   } catch {
     return { ok: false, error: 'SETTLEMENT_FAILED' };
