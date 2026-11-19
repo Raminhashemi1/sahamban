@@ -11,7 +11,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | TEMPLATES READY; owner must supply exact five product IDs per store, real package ID, public keys and Bazaar OAuth credentials |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | RUNBOOK READY; both templates are configured to use one shared D1 ID; no production resources or secrets changed |
 | 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | TEST MATRIX READY; live execution requires owner test accounts, configured products and installed builds |
-| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD SUCCESSFUL for code commit `dc964c33` in [run 44539202813](https://github.com/Raminhashemi1/sahamban/actions/runs/44539202813); both Bazaar and Myket APKs were uploaded. Release signing and final package identity remain missing |
+| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD SUCCESSFUL for current integration commit `df738b56` in [run 44541345164](https://github.com/Raminhashemi1/sahamban/actions/runs/44541345164); both Bazaar and Myket APKs were uploaded. Release signing and final package identity remain missing |
 
 ## Work completed on this integration branch
 
@@ -40,10 +40,10 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest dual-store backend, schema/migration, provider verification/settlement, Worker routing and Android wiring checks passed on current integration head `781d0e77`: [run 44540599207](https://github.com/Raminhashemi1/sahamban/actions/runs/44540599207). All CI steps passed, including Bazaar/shared Billing V2, Myket verification/order/settlement, Android host security/flavor wiring, and fresh/existing D1 schema checks.
+- Latest dual-store backend, schema/migration, provider verification/settlement, Worker routing and Android wiring checks passed on current integration head `df738b56`: [run 44541362521](https://github.com/Raminhashemi1/sahamban/actions/runs/44541362521). All CI steps passed, including Bazaar/shared Billing V2, Myket verification/order/settlement, Android host security/flavor wiring, and fresh/existing D1 schema checks.
 - The Android API client now uses an injected native `BillingV2TokenProvider`; static billing validation passed. This is an integration seam only; the commercial Sahmino session provider is not present in this repository.
 - Both Bazaar and Myket debug APKs were successfully uploaded for earlier code commit `650a27ee`: [run 44537588855](https://github.com/Raminhashemi1/sahamban/actions/runs/44537588855). Artifact: `sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE`, 7-day retention, SHA-256 `4204f0fa4fa31a8fb7a5bf1be16a84b002908d569bf89e6229acc91951622b95`.
-- The Android build for commit `dc964c33` succeeded on retry and uploaded the dual-store debug APK artifact in [run 44539202813](https://github.com/Raminhashemi1/sahamban/actions/runs/44539202813). Artifact expires 2026-11-26; digest `sha256:d44c071bceb98ec85f9b9b1229ed81ab54bf4562aa32a899d53e9ac6c0fe9e70`.
+- The Android build for current integration commit `df738b5608f1e9ac783e3a768fea0b186c083eca` completed successfully in [run 44541345164](https://github.com/Raminhashemi1/sahamban/actions/runs/44541345164). Both Bazaar and Myket debug APKs were uploaded as `sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE`; artifact ID `14539051817`, expires 2026-11-26, digest `sha256:0143301be8d494bdad98289e724327e168c60d580b1464616bdfa3baf2dbde8e`. These are unsigned debug/test APKs, not store release files.
 - No signed release build, live store purchase, or production deployment has been performed.
 
 ## Integration review
@@ -57,3 +57,11 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - No store credentials or signing keys were committed.
 - No branch was merged into `main`.
 - Keep `BILLING_V2_ENABLED=false` until all six stages pass.
+
+
+## Current checkpoint — 2026-11-19
+
+- Current integration head: `df738b5608f1e9ac783e3a768fea0b186c083eca`.
+- Both store-specific debug APK builds and the dual-store backend test workflow passed on this head.
+- Repository inspection confirms there is no production login/session implementation in this pilot repository. The existing PWA is loaded from GitHub Pages, and the native MainActivity intentionally has no JavaScript bridge or authenticated account provider. Therefore the next app-integration step cannot be safely completed by inventing a user identity or generating pilot tokens. It requires the actual Sahmino account-session provider from the production app host.
+- No live purchase, production D1 migration, store configuration, release signing, or PR merge has been performed.
