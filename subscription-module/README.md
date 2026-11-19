@@ -36,3 +36,16 @@ Run `npm test` in this directory.
 
 ## Safety
 No migration in this module is applied to a live D1 database. No marketplace secrets, product IDs, package identity, or deployment settings are invented or stored here.
+
+
+## Store-specific integration references
+- Myket official SDK and signed purchase verification notes: [providers/MYKET.md](providers/MYKET.md)
+- Provider adapter contract: [providers/CONTRACT.md](providers/CONTRACT.md)
+- PWA/native Android integration boundary: [android/PWA_NATIVE_BILLING_BRIDGE.md](android/PWA_NATIVE_BILLING_BRIDGE.md)
+
+## Implemented HTTP routes
+- `POST /api/v2/billing/orders`: creates an order using the authenticated user, server catalog, server-side product mapping, and trusted distribution resolver.
+- `POST /api/v2/billing/verify`: looks up the order for the authenticated user, selects the verifier from the persisted order store, verifies signed purchase evidence, and settles idempotently. The verifier is injected from Worker configuration; no client-selected store is accepted.
+- `GET /api/v1/me/entitlement`: returns server-side entitlement state.
+
+Myket verification is implemented as server-side RSA signature verification. Bazaar verification must be wired to the current Bazaar Developer API verifier. Until both verifiers and commercial authentication are configured, do not expose the module to production users.
