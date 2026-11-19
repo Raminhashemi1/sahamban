@@ -1,0 +1,11 @@
+{
+  "currency": "IRR",
+  "currency_label_fa": "ریال",
+  "plans": [
+    { "id": "sahmino_30d", "days": 30, "price": 1500000 },
+    { "id": "sahmino_60d", "days": 60, "price": 2850000 },
+    { "id": "sahmino_90d", "days": 90, "price": 4050000 },
+    { "id": "sahmino_180d", "days": 180, "price": 7650000 },
+    { "id": "sahmino_365d", "days": 365, "price": 14600000 }
+  ]
+}
