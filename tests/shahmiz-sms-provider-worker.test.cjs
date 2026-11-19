@@ -7,7 +7,7 @@ const TOKEN='test_shahmiz_api_token_never_use_in_production';
 function request(body,{method='POST',path='/send',contentType='application/json'}={}) {
   return new Request('https://internal-sms-provider'+path,{
     method,headers:{'Content-Type':contentType},
-    ...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})
+    ...((body===undefined||method==='GET'||method==='HEAD')?{}:{body:typeof body==='string'?body:JSON.stringify(body)})
   });
 }
 const payload={destination:'+989123456789',message:'کد ورود سهمینو: 123456',idempotencyKey:'a'.repeat(48)};
