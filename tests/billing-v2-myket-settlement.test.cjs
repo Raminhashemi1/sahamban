@@ -11,7 +11,7 @@ function fakeDb(order){
  const calls=[];
  return {
   calls,
-  prepare(sql){return {sql,bind(...values){calls.push({sql,values});return {
+  prepare(sql){return {sql,bind(...values){calls.push({sql,values});return {sql,values,
    async first(){
     if(sql.includes('SELECT expires_at FROM billing_access'))return {expires_at:order.expires_at};
     return order;
