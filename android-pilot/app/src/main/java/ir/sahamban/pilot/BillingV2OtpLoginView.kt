@@ -9,11 +9,14 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 
+/** Java-friendly completion callback for the native sign-in screen. */
+fun interface AuthenticatedListener { fun onAuthenticated.onAuthenticated() }
+
 /** Minimal native Persian OTP sign-in screen. Credentials never enter the WebView. */
 class BillingV2OtpLoginView(
     context: Context,
     private val otpClient: BillingV2NativeOtpClient,
-    private val onAuthenticated: () -> Unit
+    private val onAuthenticated: AuthenticatedListener
 ) : LinearLayout(context) {
     private val phoneInput = EditText(context)
     private val codeInput = EditText(context)
