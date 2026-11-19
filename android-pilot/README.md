@@ -85,3 +85,8 @@ The token must remain inside native code. Do not pass it to PWA JavaScript, loca
 ## Rebuild checkpoint — current integration head
 
 The current integration branch includes the native `BillingV2TokenProvider` injection seam and the latest passing dual-store validation. This documentation-only checkpoint intentionally triggers the Android workflow so both Bazaar and Myket debug APKs are rebuilt from the exact current source head. These outputs remain unsigned test artifacts; they are not store-ready release packages.
+
+
+## Current-head artifact rebuild — 2026-11-19
+
+The Billing V2 validation workflow passed on integration head `2be8ce24fbb75a9d4377efbf0443ea47cb5951a4` in run 44541889889. This documentation checkpoint triggers a fresh Bazaar/Myket debug APK build from the exact current head. The outputs remain unsigned test builds and must not be treated as store-ready releases.
