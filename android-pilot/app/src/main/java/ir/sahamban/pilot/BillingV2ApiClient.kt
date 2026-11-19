@@ -28,7 +28,7 @@ class BillingV2ApiClient(
     init {
         val parsed = URL(baseUrl)
         require(parsed.protocol == "https" && parsed.userInfo == null &&
-            parsed.query == null && parsed.fragment == null && bearerToken.isNotBlank())
+            parsed.query == null && parsed.ref == null && bearerToken.isNotBlank())
         require(storeName == "BAZAAR" || storeName == "MYKET")
     }
 
