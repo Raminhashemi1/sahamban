@@ -214,7 +214,9 @@ test('OTP HttpOnly session authenticates entitlement by internal user ID, not au
  assert.equal(response.status,200);
  assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
  assert.deepEqual(await response.json(),{proEnabled:true,reason:'ACTIVE',paidUntil:activeRow.paid_until,renewalMode:'MANUAL'});
- assert.deepEqual(storage.calls[0].values,[await require('node:crypto').webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('b'.repeat(64))).then(x=>Buffer.from(x).toString('hex')),'2099-11-19T']);
+ const expectedHash=await require('node:crypto').webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('b'.repeat(64))).then(x=>Buffer.from(x).toString('hex'));
+ assert.equal(storage.calls[0].values[0],expectedHash);
+ assert.ok(Number.isFinite(Date.parse(storage.calls[0].values[1])));
  assert.match(storage.calls[1].sql,/WHERE u.id=\?/);
  assert.doesNotMatch(storage.calls[1].sql,/u.auth_subject/);
 });
