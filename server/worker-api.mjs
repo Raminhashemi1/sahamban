@@ -2,8 +2,116 @@ import billingOrders from './billing/orders.cjs';
 import {verifyAndSettle} from './billing/bazaar.mjs';
 import {verifyAndSettleMyket} from './billing/myket.mjs';
 import otpRepository from './d1-sms-otp-repository.cjs';
+import otpServiceModule from './sms-otp-service.cjs';
 const {createD1SmsOtpRepository}=otpRepository;
+const {createSmsOtpService}=otpServiceModule;
 const {createOrder,createMyketOrder}=billingOrders;
+function otpJson(request,body,status,origin,extraHeaders={}){
+ const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin',...extraHeaders};
+ if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
+ return new Response(JSON.stringify(body),{status,headers});
+}
+async function readSmallJson(request,maxBytes=1024){
+ const declared=request.headers.get('Content-Length');
+ if(declared!==null&&(!/^[0-9]+$/.test(declared)||Number(declared)>maxBytes))return {error:'BODY_TOO_LARGE',status:413};
+ if(!request.body)return {error:'INVALID_JSON',status:400};
+ const reader=request.body.getReader(),chunks=[];let size=0;
+ try{
+  while(true){
+   const {done,value}=await reader.read();if(done)break;
+   size+=value.byteLength;
+   if(size>maxBytes){await reader.cancel();return {error:'BODY_TOO_LARGE',status:413};}
+   chunks.push(value);
+  }
+ }catch(_){return {error:'INVALID_JSON',status:400};}
+ const bytes=new Uint8Array(size);let offset=0;
+ for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ try{return {body:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))};}
+ catch(_){return {error:'INVALID_JSON',status:400};}
+}
+function requestOriginAllowed(request,env){
+ const origin=request.headers.get('Origin');
+ return typeof env?.PWA_ORIGIN==='string'&&origin===env.PWA_ORIGIN&&/^https:\/\/[a-z0-9.-]+(?::[0-9]+)?$/i.test(env.PWA_ORIGIN);
+}
+async function keyedIpPseudonym(request,secret){
+ const ip=request.headers.get('CF-Connecting-IP');
+ if(typeof ip!=='string'||!ip||typeof secret!=='string'||encoder.encode(secret).length<32)return null;
+ const key=await crypto.subtle.importKey('raw',encoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+ const bytes=await crypto.subtle.sign('HMAC',key,encoder.encode(ip));
+ return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
+}
+function createSmsBindingAdapter(binding){
+ if(!binding||typeof binding.fetch!=='function')return null;
+ return {async sendOtp(payload){
+  const response=await binding.fetch('https://sms-provider.internal/send',{
+   method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':payload.idempotencyKey},
+   body:JSON.stringify(payload)
+  });
+  if(!response.ok)return {accepted:false};
+  let result;try{result=await response.json();}catch(_){return {accepted:false};}
+  return {accepted:result?.accepted===true,providerMessageId:typeof result?.messageId==='string'?result.messageId:null};
+ }};
+}
+async function handleOtpRoutes(request,env,url,nowMs){
+ const route=url.pathname,origin=request.headers.get('Origin');
+ const routes=['/api/v1/auth/otp/request','/api/v1/auth/otp/verify','/api/v1/auth/session','/api/v1/auth/logout'];
+ if(!routes.includes(route))return null;
+ if(env?.SAHMINO_OTP_ENABLED!=='true')return otpJson(request,{error:'FEATURE_DISABLED'},404,null);
+ if(!requestOriginAllowed(request,env))return otpJson(request,{error:'ORIGIN_NOT_ALLOWED'},403,null);
+ if(url.search)return otpJson(request,{error:'QUERY_NOT_ALLOWED'},400,origin);
+ if(!env?.SAHAMBAN_DB||!env?.SAHMINO_OTP_VERIFIER_SECRET||!env?.SAHMINO_OTP_RATE_LIMIT_SECRET)
+  return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
+ const cookie=parseCookie(request,'sahmino_session');
+ if(route==='/api/v1/auth/otp/request'){
+  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
+  const parsed=await readSmallJson(request,256);
+  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==1||typeof body.phone!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const adapter=createSmsBindingAdapter(env.SAHMINO_SMS_PROVIDER);
+  if(!adapter)return otpJson(request,{error:'SMS_PROVIDER_UNAVAILABLE'},503,origin);
+  const ipKey=await keyedIpPseudonym(request,env.SAHMINO_OTP_RATE_LIMIT_SECRET);
+  if(!ipKey)return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
+  const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
+  const result=await service.requestCode({phone:body.phone,ipKey});
+  return otpJson(request,result.ok?{challengeId:result.challengeId,expiresInSeconds:result.expiresInSeconds,resendAfterSeconds:result.resendAfterSeconds}:{error:result.error,retryAfterSeconds:result.retryAfterSeconds},result.status,origin);
+ }
+ if(route==='/api/v1/auth/otp/verify'){
+  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
+  const parsed=await readSmallJson(request,256);
+  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||typeof body.challengeId!=='string'||typeof body.code!=='string')return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const adapter={async sendOtp(){return {accepted:false};}};
+  const service=createSmsOtpService({repository:repo,adapter,verifierSecret:env.SAHMINO_OTP_VERIFIER_SECRET});
+  const result=await service.verifyCode({challengeId:body.challengeId,code:body.code});
+  if(!result.ok)return otpJson(request,{error:result.error},result.status,origin);
+  return otpJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie});
+ }
+ if(route==='/api/v1/auth/session'){
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const clearCookie=repo.clearSessionCookie();
+  if(request.method!=='GET')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(!cookie)return otpJson(request,{authenticated:false},401,origin);
+  const active=await repo.findActiveSession(cookie,nowMs);
+  return active?otpJson(request,{authenticated:true,expiresAt:active.expiresAt},200,origin):otpJson(request,{authenticated:false},401,origin,{'Set-Cookie':clearCookie});
+ }
+ if(route==='/api/v1/auth/logout'){
+  const repo=createD1SmsOtpRepository(env.SAHAMBAN_DB);
+  const clearCookie=repo.clearSessionCookie();
+  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('X-Sahmino-CSRF')!=='1')return otpJson(request,{error:'CSRF_REJECTED'},403,origin,{'Set-Cookie':clearCookie});
+  if(cookie)await repo.revokeSession(cookie,new Date(nowMs).toISOString());
+  return otpJson(request,{authenticated:false},200,origin,{'Set-Cookie':clearCookie});
+ }
+ return otpJson(request,{error:'NOT_FOUND'},404,origin);
+}
+
+
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
  * Private-pilot entitlement lookup and gated Billing V2 manual fixed-term purchase endpoints.
@@ -111,6 +219,8 @@ export default {
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
    return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Sahmino-CSRF','Access-Control-Allow-Credentials':'true','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
+  const otpResponse=await handleOtpRoutes(request,env,url,nowMs);
+  if(otpResponse)return otpResponse;
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
