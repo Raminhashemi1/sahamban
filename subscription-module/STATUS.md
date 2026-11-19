@@ -31,9 +31,12 @@
 - `package.json`: Node test command.
 - `tests/domain.test.mjs`: verifies all five exact IRR prices, JSON catalog parity, unknown plan rejection, early renewal, expired/absent entitlement, and invalid inputs.
 - `.github/workflows/sahmino-subscription-tests.yml`: CI workflow using Node 22.
-- Status: GitHub Actions run #101 completed successfully on Node 22. All six domain tests passed (plan catalog/IRR, JSON parity, unknown plan, early renewal, expired/absent expiry, invalid input). This validates only the pure domain layer, not payment or server integration.
+- Status: GitHub Actions run 44520007761 completed successfully on Node 22. All six domain tests passed after aligning the plan IDs to the dossier. This validates only the pure domain layer, not payment or server integration.
 
-### M3 — PWA/native bridge design
+### M3 — Source-aligned domain correction and PWA/native bridge design
+- Corrected all five internal plan IDs to the exact dossier identifiers: SAHAMBAN_PRO_30D, SAHAMBAN_PRO_60D, SAHAMBAN_PRO_90D, SAHAMBAN_PRO_180D, SAHAMBAN_PRO_365D.
+- Updated executable catalog, JSON catalog, and tests together; CI passed after the correction.
+- Added
 - `android/PWA_NATIVE_BILLING_BRIDGE.md`: independent protocol contract for the PWA/WebView-to-native billing boundary, trusted-origin requirements, message envelope, purchase/restore/entitlement actions, and secret-handling rules.
 - Status: design documented; no bridge implementation is claimed complete. The exact production PWA origin and commercial user authentication contract are not supplied in the dossier.
 
