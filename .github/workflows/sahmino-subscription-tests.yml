@@ -26,3 +26,5 @@ jobs:
           node-version: 22
       - name: Run subscription domain tests
         run: npm --prefix subscription-module test
+      - name: Run SQLite settlement contract tests
+        run: python -m unittest discover -s subscription-module/tests -p 'sqlite_settlement_contract_test.py' -v
