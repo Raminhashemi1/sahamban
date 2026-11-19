@@ -23,6 +23,8 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - Added one-time migration for existing Bazaar Billing V2 databases.
 - Added Worker routing tests for server-side Myket selection, SKU-bound orders, and client store spoofing rejection.
 - Added Myket verifier, order creation, settlement replay/idempotency, and schema/migration tests.
+- Added Bazaar/Myket Android app flavors in the host pilot project, moved the Poolakey coordinator into the Bazaar source set, added the Myket IAB v3 coordinator in the Myket source set, and aligned the API client request bodies with the canonical Worker contract.
+- Updated the host Android build to AGP 8.12.3 / Kotlin 2.2.0 / Gradle 8.13 / compileSdk 36. Both store-specific debug APK builds are under CI validation; they are not signed release APKs.
 - Preserved Bazaar verification and settlement behavior; fixed the existing Bazaar test mock and idempotent replay validation discovered while running the expanded suite.
 
 ## Important limitations
@@ -38,7 +40,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
-- This branch: dual-store Billing V2 Node tests passed in [run 44530625740](https://github.com/Raminhashemi1/sahamban/actions/runs/44530625740).
+- This branch: dual-store Billing V2 Node tests passed in [run 44532113814](https://github.com/Raminhashemi1/sahamban/actions/runs/44532113814).
 - Latest dual-store CI including end-to-end Myket flow, Worker routing, Bazaar regression and fresh/migrated D1 schema tests passed in [run 44531003318](https://github.com/Raminhashemi1/sahamban/actions/runs/44531003318).
 
 ## Integration review
