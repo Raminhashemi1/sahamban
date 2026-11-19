@@ -40,7 +40,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest dual-store backend, schema/migration, provider verification/settlement, Worker routing and Android wiring checks passed on commit `e84e912c`: [run 44539254129](https://github.com/Raminhashemi1/sahamban/actions/runs/44539254129).
+- Latest dual-store backend, schema/migration, provider verification/settlement, Worker routing and Android wiring checks passed on current integration head `781d0e77`: [run 44540599207](https://github.com/Raminhashemi1/sahamban/actions/runs/44540599207). All CI steps passed, including Bazaar/shared Billing V2, Myket verification/order/settlement, Android host security/flavor wiring, and fresh/existing D1 schema checks.
 - The Android API client now uses an injected native `BillingV2TokenProvider`; static billing validation passed. This is an integration seam only; the commercial Sahmino session provider is not present in this repository.
 - Both Bazaar and Myket debug APKs were successfully uploaded for earlier code commit `650a27ee`: [run 44537588855](https://github.com/Raminhashemi1/sahamban/actions/runs/44537588855). Artifact: `sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE`, 7-day retention, SHA-256 `4204f0fa4fa31a8fb7a5bf1be16a84b002908d569bf89e6229acc91951622b95`.
 - The Android build for commit `dc964c33` succeeded on retry and uploaded the dual-store debug APK artifact in [run 44539202813](https://github.com/Raminhashemi1/sahamban/actions/runs/44539202813). Artifact expires 2026-11-26; digest `sha256:d44c071bceb98ec85f9b9b1229ed81ab54bf4562aa32a899d53e9ac6c0fe9e70`.
@@ -48,7 +48,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## Integration review
 
-- Supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) targets the existing Billing V2 branch from PR #187. It is not merged.
+- Supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) targets PR #187's head branch `codex/reengineering-audit`. Both PR #187 (to `main`) and PR #188 remain open drafts; neither is merged.
 - PR #188 must be reviewed and merged into PR #187's branch before the combined Billing V2 work is considered for \`main\`.
 
 ## Safety
