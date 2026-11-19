@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { getPlan } from '../core/domain.mjs';
 
 /**
@@ -15,7 +14,7 @@ export async function settleVerifiedPurchase(db, {
   authenticatedUserId,
   verifiedPurchase,
   now = new Date().toISOString(),
-  idFactory = randomUUID
+  idFactory = () => crypto.randomUUID()
 }) {
   if (typeof authenticatedUserId !== 'string' || !authenticatedUserId) {
     return { ok: false, error: 'UNAUTHENTICATED' };
