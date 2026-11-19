@@ -27,7 +27,7 @@ repositories {
 }
 ```
 
-The host project must provide Android Gradle Plugin and Kotlin Android plugin versions. The dossier's Android baseline is AGP 8.9.2, Kotlin 2.0.21, Java 17, minSdk 26. The module is set to compileSdk 35 to match the supplied host dossier; the Myket SDK requires a modern Android SDK (the official sample uses 36), and the module CI verifies the configured build.
+The host project must provide Android Gradle Plugin and Kotlin Android plugin versions. The supplied dossier's pilot baseline is AGP 8.9.2/Kotlin 2.0.21. The official Myket Billing Client 2.2 sample is built with AGP 8.12.3/Kotlin 2.2.0/Gradle 8.13/compileSdk 36. To compile both flavors together, align the host Android build toolchain to AGP 8.12.3, Kotlin 2.2.0, Gradle 8.13, Java 17, compileSdk 36, and keep minSdk 26. This is the only deliberate toolchain upgrade from the pilot dossier.
 
 ## 2. Build the correct store flavor
 
