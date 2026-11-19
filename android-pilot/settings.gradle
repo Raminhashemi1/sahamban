@@ -2,9 +2,6 @@ pluginManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://repo1.maven.org/maven2' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/google' }
         gradlePluginPortal()
     }
 }
@@ -13,10 +10,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://repo1.maven.org/maven2' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://jitpack.io' }
+        maven { url 'https://maven.myket.ir' }
     }
 }
 rootProject.name = "SahambanPilot"
