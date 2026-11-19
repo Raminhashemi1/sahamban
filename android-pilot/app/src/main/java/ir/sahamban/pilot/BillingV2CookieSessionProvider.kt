@@ -14,7 +14,7 @@ import java.net.URL
  */
 class BillingV2CookieSessionProvider(
     private val workerBaseUrl: String,
-    private val pwaOrigin: String = "https://raminhashemi1.github.io"
+    private val pwaOrigin: String = BuildConfig.SAHAMBAN_PWA_ORIGIN
 ) : BillingV2AuthProvider {
     private val main = Handler(Looper.getMainLooper())
 
