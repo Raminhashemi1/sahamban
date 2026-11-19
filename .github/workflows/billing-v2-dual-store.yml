@@ -40,3 +40,5 @@ jobs:
         run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/worker-api.test.cjs
       - name: Run Myket verifier, order and shared settlement tests
         run: node --test tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs
+      - name: Validate fresh and existing D1 schema paths
+        run: python tests/billing-v2-dual-store-schema.test.py
