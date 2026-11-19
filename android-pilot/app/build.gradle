@@ -17,6 +17,12 @@ android {
         buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + (System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: '') + '"'
         buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + (System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io') + '"'
         buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
+        buildConfigField 'String', 'SAHAMBAN_EXPECTED_PACKAGE_NAME', '"' + (System.getenv('SAHAMBAN_EXPECTED_PACKAGE_NAME') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_30D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_30D') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_60D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_60D') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_90D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_90D') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_180D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_180D') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_365D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_365D') ?: '') + '"'
     }
 
     flavorDimensions += 'store'
