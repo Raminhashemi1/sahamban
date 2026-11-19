@@ -24,7 +24,7 @@ const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
 const encoder=new TextEncoder();
 function send(body,status=200,origin=null){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
- if(origin)headers['Access-Control-Allow-Origin']=origin;
+ if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
  return new Response(JSON.stringify(body),{status,headers});
 }
 function fromBase64url(value){
