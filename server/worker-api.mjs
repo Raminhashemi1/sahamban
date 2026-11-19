@@ -1,6 +1,7 @@
 import billingOrders from './billing/orders.cjs';
 import {verifyAndSettle} from './billing/bazaar.mjs';
-const {createOrder}=billingOrders;
+import {verifyAndSettleMyket} from './billing/myket.mjs';
+const {createOrder,createMyketOrder}=billingOrders;
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
  * Private-pilot entitlement lookup and gated Billing V2 manual fixed-term purchase endpoints.
@@ -116,7 +117,10 @@ export default {
     return send({error:'JSON_REQUIRED'},415,cors);
    const parsed=await readJsonLimited(request,8192);
    if(parsed.error)return send({error:parsed.error},parsed.error==='BODY_TOO_LARGE'?413:400,cors);
-   const result=await verifyAndSettle({db:env?.SAHAMBAN_DB,env,subject,body:parsed.body,now:new Date(nowMs).toISOString()});
+   const store=env?.BILLING_STORE||'BAZAAR';
+   if(store!=='BAZAAR'&&store!=='MYKET')return send({error:'BILLING_STORE_NOT_CONFIGURED'},503,cors);
+   const args={db:env?.SAHAMBAN_DB,env,subject,body:parsed.body,now:new Date(nowMs).toISOString()};
+   const result=store==='MYKET'?await verifyAndSettleMyket(args):await verifyAndSettle(args);
    return send(result.body,result.status,cors);
   }
   if(isBillingOrders){
@@ -128,11 +132,14 @@ export default {
    if(!parsed.body||typeof parsed.body!=='object'||Array.isArray(parsed.body)||
       Object.keys(parsed.body).length!==1||typeof parsed.body.planId!=='string')
     return send({error:'INVALID_REQUEST'},400,cors);
-   const result=await createOrder(env?.SAHAMBAN_DB,{
-    subject,planId:parsed.body.planId,now:new Date(nowMs).toISOString(),
+   const store=env?.BILLING_STORE||'BAZAAR';
+   if(store!=='BAZAAR'&&store!=='MYKET')return send({error:'BILLING_STORE_NOT_CONFIGURED'},503,cors);
+   const orderArgs={subject,planId:parsed.body.planId,now:new Date(nowMs).toISOString(),
     makeId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
-     b=>b.toString(16).padStart(2,'0')).join(''))
-   });
+     b=>b.toString(16).padStart(2,'0')).join(''))};
+   const result=store==='MYKET'
+    ?await createMyketOrder(env?.SAHAMBAN_DB,{...orderArgs,skuMap:env?.MYKET_SKU_MAP})
+    :await createOrder(env?.SAHAMBAN_DB,orderArgs);
    return send(result,result.status||503,cors);
   }
   const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs);
