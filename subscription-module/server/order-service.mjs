@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { getPlan } from '../core/domain.mjs';
 
 const STORES = new Set(['BAZAAR', 'MYKET']);
@@ -10,7 +9,7 @@ const STORES = new Set(['BAZAAR', 'MYKET']);
  */
 export async function createBillingOrder(db, {
   authenticatedUserId, store, planId, productMaps,
-  now = new Date().toISOString(), idFactory = randomUUID
+  now = new Date().toISOString(), idFactory = () => crypto.randomUUID()
 }) {
   if (typeof authenticatedUserId !== 'string' ||
       authenticatedUserId.length === 0 || authenticatedUserId.length > 256) {
