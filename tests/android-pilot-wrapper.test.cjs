@@ -88,3 +88,24 @@ test('native OTP client obtains session directly from Worker and stores HttpOnly
  assert.match(otp,/singleOrNull/);
  assert.match(otp,/SESSION_COOKIE_REJECTED/);
 });
+
+
+test('Android host gates PWA startup behind native OTP and revalidates persisted sessions',()=>{
+ const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ const otp=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeOtpClient.kt');
+ const login=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2OtpLoginView.kt');
+ assert.match(activity,/new BillingV2NativeOtpClient/);
+ assert.match(activity,/otpClient\.checkSession/);
+ assert.match(activity,/showLogin\(\)/);
+ assert.match(activity,/showWebApp\(\)/);
+ assert.match(activity,/performLogout/);
+ assert.match(activity,/TrustedNavigation\.isInternal/);
+ assert.match(otp,/fun checkSession\(callback: SessionCallback\)/);
+ assert.match(otp,/api\/v1\/auth\/session/);
+ assert.match(otp,/api\/v1\/auth\/logout/);
+ assert.match(login,/fun requestCode\(/);
+ assert.match(login,/fun verifyCode\(/);
+ assert.match(login,/asciiDigits/);
+ assert.match(login,/AuthenticatedListener/);
+ assert.doesNotMatch(activity,/addJavascriptInterface|evaluateJavascript/);
+});
