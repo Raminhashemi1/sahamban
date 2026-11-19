@@ -5,18 +5,31 @@ plugins {
 
 android {
     namespace 'ir.sahamban.pilot'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
-        // Temporary internal-test identifier; never publish this package as the final app.
+        // Temporary pilot identifier; owner must replace with the actual published applicationId.
         applicationId 'ir.sahamban.pilot'
         minSdk 26
         targetSdk 35
         versionCode 1
         versionName '0.1.0-pilot'
-        buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '""'
-        buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
-        buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + (System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: '') + '"'
+        buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
+    }
+
+    flavorDimensions += 'store'
+    productFlavors {
+        bazaar {
+            dimension 'store'
+            buildConfigField 'String', 'BILLING_STORE', '"BAZAAR"'
+            buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
+        }
+        myket {
+            dimension 'store'
+            buildConfigField 'String', 'BILLING_STORE', '"MYKET"'
+            buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + (System.getenv('MYKET_PUBLIC_KEY') ?: '') + '"'
+        }
     }
 
     buildFeatures { buildConfig true }
@@ -29,17 +42,17 @@ android {
 
     buildTypes {
         debug {
-            // Keep live checkout disabled until production package, identity, SKU mapping and server secrets are verified.
-            buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
+            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
         }
         release {
             minifyEnabled false
-            buildConfigField 'boolean', 'SAHAMBAN_BAZAAR_PURCHASES_ENABLED', 'false'
+            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
         }
     }
 }
 
 dependencies {
-    implementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'
     implementation 'androidx.activity:activity-ktx:1.10.1'
+    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'
+    myketImplementation 'ir.myket:billing:2.2'
 }
