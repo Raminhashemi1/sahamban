@@ -109,3 +109,25 @@ test('Android host gates PWA startup behind native OTP and revalidates persisted
  assert.match(login,/AuthenticatedListener/);
  assert.doesNotMatch(activity,/addJavascriptInterface|evaluateJavascript/);
 });
+
+
+test('native subscription entry is reachable only after OTP and fails closed without owner SKU configuration',()=>{
+ const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ const host=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2SubscriptionHost.kt');
+ const build=read('android-pilot/app/build.gradle');
+ assert.match(activity,/otpClient\.checkSession/);
+ assert.match(activity,/showSubscription\(\)/);
+ assert.match(activity,/new BillingV2SubscriptionHost/);
+ assert.match(activity,/showingSubscription/);
+ assert.match(activity,/subscriptionHost\.close\(\)/);
+ assert.match(host,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
+ for(const sku of ['30D','60D','90D','180D','365D'])
+  assert.match(host,new RegExp('SAHAMBAN_SKU_PRO_'+sku));
+ assert.match(host,/if \(!configured\)/);
+ assert.match(host,/BillingV2PurchaseFlow\(/);
+ assert.match(host,/BillingV2SubscriptionView\(/);
+ assert.match(build,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
+ assert.match(build,/SAHAMBAN_SKU_PRO_30D/);
+ assert.match(build,/SAHAMBAN_SKU_PRO_365D/);
+ assert.match(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
+});
