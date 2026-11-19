@@ -12,7 +12,7 @@ function makeDb() {
       rows.push({ orderValues });
       return statements.map(() => ({ success: true, meta: { changes: 1 } }));
     },
-    prepare: () => ({ bind() { return this; }, first: async () => null })
+    prepare: () => ({ values: [], bind(...values) { this.values = values; return this; }, first: async () => null })
   };
 }
 function request(path, { method = 'GET', body, origin = 'https://app.example', headers = {} } = {}) {
