@@ -51,6 +51,9 @@ class SettlementSqliteContractTests(unittest.TestCase):
                 self.now, self.now, self.now, order_id, "user-1", "BAZAAR",
                 store_order_id, token_hash, self.now, event_id
             )).rowcount)
+            self.last_expiry = self.db.execute(
+                self.access_lookup, ("user-1",)
+            ).fetchone()
             self.db.commit()
             return results
         except Exception:
