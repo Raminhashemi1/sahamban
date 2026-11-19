@@ -28,7 +28,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - `android/src/bazaar/kotlin/...`: concrete Poolakey 2.3.0 adapter and flavor factory.
 - `android/src/myket/kotlin/...`: concrete Myket Billing Client 2.2 adapter and flavor factory.
 - `android/build.gradle.kts`: standalone Android library with Bazaar and Myket product flavors.
-- Both Android release flavors compiled successfully in GitHub Actions run [44526725332](https://github.com/Raminhashemi1/sahamban/actions/runs/44526725332).
+- Both Android release flavors compiled successfully in GitHub Actions run [44527042694](https://github.com/Raminhashemi1/sahamban/actions/runs/44527042694). The workflow uploaded AAR artifact `sahmino-billing-android-aar` (artifact ID `14531232351`).
 - Toolchain is AGP 8.12.3, Kotlin 2.2.0, Gradle 8.13, Java 17, compileSdk 36, minSdk 26. This upgrade is required by the Kotlin metadata version of the official Myket 2.2 SDK.
 
 ### Backend / Worker
@@ -53,7 +53,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - Node tests cover domain rules, order creation, provider verifiers, Worker routes and configuration factory.
 - SQLite tests execute the exact settlement SQL extracted from the service and cover successful grant, replay protection, early renewal and transaction rollback.
 - GitHub Actions run [44526725332](https://github.com/Raminhashemi1/sahamban/actions/runs/44526725332): both Android release flavors compiled successfully.
-- Latest domain/SQLite CI runs completed successfully; see [workflow runs](https://github.com/Raminhashemi1/sahamban/actions).
+- Latest Node and SQLite tests passed in GitHub Actions run [44527234029](https://github.com/Raminhashemi1/sahamban/actions/runs/44527234029). See [all workflow runs](https://github.com/Raminhashemi1/sahamban/actions).
 
 ## Remaining host integration / release gates
 1. Connect the production app's real commercial session token provider to `HttpBillingBackendClient` and the Worker's `authenticateRequest`. The supplied dossier documents only a pilot token; it does not define the production auth contract.
