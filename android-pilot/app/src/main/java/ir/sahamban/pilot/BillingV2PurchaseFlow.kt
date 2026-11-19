@@ -1,15 +1,19 @@
 package ir.sahamban.pilot
 
 /**
- * Native orchestration for one manually renewed Bazaar time-plan purchase.
+ * Native orchestration for one manually renewed store-specific time-plan purchase.
  * The UI must call this only after explicit user intent; server settlement is authoritative.
  */
 class BillingV2PurchaseFlow(
     private val api: BillingV2ApiClient,
-    private val bazaar: BillingV2Coordinator,
+    private val storeBilling: BillingV2Coordinator,
     private val skuByPlan: Map<String, String>,
     private val expectedPackageName: String
 ) {
+    init {
+        require(skuByPlan.keys == setOf("SAHAMBAN_PRO_30D", "SAHAMBAN_PRO_60D", "SAHAMBAN_PRO_90D", "SAHAMBAN_PRO_180D", "SAHAMBAN_PRO_365D"))
+        require(skuByPlan.values.size == skuByPlan.values.toSet().size)
+    }
     sealed interface Outcome {
         data class Active(val access: BillingV2ApiClient.Access, val consumptionPending: Boolean = false) : Outcome
         data class EntitlementRestored(val entitlement: BillingV2ApiClient.Entitlement) : Outcome
@@ -25,7 +29,7 @@ class BillingV2PurchaseFlow(
         }
         // Establish the Bazaar connection before creating an order; otherwise a
         // disconnected client leaves an avoidable orphan CREATED order on the server.
-        bazaar.connect { connected ->
+        storeBilling.connect { connected ->
             if (!connected) {
                 callback(Outcome.Failed("BAZAAR_CONNECTION_FAILED"))
                 return@connect
@@ -36,7 +40,7 @@ class BillingV2PurchaseFlow(
                         callback(Outcome.Failed(orderResult.code))
                     is BillingV2ApiClient.Result.Success -> {
                         val order = orderResult.value
-                        bazaar.buy(sku, order.id) { purchaseResult ->
+                        storeBilling.buy(sku, order.id) { purchaseResult ->
                             when (purchaseResult) {
                                 BillingV2Coordinator.PurchaseResult.Cancelled ->
                                     callback(Outcome.Cancelled)
@@ -53,7 +57,7 @@ class BillingV2PurchaseFlow(
                                         evidence.originalJson, evidence.dataSignature) { verification ->
                                         when (verification) {
                                             is BillingV2ApiClient.Result.Success ->
-                                                bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                                storeBilling.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
                                                     callback(Outcome.Active(verification.value, consumptionPending = !consumed))
                                                 }
                                             is BillingV2ApiClient.Result.Failure ->
@@ -77,6 +81,11 @@ class BillingV2PurchaseFlow(
                 callback(listOf(Outcome.Failed("BAZAAR_CONNECTION_FAILED")))
                 return@connect
             }
+            storeBilling.loadPlanDetails(skuByPlan.values.toList()) { productDetails ->
+            if (productDetails == null) {
+                callback(listOf(Outcome.Failed("STORE_PRODUCTS_UNAVAILABLE")))
+                return@loadPlanDetails
+            }
             api.refreshEntitlement { entitlementResult ->
             val durable = when (entitlementResult) {
                 is BillingV2ApiClient.Result.Success ->
@@ -86,7 +95,7 @@ class BillingV2PurchaseFlow(
                 is BillingV2ApiClient.Result.Failure ->
                     Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
             }
-            bazaar.restore { purchases ->
+            storeBilling.restore { purchases ->
                 if (purchases == null) {
                     callback(listOfNotNull(durable) + Outcome.Failed("RESTORE_UNAVAILABLE"))
                     return@restore
@@ -127,6 +136,7 @@ class BillingV2PurchaseFlow(
                         }
                     }
                 }
+            }
             }
             }
         }
