@@ -66,6 +66,13 @@
 - Myket: official developer portal is identified, but its technical content was not retrievable in this research pass. SDK/API endpoints and installer identity are deliberately not guessed; exact integration remains blocked on accessible official documentation or exported docs from the developer portal.
 - GitHub Actions run 44521057123 completed successfully after adding settlement guard tests. These tests are unit tests with fake D1, not marketplace or live D1 certification.
 
+### M8 — SQLite execution tests for settlement SQL
+- Added `tests/sqlite_settlement_contract_test.py`; it extracts the exact SQL statements from `server/settlement-service.mjs`, applies the committed schema to SQLite, and executes the settlement batch statements.
+- Covered successful grant, replayed-order rejection without extending expiry twice, early-renewal extension from the existing expiry, and rollback when a store purchase token is reused by another order.
+- Updated GitHub Actions to run both Node domain/service tests and the SQLite settlement SQL contract tests.
+- GitHub Actions run 44521911629 completed successfully; both test steps passed.
+- Scope limitation: SQLite contract tests validate SQL syntax and transaction behavior on SQLite 3.x. They are not a live Cloudflare D1 test and do not establish concurrent request behavior in the deployed Worker.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
@@ -95,4 +102,4 @@ Durations currently mean fixed 24-hour days, not calendar months. This distincti
 - Build and test on real devices and store test accounts.
 
 ## Next milestone
-Run the domain CI workflow and fix any failures. Then design the backend order/settlement contract against the verified production runtime, rather than assuming a Cloudflare/D1 API shape.
+Implement independent Cloudflare Worker route handlers around the tested services, with injected authentication and provider-verification dependencies. Keep commercial authentication and marketplace verification fail-closed until their real trusted contracts are supplied and implemented. Do not deploy or apply migrations to live infrastructure without explicit approval.
