@@ -32,6 +32,7 @@ class BillingV2Coordinator(
 
     private var helper: IabHelper? = null
     private var connected = false
+    private var configuredSkus: List<String> = emptyList()
 
     fun connect(callback: (Boolean) -> Unit) {
         if (connected && helper != null) {
@@ -94,6 +95,7 @@ class BillingV2Coordinator(
     fun loadPlanDetails(skus: List<String>, callback: (List<PlanDetails>?) -> Unit) {
         require(skus.size == 5 && skus.distinct().size == 5 &&
             skus.all { it.matches(Regex("^[A-Za-z0-9._-]{1,100}$")) })
+        configuredSkus = skus.toList()
         val billing = readyOrNull()
         if (billing == null) {
             callback(null)
@@ -122,6 +124,8 @@ class BillingV2Coordinator(
     }
 
     fun restore(callback: (List<PurchaseEvidence>?) -> Unit) {
+        val skus = configuredSkus
+        if (skus.isEmpty()) { callback(null); return }
         val billing = readyOrNull()
         if (billing == null) {
             callback(null)
@@ -130,10 +134,10 @@ class BillingV2Coordinator(
         try {
             billing.queryInventoryAsync(
                 false,
-                emptyList(),
+                skus,
                 IabHelper.QueryInventoryFinishedListener { result, inventory ->
                     if (!result.isSuccess || inventory == null) callback(null)
-                    else callback(inventory.allPurchases.mapNotNull { it.toEvidence() })
+                    else callback(skus.mapNotNull { inventory.getPurchase(it)?.toEvidence() })
                 }
             )
         } catch (_: Throwable) {
@@ -144,6 +148,8 @@ class BillingV2Coordinator(
     /** Myket consumables are consumed only after the Worker confirms settlement. */
     fun consumeAfterSettlement(purchaseToken: String, callback: (Boolean) -> Unit) {
         require(purchaseToken.length in 8..4096)
+        val skus = configuredSkus
+        if (skus.isEmpty()) { callback(false); return }
         val billing = readyOrNull()
         if (billing == null) {
             callback(false)
@@ -152,13 +158,13 @@ class BillingV2Coordinator(
         try {
             billing.queryInventoryAsync(
                 false,
-                emptyList(),
+                skus,
                 IabHelper.QueryInventoryFinishedListener { queryResult, inventory ->
                     if (!queryResult.isSuccess || inventory == null) {
                         callback(false)
                         return@QueryInventoryFinishedListener
                     }
-                    val purchase = inventory.allPurchases.firstOrNull { it.token == purchaseToken }
+                    val purchase = skus.asSequence().mapNotNull { inventory.getPurchase(it) }.firstOrNull { it.token == purchaseToken }
                     if (purchase == null) {
                         callback(false)
                         return@QueryInventoryFinishedListener
