@@ -9,7 +9,7 @@ https://raminhashemi1.github.io/sahamban/
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
   The temporary `ir.sahamban.pilot` package ID and build-generated debug
   certificate must **not** become the final app identity/signing key.
-- A native Cafe Bazaar Poolakey manual-purchase boundary is included: `purchaseProduct`, `getPurchasedProducts`, in-app SKU details, `consumeProduct`, and local RSA signature verification. The five time plans are consumable one-time products (not auto-renewing subscriptions). The trusted Worker verifies each purchase with Bazaar before D1 settlement; only then is the purchase token consumed.
+- A store-specific native billing boundary is now split into `bazaar` and `myket` app flavors from one Android codebase. Bazaar uses Poolakey 2.3.0; Myket uses the official Billing Client 2.2 IAB SDK. Both flows use consumable one-time products (not auto-renewing subscriptions), send signed purchase evidence to the server, and consume only after server settlement. The Worker selects the provider from server-side `BILLING_STORE` configuration and grants both stores into the same account entitlement ledger.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
@@ -34,14 +34,15 @@ https://raminhashemi1.github.io/sahamban/
 ## How to build a test APK
 
 GitHub Actions workflow `Sahamban Android pilot debug APK` uses Java 17,
-Android SDK 35, Gradle 8.11.1 and Android Gradle Plugin 8.9.2 to build
-`app-debug.apk` in CI. It uploads a **debug artifact**, not a marketplace
-release. No key files or signing passwords are stored in the repository.
+Android SDK 36, Gradle 8.13, Android Gradle Plugin 8.12.3 and Kotlin 2.2.0
+to build both `assembleBazaarDebug` and `assembleMyketDebug`. It uploads
+**debug artifacts**, not marketplace releases. No key files or signing passwords
+are stored in the repository.
 
 For local development with an installed Android SDK:
 
 ```sh
-gradle -p android-pilot :app:assembleDebug
+gradle -p android-pilot :app:assembleBazaarDebug :app:assembleMyketDebug
 ```
 
 Run pure Java navigation checks:
@@ -58,7 +59,7 @@ Physical Android device: PWA loading, RTL, basic navigation, browser
 handoff, permissions, synthetic 20/100-holding portfolio import and export,
 offline/slow network, cold/warm start, font scaling, TalkBack, and secure
 update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach. The native Poolakey boundary uses manual consumable-product APIs (`purchaseProduct`, `getPurchasedProducts`, `getInAppSkuDetails`, `consumeProduct`) and sends signed purchase evidence to the authenticated Worker. The Worker verifies the RSA-signed developer payload and in-app product receipt with Cafe Bazaar before D1 settlement. The token is consumed only after the server has durably granted the time-limited entitlement. The billing coordinator and purchase orchestration are not yet wired into `MainActivity` or the PWA UI; identity/session delivery and user-visible plan/price screens remain release blockers. A consumed purchase is not restored from Bazaar inventory; the user's durable entitlement must be reloaded from the authenticated Worker account. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
+Only afterwards choose a market-specific release wrapper/signing approach. The Bazaar flavor uses Poolakey manual consumable-product APIs; the Myket flavor uses Myket IAB v3 purchase/query/consume APIs. Both send signed purchase evidence to the canonical Worker. The Worker verifies the store-specific receipt and settles into the shared D1 entitlement ledger. The token is consumed only after the server has durably granted the time-limited entitlement. The billing coordinator and purchase orchestration are not yet wired into `MainActivity` or the PWA UI; identity/session delivery and user-visible plan/price screens remain release blockers. A consumed purchase is not restored from Bazaar inventory; the user's durable entitlement must be reloaded from the authenticated Worker account. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
