@@ -73,6 +73,15 @@
 - GitHub Actions run 44521911629 completed successfully; both test steps passed.
 - Scope limitation: SQLite contract tests validate SQL syntax and transaction behavior on SQLite 3.x. They are not a live Cloudflare D1 test and do not establish concurrent request behavior in the deployed Worker.
 
+### M9 — Independent Cloudflare Worker route layer
+- Added `worker/routes.mjs`, a dependency-injected Worker handler for authenticated order creation and entitlement lookup.
+- Order endpoint accepts only `planId`; it rejects client-supplied store, SKU, amount, and user identity. Store is resolved through an injected trusted resolver, and SKU mapping remains server-side.
+- Enforces exact configured HTTPS PWA origin for browser requests, bounded JSON request bodies, stable public error codes, and no-store responses.
+- Deliberately does not expose `/api/v2/billing/verify` yet: trusted marketplace verifiers and post-settlement consumption/recovery are not complete, so verification remains fail-closed/unavailable.
+- Added route tests for order creation, tampered client fields, unauthenticated requests, unknown distribution, untrusted origin, and disabled verify route.
+- GitHub Actions run 44522159061 completed successfully after these route tests were added.
+- Scope limitation: route tests use injected fake authentication, store resolver, and fake D1. No production authentication or distribution attestation is implemented by this milestone.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
@@ -102,4 +111,4 @@ Durations currently mean fixed 24-hour days, not calendar months. This distincti
 - Build and test on real devices and store test accounts.
 
 ## Next milestone
-Implement independent Cloudflare Worker route handlers around the tested services, with injected authentication and provider-verification dependencies. Keep commercial authentication and marketplace verification fail-closed until their real trusted contracts are supplied and implemented. Do not deploy or apply migrations to live infrastructure without explicit approval.
+Implement and test a trusted store-distribution resolver and provider verification boundary, then add durable post-settlement consume/recovery state. Commercial authentication remains an injected dependency until a real account/session contract is supplied. Do not deploy or apply migrations to live infrastructure without explicit approval.
