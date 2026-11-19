@@ -36,7 +36,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - `server/schema.sql`: independent Billing V2 D1 schema.
 - `server/order-service.mjs`: server-owned plan price and store SKU mapping.
 - `server/entitlement-service.mjs`: entitlement lookup.
-- `server/settlement-service.mjs`: conditional, idempotent D1 settlement batch.
+- `server/settlement-service.mjs`: conditional, idempotent D1 settlement batch. The entitlement read is now part of the same atomic batch; entitlement mutation is gated by the unique verification event.
 - `server/providers/bazaar-verifier.mjs`: Bazaar Developer API v2 OAuth refresh and in-app purchase validation.
 - `server/providers/myket-verifier.mjs`: server-side RSA verification of signed Myket IAB purchase data.
 - `worker/routes.mjs`: authenticated order, entitlement and provider-specific verify routes.
@@ -58,9 +58,9 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 
 ## Automated validation
 - Node tests cover domain rules, order creation, provider verifiers, Worker routes and configuration factory.
-- SQLite tests execute the exact settlement SQL extracted from the service and cover successful grant, replay protection, early renewal and transaction rollback.
+- SQLite tests execute the exact settlement SQL extracted from the service and cover successful grant, replay protection (including two stale pre-reads), early renewal and transaction rollback. They also execute the entitlement read inside the same transaction.
 - GitHub Actions run [44527042694](https://github.com/Raminhashemi1/sahamban/actions/runs/44527042694): both Android release flavors compiled successfully.
-- Latest Node and SQLite tests passed in GitHub Actions run [44528592418](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592418), including the new native-bridge protocol and Worker hardening tests. See [all workflow runs](https://github.com/Raminhashemi1/sahamban/actions).
+- Latest Node and SQLite tests passed in GitHub Actions run [44544169979](https://github.com/Raminhashemi1/sahamban/actions/runs/44544169979), including atomic settlement response handling, stale concurrent settlement attempts, native-bridge protocol and Worker hardening tests. See [all workflow runs](https://github.com/Raminhashemi1/sahamban/actions).
 
 ## Remaining host integration / release gates
 1. Connect the production app's real commercial session token provider to `HttpBillingBackendClient` and the Worker's `authenticateRequest`. The supplied dossier documents only a pilot token; it does not define the production auth contract.
