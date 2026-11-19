@@ -38,15 +38,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Validate required Worker endpoint configuration
+      - name: Validate optional Worker endpoint configuration
         shell: bash
         env:
           SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
         run: |
           set -euo pipefail
           if [[ -z "${SAHAMBAN_WORKER_BASE_URL:-}" ]]; then
-            echo "::error::Set the repository Actions variable SAHAMBAN_WORKER_BASE_URL to the deployed HTTPS Worker origin before building installable pilot APKs."
-            exit 1
+            echo "::notice::Worker URL is not configured. Build is compile-only; the APK will show the safe configuration screen and cannot sign in or purchase."
+            exit 0
           fi
           python3 -c 'import os,sys,urllib.parse; u=urllib.parse.urlparse(os.environ["SAHAMBAN_WORKER_BASE_URL"]); sys.exit(0 if u.scheme=="https" and u.netloc and not u.path.rstrip("/") and not u.query and not u.fragment else 1)' || {
             echo "::error::SAHAMBAN_WORKER_BASE_URL must be an HTTPS origin without path, query, or fragment."
@@ -72,7 +72,7 @@ jobs:
         run: sha256sum android-pilot/app/build/outputs/apk/*/debug/*.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE
+          name: sahamban-android-pilot-dual-store-debug-COMPILE-ONLY-NOT-STORE-READY
           path: android-pilot/app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
           retention-days: 7
