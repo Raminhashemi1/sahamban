@@ -15,6 +15,7 @@ android {
         versionCode 1
         versionName '0.1.0-pilot'
         buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + (System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + (System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io') + '"'
         buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
     }
 
