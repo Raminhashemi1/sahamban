@@ -11,7 +11,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | TEMPLATES READY; owner must supply exact five product IDs per store, real package ID, public keys and Bazaar OAuth credentials |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | RUNBOOK READY; both templates are configured to use one shared D1 ID; no production resources or secrets changed |
 | 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | TEST MATRIX READY; live execution requires owner test accounts, configured products and installed builds |
-| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD PASSED; release signing and final package identity still missing |
+| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | BLOCKED: last fresh dual-flavor debug build failed during external Maven dependency resolution before compilation; retry is running. Release signing and final package identity are also missing |
 
 ## Work completed on this integration branch
 
@@ -40,7 +40,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest backend, Bazaar regression, Myket signature/settlement, Worker routing, Android wiring and schema/migration checks passed in [run 44534469424](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469424). The Android dual-flavor debug build passed previously in [run 44533319977](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977) for an earlier commit; its artifact is available for seven days but is not treated as current. A fresh Android build for the latest source is running in [run 44534469483](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469483). No release APK or live store test is claimed.
+- Latest backend, Bazaar regression, Myket signature/settlement, Worker routing, Android wiring and schema/migration checks passed in [run 44534469424](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469424). The Android dual-flavor debug build passed previously in [run 44533319977](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977) for an earlier commit; its artifact is available for seven days but is not treated as current. The fresh Android build for the latest source [failed during Maven dependency resolution](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469483), before source compilation; the workflow job was re-run (attempt 2) to rule out a transient repository/cache issue. No release APK or live store test is claimed.
 
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
