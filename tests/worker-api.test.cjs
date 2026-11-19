@@ -226,12 +226,12 @@ test('OTP session creates orders only with CSRF and binds order to the session u
  const blocked=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,body:{planId:'SAHAMBAN_PRO_30D'}}),
   env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(blocked.status,403);
- assert.equal(storage.calls.length,1);
+ assert.equal(storage.calls.length,0);
  const allowed=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,csrf:'1',body:{planId:'SAHAMBAN_PRO_30D'}}),
   env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(allowed.status,201);
- assert.match(storage.calls[2].sql,/WHERE id=\?/);
- assert.deepEqual(storage.calls[2].values.slice(1),['SAHAMBAN_PRO_30D',storage.calls[2].values[2],'usr_'+'a'.repeat(32)]);
+ assert.match(storage.calls[1].sql,/WHERE id=\?/);
+ assert.deepEqual(storage.calls[1].values.slice(1),['SAHAMBAN_PRO_30D',storage.calls[1].values[2],'usr_'+'a'.repeat(32)]);
 });
 
 test('invalid or disabled OTP cookies fail closed and never fall back to a pilot Authorization token',async()=>{
