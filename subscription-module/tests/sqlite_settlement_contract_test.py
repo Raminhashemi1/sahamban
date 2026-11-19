@@ -235,6 +235,22 @@ class ReversalSqliteContractTests(unittest.TestCase):
             """, (self.now,))
 
     def test_failed_reversal_rolls_back_order_and_entitlement(self):
+        # A provider notification already applied to another order must fail
+        # the unique provider-event constraint and roll back this order update.
+        self.db.execute("""
+          INSERT INTO billing_orders
+            (id,user_id,store,plan_id,status,amount_irr,store_product_id,
+             store_order_id,purchase_token_hash,created_at,paid_at)
+          VALUES ('order-2','user-1','BAZAAR','SAHAMBAN_PRO_30D','REVERSED',
+                  1500000,'sku-30','store-2',?,'2027-01-01T00:00:00.000Z',
+                  '2027-01-01T00:00:00.000Z')
+        """, ('c' * 64,))
+        self.db.execute("""
+          INSERT INTO billing_events(
+            event_id,order_id,event_type,created_at,payload_hash,provider_event_id
+          ) VALUES ('prior-reversal','order-2','PURCHASE_REVERSED',?,'c','BAZAAR:refund-1')
+        """, (self.now,))
+        self.db.commit()
         self.db.execute("BEGIN")
         self.db.execute(self.order_reverse, (
             'order-1', 'user-1', 'BAZAAR', 'store-1', 'a' * 64
@@ -242,7 +258,7 @@ class ReversalSqliteContractTests(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.db.execute(self.event_insert, (
                 'reversal-1', self.now, 'b' * 64, 'BAZAAR:refund-1',
-                'missing-order', 'user-1', 'BAZAAR', 'store-1', 'a' * 64
+                'order-1', 'user-1', 'BAZAAR', 'store-1', 'a' * 64
             ))
         self.db.rollback()
         status = self.db.execute(
