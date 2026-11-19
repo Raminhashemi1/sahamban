@@ -35,6 +35,10 @@ https://raminhashemi1.github.io/sahamban/
 
 ## Required Worker URL for pilot APKs
 
+The repository records a successful earlier pilot deployment at `https://sahamban-pro-pilot.rhashemi284.workers.dev` (see `server/CLOUDFLARE-PILOT-DEPLOY.md` and workflow run 43287886357). Use the origin only after the matching Worker revision has been deployed and its OTP routes have been verified. The earlier deployed revision predates the OTP/session routes in the Billing V2 feature branch, so pointing this APK at that hostname alone does **not** make login work.
+
+The Android build intentionally requires the GitHub Actions repository variable `SAHAMBAN_WORKER_BASE_URL`; it is currently unset, and the latest APK workflow correctly failed closed instead of producing another unusable APK. Do not set this variable or rebuild for device login until the updated Worker is deployed with the required D1 OTP schema, OTP secrets, exact PWA origin, and a real configured SMS provider service binding. The current Worker code expects `SAHMINO_SMS_PROVIDER`; no production provider binding/configuration is present in the checked-in pilot deployment configuration. Checkout remains disabled.
+
 Set the GitHub repository Actions variable `SAHAMBAN_WORKER_BASE_URL` to the deployed Worker HTTPS origin (for example, `https://<your-worker-subdomain>.<your-account>.workers.dev`; replace this example with the actual deployment). The Android workflow validates that this value exists and is an HTTPS origin, then passes it to Gradle as `SAHAMBAN_WORKER_BASE_URL`. Builds now fail early rather than producing an APK that cannot start OTP login when the variable is missing. Do not use a guessed URL; deploy the Worker and copy its actual HTTPS origin from Cloudflare.
 
 GitHub Actions workflow `Sahamban Android pilot debug APK` uses Java 17,
