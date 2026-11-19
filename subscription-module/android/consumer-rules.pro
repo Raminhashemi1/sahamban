@@ -1,0 +1,3 @@
+-keep class ir.myket.billingclient.** { *; }
+-keep interface ir.myket.billingclient.** { *; }
+-keep class ir.cafebazaar.poolakey.** { *; }
