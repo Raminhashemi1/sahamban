@@ -69,3 +69,20 @@ This is a source audit only; it does not enable checkout or change runtime behav
 - Do not rebuild the five-plan UI, store SDK adapters, receipt verifiers, or shared settlement ledger; those already exist on this branch.
 - Do not treat PR #185 OTP implementation as production-ready: its SMS provider binding, deployed Worker origin, D1 migration, and physical WebView cookie acceptance remain unverified.
 - Do not merge the draft PRs, deploy, migrate production D1, or enable BILLING_V2_ENABLED as part of this audit.
+## 2026-11-19 — OTP session bridge implementation
+
+Draft PR #189 adds cookie-authenticated identity support to the existing Billing V2 routes.
+
+- The Worker recognizes the HttpOnly sahmino_session cookie only when SAHMINO_OTP_ENABLED=true, validates it against the shared D1 session repository, and resolves the internal active user_id server-side.
+- Cookie-authenticated POST requests require the exact configured PWA Origin and X-Sahmino-CSRF: 1. Credentialed CORS is explicit. Duplicate, malformed, expired, revoked, or disabled OTP cookies fail closed and cannot fall back to a pilot JWT.
+- Order creation, Bazaar/Myket receipt ownership checks, settlement, and entitlement lookup accept the trusted internal user_id. Legacy HMAC pilot authentication remains for isolated tests only.
+- The branch includes the OTP session repository, core/service dependencies, and additive D1 schema files needed by the session lookup.
+- CI now runs the Billing V2 suites, OTP session/service tests, and OTP migration tests; the latest run on PR #189 completed successfully.
+
+### Remaining release dependencies
+
+- PR #185 still contains the OTP request/verify/logout routes and PWA account panel; it remains a separate draft dependency and has not been merged.
+- No SMS provider binding or production secrets are configured, and no D1 migration or Worker deployment has been performed.
+- The Android WebView still does not wire the BillingV2PurchaseFlow or a trusted session provider. A native cookie/session handoff must be designed and tested without exposing credentials to WebView JavaScript.
+- Physical Android/WebView cookie persistence, account switching/revocation, and real store sandbox purchase/restore tests remain mandatory before enabling checkout.
+- Keep SAHMINO_OTP_ENABLED and BILLING_V2_ENABLED off until those release gates pass.
