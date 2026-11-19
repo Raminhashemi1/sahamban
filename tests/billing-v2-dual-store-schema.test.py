@@ -1,5 +1,6 @@
 import pathlib
 import sqlite3
+import tomllib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SCHEMA = (ROOT / "server/billing/schema.sql").read_text()
@@ -55,7 +56,17 @@ def test_existing_bazaar_schema_can_be_migrated_once():
     assert row == ("BAZAAR", None)
     check_shared_schema(db)
 
+def test_worker_templates_select_distinct_stores_and_share_one_database():
+    bazaar = tomllib.loads((ROOT / "server/wrangler.bazaar.toml.example").read_text())
+    myket = tomllib.loads((ROOT / "server/wrangler.myket.toml.example").read_text())
+    assert bazaar["vars"]["BILLING_STORE"] == "BAZAAR"
+    assert myket["vars"]["BILLING_STORE"] == "MYKET"
+    assert bazaar["d1_databases"][0]["binding"] == myket["d1_databases"][0]["binding"] == "SAHAMBAN_DB"
+    assert bazaar["d1_databases"][0]["database_id"] == myket["d1_databases"][0]["database_id"]
+    assert bazaar["vars"]["BILLING_V2_ENABLED"] == myket["vars"]["BILLING_V2_ENABLED"] == "false"
+
 if __name__ == "__main__":
     test_fresh_schema_supports_both_stores_in_one_ledger()
     test_existing_bazaar_schema_can_be_migrated_once()
-    print("dual-store billing schema and migration: PASS")
+    test_worker_templates_select_distinct_stores_and_share_one_database()
+    print("dual-store billing schema, migration, and Worker templates: PASS")
