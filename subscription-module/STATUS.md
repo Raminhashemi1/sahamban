@@ -140,7 +140,7 @@ Durations currently mean fixed 24-hour days, not calendar months. This distincti
 - Added concrete source-set adapters: Poolakey 2.3.0 for Bazaar and official Myket Billing Client 2.2 for Myket, plus flavor-specific factories.
 - Added standalone Android library Gradle configuration and a two-flavor build. The official Myket 2.2 artifact is compiled with Kotlin metadata 2.2.0, so the module toolchain was aligned to the official sample (AGP 8.12.3, Kotlin 2.2.0, Gradle 8.13, compileSdk 36). This is an intentional upgrade from the pilot dossier baseline.
 - Added Worker factory to bind server-only store selection, SKU maps, provider verifiers, and environment configuration. The production commercial authenticator remains injected because the dossier does not identify the live app session-token contract.
-- Node provider/route/Worker tests and SQLite settlement SQL contract tests pass in CI. Android flavor compilation is currently being validated in GitHub Actions; do not claim Android build success until the latest flavor build completes.
+- Node provider/route/Worker tests and SQLite settlement SQL contract tests pass in CI. Both Android release flavors compiled successfully in GitHub Actions run 44526725332. The workflow now also uploads the two AAR outputs as a build artifact.
 
 ## Next milestone
 Complete the concrete Android SDK adapters and Bazaar verifier, then connect the module to the production PWA/Android host. Do not deploy or apply migrations to live infrastructure without explicit approval.
