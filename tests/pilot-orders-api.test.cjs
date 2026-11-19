@@ -65,7 +65,7 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  const now=Date.now(),token=issuePilotToken({subject:'pilot:subject',secret:SECRET,nowMs:now});
  const storage=mockDB();
  const env={SAHAMBAN_DB:storage,AUTH_HMAC_SECRET:SECRET,PWA_ORIGIN:origin,
-  PILOT_ORDERS_ENABLED:'true',PILOT_ANNUAL_PRICE_RIAL:'1500000'};
+  BILLING_V2_ENABLED:'true'};
  function request(method,auth=null,reqOrigin=origin){
   return new Request('https://worker.example/api/v1/me/orders',{method,
    headers:{Origin:reqOrigin,...(auth?{Authorization:'Bearer '+auth}:{})}});
@@ -87,7 +87,7 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  const refused=await worker.fetch(forgedBody,env);
  assert.equal(refused.status,400);
  assert.equal(storage.calls.length,before);
- const blocked=await worker.fetch(request('POST',token),{...env,PILOT_ORDERS_ENABLED:'false'});
+ const blocked=await worker.fetch(request('POST',token),{...env,BILLING_V2_ENABLED:'false'});
  assert.equal(blocked.status,503);
  const checkout=await worker.fetch(new Request('https://worker.example/api/v1/checkout',{method:'POST'}),env);
  assert.equal(checkout.status,404);
