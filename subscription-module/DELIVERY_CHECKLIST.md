@@ -11,7 +11,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | TEMPLATES READY; owner must supply exact five product IDs per store, real package ID, public keys and Bazaar OAuth credentials |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | RUNBOOK READY; both templates are configured to use one shared D1 ID; no production resources or secrets changed |
 | 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | TEST MATRIX READY; live execution requires owner test accounts, configured products and installed builds |
-| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD SUCCESSFUL for commit `75d09eba`; fresh build for latest branch head `343aa7b8` is queued. Release signing and final package identity remain missing |
+| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD SUCCESSFUL for commit `343aa7b8`; fresh build for current branch head `3e450fe7` is queued in run [44536533034](https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034). Release signing and final package identity remain missing |
 
 ## Work completed on this integration branch
 
