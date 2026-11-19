@@ -61,4 +61,4 @@ jobs:
       - name: Validate fresh and existing D1 schema paths
         run: python tests/billing-v2-dual-store-schema.test.py
 
-# OTP session bridge regression coverage and migration fixtures are included in this workflow.
+# OTP session bridge, service contract, and migration fixtures are included in this workflow.
