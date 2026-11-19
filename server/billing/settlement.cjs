@@ -9,9 +9,9 @@ function validIso(value){
  * Grant a fixed-duration entitlement only after the Bazaar in-app product
  * purchase has been verified server-side. Renewal is always user-initiated.
  */
-async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchaseTime,now}={}){
+async function settle(db,{orderId,subject,userId,planId,bazaarOrderId,tokenHash,purchaseTime,now}={}){
  const plan=getPlan(planId),nowMs=Date.parse(now),purchaseMs=Date.parse(purchaseTime);
- if(!plan||typeof subject!=='string'||subject.length<1||subject.length>256||
+ if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))||
    typeof orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(orderId)||
    typeof bazaarOrderId!=='string'||bazaarOrderId.length<1||bazaarOrderId.length>256||
    typeof tokenHash!=='string'||! /^[a-f0-9]{64}$/.test(tokenHash)||
@@ -19,7 +19,10 @@ async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchas
    purchaseMs>nowMs+5*60*1000)
   return {ok:false,error:'INVALID_VERIFIED_PURCHASE'};
  try{
-  const order=await db.prepare("SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1").bind(orderId,subject).first();
+  const query=userId
+   ? "SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.id=? AND u.status='ACTIVE' LIMIT 1"
+   : "SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1";
+  const order=await db.prepare(query).bind(orderId,userId||subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
   if(order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
   if(order.status==='PAID'){
@@ -49,9 +52,9 @@ async function settle(db,{orderId,subject,planId,bazaarOrderId,tokenHash,purchas
 
 
 /** Myket equivalent of settle(): same entitlement ledger and replay-safe order transition. */
-async function settleMyket(db,{orderId,subject,planId,storeOrderId,tokenHash,purchaseTime,now}={}) {
+async function settleMyket(db,{orderId,subject,userId,planId,storeOrderId,tokenHash,purchaseTime,now}={}) {
  const plan=getPlan(planId),nowMs=Date.parse(now),purchaseMs=Date.parse(purchaseTime);
- if(!plan||typeof subject!=='string'||subject.length<1||subject.length>256||
+ if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))||
    typeof orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(orderId)||
    typeof storeOrderId!=='string'||storeOrderId.length<1||storeOrderId.length>256||
    typeof tokenHash!=='string'||! /^[a-f0-9]{64}$/.test(tokenHash)||
@@ -59,7 +62,10 @@ async function settleMyket(db,{orderId,subject,planId,storeOrderId,tokenHash,pur
    purchaseMs>nowMs+5*60*1000)
   return {ok:false,error:'INVALID_VERIFIED_PURCHASE'};
  try {
-  const order=await db.prepare("SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1").bind(orderId,subject).first();
+  const query=userId
+   ? "SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.id=? AND u.status='ACTIVE' LIMIT 1"
+   : "SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1";
+  const order=await db.prepare(query).bind(orderId,userId||subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
   if(order.store!=='MYKET'||order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
   if(order.status==='PAID'){
