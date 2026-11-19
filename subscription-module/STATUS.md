@@ -1,36 +1,40 @@
 # Development status
 
-## Decisions
-- Product: one Sahmino app/product distributed through Cafe Bazaar and Myket.
-- Shared application source and shared subscription backend.
-- Bazaar distribution uses Bazaar billing only; Myket distribution uses Myket billing only.
-- Store-specific SDK adapters/build configuration are isolated where required.
-- Shared account identity and server-side entitlement across both distributions.
-- All plan amounts are IRR (ریال), never toman.
-- Manual one-time duration purchases; no automatic recurring charge assumed.
-- Legacy subscription implementation is not reused.
+## Product and architecture decisions
+- One Sahmino product and shared account/entitlement service.
+- Bazaar distribution must use Bazaar billing; Myket distribution must use Myket billing.
+- Prefer one shared Android source tree with store-specific build configurations/adapters if this is the safest, simplest route after host-app validation.
+- All amounts are IRR (ریال), never toman.
+- Five fixed-duration plans: 30, 60, 90, 180, and 365 days.
+- Manual one-time purchases; no automatic recurring charge assumed.
+- The independent module does not import or reuse legacy subscription code.
 
-## Recorded implementation
-This work is saved on the isolated branch `feature/sahmino-subscriptions-independent`.
-The repository default branch `main` has not been changed.
+## GitHub safety
+- Work is on `feature/sahmino-subscriptions-independent`.
+- Default branch `main` has not been modified.
+- Every reviewed milestone is committed to this feature branch.
+- Unverified prototypes are not described as production-ready.
 
-### Documentation and decisions
-- `subscription-module/README.md`
-- `subscription-module/STORE_INTEGRATION_CONTRACT.md`
-- `subscription-module/STATUS.md`
-- `subscription-module/PLAN_CATALOG.json`
+## Completed and committed
 
-### Domain and database foundation
-- `subscription-module/core/domain.mjs`: canonical plan lookup and renewal date calculation.
-- `subscription-module/core/provider-contract.md`: vendor-neutral store adapter contract.
-- `subscription-module/server/schema.sql`: store SKU mapping, orders, entitlements, and event history tables.
+### M1 — Independent domain and documentation
+- `README.md`: project scope, architecture and trust boundary.
+- `PLAN_CATALOG.json`: canonical machine-readable plan prices.
+- `STORE_INTEGRATION_CONTRACT.md`: provider separation and verification rules.
+- `core/domain.mjs`: executable five-plan catalog, plan lookup, and renewal duration calculation.
+- `core/provider-contract.md`: neutral billing adapter contract.
+- `server/schema.sql`: initial D1 schema for store SKU mapping, orders, entitlements and events.
+- `android/StoreBillingProvider.kt`: provider-neutral Kotlin contract.
+- `android/FLAVOR_BUILD_GUIDE.md`: shared source tree and store-specific packaging guide.
 
-### Android foundation
-- `subscription-module/android/StoreBillingProvider.kt`: provider-neutral Kotlin billing interface.
-- `subscription-module/android/FLAVOR_BUILD_GUIDE.md`: one shared product/source tree with store-specific distribution build configurations.
+### M2 — Domain test automation
+- `package.json`: Node test command.
+- `tests/domain.test.mjs`: verifies all five exact IRR prices, JSON catalog parity, unknown plan rejection, early renewal, expired/absent entitlement, and invalid inputs.
+- `.github/workflows/sahmino-subscription-tests.yml`: CI workflow using Node 22.
+- Status: committed; awaiting first GitHub Actions result. No test pass is claimed until the workflow completes.
 
 ## Fixed plan catalog
-| Plan | Days | Price (IRR) |
+| Plan ID | Days | Price (IRR) |
 |---|---:|---:|
 | sahmino_30d | 30 | 1,500,000 |
 | sahmino_60d | 60 | 2,850,000 |
@@ -38,19 +42,24 @@ The repository default branch `main` has not been changed.
 | sahmino_180d | 180 | 7,650,000 |
 | sahmino_365d | 365 | 14,600,000 |
 
-## Important accuracy note
-Additional prototypes were generated in the ChatGPT workspace (order service, settlement prototype, purchase coordinator, verifier registry, and example Gradle configuration). They are not yet committed as production-ready code. Before committing those prototypes, they must be reconciled with this branch, reviewed for correctness, and tested in the actual host runtime. In particular, SQL atomicity/date arithmetic and Kotlin/Gradle compilation must be validated.
+Durations currently mean fixed 24-hour days, not calendar months. This distinction must remain explicit in UI/backend copy.
+
+## Inspected host-repository context (read-only)
+- The repository contains a pilot Android WebView wrapper under `android-pilot/`.
+- It currently identifies itself as a test-only pilot package and explicitly says it is not a production marketplace release.
+- Existing legacy subscription/worker files exist under `server/`; they are not dependencies of this independent module and have not been changed.
+- Host app integration cannot be finalized until the real production Android application identity, packaging model, and account/auth integration are confirmed.
 
 ## Not completed / release blockers
-- Inspect actual host Android project structure and build tool versions.
-- Pin official, compatible Bazaar and Myket SDK versions.
-- Implement concrete store SDK adapters.
+- Inspect the full host application architecture and identify the actual production Android wrapper/source.
+- Confirm whether one artifact can reliably serve both stores or store-specific build artifacts are required.
+- Confirm each store's current policy for fixed-duration digital access sold as one-time IAP.
+- Pin current official Bazaar and Myket SDK versions.
+- Implement actual store SDK adapters.
 - Implement trusted server-side verification separately for each store.
-- Wire authentication and API routes in the deployed backend.
-- Run D1 migration and concurrency/idempotency tests.
-- Handle pending, refunded, revoked, restored, and duplicate purchases.
-- Build and test both distribution artifacts on real devices/store test accounts.
-- Verify package identity, signing, and each store's publication policy.
+- Implement authenticated API routes and durable idempotent settlement.
+- Test refund, revocation, pending, cancellation, restore, duplicate and concurrent purchase cases.
+- Build and test on real devices and store test accounts.
 
-## Rule for future work
-At the end of each completed, reviewed milestone, commit the files to this feature branch and update this status file. Do not commit unfinished or untested prototypes as production-ready. Never push subscription work directly to `main`.
+## Next milestone
+Run the domain CI workflow and fix any failures. Then design the backend order/settlement contract against the verified production runtime, rather than assuming a Cloudflare/D1 API shape.
