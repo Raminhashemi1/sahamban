@@ -13,7 +13,7 @@ class BillingV2ApiClient(
     private val bearerToken: String,
     private val storeName: String = "BAZAAR"
 ) {
-    data class Order(val id: String, val planId: String, val days: Int)
+    data class Order(val id: String, val planId: String, val days: Int, val store: String)
     data class Access(val planId: String, val expiresAt: String, val renewalMode: String)
     data class Entitlement(val proEnabled: Boolean, val paidUntil: String?, val renewalMode: String?)
 
@@ -78,8 +78,10 @@ class BillingV2ApiClient(
                     val id = order?.optString("id").orEmpty()
                     val days = order?.optInt("days", 0) ?: 0
                     val returnedPlan = order?.optString("planId").orEmpty()
+                    val returnedStore = order?.optString("store")?.takeIf { it.isNotBlank() } ?: "BAZAAR"
                     if (id.matches(Regex("^ord_[a-f0-9]{32}$")) && days > 0 &&
-                        returnedPlan == planId) Result.Success(Order(id, returnedPlan, days))
+                        returnedPlan == planId && returnedStore == storeName)
+                        Result.Success(Order(id, returnedPlan, days, returnedStore))
                     else Result.Failure(502, "INVALID_ORDER_RESPONSE")
                 } else Result.Failure(status, json.optString("error", "ORDER_FAILED"))
             }, callback)
