@@ -120,7 +120,7 @@ The Billing V2 validation workflow passed on integration head `2be8ce24fbb75a9d4
 
 ## Standalone subscription selector
 
-`BillingV2SubscriptionView` is a reusable native Android view that renders the five approved manual-renewal plans and their Rial prices, starts an explicitly selected purchase through the injected `BillingV2PurchaseFlow`, exposes restore, and displays success/cancel/failure states in Persian. It does not create identity, hold store credentials, or communicate purchase tokens to WebView JavaScript.
+`BillingV2SubscriptionView` is a reusable native Android view that renders the five approved manual-renewal plans, loads each localized display price from the configured marketplace catalog (never from a hard-coded Rial amount), starts an explicitly selected purchase through the injected `BillingV2PurchaseFlow`, exposes restore, and displays success/cancel/failure states in Persian. While the billing feature flag is false, it shows a disabled-state price placeholder and cannot initiate checkout. It does not create identity, hold store credentials, or communicate purchase tokens to WebView JavaScript.
 
 The production host app can attach it after constructing `BillingV2PurchaseFlow` with its authenticated `BillingV2TokenProvider`, exact store SKU map, expected published package name, and the configured store coordinator:
 
