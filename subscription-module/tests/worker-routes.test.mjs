@@ -91,3 +91,68 @@ test('verification route stays unavailable until provider verifiers and consume 
   }));
   assert.equal(response.status, 404);
 });
+
+
+test('verify route loads store from persisted order and settles only verified evidence', async () => {
+  const order = {
+    id: 'order-verify-1', user_id: 'user-1', store: 'MYKET',
+    plan_id: 'SAHAMBAN_PRO_30D', status: 'CREATED',
+    amount_irr: 1_500_000, store_product_id: 'myket-30d',
+    store_order_id: null, purchase_token_hash: null
+  };
+  const db = {
+    batches: 0,
+    prepare(sql) {
+      return {
+        values: [],
+        bind(...values) { this.values = values; return this; },
+        first: async () => sql.includes('FROM billing_orders') ? order : null
+      };
+    },
+    batch: async (statements) => {
+      db.batches += 1;
+      return statements.map(() => ({ success: true, meta: { changes: 1 } }));
+    }
+  };
+  let verifierCalls = 0;
+  const handler = createBillingRouter({
+    db,
+    authenticateRequest: async () => ({ userId: 'user-1' }),
+    resolveStore: async () => 'BAZAAR',
+    productMaps: {},
+    providerVerifiers: {
+      MYKET: async ({ order: suppliedOrder, evidence }) => {
+        verifierCalls += 1;
+        assert.equal(suppliedOrder.id, order.id);
+        assert.equal(evidence.originalJson, '{"signed":true}');
+        return {
+          verified: true, store: 'MYKET', storeOrderId: 'myket-order-1',
+          productId: 'myket-30d', amountIrr: 1_500_000,
+          purchaseTokenHash: 'b'.repeat(64)
+        };
+      }
+    },
+    allowedOrigin: 'https://app.example'
+  });
+  const response = await handler(request('/api/v2/billing/verify', {
+    method: 'POST',
+    body: { orderId: order.id, originalJson: '{"signed":true}', signature: 'signature' }
+  }));
+  const payload = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.status, 'PAID');
+  assert.equal(payload.consumeAfterSettlement, true);
+  assert.equal(verifierCalls, 1);
+  assert.equal(db.batches, 1);
+});
+
+test('verify route rejects client-selected provider and extra fields', async () => {
+  const { handler } = setup();
+  const response = await handler(request('/api/v2/billing/verify', {
+    method: 'POST',
+    body: { orderId: 'order-1', originalJson: '{}', signature: 'x', store: 'BAZAAR' }
+  }));
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, 'INVALID_VERIFY_REQUEST');
+});
