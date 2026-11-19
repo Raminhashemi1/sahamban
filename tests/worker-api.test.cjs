@@ -23,9 +23,10 @@ async function signedToken(payloadPatch={},headerPatch={}){
  return input+'.'+signature;
 }
 async function worker(){return (await import('../server/worker-api.mjs')).default;}
-function request(token,path='/api/v1/me/entitlement',{method='GET',requestOrigin=origin,body,contentType='application/json'}={}){
+function request(token,path='/api/v1/me/entitlement',{method='GET',requestOrigin=origin,body,contentType='application/json',cookie,csrf}={}){
  return new Request('https://worker.example'+path,{method,headers:{
   ...(requestOrigin===null?{}:{Origin:requestOrigin}),...(token?{Authorization:'Bearer '+token}:{}),
+  ...(cookie?{Cookie:cookie}:{}),...(csrf?{'X-Sahmino-CSRF':csrf}:{}),
   ...(body===undefined?{}:{'Content-Type':contentType})
  },...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});
 }
@@ -187,4 +188,60 @@ test('client cannot select the store and Myket verify route is selected only by 
  }),env(db(null),{BILLING_V2_ENABLED:'true',BILLING_STORE:'MYKET'}));
  assert.equal(verify.status,404);
  assert.deepEqual(await verify.json(),{error:'ORDER_NOT_FOUND'});
+});
+
+
+function otpSessionDb({session={userId:'usr_'+'a'.repeat(32),sessionId:'ses_test'},entitlement=activeRow,changes=1}={}) {
+ const calls=[];
+ const storage={
+  calls,
+  prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {
+   async first(){
+    if(sql.includes('FROM sahmino_shared_sessions'))return session?{sessionId:session.sessionId,userId:session.userId,expiresAt:'2099-12-31T00:00:00.000Z'}:null;
+    if(sql.includes('LEFT JOIN billing_access'))return entitlement;
+    return null;
+   },
+   async run(){return {success:true,meta:{changes}};}
+  };}}},
+  async batch(){return [];}
+ };
+ return storage;
+}
+
+test('OTP HttpOnly session authenticates entitlement by internal user ID, not auth_subject',async()=>{
+ const app=await worker(),storage=otpSessionDb(),cookie='sahmino_session='+'b'.repeat(64);
+ const response=await app.fetch(request(null,'/api/v1/me/entitlement',{cookie}),env(storage,{SAHMINO_OTP_ENABLED:'true'}));
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
+ assert.deepEqual(await response.json(),{proEnabled:true,reason:'ACTIVE',paidUntil:activeRow.paid_until,renewalMode:'MANUAL'});
+ assert.deepEqual(storage.calls[0].values,[await require('node:crypto').webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('b'.repeat(64))).then(x=>Buffer.from(x).toString('hex')),'2099-11-19T']);
+ assert.match(storage.calls[1].sql,/WHERE u.id=\?/);
+ assert.doesNotMatch(storage.calls[1].sql,/u.auth_subject/);
+});
+
+test('OTP session creates orders only with CSRF and binds order to the session user ID',async()=>{
+ const app=await worker(),storage=otpSessionDb(),cookie='sahmino_session='+'c'.repeat(64);
+ const blocked=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,body:{planId:'SAHAMBAN_PRO_30D'}}),
+  env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
+ assert.equal(blocked.status,403);
+ assert.equal(storage.calls.length,1);
+ const allowed=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,csrf:'1',body:{planId:'SAHAMBAN_PRO_30D'}}),
+  env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
+ assert.equal(allowed.status,201);
+ assert.match(storage.calls[1].sql,/WHERE id=\?/);
+ assert.deepEqual(storage.calls[1].values.slice(1),['SAHAMBAN_PRO_30D',storage.calls[1].values[2],'usr_'+'a'.repeat(32)]);
+});
+
+test('invalid or disabled OTP cookies fail closed and never fall back to a pilot Authorization token',async()=>{
+ const app=await worker(),token=await signedToken();
+ for(const extra of [
+  {cookie:'sahmino_session='+'d'.repeat(64),env:{SAHMINO_OTP_ENABLED:'false'}},
+  {cookie:'sahmino_session='+'e'.repeat(64),env:{SAHMINO_OTP_ENABLED:'true'},session:null},
+  {cookie:'sahmino_session='+'f'.repeat(64)+'; sahmino_session='+'a'.repeat(64),env:{SAHMINO_OTP_ENABLED:'true'}}
+ ]){
+  const storage=otpSessionDb({session:extra.session??null});
+  const response=await app.fetch(request(token,'/api/v1/me/entitlement',{cookie:extra.cookie}),
+   env(storage,extra.env));
+  assert.equal(response.status,401);
+ }
 });
