@@ -7,7 +7,10 @@ on:
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
+      - 'android-pilot/**'
       - 'tests/billing-v2-*'
+      - 'tests/android-pilot-wrapper.test.cjs'
+      - '.github/workflows/android-pilot-debug.yml'
       - '.github/workflows/billing-v2-dual-store.yml'
   pull_request:
     paths:
@@ -36,6 +39,8 @@ jobs:
           node --check server/billing/myket-verifier.mjs
           node --check server/billing/orders.cjs
           node --check server/billing/settlement.cjs
+      - name: Validate Android host security and flavor workflow wiring
+        run: node --test tests/android-pilot-wrapper.test.cjs
       - name: Run Bazaar and shared Billing V2 tests
         run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/worker-api.test.cjs
       - name: Run Myket verifier, order and shared settlement tests
