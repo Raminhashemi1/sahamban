@@ -33,14 +33,18 @@
 - `.github/workflows/sahmino-subscription-tests.yml`: CI workflow using Node 22.
 - Status: GitHub Actions run #101 completed successfully on Node 22. All six domain tests passed (plan catalog/IRR, JSON parity, unknown plan, early renewal, expired/absent expiry, invalid input). This validates only the pure domain layer, not payment or server integration.
 
+### M3 — PWA/native bridge design
+- `android/PWA_NATIVE_BILLING_BRIDGE.md`: independent protocol contract for the PWA/WebView-to-native billing boundary, trusted-origin requirements, message envelope, purchase/restore/entitlement actions, and secret-handling rules.
+- Status: design documented; no bridge implementation is claimed complete. The exact production PWA origin and commercial user authentication contract are not supplied in the dossier.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
-| sahmino_30d | 30 | 1,500,000 |
-| sahmino_60d | 60 | 2,850,000 |
-| sahmino_90d | 90 | 4,050,000 |
-| sahmino_180d | 180 | 7,650,000 |
-| sahmino_365d | 365 | 14,600,000 |
+| SAHAMBAN_PRO_30D | 30 | 1,500,000 |
+| SAHAMBAN_PRO_60D | 60 | 2,850,000 |
+| SAHAMBAN_PRO_90D | 90 | 4,050,000 |
+| SAHAMBAN_PRO_180D | 180 | 7,650,000 |
+| SAHAMBAN_PRO_365D | 365 | 14,600,000 |
 
 Durations currently mean fixed 24-hour days, not calendar months. This distinction must remain explicit in UI/backend copy.
 
