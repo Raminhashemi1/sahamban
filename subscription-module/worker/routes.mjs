@@ -1,5 +1,6 @@
 import { createBillingOrder } from '../server/order-service.mjs';
 import { getBillingEntitlement } from '../server/entitlement-service.mjs';
+import { settleVerifiedPurchase } from '../server/settlement-service.mjs';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 
@@ -42,6 +43,7 @@ export function createBillingRouter({
   authenticateRequest,
   resolveStore,
   productMaps,
+  providerVerifiers = {},
   allowedOrigin
 }) {
   if (!db || typeof authenticateRequest !== 'function' ||
@@ -74,6 +76,7 @@ export function createBillingRouter({
     }
 
     if (url.pathname !== '/api/v2/billing/orders' &&
+        url.pathname !== '/api/v2/billing/verify' &&
         url.pathname !== '/api/v1/me/entitlement') {
       return json({ ok: false, error: 'NOT_FOUND' }, 404, cors);
     }
@@ -91,6 +94,87 @@ export function createBillingRouter({
     if (request.method === 'GET' && url.pathname === '/api/v1/me/entitlement') {
       const result = await getBillingEntitlement(db, principal.userId);
       return json(result, result.ok ? 200 : 500, cors);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/v2/billing/verify') {
+      const body = await readJsonObject(request, 24_576);
+      if (!body.ok) {
+        const status = body.error === 'BODY_TOO_LARGE' ? 413 : 400;
+        return json({ ok: false, error: body.error }, status, cors);
+      }
+      const value = body.value;
+      if (typeof value.orderId !== 'string' || !value.orderId ||
+          typeof value.originalJson !== 'string' ||
+          typeof value.signature !== 'string' ||
+          Object.keys(value).some((key) => !['orderId', 'originalJson', 'signature'].includes(key))) {
+        return json({ ok: false, error: 'INVALID_VERIFY_REQUEST' }, 400, cors);
+      }
+
+      let order;
+      try {
+        order = await db.prepare(`
+          SELECT id, user_id, store, plan_id, status, amount_irr,
+                 store_product_id, store_order_id, purchase_token_hash
+          FROM billing_orders WHERE id = ? AND user_id = ? LIMIT 1
+        `).bind(value.orderId, principal.userId).first();
+      } catch {
+        return json({ ok: false, error: 'ORDER_LOOKUP_FAILED' }, 500, cors);
+      }
+      if (!order) return json({ ok: false, error: 'ORDER_NOT_FOUND' }, 404, cors);
+      if (!['BAZAAR', 'MYKET'].includes(order.store)) {
+        return json({ ok: false, error: 'UNSUPPORTED_STORE' }, 409, cors);
+      }
+
+      const verifier = providerVerifiers[order.store];
+      if (typeof verifier !== 'function') {
+        return json({ ok: false, error: 'STORE_VERIFIER_NOT_CONFIGURED' }, 503, cors);
+      }
+
+      let verifiedPurchase;
+      try {
+        verifiedPurchase = await verifier({
+          order,
+          evidence: { originalJson: value.originalJson, signature: value.signature }
+        });
+      } catch {
+        return json({ ok: false, error: 'STORE_VERIFICATION_UNAVAILABLE' }, 503, cors);
+      }
+      if (!verifiedPurchase || verifiedPurchase.verified !== true) {
+        return json({
+          ok: false,
+          error: verifiedPurchase?.reason || 'PURCHASE_NOT_VERIFIED'
+        }, 422, cors);
+      }
+
+      if (order.status === 'PAID') {
+        const samePurchase = order.store_order_id === verifiedPurchase.storeOrderId &&
+          order.store_product_id === verifiedPurchase.productId &&
+          order.purchase_token_hash === verifiedPurchase.purchaseTokenHash;
+        if (!samePurchase) return json({ ok: false, error: 'ORDER_ALREADY_SETTLED' }, 409, cors);
+        return json({
+          ok: true,
+          status: 'PAID',
+          orderId: order.id,
+          alreadySettled: true,
+          consumeAfterSettlement: true
+        }, 200, cors);
+      }
+      if (order.status !== 'CREATED') {
+        return json({ ok: false, error: 'ORDER_NOT_PAYABLE' }, 409, cors);
+      }
+
+      const settled = await settleVerifiedPurchase(db, {
+        orderId: order.id,
+        authenticatedUserId: principal.userId,
+        verifiedPurchase
+      });
+      if (!settled.ok) {
+        return json({ ok: false, error: settled.error }, 409, cors);
+      }
+      return json({
+        ...settled,
+        consumeAfterSettlement: true
+      }, 200, cors);
     }
 
     if (request.method !== 'POST' || url.pathname !== '/api/v2/billing/orders') {
