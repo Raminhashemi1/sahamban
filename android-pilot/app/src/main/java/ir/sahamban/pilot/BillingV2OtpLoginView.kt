@@ -10,7 +10,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 /** Java-friendly completion callback for the native sign-in screen. */
-fun interface AuthenticatedListener { fun onAuthenticated.onAuthenticated() }
+fun interface AuthenticatedListener { fun onAuthenticated() }
 
 /** Minimal native Persian OTP sign-in screen. Credentials never enter the WebView. */
 class BillingV2OtpLoginView(
