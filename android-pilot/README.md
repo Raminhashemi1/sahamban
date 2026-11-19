@@ -61,6 +61,12 @@ The PWA is currently served from GitHub Pages while the Worker uses a separate o
 
 `MainActivity` still does not instantiate `BillingV2CookieSessionProvider`, `BillingV2ApiClient`, `BillingV2PurchaseFlow`, or `BillingV2SubscriptionView`. The five-plan view remains a standalone component; the purchase flow is not reachable from the installed app. Checkout remains compile-time disabled.
 
+## Native OTP login host integration — 2026-11-19
+
+The Android pilot host now checks the Worker session on cold start, presents a native Persian phone/code sign-in screen when no active session exists, stores the Worker-issued session cookie through Android `CookieManager`, and exposes an explicit native logout action that revokes the server session before clearing the cookie. The PWA WebView is loaded only after a successful session check or OTP verification. The native OTP client is not exposed to WebView JavaScript.
+
+This is still a pilot integration. Set `SAHAMBAN_WORKER_BASE_URL` and the matching `SAHAMBAN_PWA_ORIGIN` at build time, deploy the Worker with OTP enabled, apply the D1 migrations, configure the SMS binding and dedicated secrets, and validate the complete request/verify/restart/logout lifecycle on physical devices. With an empty Worker URL the APK deliberately shows a configuration message rather than bypassing authentication. Billing checkout remains disabled and is not wired into this host.
+
 ## Native OTP sign-in transport — 2026-11-19
 
 Added `BillingV2NativeOtpClient` as a native HTTPS client for the existing Worker OTP request, verify, and logout endpoints. It sends the exact configured PWA Origin, validates the OTP challenge/session response, and installs the Worker-issued Secure/HttpOnly/SameSite=None cookie into Android's native `CookieManager`. This removes the requirement that a cross-site GitHub Pages fetch successfully persist the Worker Set-Cookie response: the native HTTPS client receives the response and performs the cookie-jar handoff itself. Logout revokes the server session before clearing the native cookie.
