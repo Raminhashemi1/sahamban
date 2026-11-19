@@ -247,3 +247,54 @@ test('invalid or disabled OTP cookies fail closed and never fall back to a pilot
   assert.equal(response.status,401);
  }
 });
+
+
+test('OTP Worker routes remain disabled by default and reject untrusted origins',async()=>{
+ const app=await worker();
+ const request=new Request('https://worker.example/api/v1/auth/otp/request',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ });
+ const disabled=await app.fetch(request,env());
+ assert.equal(disabled.status,404);
+ assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
+ const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/otp/request',{
+  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ }),env(undefined,{SAHMINO_OTP_ENABLED:'true'}));
+ assert.equal(hostile.status,403);
+});
+
+test('OTP route preflight permits configured origin and required CSRF header',async()=>{
+ const app=await worker();
+ const response=await app.fetch(new Request('https://worker.example/api/v1/auth/logout',{
+  method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Headers':'content-type,x-sahmino-csrf'}
+ }),env());
+ assert.equal(response.status,204);
+ assert.match(response.headers.get('Access-Control-Allow-Headers'),/Content-Type/);
+ assert.match(response.headers.get('Access-Control-Allow-Headers'),/X-Sahmino-CSRF/);
+ assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
+ const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/logout',{
+  method:'OPTIONS',headers:{Origin:'https://evil.example'}
+ }),env());
+ assert.equal(hostile.status,403);
+});
+
+test('OTP routes fail closed when D1 or dedicated OTP secrets are missing',async()=>{
+ const app=await worker();
+ const response=await app.fetch(new Request('https://worker.example/api/v1/auth/session',{headers:{Origin:origin}}),
+  env(undefined,{SAHMINO_OTP_ENABLED:'true',SAHAMBAN_DB:undefined}));
+ assert.equal(response.status,503);
+ assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
+});
+
+test('OTP request and verify reject oversized payloads before provider or database access',async()=>{
+ const app=await worker();
+ const config=env(undefined,{SAHMINO_OTP_ENABLED:'true',SAHAMBAN_DB:{prepare(){throw new Error('must not query');}},
+  SAHMINO_OTP_VERIFIER_SECRET:'v'.repeat(48),SAHMINO_OTP_RATE_LIMIT_SECRET:'r'.repeat(48)});
+ for(const route of ['/api/v1/auth/otp/request','/api/v1/auth/otp/verify']){
+  const response=await app.fetch(new Request('https://worker.example'+route,{
+   method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Content-Length':'257'},body:' '.repeat(257)
+  }),config);
+  assert.equal(response.status,413);
+  assert.deepEqual(await response.json(),{error:'BODY_TOO_LARGE'});
+ }
+});
