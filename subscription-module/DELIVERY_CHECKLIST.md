@@ -7,7 +7,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 | Stage | Work | Status |
 |---|---|---|
 | 1. App integration | Connect selector, native bridge, real commercial session provider, and host WebView | BLOCKED: main Android host is explicitly test-only and has no commercial login/session token provider or billing bridge |
-| 2. Backend consolidation | One Billing V2 Worker contract, one D1 entitlement ledger, Bazaar and Myket provider adapters | CODED ON THIS BRANCH; review and merge into PR #187 required |
+| 2. Backend consolidation | One Billing V2 Worker contract, one D1 entitlement ledger, Bazaar and Myket provider adapters | CODED ON THIS BRANCH; supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) opened against PR #187's head branch |
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | OWNER CONFIGURATION REQUIRED; no developer-panel access or credentials in repository |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | NOT DEPLOYED; production D1/Worker resources and secrets were not changed |
 | 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | NOT RUN; requires test accounts and real installed builds |
@@ -39,9 +39,9 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
 - This branch: dual-store Billing V2 Node tests passed in [run 44530625740](https://github.com/Raminhashemi1/sahamban/actions/runs/44530625740).
-- The fresh/migrated D1 schema test was added after that run; its latest CI run is [44530749012](https://github.com/Raminhashemi1/sahamban/actions/runs/44530749012) and must be green before merging.
+- Latest dual-store CI including end-to-end Myket flow, Worker routing, Bazaar regression and fresh/migrated D1 schema tests passed in [run 44531003318](https://github.com/Raminhashemi1/sahamban/actions/runs/44531003318).
 
-## Safety
+## Integration review\n\n- Supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) targets the existing Billing V2 branch from PR #187. It is not merged.\n- PR #188 must be reviewed and merged into PR #187's branch before the combined Billing V2 work is considered for \\`main\\`.\n\n## Safety
 
 - No production deployment or D1 migration was performed.
 - No store credentials or signing keys were committed.
