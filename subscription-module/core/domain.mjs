@@ -1,11 +1,31 @@
 export const CURRENCY = 'IRR';
 
 const definitions = [
-  { id: 'sahmino_30d', days: 30, price: 1_500_000 },
-  { id: 'sahmino_60d', days: 60, price: 2_850_000 },
-  { id: 'sahmino_90d', days: 90, price: 4_050_000 },
-  { id: 'sahmino_180d', days: 180, price: 7_650_000 },
-  { id: 'sahmino_365d', days: 365, price: 14_600_000 }
+  {
+    id: 'SAHAMBAN_PRO_30D',
+    days: 30,
+    price: 1500000
+  },
+  {
+    id: 'SAHAMBAN_PRO_60D',
+    days: 60,
+    price: 2850000
+  },
+  {
+    id: 'SAHAMBAN_PRO_90D',
+    days: 90,
+    price: 4050000
+  },
+  {
+    id: 'SAHAMBAN_PRO_180D',
+    days: 180,
+    price: 7650000
+  },
+  {
+    id: 'SAHAMBAN_PRO_365D',
+    days: 365,
+    price: 14600000
+  }
 ];
 
 export const PLANS = new Map(
@@ -21,8 +41,8 @@ export function getPlan(planId) {
 }
 
 /**
- * Adds a fixed number of 24-hour days to the later of current expiry or now.
- * Inputs and output are UTC ISO timestamps. Calendar-month plans are not implied.
+ * Adds fixed 24-hour days to the later of current expiry or now.
+ * Inputs and output are UTC ISO timestamps.
  */
 export function addPlanDuration(currentExpiryIso, nowIso, days) {
   const now = Date.parse(nowIso);
