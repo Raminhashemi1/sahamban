@@ -22,3 +22,9 @@ BAZAAR_SKU_MAP = '{"SAHAMBAN_PRO_30D":"REPLACE_BAZAAR_SKU_30D","SAHAMBAN_PRO_60D
 # wrangler secret put BAZAAR_CLIENT_SECRET --config wrangler.bazaar.toml
 # wrangler secret put BAZAAR_REFRESH_TOKEN --config wrangler.bazaar.toml
 # wrangler secret put BAZAAR_RSA_PUBLIC_KEY --config wrangler.bazaar.toml
+
+# Internal SMS provider Worker. Deploy server/wrangler.shahmiz.toml.example
+# separately and set its SHAHMIZ_API_TOKEN secret before enabling OTP.
+[[services]]
+binding = "SAHMINO_SMS_PROVIDER"
+service = "sahmino-shahmiz-sms"
