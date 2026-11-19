@@ -40,7 +40,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest backend, Bazaar regression, Myket signature/settlement, Worker routing, Android wiring and schema/migration checks passed in [run 44534245212](https://github.com/Raminhashemi1/sahamban/actions/runs/44534245212) and [run 44534221461](https://github.com/Raminhashemi1/sahamban/actions/runs/44534221461). The Android dual-flavor debug build passed in [run 44533319977](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977) for commit `594143fe`; it must be rerun against the current branch head `3addd7a` before treating those APKs as current. No release APK or live store test is claimed.
+- Latest backend, Bazaar regression, Myket signature/settlement, Worker routing, Android wiring and schema/migration checks passed in [run 44534469424](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469424). The Android dual-flavor debug build passed previously in [run 44533319977](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977) for an earlier commit; its artifact is available for seven days but is not treated as current. A fresh Android build for the latest source is running in [run 44534469483](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469483). No release APK or live store test is claimed.
 
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
