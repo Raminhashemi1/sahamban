@@ -23,3 +23,16 @@ This directory implements five manually renewed, time-limited access plans. They
 7. Keep `BILLING_V2_ENABLED=false` until all release blockers pass.
 
 Do not submit the app or enable live payments based only on unit tests.
+
+
+## Dual-store extension (integration branch)
+
+The canonical Billing V2 Worker now supports a server-selected provider:
+- `BILLING_STORE=BAZAAR`: existing Bazaar verifier and Poolakey purchase flow.
+- `BILLING_STORE=MYKET`: Myket signed-purchase verifier and Myket SKU-bound order creation.
+- The client sends a plan ID and signed purchase evidence only. It cannot select the store.
+- Both providers settle into the same `billing_orders`, `billing_access`, and `billing_events` ledger.
+
+For Myket, configure `MYKET_SKU_MAP`, `MYKET_PACKAGE_NAME`, and the `MYKET_PUBLIC_KEY` Worker secret from the actual developer account. No example SKU or production package name is assumed. Existing Bazaar databases need the one-time `migrations/0002-myket-store-columns.sql`; fresh isolated databases use the updated `schema.sql`.
+
+The current Myket verifier validates the signed original purchase data and order/package/SKU binding. It does not yet perform an authoritative live refund/revocation lookup. Do not enable public checkout until this gap and the production commercial-authentication contract are resolved. See `DUAL-STORE-INTEGRATION.md`.
