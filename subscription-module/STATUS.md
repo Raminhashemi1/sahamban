@@ -124,3 +124,9 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - Bazaar/Myket authoritative refund or revocation notification contracts have not yet been established and tested. Therefore the reversal primitive is not wired to a Worker route or marketplace webhook, and refund/revocation integration is NOT complete.
 - Do not deploy or expose this primitive until each provider adapter authenticates the official event source and normalizes its transaction ID, provider event ID, purchase token hash, and payload hash.
 - The schema change adding `provider_event_id` is part of the independent schema. It has not been applied to any live D1 database.
+
+
+### Final hardening follow-up
+- Reversal idempotency now requires both the namespaced provider event ID and the exact normalized payload hash to match a previously applied event. Reusing an event ID with different content is rejected.
+- Added a regression test for a provider event ID replayed with a different payload hash.
+- GitHub Actions run [44601709782](https://github.com/Raminhashemi1/sahamban/actions/runs/44601709782) passed on commit `e0c7f185cc35bfa63c8f42d793b3d2ed6acd8bcc`: 52 Node.js tests and 10 SQLite contract tests passed.
