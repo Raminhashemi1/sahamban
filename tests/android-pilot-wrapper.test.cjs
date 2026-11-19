@@ -37,14 +37,22 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
 });
 
-test('Billing API client obtains a fresh native session token per request',()=>{
+test('Billing API client obtains fresh native OTP cookie headers and never uses bearer tokens',()=>{
  const api=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2ApiClient.kt');
- assert.match(api,/fun interface BillingV2TokenProvider/);
- assert.match(api,/private val tokenProvider: BillingV2TokenProvider/);
- assert.match(api,/tokenProvider\.getToken/);
+ assert.match(api,/fun interface BillingV2AuthProvider/);
+ assert.match(api,/private val authProvider: BillingV2AuthProvider/);
+ assert.match(api,/authProvider\.getHeaders/);
+ assert.match(api,/sahmino_session=\[a-f0-9\]\{64\}/);
+ assert.match(api,/X-Sahmino-CSRF/);
+ assert.match(api,/BuildConfig\.SAHAMBAN_PWA_ORIGIN/);
  assert.match(api,/NOT_AUTHENTICATED/);
- assert.match(api,/tokenProvider\.getToken[\s\S]*?main\.post/);
- assert.doesNotMatch(api,/private val bearerToken/);
+ assert.doesNotMatch(api,/Authorization|Bearer|BillingV2TokenProvider/);
+ const provider=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2CookieSessionProvider.kt');
+ assert.match(provider,/CookieManager\.getInstance\(\)\.getCookie/);
+ assert.match(provider,/singleOrNull/);
+ assert.match(provider,/HttpOnly/);
+ const build=read('android-pilot/app/build.gradle');
+ assert.match(build,/SAHAMBAN_PWA_ORIGIN/);
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
  assert.doesNotMatch(activity,/addJavascriptInterface/);
 });
