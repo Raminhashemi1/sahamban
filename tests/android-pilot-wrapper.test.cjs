@@ -27,6 +27,8 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(build,/bazaarImplementation.*Poolakey/);
  assert.match(build,/myketImplementation.*ir\.myket:billing:2\.2/);
  assert.match(build,/SAHAMBAN_BILLING_ENABLED.*false/);
+ const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
+ assert.match(flow,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/assembleBazaarDebug/);
  assert.match(wf,/assembleMyketDebug/);
