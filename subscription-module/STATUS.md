@@ -73,6 +73,15 @@
 - GitHub Actions run 44521911629 completed successfully; both test steps passed.
 - Scope limitation: SQLite contract tests validate SQL syntax and transaction behavior on SQLite 3.x. They are not a live Cloudflare D1 test and do not establish concurrent request behavior in the deployed Worker.
 
+### M11 — Bazaar Developer API v2 verification
+- Added `server/providers/bazaar-verifier.mjs`: refreshes an OAuth access token using the developer refresh token, then validates the in-app purchase through the Bazaar Developer API v2 endpoint.
+- Enforces purchased state, order binding through the store-returned developerPayload, and unconsumed state before first settlement. Allows consumed state only for a replay of an already-PAID order, which is accepted only when the saved purchase-token hash matches.
+- Added automated tests for valid API response, refunded state, wrong order payload, consumed purchase handling, and missing/rejected credentials.
+- Worker verify endpoint now accepts store-specific evidence: Bazaar sends only orderId + purchaseToken; Myket sends orderId + signed originalJson + signature. The persisted order selects the verifier, never the client.
+- Added `providers/BAZAAR.md` with SDK, OAuth, validation, consume-after-settlement, and configuration notes.
+- CI run 44524310930 completed successfully: Node test suite and SQLite settlement SQL contract tests passed.
+- Limitation: real Bazaar developer credentials, package/SKU mapping, and a real device test are not available in this environment; live store certification is not claimed.
+
 ### M10 — Myket signed purchase verification and verify endpoint
 - Reviewed the official Myket Android sample repository `myketstore/billing-sample-android`. It documents artifact `ir.myket:billing:2.2`, IAB v3 purchase flow, signed purchase fields, and multi-store Gradle flavors for Myket/Bazaar.
 - Added `server/providers/myket-verifier.mjs`: server-side RSASSA-PKCS1-v1_5/SHA-1 verification of the signed Myket `originalJson`, package/SKU/purchase-state checks, and order binding through signed developerPayload. Stores only SHA-256 of purchase token.
