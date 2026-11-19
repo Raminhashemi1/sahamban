@@ -21,6 +21,31 @@ class BillingV2PurchaseFlow(
         data class Failed(val reason: String) : Outcome
     }
 
+    /** Load the exact localized prices returned by the configured marketplace. */
+    fun loadPlanDetails(callback: (Map<String, String>?) -> Unit) {
+        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            callback(null)
+            return
+        }
+        storeBilling.connect { connected ->
+            if (!connected) {
+                callback(null)
+                return@connect
+            }
+            storeBilling.loadPlanDetails(skuByPlan.values.toList()) { details ->
+                if (details == null) {
+                    callback(null)
+                } else {
+                    val bySku = details.associateBy { it.sku }
+                    val prices = skuByPlan.mapNotNull { (planId, sku) ->
+                        bySku[sku]?.displayPrice?.takeIf { it.isNotBlank() }?.let { planId to it }
+                    }.toMap()
+                    callback(prices.takeIf { it.size == skuByPlan.size })
+                }
+            }
+        }
+    }
+
     fun purchase(planId: String, callback: (Outcome) -> Unit) {
         if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
             callback(Outcome.Failed("BILLING_DISABLED"))
