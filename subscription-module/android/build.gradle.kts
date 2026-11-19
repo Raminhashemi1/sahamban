@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "ir.sahmino.subscription"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 26
