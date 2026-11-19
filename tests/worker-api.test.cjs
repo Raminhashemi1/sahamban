@@ -154,3 +154,37 @@ test('receipt verification requires JSON and configured exact SKU mapping before
  assert.equal(unconfigured.status,503);
  assert.deepEqual(await unconfigured.json(),{error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'});
 });
+
+
+test('Myket deployment chooses its provider from Worker configuration and stores the Myket SKU on the order',async()=>{
+ const app=await worker(),token=await signedToken(),storage=db(null);
+ const map=JSON.stringify({
+  SAHAMBAN_PRO_30D:'myket30',SAHAMBAN_PRO_60D:'myket60',
+  SAHAMBAN_PRO_90D:'myket90',SAHAMBAN_PRO_180D:'myket180',
+  SAHAMBAN_PRO_365D:'myket365'
+ });
+ const response=await app.fetch(request(token,'/api/v2/billing/orders',{
+  method:'POST',body:{planId:'SAHAMBAN_PRO_30D'}
+ }),env(storage,{BILLING_V2_ENABLED:'true',BILLING_STORE:'MYKET',MYKET_SKU_MAP:map}));
+ assert.equal(response.status,201);
+ const result=await response.json();
+ assert.equal(result.order.store,'MYKET');
+ assert.deepEqual(storage.calls[0].values,[result.order.id,'SAHAMBAN_PRO_30D','myket30',
+  storage.calls[0].values[3],subject]);
+ assert.match(storage.calls[0].sql,/store_product_id/);
+});
+
+test('client cannot select the store and Myket verify route is selected only by server configuration',async()=>{
+ const app=await worker(),token=await signedToken();
+ const malformed=await app.fetch(request(token,'/api/v2/billing/orders',{
+  method:'POST',body:{planId:'SAHAMBAN_PRO_30D',store:'BAZAAR'}
+ }),env(db(null),{BILLING_V2_ENABLED:'true',BILLING_STORE:'MYKET',
+  MYKET_SKU_MAP:JSON.stringify({SAHAMBAN_PRO_30D:'a',SAHAMBAN_PRO_60D:'b',
+   SAHAMBAN_PRO_90D:'c',SAHAMBAN_PRO_180D:'d',SAHAMBAN_PRO_365D:'e'})}));
+ assert.equal(malformed.status,400);
+ const verify=await app.fetch(request(token,'/api/v2/billing/verify',{
+  method:'POST',body:{orderId:'ord_'+'a'.repeat(32),originalJson:'{}',signature:'A'.repeat(32)}
+ }),env(db(null),{BILLING_V2_ENABLED:'true',BILLING_STORE:'MYKET'}));
+ assert.equal(verify.status,404);
+ assert.deepEqual(await verify.json(),{error:'ORDER_NOT_FOUND'});
+});
