@@ -66,11 +66,11 @@ signing certificate; a Project Pages path alone cannot satisfy it.
 
 ## Current integration checkpoint
 
-Current integration branch head: `0c9217418a3f71657a1b21c53bbfa15267d25273`.
+Latest branch head at this checkpoint: `c0639d16b15141a77749dc72ea21fbfd3309b6b1`.
 
-The latest confirmed dual-store debug APK build is for commit `343aa7b8`:
-https://github.com/Raminhashemi1/sahamban/actions/runs/44535742152
+Both Bazaar and Myket debug APKs compiled successfully for commit `3e450fe7` in workflow run:
+https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034
 
-That run produced the Bazaar and Myket debug APK artifact. Because the branch has advanced since then, this workflow run is triggered to rebuild both variants from the current branch head. Do not treat the older APKs as current deliverables.
+The APK artifact is available for seven days. It is an unsigned debug/test artifact, not a release build. The current branch head has advanced since that build, so this change triggers a fresh build from the current source.
 
-The remaining host-app integration blocker is the absence of a production commercial account/session-token provider. The billing coordinator and purchase flow are not yet wired into `MainActivity` or the PWA UI. Do not add a hard-coded pilot token or enable `SAHAMBAN_BILLING_ENABLED` to bypass this dependency.
+The host `MainActivity` still does not wire the billing purchase flow into Sahmino's real UI/session. The commercial session-token provider and production package identity are not available in this pilot. Do not hard-code credentials or enable the billing feature gate to bypass those blockers.
