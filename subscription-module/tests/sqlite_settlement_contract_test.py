@@ -6,7 +6,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SCHEMA = (ROOT / "server" / "schema.sql").read_text()
 SERVICE = (ROOT / "server" / "settlement-service.mjs").read_text()
-QUERIES = re.findall(r"db\\.prepare\\(\`(.*?)\`\\)", SERVICE, re.S)
+QUERIES = re.findall(r"db\.prepare\(\`(.*?)\`\)", SERVICE, re.S)
 
 class SettlementSqliteContractTests(unittest.TestCase):
     @classmethod
