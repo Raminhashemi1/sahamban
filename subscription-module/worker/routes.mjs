@@ -85,6 +85,7 @@ export function createBillingRouter({
 
   return async function handleBillingRequest(request) {
     const url = new URL(request.url);
+    if (url.search || url.hash) return json({ ok: false, error: 'QUERY_NOT_ALLOWED' }, 400);
     const origin = request.headers.get('Origin');
     const cors = origin === allowedOrigin
       ? { 'access-control-allow-origin': allowedOrigin, 'vary': 'Origin' }
