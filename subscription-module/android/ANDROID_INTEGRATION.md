@@ -82,3 +82,18 @@ All five plans are one-time consumable in-app products, not auto-renewing store 
 - Test purchase success, user cancellation, network loss after purchase, app process death before verify, app process death after settlement but before consume, restore/retry, duplicate verify, refunded purchase, and expired/active renewal.
 - Confirm the Worker has the live D1 migration applied and that the auth verifier uses the real commercial login session.
 - Do not enable production purchases until all tests pass.
+
+
+## 7. PWA wiring
+Load the native billing client before the subscription selector, then mount the selector into a host element:
+
+```html
+<div id="subscription-root"></div>
+<link rel="stylesheet" href="/path/to/subscription-plans.css">
+<script type="module">
+  import { mountSubscriptionPlans } from "/path/to/subscription-plans.js";
+  await mountSubscriptionPlans(document.querySelector("#subscription-root"));
+</script>
+```
+
+The native client exposes window.SahminoBilling and maps bridge actions to Android. Do not instantiate a second JavaScript interface or expose billing credentials to the PWA.
