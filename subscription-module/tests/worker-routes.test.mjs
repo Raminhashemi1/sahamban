@@ -89,7 +89,7 @@ test('verification route rejects malformed purchase evidence', async () => {
   const response = await handler(request('/api/v2/billing/verify', {
     method: 'POST', body: { orderId: 'order-1', evidence: {} }
   }));
-  assert.equal(response.status, 404);
+  assert.equal(response.status, 400);
 });
 
 
