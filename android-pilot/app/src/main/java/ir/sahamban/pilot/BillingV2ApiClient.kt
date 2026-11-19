@@ -8,7 +8,11 @@ import javax.net.ssl.HttpsURLConnection
 import java.util.concurrent.Executors
 
 /** HTTPS-only adapter for authenticated Billing V2 Worker endpoints. */
-class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: String) {
+class BillingV2ApiClient(
+    private val baseUrl: String,
+    private val bearerToken: String,
+    private val storeName: String = "BAZAAR"
+) {
     data class Order(val id: String, val planId: String, val days: Int)
     data class Access(val planId: String, val expiresAt: String, val renewalMode: String)
     data class Entitlement(val proEnabled: Boolean, val paidUntil: String?, val renewalMode: String?)
@@ -25,6 +29,7 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
         val parsed = URL(baseUrl)
         require(parsed.protocol == "https" && parsed.userInfo == null &&
             parsed.query == null && parsed.fragment == null && bearerToken.isNotBlank())
+        require(storeName == "BAZAAR" || storeName == "MYKET")
     }
 
     /** Reload durable account entitlement; consumed Bazaar purchases are not restorable from store inventory. */
@@ -87,9 +92,14 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
         require(sku.matches(Regex("^[A-Za-z0-9._-]{1,100}$")))
         require(purchaseToken.length in 8..4096 && originalJson.length in 1..8192 &&
             dataSignature.length in 1..4096)
-        val body = JSONObject().put("orderId", orderId).put("sku", sku)
-            .put("token", purchaseToken).put("originalJson", originalJson)
-            .put("dataSignature", dataSignature)
+        val body = if (storeName == "MYKET") {
+            JSONObject().put("orderId", orderId)
+                .put("originalJson", originalJson).put("signature", dataSignature)
+        } else {
+            JSONObject().put("orderId", orderId).put("sku", sku)
+                .put("token", purchaseToken).put("originalJson", originalJson)
+                .put("dataSignature", dataSignature)
+        }
         request("/api/v2/billing/verify", body, { status, json ->
             if (status == 200 && json.optString("status") == "ACTIVE") {
                 val plan = json.optString("planId")
