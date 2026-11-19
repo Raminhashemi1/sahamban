@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <queries>
+        <package android:name="com.farsitel.bazaar" />
+        <package android:name="ir.mservices.market" />
+    </queries>
+</manifest>
