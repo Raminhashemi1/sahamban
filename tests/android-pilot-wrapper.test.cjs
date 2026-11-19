@@ -70,3 +70,21 @@ test('standalone subscription selector renders five Rial-priced manual plans and
  assert.match(ui,/purchaseFlow\.restore/);
  assert.match(ui,/NOT_AUTHENTICATED/);
 });
+
+
+test('native OTP client obtains session directly from Worker and stores HttpOnly cookie without JS exposure',()=>{
+ const otp=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeOtpClient.kt');
+ assert.match(otp,/fun requestCode\(/);
+ assert.match(otp,/fun verifyCode\(/);
+ assert.match(otp,/fun logout\(/);
+ assert.match(otp,/https/);
+ assert.match(otp,/setCookie\(workerBaseUrl, cookie\)/);
+ assert.match(otp,/CookieManager\.getInstance\(\)/);
+ assert.match(otp,/HttpOnly/);
+ assert.match(otp,/SameSite=None/);
+ assert.match(otp,/X-Sahmino-CSRF/);
+ assert.match(otp,/Origin", pwaOrigin/);
+ assert.doesNotMatch(otp,/Log\.|println\(|addJavascriptInterface|evaluateJavascript/);
+ assert.match(otp,/singleOrNull/);
+ assert.match(otp,/SESSION_COOKIE_REJECTED/);
+});
