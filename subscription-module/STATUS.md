@@ -78,3 +78,27 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - All work is on `feature/sahmino-subscriptions-independent`.
 - The default branch has not been changed.
 - No production secrets or live infrastructure have been modified.
+
+
+## Settlement engine review — 2026-11-19
+
+Reviewed the independent module on `feature/sahmino-subscriptions-independent` at the branch head used by CI commit `754b0f0a4964ba05994287c19e69b9a0449ff6a3`.
+
+### Confirmed implementation
+- Settlement validates the authenticated order owner, provider, product, amount, plan, and normalized verified evidence before attempting writes.
+- The `CREATED -> PAID` transition is conditional and is performed in a single D1 `batch()` with the verification event and entitlement upsert.
+- The verification event and entitlement grant are linked by an event gate; schema uniqueness constraints protect order verification, store order IDs, and purchase-token hashes.
+- Entitlement expiry is extended from the later of the existing expiry and settlement time, with fixed plan-day durations.
+- The settlement response reads the entitlement within the same batch.
+
+### Validation evidence
+- GitHub Actions run [44544169979](https://github.com/Raminhashemi1/sahamban/actions/runs/44544169979) checked out commit `754b0f0a4964ba05994287c19e69b9a0449ff6a3`.
+- All 46 Node.js tests passed.
+- All 5 SQLite settlement contract tests passed, including stale-pre-read replay protection and rollback on duplicate store token.
+
+### Important limits / next work
+- SQLite contract tests execute the SQL extracted from the production service, but they are not a live Cloudflare D1 test. The stale-pre-read test models two callers that both read `CREATED`, then executes their batches sequentially; it does not create two concurrent D1 requests.
+- No live D1 binding or production migration has been exercised. D1 atomic-batch behavior and result metadata still require validation in a controlled D1 test database.
+- Reversal/refund handling is not implemented as a complete entitlement-reconciliation flow. Do not mark a reversed order and leave the aggregate entitlement unchanged.
+- Next settlement work: add a provider-neutral, idempotent reversal ledger and deterministic entitlement recomputation, with tests for out-of-order reversals, repeated reversal notifications, multiple purchases, and rollback. Provider-specific reversal authenticity must remain blocked until each store's authoritative contract is established.
+- Production D1 validation requires a dedicated test database and credentials; no live database or production configuration was changed during this review.
