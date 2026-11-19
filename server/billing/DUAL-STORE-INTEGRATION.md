@@ -44,3 +44,28 @@ The current Worker still validates the private-pilot HMAC JWT. This is not a com
 ## Integration review status
 
 The implementation is available as supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188), based on the existing PR #187 head branch. It is intentionally not merged. Review and merge PR #188 into the PR #187 branch first, then review the combined change as the single canonical Billing V2 implementation.
+## 2026-11-19 — account-session integration audit
+
+This is a source audit only; it does not enable checkout or change runtime behavior.
+
+### Confirmed repository state
+
+- The existing PWA account panel and OTP implementation currently live on draft PR #185 (feat/android-subscription-preview-20261115), not on main or this Billing V2 branch.
+- That OTP flow authenticates with the HttpOnly sahmino_session cookie and stores only a SHA-256 digest in sahmino_shared_sessions.
+- OTP-created rows in sahamban_users currently have auth_subject = NULL.
+- This Billing V2 Worker currently accepts only the private-pilot HMAC Bearer token. Its order and settlement queries resolve the account through sahamban_users.auth_subject.
+- The Android MainActivity is still a WebView test shell. It does not instantiate BillingV2ApiClient, BillingV2PurchaseFlow, or BillingV2SubscriptionView, and it has no production session-token provider.
+
+### Required integration before connecting the purchase screen
+
+1. Bring the approved OTP account/session routes and their D1 schema into the canonical Worker without replacing the existing PWA account UI.
+2. Add a server-validated bridge from the HttpOnly OTP session to Billing V2 identity. Resolve the active D1 session to its internal user_id server-side; never accept a user ID from the client and never expose a session bearer or billing token to WebView JavaScript.
+3. Make order creation, purchase verification, settlement, entitlement refresh, and account switching consistently use that authenticated internal user identity. Preserve the pilot JWT path only for isolated tests until it can be retired safely.
+4. Wire the existing native five-plan view to the store-specific Billing V2 flow only after the authenticated session provider and exact Worker origin are configured.
+5. Keep checkout disabled until real SMS sandbox delivery, isolated D1 migration, package/SKU/public-key mapping, and physical-device account-isolation tests pass.
+
+### No duplicate work / safety boundary
+
+- Do not rebuild the five-plan UI, store SDK adapters, receipt verifiers, or shared settlement ledger; those already exist on this branch.
+- Do not treat PR #185 OTP implementation as production-ready: its SMS provider binding, deployed Worker origin, D1 migration, and physical WebView cookie acceptance remain unverified.
+- Do not merge the draft PRs, deploy, migrate production D1, or enable BILLING_V2_ENABLED as part of this audit.
