@@ -49,7 +49,7 @@ class SettlementSqliteContractTests(unittest.TestCase):
             )).rowcount)
             results.append(self.db.execute(self.access_upsert, (
                 self.now, self.now, self.now, order_id, "user-1", "BAZAAR",
-                store_order_id, token_hash, self.now
+                store_order_id, token_hash, self.now, event_id
             )).rowcount)
             self.db.commit()
             return results
@@ -67,12 +67,33 @@ class SettlementSqliteContractTests(unittest.TestCase):
     def test_replayed_order_cannot_extend_access_twice(self):
         self.assertEqual(self.run_batch(), [1, 1, 1])
         # The conditional CREATED -> PAID update no longer matches.
-        # changes() gates prevent event insertion and entitlement extension.
+        # The event-gated entitlement write therefore has no source row.
         self.assertEqual(self.run_batch(event_id="event-2"), [0, 0, 0])
         row = self.db.execute(
             "SELECT expires_at FROM billing_access WHERE user_id='user-1'"
         ).fetchone()
         self.assertEqual(row[0], "2027-01-31T00:00:00.000Z")
+        self.assertEqual(self.db.execute(
+            "SELECT COUNT(*) FROM billing_events WHERE event_type='PURCHASE_VERIFIED'"
+        ).fetchone()[0], 1)
+
+    def test_two_requests_that_both_pre_read_created_only_grant_once(self):
+        # Both callers can observe CREATED before either atomic batch starts.
+        first_read = self.db.execute(
+            "SELECT status FROM billing_orders WHERE id='order-1'"
+        ).fetchone()[0]
+        second_read = self.db.execute(
+            "SELECT status FROM billing_orders WHERE id='order-1'"
+        ).fetchone()[0]
+        self.assertEqual((first_read, second_read), ("CREATED", "CREATED"))
+
+        self.assertEqual(self.run_batch(event_id="event-1"), [1, 1, 1])
+        # The second caller's stale pre-read cannot bypass the conditional UPDATE.
+        self.assertEqual(self.run_batch(event_id="event-2"), [0, 0, 0])
+        expiry = self.db.execute(
+            "SELECT expires_at FROM billing_access WHERE user_id='user-1'"
+        ).fetchone()[0]
+        self.assertEqual(expiry, "2027-01-31T00:00:00.000Z")
         self.assertEqual(self.db.execute(
             "SELECT COUNT(*) FROM billing_events WHERE event_type='PURCHASE_VERIFIED'"
         ).fetchone()[0], 1)
@@ -90,7 +111,6 @@ class SettlementSqliteContractTests(unittest.TestCase):
         self.assertEqual(row[0], "2027-03-12T00:00:00.000Z")
 
     def test_duplicate_store_token_rolls_back_entire_batch(self):
-        # A different order cannot reuse a purchase token already settled.
         self.db.execute("""
           INSERT INTO billing_orders
             (id,user_id,store,plan_id,status,amount_irr,store_product_id,created_at)
