@@ -70,3 +70,7 @@ Myket verification is implemented as server-side RSA signature verification. Baz
 - Worker environment factory: worker/create-billing-worker.mjs
 
 The Android source is compiled by the dedicated GitHub Actions workflow for both store flavors. Live store payments still require the real commercial session provider, production PWA origin, D1 migration, and real store test accounts.
+
+
+## Important: host Billing V2 reconciliation
+The repository already has draft Billing V2 work in PR #187 and related subscription UI drafts. This module defines its own Worker routes and D1 tables with names that overlap PR #187 but use a different schema and auth contract. Do not merge/deploy both backends unchanged. Read [INTEGRATION_RECONCILIATION.md](./INTEGRATION_RECONCILIATION.md) before any consolidation. The recommended production direction is one canonical host Worker, one D1 ledger, and provider-specific Bazaar/Myket adapters.
