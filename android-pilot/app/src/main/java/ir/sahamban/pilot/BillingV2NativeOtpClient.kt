@@ -92,6 +92,42 @@ class BillingV2NativeOtpClient(
         }
     }
 
+    /** Validate the persisted native session against the Worker on every cold start. */
+    fun checkSession(callback: (Result<Boolean>) -> Unit) {
+        main.post {
+            val raw = try { CookieManager.getInstance().getCookie(workerBaseUrl) } catch (_: Exception) { null }
+            val cookie = raw.orEmpty().split(';').map { it.trim() }
+                .singleOrNull { it.startsWith("sahmino_session=") }
+                ?.takeIf { it.matches(Regex("^sahmino_session=[a-f0-9]{64}$")) }
+            if (cookie == null) {
+                callback(Result.Success(false))
+                return@post
+            }
+            executor.execute {
+                val result: Result<Boolean> = try {
+                    val endpoint = URL(URL(workerBaseUrl), "/api/v1/auth/session")
+                    val connection = endpoint.openConnection() as HttpsURLConnection
+                    try {
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 10000
+                        connection.readTimeout = 15000
+                        connection.setRequestProperty("Origin", pwaOrigin)
+                        connection.setRequestProperty("Cookie", cookie)
+                        connection.setRequestProperty("Accept", "application/json")
+                        connection.setRequestProperty("Cache-Control", "no-store")
+                        val status = connection.responseCode
+                        val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+                        val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
+                        val authenticated = status == 200 && JSONObject(body).optBoolean("authenticated")
+                        if (status == 200 || status == 401) Result.Success(authenticated)
+                        else Result.Failure(status, "SESSION_CHECK_FAILED")
+                    } finally { connection.disconnect() }
+                } catch (_: Exception) { Result.Failure(0, "NETWORK_UNAVAILABLE") }
+                main.post { callback(result) }
+            }
+        }
+    }
+
     fun logout(callback: (Result<Boolean>) -> Unit) {
         val raw = try { CookieManager.getInstance().getCookie(workerBaseUrl) } catch (_: Exception) { null }
         val cookie = raw.orEmpty().split(';').map { it.trim() }
