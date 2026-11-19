@@ -36,7 +36,6 @@
 ### M3 — Source-aligned domain correction and PWA/native bridge design
 - Corrected all five internal plan IDs to the exact dossier identifiers: SAHAMBAN_PRO_30D, SAHAMBAN_PRO_60D, SAHAMBAN_PRO_90D, SAHAMBAN_PRO_180D, SAHAMBAN_PRO_365D.
 - Updated executable catalog, JSON catalog, and tests together; CI passed after the correction.
-- Added
 - `android/PWA_NATIVE_BILLING_BRIDGE.md`: independent protocol contract for the PWA/WebView-to-native billing boundary, trusted-origin requirements, message envelope, purchase/restore/entitlement actions, and secret-handling rules.
 - Status: design documented; no bridge implementation is claimed complete. The exact production PWA origin and commercial user authentication contract are not supplied in the dossier.
 
