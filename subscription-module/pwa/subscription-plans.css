@@ -1,0 +1,11 @@
+.sahmino-subscriptions{font-family:inherit;color:inherit}
+.sahmino-subscriptions__heading{font-size:1.25rem;margin:0 0 .75rem}
+.sahmino-subscriptions__status{padding:.75rem 1rem;border-radius:.75rem;background:#f4f6f8;color:#263238}
+.sahmino-subscriptions__plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.85rem}
+.sahmino-plan{border:1px solid #d9dee5;border-radius:1rem;padding:1rem;display:flex;flex-direction:column;gap:.45rem;background:#fff}
+.sahmino-plan__name{font-size:1.05rem;margin:0}
+.sahmino-plan__duration{margin:0;color:#56616d}
+.sahmino-plan__price{font-weight:700;font-size:1.05rem;margin:.35rem 0}
+.sahmino-plan__buy{margin-top:auto;border:0;border-radius:.7rem;padding:.75rem 1rem;background:#174ea6;color:#fff;font:inherit;cursor:pointer}
+.sahmino-plan__buy:disabled{opacity:.55;cursor:not-allowed}
+@media(prefers-reduced-motion:no-preference){.sahmino-plan__buy{transition:opacity .15s ease}}
