@@ -7,6 +7,8 @@ on:
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
+      - 'server/d1-sms-otp-repository.cjs'
+      - 'server/d1-sahmino-sms-otp*.sql'
       - 'android-pilot/**'
       - 'tests/billing-v2-*'
       - 'tests/android-pilot-wrapper.test.cjs'
@@ -16,6 +18,11 @@ on:
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
+      - 'server/d1-sms-otp-repository.cjs'
+      - 'server/d1-sahmino-sms-otp*.sql'
+      - 'tests/d1-sms-otp-session.test.cjs'
+      - 'tests/sahmino-sms-otp-*.test.cjs'
+      - 'tests/d1-sahmino-sms-otp-*.test.py'
       - 'tests/billing-v2-*'
       - '.github/workflows/billing-v2-dual-store.yml'
   workflow_dispatch:
@@ -45,5 +52,11 @@ jobs:
         run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/worker-api.test.cjs
       - name: Run Myket verifier, order and shared settlement tests
         run: node --test tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs
+      - name: Run OTP session repository and service tests
+        run: node --test tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs
+      - name: Validate OTP D1 migrations
+        run: |
+          python tests/d1-sahmino-sms-otp-migration.test.py
+          python tests/d1-sahmino-sms-otp-runtime.test.py
       - name: Validate fresh and existing D1 schema paths
         run: python tests/billing-v2-dual-store-schema.test.py
