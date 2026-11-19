@@ -45,6 +45,13 @@
 - Added unique indexes for store order IDs and purchase-token hashes, and explicit lifecycle checks.
 - Status: schema drafted and committed; not applied to live D1. Must be validated against target D1 runtime and reviewed before migration.
 
+### M5 — Independent backend order and entitlement services
+- Added `server/order-service.mjs`: authenticated principal is injected by trusted middleware; store product ID is resolved only from server configuration; amount and plan duration are resolved from the canonical catalog; order and ORDER_CREATED event are written through a D1 batch.
+- Added `server/entitlement-service.mjs`: current access is read from `billing_access` and active status is derived using server time; includes the pure manual-renewal expiry policy helper.
+- Added `tests/order-service.test.mjs`: checks server-owned price/product mapping, missing mapping rejection, unauthenticated/unknown plan rejection, entitlement status, and manual renewal extension.
+- GitHub Actions runs 44520669827, 44520675896, and 44520684135 completed successfully for the backend service commits. These are service-level tests using a fake D1 interface; they do not prove live D1 behavior or production authentication.
+- Status: service prototypes and tests committed; Worker routing, trusted commercial auth, store verification, and atomic settlement remain unimplemented.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
