@@ -102,3 +102,25 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - Reversal/refund handling is not implemented as a complete entitlement-reconciliation flow. Do not mark a reversed order and leave the aggregate entitlement unchanged.
 - Next settlement work: add a provider-neutral, idempotent reversal ledger and deterministic entitlement recomputation, with tests for out-of-order reversals, repeated reversal notifications, multiple purchases, and rollback. Provider-specific reversal authenticity must remain blocked until each store's authoritative contract is established.
 - Production D1 validation requires a dedicated test database and credentials; no live database or production configuration was changed during this review.
+
+
+## Verified reversal engine — 2026-11-19
+
+### Implemented on the independent branch
+- Added `server/reversal-service.mjs` as an internal-only primitive. It accepts only normalized evidence marked verified by a trusted server-side provider adapter; no public HTTP route or client-triggered refund route is exposed.
+- Reversal is bound to the authenticated owner, persisted store, store transaction ID, and persisted purchase-token hash.
+- One D1 atomic batch conditionally changes `PAID -> REVERSED`, appends an immutable `PURCHASE_REVERSED` event, removes the previous aggregate entitlement, deterministically rebuilds entitlement from all remaining `PAID` orders, and reads the result.
+- Entitlement rebuild orders remaining paid purchases by server-set `paid_at` then order ID, extending each fixed plan duration from the later of the previous expiry and that purchase's paid time.
+- Repeated notification for the same provider event is idempotent. A second/different reversal for an already reversed order is rejected.
+- Added unique constraints for one reversal per order and one application of a provider event ID. Raw receipt/token values remain excluded; hashes only.
+
+### Validation
+- GitHub Actions run [44601381376](https://github.com/Raminhashemi1/sahamban/actions/runs/44601381376) passed on commit `6fdc001e628cba6a9f22fa56f003b757ecedd70f`.
+- 51 Node.js tests passed.
+- 10 SQLite contract tests passed, including reversal of the only purchase, rebuilding after reversing an earlier purchase, out-of-order reversal, duplicate provider-event rejection, and rollback.
+- These are CI tests against SQLite and mocked D1 interfaces, not a live Cloudflare D1 validation.
+
+### Deliberate release gate
+- Bazaar/Myket authoritative refund or revocation notification contracts have not yet been established and tested. Therefore the reversal primitive is not wired to a Worker route or marketplace webhook, and refund/revocation integration is NOT complete.
+- Do not deploy or expose this primitive until each provider adapter authenticates the official event source and normalizes its transaction ID, provider event ID, purchase token hash, and payload hash.
+- The schema change adding `provider_event_id` is part of the independent schema. It has not been applied to any live D1 database.
