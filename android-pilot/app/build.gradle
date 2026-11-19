@@ -22,11 +22,17 @@ android {
     productFlavors {
         bazaar {
             dimension 'store'
+            manifestPlaceholders['marketApplicationId'] = 'com.farsitel.bazaar'
+            manifestPlaceholders['marketBindAddress'] = 'ir.cafebazaar.pardakht.InAppBillingService.BIND'
+            manifestPlaceholders['marketPermission'] = 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
             buildConfigField 'String', 'BILLING_STORE', '"BAZAAR"'
             buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
         }
         myket {
             dimension 'store'
+            manifestPlaceholders['marketApplicationId'] = 'ir.mservices.market'
+            manifestPlaceholders['marketBindAddress'] = 'ir.mservices.market.InAppBillingService.BIND'
+            manifestPlaceholders['marketPermission'] = 'ir.mservices.market.BILLING'
             buildConfigField 'String', 'BILLING_STORE', '"MYKET"'
             buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + (System.getenv('MYKET_PUBLIC_KEY') ?: '') + '"'
         }
