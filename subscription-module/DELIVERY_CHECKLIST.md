@@ -29,14 +29,16 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## Important limitations
 
-1. Main branch Android app is still a test-only WebView shell; its package ID is `ir.sahamban.pilot`, not confirmed as the published Sahmino package. It has no production commercial login/session contract and no active native billing bridge.
+1. Android now has separate Bazaar and Myket flavor coordinators and an HTTPS Billing V2 client. The host `MainActivity` remains a test-only WebView shell and intentionally does not instantiate the billing bridge: it has no production commercial login/session token provider. The temporary package ID is `ir.sahamban.pilot`, not confirmed as the published Sahmino package.
 2. Existing Worker authentication is short-lived private-pilot HMAC JWT, explicitly not the commercial account identity implementation.
 3. Myket signed receipt verification does not provide a live refund/revocation query. An authoritative Myket API contract or approved reconciliation process is still required before public launch.
 4. Myket package name, public key, and five product IDs must come from the real developer panel. Bazaar OAuth credentials and RSA key must also be configured as secrets.
 5. The schema migration is prepared and tested only against SQLite test databases; it has not been run against production D1.
-6. The existing independent PWA/Android module is a reusable implementation reference. It has not yet been connected to the actual host app Activity and the canonical PR #187 API client.
+6. The native billing coordinators are implemented in the host app's Bazaar/Myket source sets, and the API client is aligned to the canonical Worker request/response contracts. The host Activity wiring is still blocked on the production identity provider; Android flavor APK compilation is being validated in CI.
 
 ## CI evidence
+
+- Latest backend/Android wiring checks passed in [run 44532400509](https://github.com/Raminhashemi1/sahamban/actions/runs/44532400509). The dual-flavor APK build is still running in [run 44532392608](https://github.com/Raminhashemi1/sahamban/actions/runs/44532392608); no APK artifact is claimed until that job completes.
 
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
