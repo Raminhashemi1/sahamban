@@ -53,7 +53,8 @@ CREATE TABLE IF NOT EXISTS billing_events (
     'ORDER_CREATED', 'PURCHASE_VERIFIED', 'PURCHASE_REVERSED', 'PURCHASE_CANCELLED'
   )),
   created_at TEXT NOT NULL,
-  payload_hash TEXT
+  payload_hash TEXT,
+  provider_event_id TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_billing_events_order_created
   ON billing_events(order_id, created_at);
@@ -62,3 +63,12 @@ CREATE INDEX IF NOT EXISTS idx_billing_events_order_created
 CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_events_order_verified
   ON billing_events(order_id)
   WHERE event_type = 'PURCHASE_VERIFIED';
+
+-- A verified purchase may be reversed only once, and a provider notification
+-- must not be applied to two different orders.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_events_order_reversed
+  ON billing_events(order_id)
+  WHERE event_type = 'PURCHASE_REVERSED';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_events_provider_event
+  ON billing_events(provider_event_id)
+  WHERE provider_event_id IS NOT NULL;
