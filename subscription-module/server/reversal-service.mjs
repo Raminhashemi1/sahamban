@@ -44,10 +44,11 @@ export async function reverseVerifiedPurchase(db, {
 
     if (order.status === 'REVERSED') {
       const prior = await db.prepare(`
-        SELECT provider_event_id FROM billing_events
+        SELECT provider_event_id, payload_hash FROM billing_events
         WHERE order_id = ? AND event_type = 'PURCHASE_REVERSED' LIMIT 1
       `).bind(orderId).first();
-      if (prior?.provider_event_id === store + ':' + providerEventId) {
+      if (prior?.provider_event_id === store + ':' + providerEventId &&
+          prior?.payload_hash === payloadHash.toLowerCase()) {
         const current = await db.prepare(`
           SELECT expires_at FROM billing_access WHERE user_id = ? LIMIT 1
         `).bind(authenticatedUserId).first();
