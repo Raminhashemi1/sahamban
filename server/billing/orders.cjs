@@ -49,5 +49,5 @@ async function createMyketOrder(db, {subject, planId, now, makeId, skuMap: rawSk
  } catch (_) { return {status:503,error:'ORDER_CREATE_FAILED'}; }
 }
 
-module.exports = Object.assign(module.exports, {createMyketOrder, parseStoreSkuMap});
+module.exports = {createOrder, createMyketOrder, parseStoreSkuMap};
 
