@@ -2,7 +2,15 @@ import { createBillingRouter } from './routes.mjs';
 import { verifyBazaarPurchase } from '../server/providers/bazaar-verifier.mjs';
 import { verifyMyketPurchase } from '../server/providers/myket-verifier.mjs';
 
-const DEFAULT_SKU_MAP = Object.freeze({\n  SAHAMBAN_PRO_30D: 'SAHAMBAN_PRO_30D',\n  SAHAMBAN_PRO_60D: 'SAHAMBAN_PRO_60D',\n  SAHAMBAN_PRO_90D: 'SAHAMBAN_PRO_90D',\n  SAHAMBAN_PRO_180D: 'SAHAMBAN_PRO_180D',\n  SAHAMBAN_PRO_365D: 'SAHAMBAN_PRO_365D'\n});\n\nfunction parseJsonMap(value, name) {
+const DEFAULT_SKU_MAP = Object.freeze({
+  SAHAMBAN_PRO_30D: 'SAHAMBAN_PRO_30D',
+  SAHAMBAN_PRO_60D: 'SAHAMBAN_PRO_60D',
+  SAHAMBAN_PRO_90D: 'SAHAMBAN_PRO_90D',
+  SAHAMBAN_PRO_180D: 'SAHAMBAN_PRO_180D',
+  SAHAMBAN_PRO_365D: 'SAHAMBAN_PRO_365D'
+});
+
+function parseJsonMap(value, name) {
   if (typeof value !== 'string' || !value) throw new TypeError(name + '_NOT_CONFIGURED');
   const parsed = JSON.parse(value);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
