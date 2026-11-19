@@ -31,7 +31,7 @@
 - `package.json`: Node test command.
 - `tests/domain.test.mjs`: verifies all five exact IRR prices, JSON catalog parity, unknown plan rejection, early renewal, expired/absent entitlement, and invalid inputs.
 - `.github/workflows/sahmino-subscription-tests.yml`: CI workflow using Node 22.
-- Status: committed; awaiting first GitHub Actions result. No test pass is claimed until the workflow completes.
+- Status: GitHub Actions run #101 completed successfully on Node 22. All six domain tests passed (plan catalog/IRR, JSON parity, unknown plan, early renewal, expired/absent expiry, invalid input). This validates only the pure domain layer, not payment or server integration.
 
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
