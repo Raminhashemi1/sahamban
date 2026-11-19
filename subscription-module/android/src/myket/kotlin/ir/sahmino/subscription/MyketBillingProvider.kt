@@ -25,7 +25,7 @@ class MyketBillingProvider(
         suspendCancellableCoroutine { continuation ->
             try {
                 val billing = IabHelper(activity, publicKeyBase64)
-                billing.enableDebugLogging(false, "SahminoBilling")
+                billing.enableDebugLogging(false)
                 helper = billing
                 billing.startSetup { result ->
                     connected = result.isSuccess
