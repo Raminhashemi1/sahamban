@@ -111,7 +111,12 @@ test('verify route loads store from persisted order and settles only verified ev
     },
     batch: async (statements) => {
       db.batches += 1;
-      return statements.map(() => ({ success: true, meta: { changes: 1 } }));
+      return [
+        { success: true, meta: { changes: 1 } },
+        { success: true, meta: { changes: 1 } },
+        { success: true, meta: { changes: 1 } },
+        { success: true, meta: { changes: 0 }, results: [{ expires_at: '2027-01-31T00:00:00.000Z' }] }
+      ];
     }
   };
   let verifierCalls = 0;
