@@ -1,6 +1,8 @@
 import billingOrders from './billing/orders.cjs';
 import {verifyAndSettle} from './billing/bazaar.mjs';
 import {verifyAndSettleMyket} from './billing/myket.mjs';
+import otpRepository from './d1-sms-otp-repository.cjs';
+const {createD1SmsOtpRepository}=otpRepository;
 const {createOrder,createMyketOrder}=billingOrders;
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
@@ -71,15 +73,25 @@ async function readJsonLimited(request,maxBytes){
  try{return {body:JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))};}
  catch(_){return {error:'INVALID_JSON'};}
 }
+function parseCookie(request,name){
+ const raw=request.headers.get('Cookie')||'';
+ const matches=raw.split(';').map(x=>x.trim()).filter(x=>x.startsWith(name+'='));
+ if(matches.length!==1)return null;
+ const value=matches[0].slice(name.length+1);
+ return /^[a-f0-9]{64}$/.test(value)?value:null;
+}
 function parsePaidUntil(value){
  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value))return null;
  const n=Date.parse(value);
  return Number.isFinite(n)&&new Date(n).toISOString().slice(0,19)===value.slice(0,19)?n:null;
 }
-async function lookupEntitlement(db,subject,nowMs){
+async function lookupEntitlement(db,subject,nowMs,userId=null){
  if(!db||typeof db.prepare!=='function')return {state:'UNAVAILABLE',http:503};
  try{
-  const row=await db.prepare(QUERY).bind(subject).first();
+  const query=userId
+   ? QUERY.replace('WHERE u.auth_subject=?','WHERE u.id=?')
+   : QUERY;
+  const row=await db.prepare(query).bind(userId||subject).first();
   if(!row||row.account_status!=='ACTIVE'||typeof row.user_id!=='string')return {state:'INACTIVE',http:403};
   if(row.paid_until===null)return {state:'NO_SUBSCRIPTION',http:403};
   // Billing V2 grants only manual one-time products. Never label an auto-renewing
@@ -97,7 +109,7 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Sahmino-CSRF','Access-Control-Allow-Credentials':'true','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
@@ -109,8 +121,23 @@ export default {
   if((isBillingOrders||isBillingVerify)&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
-  const subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
-  if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  const sessionCookie=parseCookie(request,'sahmino_session');
+  let subject=null,userId=null;
+  if(sessionCookie){
+   if(env?.SAHMINO_OTP_ENABLED!=='true'||!cors||origin!==allowed)
+    return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+   if(request.method==='POST'&&request.headers.get('X-Sahmino-CSRF')!=='1')
+    return send({error:'CSRF_REJECTED'},403,cors);
+   try{
+    const sessionRepo=createD1SmsOtpRepository(env?.SAHAMBAN_DB);
+    const activeSession=await sessionRepo.findActiveSession(sessionCookie,nowMs);
+    if(!activeSession?.userId)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+    userId=activeSession.userId;
+   }catch(_){return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);}
+  }else{
+   subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
+   if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
+  }
   if(isBillingVerify){
    if(env?.BILLING_V2_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
@@ -119,7 +146,7 @@ export default {
    if(parsed.error)return send({error:parsed.error},parsed.error==='BODY_TOO_LARGE'?413:400,cors);
    const store=env?.BILLING_STORE||'BAZAAR';
    if(store!=='BAZAAR'&&store!=='MYKET')return send({error:'BILLING_STORE_NOT_CONFIGURED'},503,cors);
-   const args={db:env?.SAHAMBAN_DB,env,subject,body:parsed.body,now:new Date(nowMs).toISOString()};
+   const args={db:env?.SAHAMBAN_DB,env,subject,userId,body:parsed.body,now:new Date(nowMs).toISOString()};
    const result=store==='MYKET'?await verifyAndSettleMyket(args):await verifyAndSettle(args);
    return send(result.body,result.status,cors);
   }
@@ -134,7 +161,7 @@ export default {
     return send({error:'INVALID_REQUEST'},400,cors);
    const store=env?.BILLING_STORE||'BAZAAR';
    if(store!=='BAZAAR'&&store!=='MYKET')return send({error:'BILLING_STORE_NOT_CONFIGURED'},503,cors);
-   const orderArgs={subject,planId:parsed.body.planId,now:new Date(nowMs).toISOString(),
+   const orderArgs={subject,userId,planId:parsed.body.planId,now:new Date(nowMs).toISOString(),
     makeId:()=>('ord_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),
      b=>b.toString(16).padStart(2,'0')).join(''))};
    const result=store==='MYKET'
@@ -142,7 +169,7 @@ export default {
     :await createOrder(env?.SAHAMBAN_DB,orderArgs);
    return send(result,result.status||503,cors);
   }
-  const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs);
+  const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs,userId);
   if(result.http!==200)return send({proEnabled:false,reason:result.state},result.http,cors);
   return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,renewalMode:'MANUAL'},200,cors);
  }
