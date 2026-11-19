@@ -22,6 +22,10 @@ class BillingV2PurchaseFlow(
     }
 
     fun purchase(planId: String, callback: (Outcome) -> Unit) {
+        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            callback(Outcome.Failed("BILLING_DISABLED"))
+            return
+        }
         val sku = skuByPlan[planId]
         if (sku == null || !sku.matches(Regex("^[A-Za-z0-9._-]{1,100}$"))) {
             callback(Outcome.Failed("PLAN_NOT_CONFIGURED"))
@@ -74,6 +78,10 @@ class BillingV2PurchaseFlow(
     }
 
     fun restore(callback: (List<Outcome>) -> Unit) {
+        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            callback(listOf(Outcome.Failed("BILLING_DISABLED")))
+            return
+        }
         // Establish the store connection before reading inventory. Durable account
         // entitlement is still fetched from the server, including already-consumed items.
         storeBilling.connect { connected ->
