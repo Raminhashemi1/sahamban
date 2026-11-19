@@ -11,7 +11,7 @@ import java.util.concurrent.Executors
 class BillingV2ApiClient(
     private val baseUrl: String,
     private val bearerToken: String,
-    private val storeName: String = "BAZAAR"
+    private val storeName: String = BuildConfig.BILLING_STORE
 ) {
     data class Order(val id: String, val planId: String, val days: Int, val store: String)
     data class Access(val planId: String, val expiresAt: String, val renewalMode: String)
