@@ -10,7 +10,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 | 2. Backend consolidation | One Billing V2 Worker contract, one D1 entitlement ledger, Bazaar and Myket provider adapters | CODED ON THIS BRANCH; supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) opened against PR #187's head branch |
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | TEMPLATES READY; exact product IDs, package ID and public keys must come from the owner developer panels |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | RUNBOOK READY; two Worker templates share one D1 ID, but production D1/Worker resources and secrets were not changed |
-| 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | NOT RUN; requires test accounts and real installed builds |
+| 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | TEST MATRIX READY; live execution still requires test accounts and real installed builds |
 | 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD PASSED; release signing and final package identity still missing |
 
 ## Work completed on this integration branch
@@ -24,6 +24,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - Added Worker routing tests for server-side Myket selection, SKU-bound orders, and client store spoofing rejection.
 - Added Myket verifier, order creation, settlement replay/idempotency, and schema/migration tests.
 - Added separate Bazaar/Myket Wrangler templates and a deployment runbook that enforces one shared D1 database and keeps checkout disabled.
+- Added a physical-device acceptance matrix covering payment success, replay, cancellation, offline recovery, consume retry, cross-store account access, and refunds; live execution is still pending.
 - Added Bazaar/Myket Android app flavors in the host pilot project, moved the Poolakey coordinator into the Bazaar source set, added the Myket IAB v3 coordinator in the Myket source set, and aligned the API client request bodies with the canonical Worker contract.
 - Updated the host Android build to AGP 8.12.3 / Kotlin 2.2.0 / Gradle 8.13 / compileSdk 36. Both store-specific debug APKs compiled successfully in [run 44533319977](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977). Artifact: [sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977). These are unsigned debug APKs, not release APKs. The purchase/restore orchestration now has an explicit compile-time feature gate that remains hard-coded false for both debug and release builds.
 - Preserved Bazaar verification and settlement behavior; fixed the existing Bazaar test mock and idempotent replay validation discovered while running the expanded suite.
