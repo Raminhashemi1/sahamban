@@ -59,6 +59,13 @@
 - Added settlement guard tests for unverified evidence, wrong user, amount mismatch, and unsuccessful D1 batch.
 - Important: tests use a fake D1 adapter and do not establish real D1 concurrency/transaction behavior. Provider verification adapters, reversal/refund handling, and live integration remain outstanding.
 
+### M7 — Store adapter contract and integration boundaries
+- Added `providers/CONTRACT.md` defining the trusted server-side verifier interface, provider selection from the persisted order, fail-closed verification, token hashing, post-settlement consumption, and reversal handling.
+- Preserved the one-codebase/two-store design: shared PWA and entitlement ledger, store-specific native/provider adapters selected only from trusted installation provenance.
+- Bazaar: technical dossier confirms Poolakey 2.3.0. Official Poolakey repository confirms the purchase/consume separation; server verification still requires the official Bazaar API contract.
+- Myket: official developer portal is identified, but its technical content was not retrievable in this research pass. SDK/API endpoints and installer identity are deliberately not guessed; exact integration remains blocked on accessible official documentation or exported docs from the developer portal.
+- GitHub Actions run 44521057123 completed successfully after adding settlement guard tests. These tests are unit tests with fake D1, not marketplace or live D1 certification.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
