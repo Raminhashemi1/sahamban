@@ -22,7 +22,7 @@ const validBody={orderId,sku:'pro30',token:'token-123',originalJson,dataSignatur
 const receipt={kind:'androidpublisher#productPurchase',purchaseState:0,consumptionState:0,
  purchaseTimeMillis:Date.parse(now),orderId:'bazaar-order'};
 function fakeDb(order){
- return {prepare(sql){return {bind(...values){return {first:async()=>{
+ return {prepare(sql){return {bind(...values){return {values,first:async()=>{
    if(sql.includes("SELECT expires_at FROM billing_access"))return {expires_at:order.settledExpiresAt||order.expires_at};
    return order;
   }}}}},
