@@ -28,7 +28,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - `android/src/bazaar/kotlin/...`: concrete Poolakey 2.3.0 adapter and flavor factory.
 - `android/src/myket/kotlin/...`: concrete Myket Billing Client 2.2 adapter and flavor factory.
 - `android/build.gradle.kts`: standalone Android library with Bazaar and Myket product flavors.
-- Both Android release flavors compiled successfully in GitHub Actions run [44527042694](https://github.com/Raminhashemi1/sahamban/actions/runs/44527042694). The workflow uploaded AAR artifact `sahmino-billing-android-aar` (artifact ID `14531232351`).
+- Both Android release flavors compiled successfully on the latest source cleanup in GitHub Actions run [44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255). The workflow uploaded AAR artifact `sahmino-billing-android-aar` (artifact ID `14531992190`).
 - Toolchain is AGP 8.12.3, Kotlin 2.2.0, Gradle 8.13, Java 17, compileSdk 36, minSdk 26. This upgrade is required by the Kotlin metadata version of the official Myket 2.2 SDK.
 
 ### Backend / Worker
@@ -69,6 +69,10 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 4. Apply and verify `server/schema.sql` against the actual production D1 database; no live migration has been run.
 5. Configure the actual app package name and app-specific Myket public key; configure Bazaar Developer API credentials. No credentials are in GitHub.
 6. Run real purchases, interruption/recovery, consume, refund/revocation and renewal tests on physical devices using both store test accounts.
+
+## Existing billing work in the repository
+- The repository already has draft Billing V2 work, including PR [#187](https://github.com/Raminhashemi1/sahamban/pull/187) for a Bazaar-focused implementation integrated with the pilot Android wrapper, plus earlier UI/catalogue drafts (#185 and #186).
+- This module has overlapping API route paths and D1 table names but a different schema and authentication contract. It must not be merged/deployed alongside those backends unchanged. See [INTEGRATION_RECONCILIATION.md](./INTEGRATION_RECONCILIATION.md) for the concrete collision and recommended consolidation path.
 
 ## GitHub
 - All work is on `feature/sahmino-subscriptions-independent`.
