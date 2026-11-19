@@ -38,7 +38,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest backend/Android wiring checks passed in [run 44532400509](https://github.com/Raminhashemi1/sahamban/actions/runs/44532400509). The dual-flavor APK build is still running in [run 44532392608](https://github.com/Raminhashemi1/sahamban/actions/runs/44532392608); no APK artifact is claimed until that job completes.
+- Latest backend/Android wiring checks passed in [run 44532400509](https://github.com/Raminhashemi1/sahamban/actions/runs/44532400509). The first dual-flavor APK build attempt [failed before source compilation](https://github.com/Raminhashemi1/sahamban/actions/runs/44532392608) because Gradle could not resolve several remote Maven artifacts. The app repositories were aligned with the known-good standalone module and the build step now retries transient dependency-resolution failures; the fresh build is [queued/running here](https://github.com/Raminhashemi1/sahamban/actions/runs/44532834562). No APK artifact is claimed until a build completes successfully.
 
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
