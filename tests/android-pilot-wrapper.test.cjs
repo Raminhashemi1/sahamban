@@ -23,6 +23,10 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  const build=read('android-pilot/app/build.gradle');
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
+ assert.match(build,/compileSdk 36/);
+ assert.match(build,/bazaarImplementation.*Poolakey/);
+ assert.match(build,/myketImplementation.*ir\\.myket:billing:2\\.2/);
+ assert.match(build,/SAHAMBAN_BILLING_ENABLED.*false/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/assembleBazaarDebug/);
  assert.match(wf,/assembleMyketDebug/);
