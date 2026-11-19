@@ -63,3 +63,15 @@ Only afterwards choose a market-specific release wrapper/signing approach. The B
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
+
+## Current integration checkpoint
+
+The latest dual-store backend validation on the integration branch is green:
+https://github.com/Raminhashemi1/sahamban/actions/runs/44534245212
+
+A previous Bazaar + Myket debug APK build completed successfully:
+https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977
+
+That APK build predates later changes on the integration branch. A fresh Android build is triggered by this README revision so the artifacts correspond to the current source revision. Until that build finishes, do not treat the older APKs as current.
+
+The remaining host-app integration blocker is the absence of a production commercial account/session-token provider. Do not add a hard-coded pilot token or enable `SAHAMBAN_BILLING_ENABLED` to bypass that dependency.
