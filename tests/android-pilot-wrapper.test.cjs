@@ -24,7 +24,7 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
- assert.match(wf,/assembleDebug/);
+ assert.match(wf,/assembleBazaarDebug/);\n assert.match(wf,/assembleMyketDebug/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.match(wf,/upload-artifact/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
