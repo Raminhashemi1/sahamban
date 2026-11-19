@@ -30,6 +30,8 @@ public final class MainActivity extends ComponentActivity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
     private BillingV2NativeOtpClient otpClient;
+    private BillingV2SubscriptionHost subscriptionHost;
+    private boolean showingSubscription;
 
     @Override
     public void onCreate(Bundle state) {
@@ -71,8 +73,16 @@ public final class MainActivity extends ComponentActivity {
     }
 
     private void showWebApp() {
+        showingSubscription = false;
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+
+        Button subscriptions = new Button(this);
+        subscriptions.setText("اشتراک سهمینو");
+        subscriptions.setAllCaps(false);
+        subscriptions.setOnClickListener(v -> showSubscription());
+        root.addView(subscriptions, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         Button logout = new Button(this);
         logout.setText("خروج از حساب");
@@ -141,6 +151,27 @@ public final class MainActivity extends ComponentActivity {
         webView.loadUrl(START_URL);
     }
 
+    private void showSubscription() {
+        if (subscriptionHost == null) {
+            subscriptionHost = new BillingV2SubscriptionHost(this, BuildConfig.SAHAMBAN_WORKER_BASE_URL);
+        }
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+
+        Button back = new Button(this);
+        back.setText("بازگشت به سهمینو");
+        back.setAllCaps(false);
+        back.setOnClickListener(v -> showWebApp());
+        root.addView(back, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        View subscription = subscriptionHost.createView();
+        root.addView(subscription, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        showingSubscription = true;
+        setContentView(root);
+    }
+
     private void performLogout(Button button) {
         button.setEnabled(false);
         otpClient.logout(result -> {
@@ -190,6 +221,7 @@ public final class MainActivity extends ComponentActivity {
 
     @Override
     public void onBackPressed() {
+        if (showingSubscription) { showWebApp(); return; }
         if (webView != null && webView.canGoBack()) webView.goBack();
         else super.onBackPressed();
     }
@@ -202,6 +234,7 @@ public final class MainActivity extends ComponentActivity {
         }
         if (webView != null) webView.destroy();
         if (otpClient != null) otpClient.close();
+        if (subscriptionHost != null) subscriptionHost.close();
         super.onDestroy();
     }
 }
