@@ -59,7 +59,7 @@ The Billing V2 Worker branch now mounts the existing OTP request, verify, sessio
 
 The PWA is currently served from GitHub Pages while the Worker uses a separate origin. The session cookie is therefore cross-site. Do not enable WebView third-party cookies globally as a shortcut: that expands cookie exposure to every third-party origin loaded by this WebView. The native cookie provider fails closed if the Worker cookie is unavailable. Before connecting checkout, choose and validate a reviewed same-site/custom-domain deployment, or implement a native OTP sign-in flow that obtains the session over HTTPS and stores it through Android's native CookieManager without exposing it to JavaScript. The latter must include logout/revocation and account-switch handling. Neither path has passed physical-device acceptance yet.
 
-`MainActivity` now uses `BillingV2NativeOtpClient` for OTP login/session checks/logout, but still does not instantiate `BillingV2CookieSessionProvider`, `BillingV2ApiClient`, `BillingV2PurchaseFlow`, or `BillingV2SubscriptionView`. The five-plan view remains a standalone component; the purchase flow is not reachable from the installed app. Checkout remains compile-time disabled.
+`MainActivity` uses `BillingV2NativeOtpClient` for OTP login/session checks/logout. The billing components remain standalone and checkout is compile-time disabled. The native cookie provider and API client have not been validated together against a deployed Worker, and the subscription view is not yet reachable from the installed app. Checkout must remain disabled until host wiring, real store identifiers, deployed D1/Worker configuration, and physical-device purchase/settlement tests are complete.
 
 ## Native OTP login host integration — 2026-11-19
 
@@ -79,7 +79,7 @@ Physical Android device: PWA loading, RTL, basic navigation, browser
 handoff, permissions, synthetic 20/100-holding portfolio import and export,
 offline/slow network, cold/warm start, font scaling, TalkBack, and secure
 update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach. The Bazaar flavor uses Poolakey manual consumable-product APIs; the Myket flavor uses the official Myket Billing Client 2.2 IAB v3 purchase/query/consume APIs, resolved from Myket's Maven repository (`https://maven.myket.ir`). Both send signed purchase evidence to the canonical Worker. The Worker verifies the store-specific receipt and settles into the shared D1 entitlement ledger. The token is consumed only after the server has durably granted the time-limited entitlement. The native OTP identity/session entry point is now wired into `MainActivity`, but the billing coordinator and purchase orchestration are still not wired into `MainActivity` or the PWA UI. User-visible five-plan purchase integration remains a release blocker. A consumed purchase is not restored from Bazaar inventory; the user's durable entitlement must be reloaded from the authenticated Worker account. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
+Only afterwards choose a market-specific release wrapper/signing approach. The Bazaar flavor uses Poolakey manual consumable-product APIs; the Myket flavor uses the official Myket Billing Client 2.2 IAB v3 purchase/query/consume APIs, resolved from Myket's Maven repository (`https://maven.myket.ir`). Both send signed purchase evidence to the canonical Worker. The Worker verifies the store-specific receipt and settles into the shared D1 entitlement ledger. The token is consumed only after the server has durably granted the time-limited entitlement. The native OTP identity/session entry point is wired into `MainActivity`. The store-specific `BillingV2Coordinator`, `BillingV2ApiClient`, `BillingV2PurchaseFlow`, and five-plan `BillingV2SubscriptionView` exist as separate components, but they are not yet composed into the app host. The PWA currently loads after OTP; no native purchase screen is reachable from the installed APK. Do not treat the presence of these components or a successful debug build as an end-to-end purchase integration. A consumed purchase is not restored from Bazaar inventory; the user's durable entitlement must be reloaded from the authenticated Worker account. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
@@ -134,3 +134,18 @@ setContentView(subscriptionView)
 ```
 
 This selector is independently implemented and covered by repository checks, but it is not installed by the pilot `MainActivity`: that activity still lacks the real Sahmino account-session provider and published package/store configuration. Checkout remains disabled until the host integration is supplied and release acceptance is complete.
+
+
+## Verified CI state — 2026-11-19
+
+On branch `feat/billing-v2-otp-session-bridge`, commit `fdba34e7ae44b1b67cd82debde8f3d3250ab3860`, the dual-store Billing V2 validation workflow completed successfully and the Android pilot workflow built the Bazaar and Myket debug variants successfully. The uploaded artifact is an unsigned debug APK bundle for installation testing only, not a signed store release. These CI results do not verify live D1, SMS delivery, store developer APIs, real purchases, refunds, or physical-device behavior.
+
+### Remaining owner-provided configuration
+
+- Final Android `applicationId` registered in both stores.
+- Five exact Bazaar product IDs and five exact Myket product IDs, configured as consumable one-time products with the agreed prices.
+- Worker deployment URL, exact PWA origin, production D1 database binding/migrations, and SMS provider binding/secrets.
+- Bazaar merchant/API credentials and matching RSA public key; Myket public key and any officially supported reconciliation credentials.
+- Store account access/device test accounts for end-to-end sandbox or controlled live validation.
+
+Do not add placeholder identifiers as if they were real, do not enable checkout, and do not mark release-ready until the configuration and acceptance checklist are verified.
