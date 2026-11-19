@@ -89,7 +89,7 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  assert.equal(refused.status,400);
  assert.equal(storage.calls.length,before);
  const blocked=await worker.fetch(request('POST',token),{...env,BILLING_V2_ENABLED:'false'});
- assert.equal(blocked.status,503);
+ assert.equal(blocked.status,404);
  const checkout=await worker.fetch(new Request('https://worker.example/api/v1/checkout',{method:'POST'}),env);
  assert.equal(checkout.status,404);
 });
