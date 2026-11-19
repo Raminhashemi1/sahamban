@@ -57,18 +57,21 @@ test('Billing API client obtains fresh native OTP cookie headers and never uses 
  assert.doesNotMatch(activity,/addJavascriptInterface/);
 });
 
-test('standalone subscription selector renders five Rial-priced manual plans and restore action',()=>{
+test('native subscription selector uses exact marketplace prices and manual-renewal wording',()=>{
  const ui=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2SubscriptionView.kt');
+ const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
  for(const plan of ['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D',
   'SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D']) assert.ok(ui.includes(plan),plan);
- for(const price of ['1_500_000L','2_850_000L','4_050_000L','7_650_000L','14_600_000L'])
-  assert.ok(ui.includes(price),price);
- assert.match(ui,/ریال/);
+ assert.match(ui,/قیمت فروشگاه/);
+ assert.match(ui,/SAHAMBAN_BILLING_ENABLED/);
  assert.match(ui,/تمدید خودکار نداریم/);
  assert.match(ui,/بازیابی اشتراک/);
  assert.match(ui,/purchaseFlow\.purchase\(plan\.id\)/);
  assert.match(ui,/purchaseFlow\.restore/);
  assert.match(ui,/NOT_AUTHENTICATED/);
+ assert.match(flow,/fun loadPlanDetails/);
+ assert.match(flow,/displayPrice/);
+ assert.doesNotMatch(ui,/1_500_000L|2_850_000L|4_050_000L|7_650_000L|14_600_000L/);
 });
 
 
