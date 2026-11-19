@@ -84,7 +84,7 @@ test('untrusted origin is rejected', async () => {
   assert.equal(response.status, 403);
 });
 
-test('verification route stays unavailable until provider verifiers and consume recovery exist', async () => {
+test('verification route rejects malformed purchase evidence', async () => {
   const { handler } = setup();
   const response = await handler(request('/api/v2/billing/verify', {
     method: 'POST', body: { orderId: 'order-1', evidence: {} }
