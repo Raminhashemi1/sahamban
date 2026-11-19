@@ -27,11 +27,11 @@ class BillingV2PurchaseFlow(
             callback(Outcome.Failed("PLAN_NOT_CONFIGURED"))
             return
         }
-        // Establish the Bazaar connection before creating an order; otherwise a
+        // Establish the store connection before creating an order; otherwise a
         // disconnected client leaves an avoidable orphan CREATED order on the server.
         storeBilling.connect { connected ->
             if (!connected) {
-                callback(Outcome.Failed("BAZAAR_CONNECTION_FAILED"))
+                callback(Outcome.Failed("STORE_CONNECTION_FAILED"))
                 return@connect
             }
             api.createOrder(planId) { orderResult ->
@@ -76,9 +76,9 @@ class BillingV2PurchaseFlow(
     fun restore(callback: (List<Outcome>) -> Unit) {
         // Establish the store connection before reading inventory. Durable account
         // entitlement is still fetched from the server, including already-consumed items.
-        bazaar.connect { connected ->
+        storeBilling.connect { connected ->
             if (!connected) {
-                callback(listOf(Outcome.Failed("BAZAAR_CONNECTION_FAILED")))
+                callback(listOf(Outcome.Failed("STORE_CONNECTION_FAILED")))
                 return@connect
             }
             storeBilling.loadPlanDetails(skuByPlan.values.toList()) { productDetails ->
@@ -124,7 +124,7 @@ class BillingV2PurchaseFlow(
                             evidence.originalJson, evidence.dataSignature) { verification ->
                             when (verification) {
                                 is BillingV2ApiClient.Result.Success ->
-                                    bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                    storeBilling.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
                                         results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
                                         completeOne()
                                     }
