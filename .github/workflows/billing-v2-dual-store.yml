@@ -60,3 +60,5 @@ jobs:
           python tests/d1-sahmino-sms-otp-runtime.test.py
       - name: Validate fresh and existing D1 schema paths
         run: python tests/billing-v2-dual-store-schema.test.py
+
+# OTP session bridge regression coverage is included in this workflow.
