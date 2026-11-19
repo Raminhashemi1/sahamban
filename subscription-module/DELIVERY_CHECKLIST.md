@@ -40,9 +40,10 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest dual-store backend and Android wiring tests passed for current documentation head `7557ff58`: [run 44537634613](https://github.com/Raminhashemi1/sahamban/actions/runs/44537634613).
-- Both Bazaar and Myket debug APKs compiled and were uploaded for code commit `650a27ee`: [run 44537588855](https://github.com/Raminhashemi1/sahamban/actions/runs/44537588855). Artifact: `sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE`, expires 2026-11-26. The only subsequent change to branch head `7557ff58` is documentation; Android source did not change.
-- These are unsigned debug/test APKs. They are not production-signed builds and have not been tested against live store accounts.
+- Latest dual-store backend, schema/migration, provider verification/settlement, Worker routing and Android wiring checks passed on current source commit `dc11bc1`: [run 44537964748](https://github.com/Raminhashemi1/sahamban/actions/runs/44537964748).
+- Both Bazaar and Myket debug APKs compiled and were uploaded successfully for code commit `650a27ee`: [run 44537588855](https://github.com/Raminhashemi1/sahamban/actions/runs/44537588855). Artifact: `sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE`, expires 2026-11-26. SHA-256: `4204f0fa4fa31a8fb7a5bf1be16a84b002908d569bf89e6229acc91951622b95`. Branch head `dc11bc1` contains documentation-only changes after the APK build; Android source is unchanged.
+- APKs are unsigned debug/test builds, not release-signed packages. No live Bazaar/Myket account purchase or production deployment has been performed.
+
 ## Integration review
 
 - Supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) targets the existing Billing V2 branch from PR #187. It is not merged.
