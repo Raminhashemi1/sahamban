@@ -53,6 +53,14 @@ javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/
 java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
 ```
 
+## OTP route and cross-origin session status
+
+The Billing V2 Worker branch now mounts the existing OTP request, verify, session-check, and logout routes using the shared D1 OTP repository/service. This is server-side route integration only; it does not mean the SMS provider binding, secrets, D1 migration, or deployed Worker are configured.
+
+The PWA is currently served from GitHub Pages while the Worker uses a separate origin. The session cookie is therefore cross-site. Do not enable WebView third-party cookies globally as a shortcut: that expands cookie exposure to every third-party origin loaded by this WebView. The native cookie provider fails closed if the Worker cookie is unavailable. Before connecting checkout, choose and validate a reviewed same-site/custom-domain deployment, or implement a native OTP sign-in flow that obtains the session over HTTPS and stores it through Android's native CookieManager without exposing it to JavaScript. The latter must include logout/revocation and account-switch handling. Neither path has passed physical-device acceptance yet.
+
+`MainActivity` still does not instantiate `BillingV2CookieSessionProvider`, `BillingV2ApiClient`, `BillingV2PurchaseFlow`, or `BillingV2SubscriptionView`. The five-plan view remains a standalone component; the purchase flow is not reachable from the installed app. Checkout remains compile-time disabled.
+
 ## Acceptance still required
 
 Physical Android device: PWA loading, RTL, basic navigation, browser
