@@ -121,6 +121,8 @@ export default {
   if((isBillingOrders||isBillingVerify)&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
+  // Prefer the HttpOnly OTP session whenever its cookie is present; never fall back
+  // to a pilot JWT after a malformed, revoked, or disabled session cookie.
   const cookieHeader=request.headers.get('Cookie')||'';
   const hasSessionCookie=cookieHeader.split(';').some(part=>part.trim().startsWith('sahmino_session='));
   const sessionCookie=parseCookie(request,'sahmino_session');
