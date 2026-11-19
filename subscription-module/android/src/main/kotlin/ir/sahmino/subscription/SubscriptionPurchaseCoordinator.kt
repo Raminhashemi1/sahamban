@@ -56,7 +56,16 @@ class SubscriptionPurchaseCoordinator(
         val order = backend.createOrder(planId)
         require(order.store == storeName) { "ORDER_STORE_MISMATCH" }
 
-        val storePurchase = storeProvider.purchase(order.productId, order.orderId)
+        val storePurchase = try {
+            storeProvider.purchase(order.productId, order.orderId)
+        } catch (error: Throwable) {
+            if (error.message == "PURCHASE_CANCELLED" ||
+                error.message == "USER_CANCELED" ||
+                error.message == "IABHELPER_USER_CANCELLED") {
+                return mapOf("status" to "CANCELLED")
+            }
+            throw error
+        }
         val settlement = backend.verifyPurchase(order.orderId, storePurchase)
         if (!settlement.paid) {
             return mapOf("status" to "PENDING_VERIFICATION")
