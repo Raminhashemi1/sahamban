@@ -34,10 +34,10 @@ export function createBillingWorker(env, { authenticateRequest }) {
     throw new TypeError('BILLING_STORE_MUST_BE_SET_PER_DEPLOYMENT');
   }
 
-  const productMaps = {
-    BAZAAR: parseJsonMap(env.BAZAAR_SKU_MAP, 'BAZAAR_SKU_MAP'),
-    MYKET: parseJsonMap(env.MYKET_SKU_MAP, 'MYKET_SKU_MAP')
-  };
+  const storeProductMap = env.BILLING_STORE === 'BAZAAR'
+    ? parseJsonMap(env.BAZAAR_SKU_MAP, 'BAZAAR_SKU_MAP')
+    : parseJsonMap(env.MYKET_SKU_MAP, 'MYKET_SKU_MAP');
+  const productMaps = { [env.BILLING_STORE]: storeProductMap };
   const providerVerifiers = {
     BAZAAR: (args) => verifyBazaarPurchase({
       ...args,
