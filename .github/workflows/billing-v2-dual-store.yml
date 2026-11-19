@@ -11,6 +11,7 @@ on:
       - 'server/d1-sahmino-sms-otp*.sql'
       - 'android-pilot/**'
       - 'tests/billing-v2-*'
+      - 'tests/worker-api.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
       - '.github/workflows/billing-v2-dual-store.yml'
