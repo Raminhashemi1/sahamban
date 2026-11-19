@@ -36,3 +36,15 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(wf,/upload-artifact/);
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
 });
+
+test('Billing API client obtains a fresh native session token per request',()=>{
+ const api=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2ApiClient.kt');
+ assert.match(api,/fun interface BillingV2TokenProvider/);
+ assert.match(api,/private val tokenProvider: BillingV2TokenProvider/);
+ assert.match(api,/tokenProvider\.getToken/);
+ assert.match(api,/NOT_AUTHENTICATED/);
+ assert.match(api,/tokenProvider\.getToken[\s\S]*?main\.post/);
+ assert.doesNotMatch(api,/private val bearerToken/);
+ const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
+ assert.doesNotMatch(activity,/addJavascriptInterface/);
+});
