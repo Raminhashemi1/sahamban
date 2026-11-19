@@ -137,7 +137,7 @@ class BillingV2ApiClient(
             authProvider.getHeaders { candidate ->
                 val safe = candidate?.takeIf { headers ->
                     headers["Cookie"]?.matches(Regex("^sahmino_session=[a-f0-9]{64}$")) == true &&
-                        headers["Origin"] == "https://raminhashemi1.github.io" &&
+                        headers["Origin"] == BuildConfig.SAHAMBAN_PWA_ORIGIN &&
                         headers["X-Sahmino-CSRF"] == "1" &&
                         headers.keys.all { it in setOf("Cookie", "Origin", "X-Sahmino-CSRF") }
                 }
