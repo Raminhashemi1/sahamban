@@ -39,6 +39,12 @@
 - `android/PWA_NATIVE_BILLING_BRIDGE.md`: independent protocol contract for the PWA/WebView-to-native billing boundary, trusted-origin requirements, message envelope, purchase/restore/entitlement actions, and secret-handling rules.
 - Status: design documented; no bridge implementation is claimed complete. The exact production PWA origin and commercial user authentication contract are not supplied in the dossier.
 
+### M4 — Independent Billing V2 data model
+- Replaced the earlier generic subscription_orders/subscription_entitlements draft with a dossier-aligned Billing V2 model: billing_orders, billing_access, billing_events.
+- Added a store discriminator (BAZAAR/MYKET) and generic store product/order fields so each store has its own transaction identifiers while account entitlement remains shared.
+- Added unique indexes for store order IDs and purchase-token hashes, and explicit lifecycle checks.
+- Status: schema drafted and committed; not applied to live D1. Must be validated against target D1 runtime and reviewed before migration.
+
 ## Fixed plan catalog
 | Plan ID | Days | Price (IRR) |
 |---|---:|---:|
