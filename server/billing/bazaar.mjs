@@ -60,9 +60,9 @@ async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now(),allowConsumed
    throw Error('INAPP_PURCHASE_NOT_VALID');
  return {receipt,purchaseTime:new Date(purchaseTimeMs).toISOString()};
 }
-export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
+export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fetch}){
  if(env.BILLING_V2_ENABLED!=='true')return {status:404,body:{error:'BILLING_DISABLED'}};
- if(!subject)return {status:401,body:{error:'UNAUTHENTICATED'}};
+ if(!(typeof subject==='string'&&subject.length>0)&&!(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))return {status:401,body:{error:'UNAUTHENTICATED'}};
  if(!body||Object.keys(body).sort().join(',')!=='dataSignature,orderId,originalJson,sku,token'||
    typeof body.orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.orderId)||
    typeof body.sku!=='string'||typeof body.token!=='string'||body.token.length<8||body.token.length>4096||
@@ -74,7 +74,10 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  const planId=PLAN_IDS.find(id=>mapping[id]===body.sku);
  if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
-  const order=await db.prepare("SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
+  const query=userId
+   ? "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
+   : "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
+  const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
   await verifySignedPurchase(env,body);
@@ -92,7 +95,7 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
       (current.receipt.orderId&&order.bazaar_order_id&&order.bazaar_order_id!==tokenHash&&
        current.receipt.orderId!==order.bazaar_order_id))
     return {status:409,body:{error:'PURCHASE_STATE_MISMATCH'}};
-   const restored=await settle(db,{orderId:body.orderId,subject,planId,
+   const restored=await settle(db,{orderId:body.orderId,subject,userId,planId,
     bazaarOrderId:order.bazaar_order_id||tokenHash,tokenHash,
     purchaseTime:order.paid_at,now});
    return restored.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:restored.expiresAt,
