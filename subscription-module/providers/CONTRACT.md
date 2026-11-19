@@ -61,3 +61,23 @@ A verified refund/reversal must be an authenticated provider event. It must crea
 - Bazaar: dossier identifies Poolakey 2.3.0 and its purchase/consume flow. The independent server verifier still needs to be implemented and tested against the official Bazaar API.
 - Myket: official developer portal is identified at https://developer.myket.ir/fa/, but its technical page content could not be retrieved in the current research pass. No Myket endpoint, SDK signature, response schema, or installer package name is invented here.
 - Both: no production credentials or store product IDs are committed.
+
+
+## Verified refund/reversal adapter contract
+
+A provider adapter may call the internal `reverseVerifiedPurchase` primitive only after authenticating an authoritative store refund/revocation event. The normalized object is:
+
+```js
+{
+  verified: true,
+  store: 'BAZAAR' | 'MYKET',
+  storeOrderId: '...',
+  purchaseTokenHash: '<64-char lowercase SHA-256 hex>',
+  providerEventId: '...',
+  payloadHash: '<64-char lowercase SHA-256 hex>'
+}
+```
+
+The provider event ID is namespaced by store before persistence. The adapter must bind the notification to the same persisted store transaction and purchase token hash. Duplicate notifications must retain the same provider event ID. The internal service performs no network calls and is not an HTTP endpoint.
+
+Do not implement a webhook, polling job, or refund route until the exact official event/API authentication, response fields, retry semantics, and test environment are established for that marketplace. Myket's currently reviewed signed purchase response alone is not a live refund/revocation lookup.
