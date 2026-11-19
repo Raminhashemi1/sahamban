@@ -35,8 +35,8 @@ async function readJsonObject(request, maxBytes = 4096) {
  * - productMaps: server-side SKU map, never supplied by the client
  * - allowedOrigin: exact PWA HTTPS origin
  *
- * This router deliberately does not expose /verify until real provider verifiers
- * and post-settlement consume/recovery handling are installed.
+ * Provider verifiers are injected from Worker secrets/configuration. The client
+ * cannot choose the store; the persisted order selects the verifier.
  */
 export function createBillingRouter({
   db,
