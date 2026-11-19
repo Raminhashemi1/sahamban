@@ -65,7 +65,9 @@ export async function mountSubscriptionPlans(root, billing = window.SahminoBilli
           status.textContent = 'پرداخت تأیید شد؛ در حال دریافت اعتبار اشتراک…';
           const entitlement = await billing.getEntitlement();
           status.textContent = entitlement?.active
-            ? `اشتراک شما فعال است. تاریخ انقضا: ${new Date(entitlement.expiresAt).toLocaleDateString('fa-IR')}`
+            ? (state === 'SETTLED_CONSUMPTION_PENDING'
+                ? `پرداخت ثبت شد و اشتراک فعال است؛ نهایی‌سازی خرید فروشگاه در حال پیگیری است. انقضا: ${new Date(entitlement.expiresAt).toLocaleDateString('fa-IR')}`
+                : `اشتراک شما فعال است. تاریخ انقضا: ${new Date(entitlement.expiresAt).toLocaleDateString('fa-IR')}`)
             : 'پرداخت ثبت شد؛ وضعیت اشتراک در حال به‌روزرسانی است.';
         } else if (state === 'CANCELLED') {
           status.textContent = 'خرید توسط شما لغو شد.';
