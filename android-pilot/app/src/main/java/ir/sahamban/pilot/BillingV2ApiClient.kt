@@ -8,18 +8,18 @@ import javax.net.ssl.HttpsURLConnection
 import java.util.concurrent.Executors
 
 /**
- * Supplies the current access token from the app's already-authenticated account session.
- * Implementations must never mint pilot tokens or expose this token to WebView JavaScript.
- * Invoke the callback exactly once; return null when the user is signed out.
+ * Supplies native-only request headers for the current authenticated account.
+ * OTP implementations read the HttpOnly cookie from WebView's cookie jar.
+ * Credentials must never be exposed to WebView JavaScript. Callback exactly once.
  */
-fun interface BillingV2TokenProvider {
-    fun getToken(callback: (String?) -> Unit)
+fun interface BillingV2AuthProvider {
+    fun getHeaders(callback: (Map<String, String>?) -> Unit)
 }
 
 /** HTTPS-only adapter for authenticated Billing V2 Worker endpoints. */
 class BillingV2ApiClient(
     private val baseUrl: String,
-    private val tokenProvider: BillingV2TokenProvider,
+    private val authProvider: BillingV2AuthProvider,
     private val storeName: String = BuildConfig.BILLING_STORE
 ) {
     data class Order(val id: String, val planId: String, val days: Int, val store: String)
@@ -46,10 +46,10 @@ class BillingV2ApiClient(
      * authenticated session. No token is cached across requests.
      */
     fun refreshEntitlement(callback: (Result<Entitlement>) -> Unit) {
-        withToken { bearerToken ->
-            if (bearerToken == null) {
+        withAuth { authHeaders ->
+            if (authHeaders == null) {
                 callback(Result.Failure(401, "NOT_AUTHENTICATED"))
-                return@withToken
+                return@withAuth
             }
             executor.execute {
                 val result: Result<Entitlement> = try {
@@ -62,7 +62,7 @@ class BillingV2ApiClient(
                         connection.requestMethod = "GET"
                         connection.connectTimeout = 10000
                         connection.readTimeout = 15000
-                        connection.setRequestProperty("Authorization", "Bearer $bearerToken")
+                        authHeaders.forEach { (name, value) -> connection.setRequestProperty(name, value) }
                         connection.setRequestProperty("Accept", "application/json")
                         connection.setRequestProperty("Cache-Control", "no-store")
                         val status = connection.responseCode
@@ -131,17 +131,17 @@ class BillingV2ApiClient(
         }, callback)
     }
 
-    /**
-     * Resolve the current account token for each call. This prevents stale tokens
-     * from surviving sign-out/account-switch and keeps credentials out of WebView.
-     */
-    private fun withToken(callback: (String?) -> Unit) {
+    /** Resolve fresh native session headers for every request; never cache credentials. */
+    private fun withAuth(callback: (Map<String, String>?) -> Unit) {
         try {
-            tokenProvider.getToken { candidate ->
-                val token = candidate?.takeIf {
-                    it.isNotBlank() && it.length <= 4096 && it.none(Char::isWhitespace)
+            authProvider.getHeaders { candidate ->
+                val safe = candidate?.takeIf { headers ->
+                    headers["Cookie"]?.matches(Regex("^sahmino_session=[a-f0-9]{64}$")) == true &&
+                        headers["Origin"] == "https://raminhashemi1.github.io" &&
+                        headers["X-Sahmino-CSRF"] == "1" &&
+                        headers.keys.all { it in setOf("Cookie", "Origin", "X-Sahmino-CSRF") }
                 }
-                main.post { callback(token) }
+                main.post { callback(safe) }
             }
         } catch (_: Exception) {
             main.post { callback(null) }
@@ -154,10 +154,10 @@ class BillingV2ApiClient(
         map: (Int, JSONObject) -> Result<T>,
         callback: (Result<T>) -> Unit
     ) {
-        withToken { bearerToken ->
-            if (bearerToken == null) {
+        withAuth { authHeaders ->
+            if (authHeaders == null) {
                 callback(Result.Failure(401, "NOT_AUTHENTICATED"))
-                return@withToken
+                return@withAuth
             }
             executor.execute {
                 val result: Result<T> = try {
@@ -171,7 +171,7 @@ class BillingV2ApiClient(
                         connection.connectTimeout = 10000
                         connection.readTimeout = 15000
                         connection.doOutput = true
-                        connection.setRequestProperty("Authorization", "Bearer $bearerToken")
+                        authHeaders.forEach { (name, value) -> connection.setRequestProperty(name, value) }
                         connection.setRequestProperty("Content-Type", "application/json")
                         connection.setRequestProperty("Accept", "application/json")
                         connection.setRequestProperty("Cache-Control", "no-store")
