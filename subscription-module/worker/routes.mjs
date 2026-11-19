@@ -73,7 +73,15 @@ export function createBillingRouter({
   providerVerifiers = {},
   allowedOrigin
 }) {
-  let parsedOrigin;\n  try { parsedOrigin = new URL(allowedOrigin); } catch { parsedOrigin = null; }\n  if (!db || typeof authenticateRequest !== 'function' ||\n      typeof resolveStore !== 'function' || !productMaps ||\n      typeof allowedOrigin !== 'string' || !parsedOrigin ||\n      parsedOrigin.protocol !== 'https:' || parsedOrigin.origin !== allowedOrigin ||\n      parsedOrigin.username || parsedOrigin.password || parsedOrigin.search || parsedOrigin.hash) {\n    throw new TypeError('BILLING_ROUTER_DEPENDENCY_MISSING');\n  }
+  let parsedOrigin;
+  try { parsedOrigin = new URL(allowedOrigin); } catch { parsedOrigin = null; }
+  if (!db || typeof authenticateRequest !== 'function' ||
+      typeof resolveStore !== 'function' || !productMaps ||
+      typeof allowedOrigin !== 'string' || !parsedOrigin ||
+      parsedOrigin.protocol !== 'https:' || parsedOrigin.origin !== allowedOrigin ||
+      parsedOrigin.username || parsedOrigin.password || parsedOrigin.search || parsedOrigin.hash) {
+    throw new TypeError('BILLING_ROUTER_DEPENDENCY_MISSING');
+  }
 
   return async function handleBillingRequest(request) {
     const url = new URL(request.url);
