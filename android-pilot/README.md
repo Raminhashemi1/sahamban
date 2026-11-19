@@ -61,6 +61,12 @@ The PWA is currently served from GitHub Pages while the Worker uses a separate o
 
 `MainActivity` still does not instantiate `BillingV2CookieSessionProvider`, `BillingV2ApiClient`, `BillingV2PurchaseFlow`, or `BillingV2SubscriptionView`. The five-plan view remains a standalone component; the purchase flow is not reachable from the installed app. Checkout remains compile-time disabled.
 
+## Native OTP sign-in transport — 2026-11-19
+
+Added `BillingV2NativeOtpClient` as a native HTTPS client for the existing Worker OTP request, verify, and logout endpoints. It sends the exact configured PWA Origin, validates the OTP challenge/session response, and installs the Worker-issued Secure/HttpOnly/SameSite=None cookie into Android's native `CookieManager`. This removes the requirement that a cross-site GitHub Pages fetch successfully persist the Worker Set-Cookie response: the native HTTPS client receives the response and performs the cookie-jar handoff itself. Logout revokes the server session before clearing the native cookie.
+
+The helper does not expose the cookie to JavaScript, local storage, logs, or URLs. It is not yet wired to a visible OTP login screen or MainActivity. The Worker URL, SMS provider binding, secrets, live D1 migration, and physical-device tests are still required. Billing remains disabled and no purchase can be made from this build.
+
 ## Acceptance still required
 
 Physical Android device: PWA loading, RTL, basic navigation, browser
