@@ -40,7 +40,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - `server/providers/bazaar-verifier.mjs`: Bazaar Developer API v2 OAuth refresh and in-app purchase validation.
 - `server/providers/myket-verifier.mjs`: server-side RSA verification of signed Myket IAB purchase data.
 - `worker/routes.mjs`: authenticated order, entitlement and provider-specific verify routes.
-- `worker/create-billing-worker.mjs`: deployment factory; store is fixed by server-side `BILLING_STORE`, never by a client field.
+- `worker/create-billing-worker.mjs`: deployment factory; store is fixed by server-side `BILLING_STORE`, never by a client field.\n- Worker request parsing is byte-bounded while streaming, requires JSON content type, rejects query parameters, and validates an exact HTTPS origin.
 - Two store deployments can share the same D1 database and entitlement ledger.
 
 ### Provider handling
@@ -49,7 +49,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - Raw purchase tokens are not persisted; only SHA-256 hashes are stored.
 - Default SKU mapping uses the canonical plan IDs. Override server-side maps if the store developer panels already use different product IDs. The defaults do not claim those SKUs are already created in the store panels.
 
-## Automated validation
+### Recent hardening\n- Added automated protocol tests for PWA/native bridge concurrency, error replies, malformed replies and send failures.\n- Added Worker route tests for exact-origin configuration, query rejection, JSON content type and streaming body-size enforcement.\n- Worker now rejects over-limit bodies before buffering them in full and rejects non-exact origin configuration.\n- Native purchase coordinator now distinguishes explicit cancellation from payment failure.\n\n## Automated validation
 - Node tests cover domain rules, order creation, provider verifiers, Worker routes and configuration factory.
 - SQLite tests execute the exact settlement SQL extracted from the service and cover successful grant, replay protection, early renewal and transaction rollback.
 - GitHub Actions run [44526725332](https://github.com/Raminhashemi1/sahamban/actions/runs/44526725332): both Android release flavors compiled successfully.
