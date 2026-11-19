@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {DatabaseSync}=require('node:sqlite');
-const {settle}=require('../server/billing/settlement.cjs');
+const {settle,settleMyket}=require('../server/billing/settlement.cjs');
 
 const now='2026-01-01T00:00:00.000Z';
 const planId='SAHAMBAN_PRO_30D';
@@ -132,5 +132,59 @@ test('a purchase token already used by another order rolls back the entire new s
  assert.equal(sqlite.prepare('SELECT status FROM billing_orders WHERE id=?').get(second).status,'CREATED');
  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,1);
  assert.equal(sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at,before);
+ sqlite.close();
+});
+
+
+function createMyketOrder(sqlite,id,createdAt=now){
+ sqlite.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,store,store_product_id,created_at) VALUES(?,?,?,'CREATED','MYKET',?,?)")
+  .run(id,'u1',planId,'myket_30d',createdAt);
+}
+function myketInput(id,hash,storeOrderId){
+ return {orderId:id,subject,planId,storeOrderId,tokenHash:hash,
+  purchaseTime:now,now};
+}
+
+test('real SQLite Myket settlement atomically records order, event and shared entitlement',async()=>{
+ const {sqlite,adapter}=setup(),id='ord_'+'8'.repeat(32),hash='8'.repeat(64);
+ createMyketOrder(sqlite,id);
+ const result=await settleMyket(adapter,myketInput(id,hash,'myket-order-8'));
+ assert.deepEqual(result,{ok:true,restored:false,expiresAt:'2026-01-31T00:00:00.000Z',
+  daysAdded:30,renewalMode:'MANUAL'});
+ const order=sqlite.prepare('SELECT status,store,store_order_id,purchase_token_hash FROM billing_orders WHERE id=?').get(id);
+ assert.equal(order.status,'PAID');assert.equal(order.store,'MYKET');
+ assert.equal(order.store_order_id,'myket-order-8');assert.equal(order.purchase_token_hash,hash);
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,1);
+ assert.equal(sqlite.prepare('SELECT auto_renewing FROM billing_access WHERE user_id=?').get('u1').auto_renewing,0);
+ sqlite.close();
+});
+
+test('real SQLite Myket replay is idempotent and duplicate token cannot settle another order',async()=>{
+ const {sqlite,adapter}=setup(),first='ord_'+'9'.repeat(32),second='ord_'+'a'.repeat(32),hash='9'.repeat(64);
+ createMyketOrder(sqlite,first);createMyketOrder(sqlite,second);
+ const initial=await settleMyket(adapter,myketInput(first,hash,'myket-order-9'));
+ assert.equal(initial.ok,true);
+ const replay=await settleMyket(adapter,myketInput(first,hash,'myket-order-9'));
+ assert.equal(replay.restored,true);assert.equal(replay.daysAdded,0);
+ const before=sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at;
+ const duplicate=await settleMyket(adapter,myketInput(second,hash,'myket-order-other'));
+ assert.equal(duplicate.ok,false);
+ assert.equal(sqlite.prepare('SELECT status FROM billing_orders WHERE id=?').get(second).status,'CREATED');
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,1);
+ assert.equal(sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at,before);
+ sqlite.close();
+});
+
+test('two distinct verified Myket orders extend one SQLite entitlement by exactly two terms',async()=>{
+ const {sqlite,adapter}=setup(),first='ord_'+'b'.repeat(32),second='ord_'+'c'.repeat(32);
+ createMyketOrder(sqlite,first);createMyketOrder(sqlite,second);
+ const [a,b]=await Promise.all([
+  settleMyket(adapter,myketInput(first,'b'.repeat(64),'myket-order-b')),
+  settleMyket(adapter,myketInput(second,'c'.repeat(64),'myket-order-c'))
+ ]);
+ assert.equal(a.ok,true);assert.equal(b.ok,true);
+ assert.equal(sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at,
+  '2026-03-02T00:00:00.000Z');
+ assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,2);
  sqlite.close();
 });
