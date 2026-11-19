@@ -90,3 +90,21 @@ The current integration branch includes the native `BillingV2TokenProvider` inje
 ## Current-head artifact rebuild — 2026-11-19
 
 The Billing V2 validation workflow passed on integration head `2be8ce24fbb75a9d4377efbf0443ea47cb5951a4` in run 44541889889. This documentation checkpoint triggers a fresh Bazaar/Myket debug APK build from the exact current head. The outputs remain unsigned test builds and must not be treated as store-ready releases.
+
+
+## Standalone subscription selector
+
+`BillingV2SubscriptionView` is a reusable native Android view that renders the five approved manual-renewal plans and their Rial prices, starts an explicitly selected purchase through the injected `BillingV2PurchaseFlow`, exposes restore, and displays success/cancel/failure states in Persian. It does not create identity, hold store credentials, or communicate purchase tokens to WebView JavaScript.
+
+The production host app can attach it after constructing `BillingV2PurchaseFlow` with its authenticated `BillingV2TokenProvider`, exact store SKU map, expected published package name, and the configured store coordinator:
+
+```kotlin
+val subscriptionView = BillingV2SubscriptionView(
+    context = this,
+    purchaseFlow = purchaseFlow,
+    onStatusChanged = { message -> /* update host status if needed */ }
+)
+setContentView(subscriptionView)
+```
+
+This selector is independently implemented and covered by repository checks, but it is not installed by the pilot `MainActivity`: that activity still lacks the real Sahmino account-session provider and published package/store configuration. Checkout remains disabled until the host integration is supplied and release acceptance is complete.
