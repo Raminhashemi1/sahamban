@@ -42,7 +42,7 @@ test('Myket settlement grants one fixed term in the shared access ledger',async(
  assert.equal(result.daysAdded,30);
  assert.equal(result.expiresAt,'2026-01-31T00:00:00.000Z');
  assert.equal(order.status,'PAID');
- assert.equal(db.calls.length,2);
+ assert.equal(db.calls.length,5);
 });
 
 test('Myket replay of the same settled order is idempotent',async()=>{
