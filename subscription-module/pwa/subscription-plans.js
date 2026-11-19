@@ -61,7 +61,7 @@ export async function mountSubscriptionPlans(root, billing = window.SahminoBilli
       try {
         const result = await billing.purchase(plan.id);
         const state = result?.status;
-        if (state === 'PURCHASED_AND_SETTLED' || state === 'PAID') {
+        if (state === 'PURCHASED_AND_SETTLED' || state === 'PAID' || state === 'SETTLED_CONSUMPTION_PENDING') {
           status.textContent = 'پرداخت تأیید شد؛ در حال دریافت اعتبار اشتراک…';
           const entitlement = await billing.getEntitlement();
           status.textContent = entitlement?.active
