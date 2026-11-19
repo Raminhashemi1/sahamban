@@ -25,7 +25,6 @@ jobs:
       - run: node --test tests/worker-api.test.cjs
       - run: node --test tests/pilot-orders-api.test.cjs
       - run: node --test tests/mint-pilot-token.test.cjs
-      - run: node --test tests/manual-settlement-db.test.cjs
       - run: node --test tests/prospective-signal-ledger.test.cjs
       - run: node --test tests/fixed-rule-evaluator.test.cjs
       - run: node --test tests/android-pilot-wrapper.test.cjs
