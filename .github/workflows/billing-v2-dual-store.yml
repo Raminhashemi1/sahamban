@@ -25,6 +25,8 @@ on:
       - 'tests/sahmino-sms-otp-*.test.cjs'
       - 'tests/d1-sahmino-sms-otp-*.test.py'
       - 'tests/billing-v2-*'
+      - 'tests/android-pilot-wrapper.test.cjs'
+      - 'android-pilot/**'
       - '.github/workflows/billing-v2-dual-store.yml'
   workflow_dispatch:
 
