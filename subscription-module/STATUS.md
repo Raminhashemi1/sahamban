@@ -59,8 +59,8 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 ## Automated validation
 - Node tests cover domain rules, order creation, provider verifiers, Worker routes and configuration factory.
 - SQLite tests execute the exact settlement SQL extracted from the service and cover successful grant, replay protection, early renewal and transaction rollback.
-- GitHub Actions run [44526725332](https://github.com/Raminhashemi1/sahamban/actions/runs/44526725332): both Android release flavors compiled successfully.
-- Latest Node and SQLite tests passed in GitHub Actions run [44527234029](https://github.com/Raminhashemi1/sahamban/actions/runs/44527234029). See [all workflow runs](https://github.com/Raminhashemi1/sahamban/actions).
+- GitHub Actions run [44527042694](https://github.com/Raminhashemi1/sahamban/actions/runs/44527042694): both Android release flavors compiled successfully.
+- Latest Node and SQLite tests passed in GitHub Actions run [44528592418](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592418), including the new native-bridge protocol and Worker hardening tests. See [all workflow runs](https://github.com/Raminhashemi1/sahamban/actions).
 
 ## Remaining host integration / release gates
 1. Connect the production app's real commercial session token provider to `HttpBillingBackendClient` and the Worker's `authenticateRequest`. The supplied dossier documents only a pilot token; it does not define the production auth contract.
