@@ -73,6 +73,15 @@
 - GitHub Actions run 44521911629 completed successfully; both test steps passed.
 - Scope limitation: SQLite contract tests validate SQL syntax and transaction behavior on SQLite 3.x. They are not a live Cloudflare D1 test and do not establish concurrent request behavior in the deployed Worker.
 
+### M10 — Myket signed purchase verification and verify endpoint
+- Reviewed the official Myket Android sample repository `myketstore/billing-sample-android`. It documents artifact `ir.myket:billing:2.2`, IAB v3 purchase flow, signed purchase fields, and multi-store Gradle flavors for Myket/Bazaar.
+- Added `server/providers/myket-verifier.mjs`: server-side RSASSA-PKCS1-v1_5/SHA-1 verification of the signed Myket `originalJson`, package/SKU/purchase-state checks, and order binding through signed developerPayload. Stores only SHA-256 of purchase token.
+- Added tests using generated RSA keys for valid signature, tampered signature, wrong package, refunded state, wrong SKU/order payload, and missing configuration.
+- Added `providers/MYKET.md` with the correct one-time consumable approach for fixed-duration manual renewals, SDK integration contract, configuration, and limitations.
+- Extended Worker `POST /api/v2/billing/verify` to load the order for the authenticated user, choose provider verifier from the persisted store field, settle only verified evidence, and return `consumeAfterSettlement` only after settlement. Re-verification of the same settled purchase is idempotently acknowledged for consume recovery.
+- Added route tests for verification/settlement and rejection of client-selected provider data.
+- Limitation: Myket signature validation is implemented; live Myket Developer API lookup for refund/revocation reconciliation is not. Real app public key, package ID, and test purchase remain deployment-specific.
+
 ### M9 — Independent Cloudflare Worker route layer
 - Added `worker/routes.mjs`, a dependency-injected Worker handler for authenticated order creation and entitlement lookup.
 - Order endpoint accepts only `planId`; it rejects client-supplied store, SKU, amount, and user identity. Store is resolved through an injected trusted resolver, and SKU mapping remains server-side.
@@ -111,4 +120,4 @@ Durations currently mean fixed 24-hour days, not calendar months. This distincti
 - Build and test on real devices and store test accounts.
 
 ## Next milestone
-Implement and test a trusted store-distribution resolver and provider verification boundary, then add durable post-settlement consume/recovery state. Commercial authentication remains an injected dependency until a real account/session contract is supplied. Do not deploy or apply migrations to live infrastructure without explicit approval.
+Complete the concrete Android SDK adapters and Bazaar verifier, then connect the module to the production PWA/Android host. Do not deploy or apply migrations to live infrastructure without explicit approval.
