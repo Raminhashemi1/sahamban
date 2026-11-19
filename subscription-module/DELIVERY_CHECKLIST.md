@@ -11,7 +11,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | TEMPLATES READY; owner must supply exact five product IDs per store, real package ID, public keys and Bazaar OAuth credentials |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | RUNBOOK READY; both templates are configured to use one shared D1 ID; no production resources or secrets changed |
 | 5. Real payment acceptance | Purchase, replay, interrupted flow, consume, restore, refund/revocation and renewal tests on physical devices | TEST MATRIX READY; live execution requires owner test accounts, configured products and installed builds |
-| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD SUCCESSFUL for commit `343aa7b8`; fresh build for current branch head `3e450fe7` is queued in run [44536533034](https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034). Release signing and final package identity remain missing |
+| 6. Release | Sign and build the final distribution variants, verify package IDs, submit to stores | DEBUG BUILD SUCCESSFUL for commit `3e450fe7` in [run 44536533034](https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034); that run produced both store debug APKs. A fresh build from current branch head `c0639d16` is triggered by commit `650a27ee`. Release signing and final package identity remain missing |
 
 ## Work completed on this integration branch
 
@@ -40,12 +40,10 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest backend, Bazaar regression, Myket signature/settlement, Worker routing, Android wiring and schema/migration checks passed in [run 44534469424](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469424). The Android dual-flavor debug build passed previously in [run 44533319977](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977) for an earlier commit; its artifact is available for seven days but is not treated as current. The Android dual-flavor debug build succeeded on retry for commit `75d09eba` and produced a Bazaar/Myket debug artifact [here](https://github.com/Raminhashemi1/sahamban/actions/runs/44534469483). This commit is an ancestor of the current branch, so the artifact is not treated as the latest deliverable. A fresh Android build for branch head `343aa7b8` is queued in [run 44535742152](https://github.com/Raminhashemi1/sahamban/actions/runs/44535742152), alongside latest backend validation [run 44535742117](https://github.com/Raminhashemi1/sahamban/actions/runs/44535742117). No release APK or live store test is claimed.
-
-- Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
-- Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
-- This branch: dual-store Billing V2 Node and SQLite tests passed in [run 44533350142](https://github.com/Raminhashemi1/sahamban/actions/runs/44533350142).
-- Latest dual-store CI including end-to-end Myket flow, Worker routing, Bazaar regression and fresh/migrated D1 schema tests passed in [run 44531003318](https://github.com/Raminhashemi1/sahamban/actions/runs/44531003318).
+- Latest dual-store backend validation passed on commit `c0639d16`: [run 44536585315](https://github.com/Raminhashemi1/sahamban/actions/runs/44536585315).
+- Both Bazaar and Myket debug APKs compiled and were uploaded successfully for commit `3e450fe7`: [run 44536533034](https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034). Artifact: `sahamban-android-pilot-dual-store-debug-UNSIGNED-FOR-STORE`, expires 2026-11-26. These are unsigned debug/test APKs, not release APKs.
+- A fresh Android build for the current branch head was triggered by commit `650a27ee`; verify its workflow result before accepting APKs as current.
+- Earlier successful regression runs: [44536544556](https://github.com/Raminhashemi1/sahamban/actions/runs/44536544556) and [44536585315](https://github.com/Raminhashemi1/sahamban/actions/runs/44536585315).
 
 ## Integration review
 
