@@ -15,11 +15,14 @@ import java.util.concurrent.Executors
  * into WebView's native cookie jar without exposing the token to JavaScript or logs.
  * This avoids depending on third-party Set-Cookie acceptance by a GitHub Pages PWA.
  */
-class BillingV2NativeOtpClient(
+class BillingV2NativeOtpClient @JvmOverloads constructor(
     private val workerBaseUrl: String,
     private val pwaOrigin: String = BuildConfig.SAHAMBAN_PWA_ORIGIN
 ) {
     data class Challenge(val challengeId: String, val expiresInSeconds: Int, val resendAfterSeconds: Int)
+
+    fun interface SessionCallback { fun onResult(result: Result<Boolean>) }
+    fun interface LogoutCallback { fun onResult(result: Result<Boolean>) }
 
     sealed interface Result<out T> {
         data class Success<T>(val value: T) : Result<T>
@@ -93,14 +96,14 @@ class BillingV2NativeOtpClient(
     }
 
     /** Validate the persisted native session against the Worker on every cold start. */
-    fun checkSession(callback: (Result<Boolean>) -> Unit) {
+    fun checkSession(callback: SessionCallback) {
         main.post {
             val raw = try { CookieManager.getInstance().getCookie(workerBaseUrl) } catch (_: Exception) { null }
             val cookie = raw.orEmpty().split(';').map { it.trim() }
                 .singleOrNull { it.startsWith("sahmino_session=") }
                 ?.takeIf { it.matches(Regex("^sahmino_session=[a-f0-9]{64}$")) }
             if (cookie == null) {
-                callback(Result.Success(false))
+                callback.onResult(Result.Success(false))
                 return@post
             }
             executor.execute {
@@ -123,18 +126,18 @@ class BillingV2NativeOtpClient(
                         else Result.Failure(status, "SESSION_CHECK_FAILED")
                     } finally { connection.disconnect() }
                 } catch (_: Exception) { Result.Failure(0, "NETWORK_UNAVAILABLE") }
-                main.post { callback(result) }
+                main.post { callback.onResult(result) }
             }
         }
     }
 
-    fun logout(callback: (Result<Boolean>) -> Unit) {
+    fun logout(callback: LogoutCallback) {
         val raw = try { CookieManager.getInstance().getCookie(workerBaseUrl) } catch (_: Exception) { null }
         val cookie = raw.orEmpty().split(';').map { it.trim() }
             .singleOrNull { it.startsWith("sahmino_session=") }
             ?.takeIf { it.matches(Regex("^sahmino_session=[a-f0-9]{64}$")) }
         if (cookie == null) {
-            callback(Result.Success(true))
+            callback.onResult(Result.Success(true))
             return
         }
         executor.execute {
@@ -161,7 +164,7 @@ class BillingV2NativeOtpClient(
                         CookieManager.getInstance().flush()
                         callback(Result.Success(true))
                     }
-                } else callback(Result.Failure(0, "LOGOUT_UNAVAILABLE"))
+                } else callback.onResult(Result.Failure(0, "LOGOUT_UNAVAILABLE"))
             }
         }
     }
