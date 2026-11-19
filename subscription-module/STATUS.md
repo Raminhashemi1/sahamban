@@ -73,6 +73,11 @@
 - GitHub Actions run 44521911629 completed successfully; both test steps passed.
 - Scope limitation: SQLite contract tests validate SQL syntax and transaction behavior on SQLite 3.x. They are not a live Cloudflare D1 test and do not establish concurrent request behavior in the deployed Worker.
 
+### M12 — Embeddable PWA five-plan selector
+- Added `pwa/subscription-plans.js` and `pwa/subscription-plans.css` as an independent, embeddable RTL purchase UI for the five approved plans and exact IRR prices.
+- UI delegates purchase to the native billing bridge, reports cancellation/pending/failure states, and refreshes entitlement after backend settlement. It never treats a store callback alone as payment success.
+- Added embedding contract to README. The PWA selector is source-complete; the Android WebMessage bridge and concrete SDK adapter implementation remain required to make it operational inside the production WebView.
+
 ### M11 — Bazaar Developer API v2 verification
 - Added `server/providers/bazaar-verifier.mjs`: refreshes an OAuth access token using the developer refresh token, then validates the in-app purchase through the Bazaar Developer API v2 endpoint.
 - Enforces purchased state, order binding through the store-returned developerPayload, and unconsumed state before first settlement. Allows consumed state only for a replay of an already-PAID order, which is accepted only when the saved purchase-token hash matches.
