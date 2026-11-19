@@ -39,3 +39,8 @@ A live Myket refund/revocation API lookup has not been implemented. Signature ve
 ## Authentication
 
 The current Worker still validates the private-pilot HMAC JWT. This is not a commercial login/session implementation. The host app's production identity provider must be integrated before enabling live payments.
+
+
+## Integration review status
+
+The implementation is available as supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188), based on the existing PR #187 head branch. It is intentionally not merged. Review and merge PR #188 into the PR #187 branch first, then review the combined change as the single canonical Billing V2 implementation.
