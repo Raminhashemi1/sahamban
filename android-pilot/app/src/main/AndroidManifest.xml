@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <queries>
         <package android:name="com.farsitel.bazaar" />
+        <package android:name="ir.mservices.market" />
     </queries>
     <application
         android:allowBackup="false"
