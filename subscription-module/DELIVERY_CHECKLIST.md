@@ -24,7 +24,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - Added Worker routing tests for server-side Myket selection, SKU-bound orders, and client store spoofing rejection.
 - Added Myket verifier, order creation, settlement replay/idempotency, and schema/migration tests.
 - Added Bazaar/Myket Android app flavors in the host pilot project, moved the Poolakey coordinator into the Bazaar source set, added the Myket IAB v3 coordinator in the Myket source set, and aligned the API client request bodies with the canonical Worker contract.
-- Updated the host Android build to AGP 8.12.3 / Kotlin 2.2.0 / Gradle 8.13 / compileSdk 36. Both store-specific debug APK builds are under CI validation; they are not signed release APKs.
+- Updated the host Android build to AGP 8.12.3 / Kotlin 2.2.0 / Gradle 8.13 / compileSdk 36. Both store-specific debug APK builds are under CI validation; they are not signed release APKs. The purchase/restore orchestration now has an explicit compile-time feature gate that remains hard-coded false for both debug and release builds.
 - Preserved Bazaar verification and settlement behavior; fixed the existing Bazaar test mock and idempotent replay validation discovered while running the expanded suite.
 
 ## Important limitations
@@ -38,7 +38,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## CI evidence
 
-- Latest backend/Android wiring checks passed in [run 44532400509](https://github.com/Raminhashemi1/sahamban/actions/runs/44532400509). The first dual-flavor APK build attempt [failed before source compilation](https://github.com/Raminhashemi1/sahamban/actions/runs/44532392608) because Gradle could not resolve several remote Maven artifacts. The app repositories were aligned with the known-good standalone module and the build step now retries transient dependency-resolution failures; the fresh build is [queued/running here](https://github.com/Raminhashemi1/sahamban/actions/runs/44532834562). No APK artifact is claimed until a build completes successfully.
+- Latest backend/Android wiring checks, including the explicit purchase-flow feature-gate assertion, passed in [run 44533350142](https://github.com/Raminhashemi1/sahamban/actions/runs/44533350142) and [run 44533339396](https://github.com/Raminhashemi1/sahamban/actions/runs/44533339396). The first dual-flavor APK build attempt [failed before source compilation](https://github.com/Raminhashemi1/sahamban/actions/runs/44532392608) because Gradle could not resolve several remote Maven artifacts. The app repositories were aligned with the known-good standalone module and the build step now retries transient dependency-resolution failures; the latest dual-flavor build is [still running here](https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977). No APK artifact is claimed until a build completes successfully. No APK artifact is claimed until a build completes successfully.
 
 - Previous standalone module: Android Bazaar and Myket AAR compilation passed in [run 44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255).
 - Previous standalone module: PWA/backend tests passed in [run 44528892500](https://github.com/Raminhashemi1/sahamban/actions/runs/44528892500).
