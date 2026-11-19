@@ -66,15 +66,11 @@ signing certificate; a Project Pages path alone cannot satisfy it.
 
 ## Current integration checkpoint
 
-The latest dual-store backend validation on the integration branch is green:
-https://github.com/Raminhashemi1/sahamban/actions/runs/44534245212
+Current integration branch head: `0c9217418a3f71657a1b21c53bbfa15267d25273`.
 
-A previous Bazaar + Myket debug APK build completed successfully:
-https://github.com/Raminhashemi1/sahamban/actions/runs/44533319977
+The latest confirmed dual-store debug APK build is for commit `343aa7b8`:
+https://github.com/Raminhashemi1/sahamban/actions/runs/44535742152
 
-That APK build predates later changes on the integration branch. A fresh Android build is triggered by this README revision so the artifacts correspond to the current source revision. Until that build finishes, do not treat the older APKs as current.
+That run produced the Bazaar and Myket debug APK artifact. Because the branch has advanced since then, this workflow run is triggered to rebuild both variants from the current branch head. Do not treat the older APKs as current deliverables.
 
-The remaining host-app integration blocker is the absence of a production commercial account/session-token provider. Do not add a hard-coded pilot token or enable `SAHAMBAN_BILLING_ENABLED` to bypass that dependency.
-
-
-Latest dual-store build checkpoint (2026-11-19): a rerun of the Android workflow completed successfully for commit `75d09eba`, producing both Bazaar and Myket debug APKs. The integration branch has advanced since that commit, so those APKs are a successful build artifact but are not the final binaries for the current branch. Rebuild the latest branch head before acceptance.
+The remaining host-app integration blocker is the absence of a production commercial account/session-token provider. The billing coordinator and purchase flow are not yet wired into `MainActivity` or the PWA UI. Do not add a hard-coded pilot token or enable `SAHAMBAN_BILLING_ENABLED` to bypass this dependency.
