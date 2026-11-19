@@ -280,16 +280,17 @@ test('OTP route preflight permits configured origin and required CSRF header',as
 
 test('OTP routes fail closed when D1 or dedicated OTP secrets are missing',async()=>{
  const app=await worker();
- const response=await app.fetch(new Request('https://worker.example/api/v1/auth/session',{headers:{Origin:origin}}),
-  env(undefined,{SAHMINO_OTP_ENABLED:'true',SAHAMBAN_DB:undefined}));
+ const config=env(); config.SAHMINO_OTP_ENABLED='true'; config.SAHAMBAN_DB=undefined;
+ const response=await app.fetch(new Request('https://worker.example/api/v1/auth/session',{headers:{Origin:origin}}),config);
  assert.equal(response.status,503);
  assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
 });
 
 test('OTP request and verify reject oversized payloads before provider or database access',async()=>{
  const app=await worker();
- const config=env(undefined,{SAHMINO_OTP_ENABLED:'true',SAHAMBAN_DB:{prepare(){throw new Error('must not query');}},
-  SAHMINO_OTP_VERIFIER_SECRET:'v'.repeat(48),SAHMINO_OTP_RATE_LIMIT_SECRET:'r'.repeat(48)});
+ const config=env(); config.SAHMINO_OTP_ENABLED='true';
+ config.SAHAMBAN_DB={prepare(){throw new Error('must not query');}};
+ config.SAHMINO_OTP_VERIFIER_SECRET='v'.repeat(48); config.SAHMINO_OTP_RATE_LIMIT_SECRET='r'.repeat(48);
  for(const route of ['/api/v1/auth/otp/request','/api/v1/auth/otp/verify']){
   const response=await app.fetch(new Request('https://worker.example'+route,{
    method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Content-Length':'257'},body:' '.repeat(257)
