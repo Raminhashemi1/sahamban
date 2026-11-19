@@ -22,7 +22,7 @@ class BillingV2CookieSessionProvider(
         val worker = URL(workerBaseUrl)
         val origin = URL(pwaOrigin)
         require(worker.protocol == "https" && worker.userInfo == null &&
-            worker.query == null && worker.ref == null && worker.path.isNullOrEmpty())
+            worker.query == null && worker.ref == null && (worker.path.isNullOrEmpty() || worker.path == "/"))
         require(origin.protocol == "https" && origin.userInfo == null &&
             origin.query == null && origin.ref == null && origin.path.isNullOrEmpty())
     }
