@@ -136,7 +136,7 @@ class SettlementSqliteContractTests(unittest.TestCase):
 
 # Reversal contract tests execute the exact SQL from reversal-service.mjs.
 REVERSAL_SERVICE = (ROOT / "server" / "reversal-service.mjs").read_text()
-REVERSAL_QUERIES = re.findall(r"db\\.prepare\\(\\`(.*?)\\`\\)", REVERSAL_SERVICE, re.S)
+REVERSAL_QUERIES = re.findall(r"db\.prepare\(`(.*?)`\)", REVERSAL_SERVICE, re.S)
 
 class ReversalSqliteContractTests(unittest.TestCase):
     @classmethod
