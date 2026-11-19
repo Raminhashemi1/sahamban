@@ -74,3 +74,9 @@ https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034
 The APK artifact is available for seven days. It is an unsigned debug/test artifact, not a release build. The current branch head has advanced since that build, so this change triggers a fresh build from the current source.
 
 The host `MainActivity` still does not wire the billing purchase flow into Sahmino's real UI/session. The commercial session-token provider and production package identity are not available in this pilot. Do not hard-code credentials or enable the billing feature gate to bypass those blockers.
+
+## Authenticated session integration contract
+
+`BillingV2ApiClient` now accepts a native `BillingV2TokenProvider` instead of a fixed bearer-token string. The provider must read the current access token from Sahmino's already-authenticated native account session and invoke its callback exactly once; return `null` when signed out. The client requests a fresh token for every Worker call, rejects blank/oversized/whitespace-containing tokens, and reports `NOT_AUTHENTICATED` without making a network request when no session exists.
+
+The token must remain inside native code. Do not pass it to PWA JavaScript, local storage, URL parameters, logs, or a hard-coded pilot-token generator. The current pilot `MainActivity` does not yet have Sahmino's commercial session provider and therefore must not instantiate the purchase flow. This interface is an integration seam, not a claim that commercial login is already connected.
