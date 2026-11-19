@@ -33,6 +33,10 @@ https://raminhashemi1.github.io/sahamban/
 
 ## How to build a test APK
 
+## Required Worker URL for pilot APKs
+
+Set the GitHub repository Actions variable `SAHAMBAN_WORKER_BASE_URL` to the deployed Worker HTTPS origin (for example, `https://<your-worker-subdomain>.<your-account>.workers.dev`; replace this example with the actual deployment). The Android workflow validates that this value exists and is an HTTPS origin, then passes it to Gradle as `SAHAMBAN_WORKER_BASE_URL`. Builds now fail early rather than producing an APK that cannot start OTP login when the variable is missing. Do not use a guessed URL; deploy the Worker and copy its actual HTTPS origin from Cloudflare.
+
 GitHub Actions workflow `Sahamban Android pilot debug APK` uses Java 17,
 Android SDK 36, Gradle 8.13, Android Gradle Plugin 8.12.3 and Kotlin 2.2.0
 to build both `assembleBazaarDebug` and `assembleMyketDebug`. It uploads
