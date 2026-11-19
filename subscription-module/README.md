@@ -49,3 +49,12 @@ No migration in this module is applied to a live D1 database. No marketplace sec
 - `GET /api/v1/me/entitlement`: returns server-side entitlement state.
 
 Myket verification is implemented as server-side RSA signature verification. Bazaar verification must be wired to the current Bazaar Developer API verifier. Until both verifiers and commercial authentication are configured, do not expose the module to production users.
+
+
+## Embeddable PWA plan selector
+- UI module: `pwa/subscription-plans.js`
+- Styles: `pwa/subscription-plans.css`
+- Mount with: `mountSubscriptionPlans(document.querySelector('#subscription-root'), window.SahminoBilling)`.
+- The native bridge facade must implement `getAvailability()`, `getEntitlement()`, and `purchase(planId)`.
+- The UI renders the five fixed IRR prices and never activates access from a store callback. It refreshes entitlement only after the bridge reports server settlement.
+- Native bridge and concrete Android SDK adapters still need to be compiled and integrated into the production host Activity before the module is installable as a complete app feature.
