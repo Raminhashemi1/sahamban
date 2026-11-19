@@ -50,8 +50,7 @@ export async function settleVerifiedPurchase(db, {
         order.amount_irr !== amountIrr) {
       return { ok: false, error: 'PURCHASE_ORDER_MISMATCH' };
     }
-    const plan = getPlan(order.plan_id);
-    if (!plan) return { ok: false, error: 'UNKNOWN_PLAN' };
+    if (!getPlan(order.plan_id)) return { ok: false, error: 'UNKNOWN_PLAN' };
 
     const eventId = idFactory();
     if (typeof eventId !== 'string' || !eventId || eventId.length > 128) {
@@ -75,6 +74,7 @@ export async function settleVerifiedPurchase(db, {
         FROM billing_orders
         WHERE id = ? AND user_id = ? AND status = 'PAID'
           AND store_order_id = ? AND purchase_token_hash = ? AND paid_at = ?
+          AND changes() = 1
       `).bind(eventId, now, purchaseTokenHash.toLowerCase(),
         orderId, authenticatedUserId, storeOrderId, purchaseTokenHash.toLowerCase(), now),
 
@@ -99,6 +99,7 @@ export async function settleVerifiedPurchase(db, {
         FROM billing_orders
         WHERE id = ? AND user_id = ? AND store = ? AND status = 'PAID'
           AND store_order_id = ? AND purchase_token_hash = ? AND paid_at = ?
+          AND changes() = 1
         ON CONFLICT(user_id) DO UPDATE SET
           expires_at = excluded.expires_at,
           auto_renewing = 0,
