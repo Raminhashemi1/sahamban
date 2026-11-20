@@ -17,7 +17,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sahamban_users_username
 -- account is silently given a default or guessable password.
 UPDATE sahamban_users
 SET username_normalized = (
-  SELECT '+989' || substr(p.phone_e164, 5)
+  SELECT p.phone_e164
   FROM sahmino_phone_identities p
   WHERE p.user_id = sahamban_users.id AND p.revoked_at IS NULL
   ORDER BY p.verified_at DESC LIMIT 1
@@ -29,7 +29,7 @@ WHERE username_normalized IS NULL
   );
 
 CREATE TABLE IF NOT EXISTS sahmino_auth_rate_limits (
-  bucket_key TEXT PRIMARY KEY CHECK(length(bucket_key)=66),
+  bucket_key TEXT PRIMARY KEY CHECK(length(bucket_key)=64),
   window_started_epoch INTEGER NOT NULL CHECK(window_started_epoch>=0),
   attempts INTEGER NOT NULL CHECK(attempts BETWEEN 1 AND 1000),
   updated_at TEXT NOT NULL
