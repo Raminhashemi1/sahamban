@@ -1,38 +1,44 @@
-# Billing V2 — Cafe Bazaar manual time-pass purchases
+# Billing V2 — Sahmino manual fixed-day plans
 
-This directory implements five manually renewed, time-limited access plans. They are displayed to customers as subscriptions/plans, but are **not configured as Bazaar auto-renewing subscription products**.
+Exactly five manually renewed, fixed elapsed-day plans are available. There is no free tier and no automatic renewal.
 
-- Five Bazaar **consumable in-app product** SKUs: 30/60/90/180/365 days.
-- Each user explicitly initiates and pays for every new term. No automatic debit or automatic renewal is used.
-- After server-side verification and durable entitlement settlement, Android consumes the purchase token with Poolakey `consumeProduct`. This releases the SKU so it can be purchased again later.
-- If consumption fails after settlement, access remains granted and the pending purchase is retried/reconciled on the next app session. Never consume before server settlement.
-- The server verifies via Bazaar's in-app product validation API (`/validate/{package}/inapp/{product}/purchases/{token}/`), not the subscription-validation API.
-- Access duration is granted by the server using the selected internal plan's fixed day count. If the user buys before the current access expires, the new days are added after the current expiry; otherwise they start at the new purchase settlement time.
-- Repeated verification of the same order/token is idempotent and must never grant the same days twice.
-- Customer-facing prices remain in IRR (rial), matching the approved product contract. Preserve Bazaar's localized price string verbatim; do not convert to toman or hardcode unapproved prices.
-- The client callback is evidence only; it cannot activate access by itself.
+| Internal plan ID | Duration | Approved price (IRR) |
+|---|---:|---:|
+| `SAHAMBAN_PRO_30D` | 30 days | 1,500,000 |
+| `SAHAMBAN_PRO_60D` | 60 days | 2,850,000 |
+| `SAHAMBAN_PRO_90D` | 90 days | 4,050,000 |
+| `SAHAMBAN_PRO_180D` | 180 days | 7,650,000 |
+| `SAHAMBAN_PRO_365D` | 365 days | 14,600,000 |
 
-## Release blockers
+- The server catalog is authoritative. Both Bazaar and Myket order creation persist `amount_irr`; D1 checks the exact plan-to-price pair.
+- Each period is a consumable one-time in-app product, not an auto-renewing subscription. The user explicitly buys again to renew.
+- Both stores use the same account entitlement ledger. Days stack after an unexpired entitlement; expired entitlements restart at settlement time.
+- The app consumes the store purchase token only after the server verifies the receipt and durably settles the entitlement.
+- If consume fails after settlement, the entitlement remains active; the pending store purchase is reconciled on the next app session.
+- The client cannot choose the store, plan duration, price, account ID, or entitlement expiry.
+- Never convert Rial to Toman in server data. Confirm each marketplace's product configuration against these exact Rial amounts before enabling checkout.
 
-1. Configure five **consumable in-app products**, not subscription products, in Bazaar Pishkhan with the exact product IDs and approved prices.
-2. Confirm that the five product IDs are unique and that the app's package name exactly matches the Pishkhan app.
-3. Configure `BAZAAR_RSA_PUBLIC_KEY` and Bazaar OAuth credentials as Worker secrets. Do not commit secrets.
-4. Apply `schema.sql` to an isolated D1 database and run Worker/Android tests.
-5. Connect the purchase flow to a real authenticated user session and the visible plan screen.
-6. Test purchase, server verification, consume, retry-after-consume-failure, repurchase, overlapping-term stacking, refund/reversal and account switching on a Bazaar-enabled physical device.
-7. Keep `BILLING_V2_ENABLED=false` until all release blockers pass.
+## Store adapters
 
-Do not submit the app or enable live payments based only on unit tests.
+- `BILLING_STORE=BAZAAR`: Poolakey + Bazaar RSA signature and Developer API in-app purchase validation.
+- `BILLING_STORE=MYKET`: Myket IAB signed purchase verification and Myket SKU-bound order creation.
+- Both providers settle to `billing_orders`, `billing_access`, and `billing_events`.
 
+## Database
 
-## Dual-store extension (integration branch)
+Fresh D1: apply the base user schema, then `server/billing/schema.sql`.
 
-The canonical Billing V2 Worker now supports a server-selected provider:
-- `BILLING_STORE=BAZAAR`: existing Bazaar verifier and Poolakey purchase flow.
-- `BILLING_STORE=MYKET`: Myket signed-purchase verifier and Myket SKU-bound order creation.
-- The client sends a plan ID and signed purchase evidence only. It cannot select the store.
-- Both providers settle into the same `billing_orders`, `billing_access`, and `billing_events` ledger.
+Existing Billing V2 D1: apply `migrations/0002-myket-store-columns.sql` if not already applied, then `migrations/0003-authoritative-irr-prices.sql` exactly once. The latter backfills historic rows and installs plan-price guard triggers. Never run migrations against production until backup and environment have been verified.
 
-For Myket, configure `MYKET_SKU_MAP`, `MYKET_PACKAGE_NAME`, and the `MYKET_PUBLIC_KEY` Worker secret from the actual developer account. No example SKU or production package name is assumed. Existing Bazaar databases need the one-time `migrations/0002-myket-store-columns.sql`; fresh isolated databases use the updated `schema.sql`.
+## Remaining external release gates
 
-The current Myket verifier validates the signed original purchase data and order/package/SKU binding. It does not yet perform an authoritative live refund/revocation lookup. Do not enable public checkout until this gap and the production commercial-authentication contract are resolved. See `DUAL-STORE-INTEGRATION.md`.
+1. Confirm the final Android applicationId registered in each marketplace.
+2. Create the five consumable products in each store and record the real, unique SKU IDs.
+3. Set both Worker configurations to the same private D1 database and exact PWA origin.
+4. Configure marketplace public keys and Bazaar OAuth credentials as Worker secrets; configure OTP secrets and SMS-provider binding.
+5. Apply the OTP runtime and Billing V2 migrations to the correct D1 database.
+6. Verify Myket refund/revocation reconciliation against its supported provider contract; signature-only validation does not prove a later refund has not occurred.
+7. Build and test both market flavors on physical devices with store test accounts, including purchase, verification, consume, retry, restore, repurchase, account switching, expiry, refund and network loss.
+8. Keep OTP and billing flags off until the relevant deployment, secrets, migrations and device acceptance tests pass.
+
+No checkout, Worker deployment, production migration, or store configuration is performed by CI.
