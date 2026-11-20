@@ -63,7 +63,7 @@ test('settlement accepts an opaque migrated account ID and binds it to the order
   amount_irr:1500000,created_at:now,expires_at:null});
  const result=await settle(db,{...input,subject:undefined,userId:'legacy-user-42'});
  assert.equal(result.ok,true);
- assert.match(db.reads[0].sql,/u.id=\\?/);
+ assert.ok(db.reads[0].sql.includes('u.id=?'));
  assert.deepEqual(db.reads[0].values,[input.orderId,'legacy-user-42']);
 });
 
