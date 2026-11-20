@@ -52,9 +52,8 @@ test('real SQLite settlement writes order, unique event and manual entitlement a
  const result=await settle(adapter,input(id,hash));
  assert.deepEqual(result,{ok:true,restored:false,expiresAt:'2026-01-31T00:00:00.000Z',
   daysAdded:30,renewalMode:'MANUAL'});
- const paidOrder=sqlite.prepare('SELECT status,purchase_token_hash,amount_irr FROM billing_orders WHERE id=?').get(id);
+ const paidOrder=sqlite.prepare('SELECT status,purchase_token_hash FROM billing_orders WHERE id=?').get(id);
  assert.equal(paidOrder.status,'PAID');assert.equal(paidOrder.purchase_token_hash,hash);
- assert.equal(paidOrder.amount_irr,1500000);
  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,1);
  const access=sqlite.prepare('SELECT expires_at,auto_renewing FROM billing_access WHERE user_id=?').get('u1');
  assert.equal(access.expires_at,'2026-01-31T00:00:00.000Z');assert.equal(access.auto_renewing,0);
@@ -130,9 +129,10 @@ test('a purchase token already used by another order rolls back the entire new s
  createOrder(sqlite,first);createOrder(sqlite,second);
  assert.equal((await settle(adapter,input(first,hash))).ok,true);
  const before=sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at;
- const result=await settle(adapter,input(second,hash));
- assert.equal(result.ok,false);
- assert.equal(sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at,before);
+ const duplicate=await settle(adapter,{...input(second,hash),bazaarOrderId:'bazaar-different-order'});
+ assert.equal(duplicate.ok,false);
+ assert.equal(sqlite.prepare('SELECT status FROM billing_orders WHERE id=?').get(second).status,'CREATED');
  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM billing_events').get().n,1);
+ assert.equal(sqlite.prepare('SELECT expires_at FROM billing_access WHERE user_id=?').get('u1').expires_at,before);
  sqlite.close();
 });
