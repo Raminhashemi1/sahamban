@@ -30,7 +30,7 @@ class BillingV2PasswordLoginView(
         addView(label("ورود به سهمینو", 24f, true))
         addView(label("نام کاربری و رمز عبور خود را وارد کنید.", 15f, false))
         usernameInput.hint = "نام کاربری یا شماره تلفن همراه"
-        usernameInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_USERNAME
+        usernameInput.inputType = InputType.TYPE_CLASS_TEXT
         usernameInput.setSingleLine(true)
         usernameInput.layoutDirection = View.LAYOUT_DIRECTION_LTR
         usernameInput.isSaveEnabled = false
