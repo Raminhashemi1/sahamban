@@ -39,7 +39,7 @@ function db(order){
 
 test('Myket signed receipt verifies and settles into the canonical Billing V2 entitlement',async()=>{
  const order={id:orderId,user_id:'u1',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',
-  store:'MYKET',store_product_id:'myket_30d',store_order_id:null,purchase_token_hash:null,
+  store:'MYKET',store_product_id:'myket_30d',store_order_id:null,purchase_token_hash:null,amount_irr:1500000,
   created_at:now,expires_at:null};
  const result=await verifyAndSettleMyket({
   db:db(order),env:{BILLING_V2_ENABLED:'true',MYKET_PUBLIC_KEY:publicKeyBase64,
@@ -47,7 +47,7 @@ test('Myket signed receipt verifies and settles into the canonical Billing V2 en
   body:{orderId,originalJson,signature},now
  });
  assert.equal(result.status,200);
- assert.deepEqual(result.body,{status:'ACTIVE',planId:'SAHAMBAN_PRO_30D',
+ assert.deepEqual(result.body,{status:'ACTIVE',planId:'SAHAMBAN_PRO_30D',amountRial:1500000,
   expiresAt:'2026-01-31T00:00:00.000Z',renewalMode:'MANUAL',daysAdded:30,restored:false});
 });
 
