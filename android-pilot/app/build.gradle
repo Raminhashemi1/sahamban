@@ -3,21 +3,31 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahamban.pilot'
+def expectedPackage = System.getenv('SAHAMBAN_EXPECTED_PACKAGE_NAME') ?: appId
+def workerUrl = System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: ''
+def pwaOrigin = System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io'
+def skuKeys = ['SAHAMBAN_SKU_PRO_30D','SAHAMBAN_SKU_PRO_60D','SAHAMBAN_SKU_PRO_90D','SAHAMBAN_SKU_PRO_180D','SAHAMBAN_SKU_PRO_365D']
+def allSkusPresent = skuKeys.every { (System.getenv(it) ?: '').matches('^[A-Za-z0-9._-]{1,100}$') } &&
+    skuKeys.collect { System.getenv(it) }.toSet().size() == 5
+def commonBillingReady = System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
+    expectedPackage == appId &&
+    appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
+    workerUrl.startsWith('https://') && allSkusPresent
+
 android {
     namespace 'ir.sahamban.pilot'
     compileSdk 36
 
     defaultConfig {
-        // Temporary pilot identifier; owner must replace with the actual published applicationId.
-        applicationId 'ir.sahamban.pilot'
+        applicationId appId
         minSdk 26
         targetSdk 35
         versionCode 1
         versionName '0.1.0-pilot'
-        buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + (System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + (System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io') + '"'
-        buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
-        buildConfigField 'String', 'SAHAMBAN_EXPECTED_PACKAGE_NAME', '"' + (System.getenv('SAHAMBAN_EXPECTED_PACKAGE_NAME') ?: '') + '"'
+        buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + workerUrl + '"'
+        buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + pwaOrigin + '"'
+        buildConfigField 'String', 'SAHAMBAN_EXPECTED_PACKAGE_NAME', '"' + expectedPackage + '"'
         buildConfigField 'String', 'SAHAMBAN_SKU_PRO_30D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_30D') ?: '') + '"'
         buildConfigField 'String', 'SAHAMBAN_SKU_PRO_60D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_60D') ?: '') + '"'
         buildConfigField 'String', 'SAHAMBAN_SKU_PRO_90D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_90D') ?: '') + '"'
@@ -34,6 +44,7 @@ android {
             manifestPlaceholders['marketPermission'] = 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
             buildConfigField 'String', 'BILLING_STORE', '"BAZAAR"'
             buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
+            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady && (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '').length() > 100).toString()
         }
         myket {
             dimension 'store'
@@ -42,21 +53,18 @@ android {
             manifestPlaceholders['marketPermission'] = 'ir.mservices.market.BILLING'
             buildConfigField 'String', 'BILLING_STORE', '"MYKET"'
             buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + (System.getenv('MYKET_PUBLIC_KEY') ?: '') + '"'
+            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady && (System.getenv('MYKET_PUBLIC_KEY') ?: '').length() > 100).toString()
         }
     }
 
     buildFeatures { buildConfig true }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = '17' }
-
     buildTypes {
-        debug {
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
-        }
+        debug { }
         release {
             minifyEnabled false
             buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
