@@ -30,6 +30,7 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(build,/myketImplementation.*ir\.myket:billing:2\.2/);
  assert.match(build,/System\.getenv\('SAHAMBAN_BILLING_ENABLED'\) == 'true'/);
  assert.match(build,/allSkusPresent/);
+ assert.match(build,/appId != 'ir\\.sahamban\\.pilot'|appId != 'ir\.sahamban\.pilot'/);
  assert.match(build,/workerUrl\.startsWith\('https:\/\/'\)/);
  const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
  assert.match(flow,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
