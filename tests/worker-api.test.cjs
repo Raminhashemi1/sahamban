@@ -197,7 +197,7 @@ test('client cannot select the store and Myket verify route is selected only by 
 });
 
 
-function passwordSessionDb({session={userId:'usr_'+'a'.repeat(32),sessionId:'ses_test'},entitlement=activeRow,user=null,changes=1,rateChanges=[1,1,0]}={}) {
+function passwordSessionDb({session={userId:'legacy-user-42',sessionId:'ses_test'},entitlement=activeRow,user=null,changes=1,rateChanges=[1,1,0]}={}) {
  const calls=[];
  return {
   calls,
@@ -237,7 +237,7 @@ test('password session creates orders only with CSRF and binds order to session 
   env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(allowed.status,201);
  assert.match(storage.calls[1].sql,/WHERE id=\?/);
- assert.equal(storage.calls[1].values[5],'usr_'+'a'.repeat(32));
+ assert.equal(storage.calls[1].values[5],'legacy-user-42');
 });
 
 test('invalid or disabled password session cookies fail closed and never fall back to a pilot token',async()=>{
