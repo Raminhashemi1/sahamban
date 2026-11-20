@@ -296,3 +296,62 @@ test('password login creates session cookie and password never reaches logs or r
  assert.equal(storage.calls.some(x=>JSON.stringify(x).includes('Correct Horse Battery')),false);
 });
 
+
+
+test('password session endpoint validates cookie, returns no-store status and clears malformed or revoked cookies',async()=>{
+ const app=await worker(),cookie='sahmino_session='+'1'.repeat(64);
+ const absent=await app.fetch(request(null,'/api/v1/auth/session'),env(passwordSessionDb(),{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(absent.status,401);
+ assert.deepEqual(await absent.json(),{authenticated:false});
+ const malformed=await app.fetch(request(null,'/api/v1/auth/session',{cookie:'sahmino_session=not-a-token'}),env(passwordSessionDb(),{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(malformed.status,401);
+ assert.match(malformed.headers.get('Set-Cookie'),/sahmino_session=;.*Max-Age=0/);
+ assert.match(malformed.headers.get('Cache-Control'),/no-store/);
+ const active=await app.fetch(request(null,'/api/v1/auth/session',{cookie}),env(passwordSessionDb(),{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(active.status,200);
+ assert.deepEqual(await active.json(),{authenticated:true,expiresAt:'2099-12-31T00:00:00.000Z'});
+ const revokedDb=passwordSessionDb({session:null});
+ const revoked=await app.fetch(request(null,'/api/v1/auth/session',{cookie}),env(revokedDb,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(revoked.status,401);
+ assert.match(revoked.headers.get('Set-Cookie'),/Max-Age=0/);
+});
+
+test('password logout requires same-origin CSRF proof and revokes the server session before clearing cookie',async()=>{
+ const app=await worker(),cookie='sahmino_session='+'2'.repeat(64);
+ const storage=passwordSessionDb();
+ const blocked=await app.fetch(request(null,'/api/v1/auth/logout',{method:'POST',cookie,body:{}}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(blocked.status,403);
+ assert.deepEqual(await blocked.json(),{error:'CSRF_REJECTED'});
+ assert.equal(storage.calls.length,0);
+ const hostile=await app.fetch(request(null,'/api/v1/auth/logout',{method:'POST',cookie,csrf:'1',requestOrigin:'https://evil.example',body:{}}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(hostile.status,403);
+ assert.equal(storage.calls.length,0);
+ const success=await app.fetch(request(null,'/api/v1/auth/logout',{method:'POST',cookie,csrf:'1',body:{}}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(success.status,200);
+ assert.deepEqual(await success.json(),{authenticated:false});
+ assert.match(success.headers.get('Set-Cookie'),/sahmino_session=;.*HttpOnly; Secure; SameSite=None; Max-Age=0/);
+ assert.equal(storage.calls.length,1);
+ assert.match(storage.calls[0].sql,/UPDATE sahmino_shared_sessions SET revoked_at/);
+ assert.equal(storage.calls[0].values[1],await require('node:crypto').webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('2'.repeat(64))).then(x=>Buffer.from(x).toString('hex')));
+});
+
+test('password login returns bounded rate-limit response and generic credentials errors',async()=>{
+ const app=await worker();
+ const rateLimited=passwordSessionDb({rateChanges:[0,1,0]});
+ const limited=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
+  body:JSON.stringify({username:'09123456789',password:'Correct Horse Battery 2026!'})
+ }),env(rateLimited,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',AUTH_RATE_LIMIT_SECRET:'r'.repeat(48)}));
+ assert.equal(limited.status,429);
+ assert.equal(limited.headers.get('Retry-After'),'900');
+ assert.deepEqual(await limited.json(),{error:'LOGIN_RATE_LIMITED'});
+ assert.equal(rateLimited.calls.some(x=>x.kind==='first'),false);
+ const invalid=passwordSessionDb({user:null});
+ const rejected=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
+  body:JSON.stringify({username:'09123456789',password:'Correct Horse Battery 2026!'})
+ }),env(invalid,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',AUTH_RATE_LIMIT_SECRET:'r'.repeat(48)}));
+ assert.equal(rejected.status,401);
+ assert.deepEqual(await rejected.json(),{error:'INVALID_CREDENTIALS'});
+ assert.match(rejected.headers.get('Cache-Control'),/no-store/);
+});
