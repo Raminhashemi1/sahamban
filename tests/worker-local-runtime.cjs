@@ -35,7 +35,7 @@ async function main(){
  const token=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  const app=spawn('npx',['--no-install','wrangler','dev','--local','--config',CONFIG,'--ip','127.0.0.1','--port',String(PORT),
   '--var','AUTH_HMAC_SECRET:'+SECRET,
-  ...(enableBillingV2?['--var','BILLING_V2_ENABLED:true']:[])],{
+  ...(enableBillingV2?['--var','BILLING_V2_ENABLED:true','--var','BAZAAR_SKU_MAP:{\"SAHAMBAN_PRO_30D\":\"local30\",\"SAHAMBAN_PRO_60D\":\"local60\",\"SAHAMBAN_PRO_90D\":\"local90\",\"SAHAMBAN_PRO_180D\":\"local180\",\"SAHAMBAN_PRO_365D\":\"local365\"}']:[])],{
   cwd:process.cwd(),env:{...process.env,WRANGLER_SEND_METRICS:'false',NO_COLOR:'1'},
   stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'
  });
@@ -77,7 +77,7 @@ async function main(){
     originalJson:'{}',dataSignature:'AAAAAAAAAAAAAAAA'
    }});
    assert.equal(noSku.status,503);
-   assert.deepEqual(noSku.data,{error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'});
+   assert.deepEqual(noSku.data,{error:'UNKNOWN_PRODUCT_SKU'});
   }
   assert.equal((await json('/api/v1/checkout',{method:'POST'})).status,404);
   const preflight=await fetch(BASE+'/api/v1/me/entitlement',{method:'OPTIONS',headers:{Origin:ORIGIN},signal:AbortSignal.timeout(5000)});
