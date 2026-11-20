@@ -65,7 +65,7 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  const now=Date.now(),token=issuePilotToken({subject:'pilot:subject',secret:SECRET,nowMs:now});
  const storage=mockDB();
  const env={SAHAMBAN_DB:storage,AUTH_HMAC_SECRET:SECRET,PWA_ORIGIN:origin,
-  BILLING_V2_ENABLED:'true',PILOT_AUTH_ENABLED:'true'};
+  BILLING_V2_ENABLED:'true',PILOT_AUTH_ENABLED:'true',BAZAAR_SKU_MAP:JSON.stringify({SAHAMBAN_PRO_30D:'b30',SAHAMBAN_PRO_60D:'b60',SAHAMBAN_PRO_90D:'b90',SAHAMBAN_PRO_180D:'b180',SAHAMBAN_PRO_365D:'b365'})};
  function request(method,auth=null,reqOrigin=origin){
   return new Request('https://worker.example/api/v2/billing/orders',{method,
    headers:{Origin:reqOrigin,'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
