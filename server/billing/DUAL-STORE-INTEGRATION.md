@@ -38,7 +38,7 @@ A live Myket refund/revocation API lookup has not been implemented. Signature ve
 
 ## Authentication
 
-The current Worker still validates the private-pilot HMAC JWT. This is not a commercial login/session implementation. The host app's production identity provider must be integrated before enabling live payments.
+The PR #189 branch adds cookie-authenticated OTP session resolution: the Worker validates the HttpOnly `sahmino_session` cookie against the shared D1 session repository, then resolves the active internal user ID server-side. The legacy private-pilot HMAC JWT remains for isolated tests. However, the OTP request/verify/logout routes and PWA account UI are still a separate unmerged PR #185 dependency; no production SMS binding, secrets, Worker deployment, or physical-device session acceptance has been completed.
 
 
 ## Integration review status
@@ -54,7 +54,7 @@ This is a source audit only; it does not enable checkout or change runtime behav
 - That OTP flow authenticates with the HttpOnly sahmino_session cookie and stores only a SHA-256 digest in sahmino_shared_sessions.
 - OTP-created rows in sahamban_users currently have auth_subject = NULL.
 - This Billing V2 Worker currently accepts only the private-pilot HMAC Bearer token. Its order and settlement queries resolve the account through sahamban_users.auth_subject.
-- The Android MainActivity is still a WebView test shell. It does not instantiate BillingV2ApiClient, BillingV2PurchaseFlow, or BillingV2SubscriptionView, and it has no production session-token provider.
+- The Android MainActivity is a test-only WebView shell, but it does expose the subscription entry point and instantiates `BillingV2SubscriptionHost`. When package/SKU settings pass, the host composes `BillingV2CookieSessionProvider`, `BillingV2ApiClient`, the store coordinator, `BillingV2PurchaseFlow`, and `BillingV2SubscriptionView`. The app remains a pilot shell, not the confirmed final commercial Android package.
 
 ### Required integration before connecting the purchase screen
 
@@ -83,6 +83,19 @@ Draft PR #189 adds cookie-authenticated identity support to the existing Billing
 
 - PR #185 still contains the OTP request/verify/logout routes and PWA account panel; it remains a separate draft dependency and has not been merged.
 - No SMS provider binding or production secrets are configured, and no D1 migration or Worker deployment has been performed.
-- The Android WebView still does not wire the BillingV2PurchaseFlow or a trusted session provider. A native cookie/session handoff must be designed and tested without exposing credentials to WebView JavaScript.
+- The Android pilot source now wires `MainActivity` → `BillingV2SubscriptionHost` → `BillingV2PurchaseFlow` and includes a native Worker-cookie session provider. This corrects the earlier source-audit wording that said the flow was not wired at all. End-to-end operation is still blocked by the unmerged PR #185 OTP route/PWA dependency, missing production Worker/SMS/store configuration, temporary package ID and missing SKU values; the billing build gate remains false. Physical-device cookie persistence, logout/revocation, account switching, and sandbox purchase/restore tests are outstanding.
 - Physical Android/WebView cookie persistence, account switching/revocation, and real store sandbox purchase/restore tests remain mandatory before enabling checkout.
 - Keep SAHMINO_OTP_ENABLED and BILLING_V2_ENABLED off until those release gates pass.
+
+
+## 2026-11-20 — corrected Android host wiring status
+
+A fresh inspection of the current PR #189 source confirms:
+
+- `MainActivity.showWebApp()` adds the subscription entry point.
+- `MainActivity.showSubscription()` instantiates `BillingV2SubscriptionHost` and displays its view.
+- The host composes the native cookie-session provider, Billing V2 API client, store-specific coordinator, purchase flow, and five-plan UI if the exact package and five SKU values pass validation.
+- This is a real source-level host wiring path in the pilot app, but not an enabled or accepted commercial checkout path.
+- `SAHAMBAN_BILLING_ENABLED` remains hard-coded false in both build types. The app ID is still `ir.sahamban.pilot`; product SKU values, production Worker origin, OTP route deployment/SMS secrets, and real store credentials are not configured.
+- PR #189 backend validation passed on commit `5834d9ca8f1ce44cb580ef3b071a3790684b6a1a` ([run 44607013630](https://github.com/Raminhashemi1/sahamban/actions/runs/44607013630)). This does not prove current Android APK compilation, device acceptance, or a live purchase.
+- PR #185 remains a separate unmerged dependency for OTP routes and PWA account UI. No production deployment, migration, checkout activation, or release signing was performed.
