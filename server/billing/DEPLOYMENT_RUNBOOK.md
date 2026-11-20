@@ -37,6 +37,8 @@ wrangler secret put AUTH_RATE_LIMIT_SECRET --config server/wrangler.myket.toml
 wrangler secret put MYKET_PUBLIC_KEY --config server/wrangler.myket.toml
 ```
 
+Before enabling login, benchmark the 310,000-iteration PBKDF2 verification on the actual Cloudflare plan and inspect Worker CPU usage. Cloudflare Workers Free has a 10 ms CPU limit; Paid defaults to 30 seconds and supports a configurable higher limit. Do not assume the Free plan can serve this authentication workload. If measured CPU exceeds the selected plan limit, keep login disabled and choose a supported plan or redesign the password-verification execution path before rollout.
+
 The Worker uses native username/password authentication and a D1-backed HttpOnly session. Provision real accounts with `scripts/provision-sahmino-user.mjs`, set a private `AUTH_RATE_LIMIT_SECRET` of at least 32 bytes, and keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until the migration, account provisioning, and password-recovery procedure are reviewed.
 
 ## 4. Deploy with checkout disabled
