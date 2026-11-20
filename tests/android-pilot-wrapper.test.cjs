@@ -150,3 +150,38 @@ test('native subscription entry is reachable only after OTP and fails closed wit
  assert.match(build,/SAHAMBAN_SKU_PRO_365D/);
  assert.match(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
 });
+
+test('native purchase verifies the exact order evidence on the server before consuming either store token',()=>{
+ const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
+ const api=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2ApiClient.kt');
+ const bazaar=read('server/billing/bazaar.mjs');
+ const myket=read('server/billing/myket.mjs');
+ const worker=read('server/worker-api.mjs');
+
+ const purchase=flow.slice(flow.indexOf('fun purchase('),flow.indexOf('fun restore('));
+ assert.ok(purchase.indexOf('storeBilling.connect') < purchase.indexOf('api.createOrder'),
+  'connect to the selected marketplace before creating a server order');
+ assert.match(purchase,/evidence\.packageName != expectedPackageName/);
+ assert.match(purchase,/evidence\.planSku != sku/);
+ assert.match(purchase,/evidence\.orderId != order\.id/);
+ const verifyAt=purchase.indexOf('api.verifyPurchase');
+ const consumeAt=purchase.indexOf('storeBilling.consumeAfterSettlement');
+ assert.ok(verifyAt >= 0 && consumeAt > verifyAt,
+  'consumption must happen only after the server verification request');
+ const verifiedSuccess=purchase.indexOf('is BillingV2ApiClient.Result.Success ->',verifyAt);
+ const verifiedFailure=purchase.indexOf('is BillingV2ApiClient.Result.Failure ->',verifyAt);
+ assert.ok(verifiedSuccess > verifyAt && verifiedFailure > verifiedSuccess);
+ assert.ok(purchase.indexOf('storeBilling.consumeAfterSettlement',verifiedSuccess) > verifiedSuccess);
+ assert.doesNotMatch(purchase.slice(verifiedFailure),/storeBilling\.consumeAfterSettlement/,
+  'verification failure must never consume the marketplace purchase');
+
+ assert.match(api,/JSONObject\(\)\.put\("orderId", orderId\)\s*\.put\("originalJson", originalJson\)\.put\("signature", dataSignature\)/);
+ assert.match(api,/JSONObject\(\)\.put\("orderId", orderId\)\.put\("sku", sku\)/);
+ assert.match(api,/\.put\("token", purchaseToken\)\.put\("originalJson", originalJson\)/);
+ assert.match(api,/\.put\("dataSignature", dataSignature\)/);
+ assert.match(bazaar,/Object\.keys\(body\)\.sort\(\)\.join\(','\)!=='dataSignature,orderId,originalJson,sku,token'/);
+ assert.match(myket,/Object\.keys\(body\)\.sort\(\)\.join\(','\)!=='orderId,originalJson,signature'/);
+ assert.match(worker,/const store=env\?\.BILLING_STORE\|\|'BAZAAR'/);
+ assert.match(worker,/verifyAndSettleMyket/);
+ assert.match(worker,/verifyAndSettle/);
+});
