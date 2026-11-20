@@ -11,8 +11,8 @@
 - وضعیت هنگام تهیهٔ این فایل: OPEN و DRAFT؛ هنوز Merge نشده است.
 - شاخهٔ PR (head): `codex/reengineering-audit`
 - شاخهٔ مقصد (base): `main`
-- SHA شاخهٔ PR هنگام تهیهٔ این فایل: `2a1c0c30f16db3a1101f0c40735c9559032358d7`
-- آخرین متادیتای دریافت‌شده: 231 commit، 54 فایل، 1,512 افزودن و 1,726 حذف.
+- آخرین SHA شاخهٔ PR پس از ثبت سند انتقال: `7881506b92b0523102c0fc47acecfa1d5d579ecc`
+- آخرین متادیتای دریافت‌شده: 232 commit، 55 فایل، 1,590 افزودن و 1,726 حذف.
 - GitHub CLI قبلاً با موفقیت احراز هویت شده و حساب نمایش‌داده‌شده `Raminhashemi1` بوده است.
 
 ## تصمیم‌های قطعی محصول
@@ -76,3 +76,32 @@ gh pr view 187 --json files
 
 ## قاعدهٔ ایمنی
 هیچ Merge، Deploy، migration روی دیتابیس زنده، تغییر Worker secret، فعال‌سازی checkout یا پرداخت واقعی بدون بررسی صریح و تأیید مالک انجام نشود.
+
+
+## بازبینی تکمیلی پس از انتقال (2026-11-20)
+- وضعیت زنده PR دوباره خوانده شد: OPEN، DRAFT، هنوز Merge نشده؛ `mergeable=true` در پاسخ فعلی GitHub. آخرین head SHA همان `7881506b92b0523102c0fc47acecfa1d5d579ecc` است.
+- فایل همین سند با موفقیت از شاخه PR بازخوانی شد.
+- Workflow مربوط به `Sahamban free pilot Worker build verification` برای این SHA با run شماره `44695100988` موفق بود. Job `offline-worker-bundle` و مراحل تست امنیت Worker، bundle بدون deploy، اعمال schema روی D1 محلی ایزوله، بررسی جدول‌های Billing V2 و اجرای HTTP lifecycle محلی همگی موفق گزارش شدند. این تست، Cloudflare D1 زنده یا خرید واقعی Bazaar را اثبات نمی‌کند.
+- فایل‌های واقعی بررسی‌شده: `server/billing/README.md`, `schema.sql`, `settlement.cjs`, `bazaar.mjs`, `orders.cjs`, `server/worker-api.mjs`, `BillingV2ApiClient.kt`, `BillingV2Coordinator.kt`, `BillingV2PurchaseFlow.kt`, `MainActivity.java`, `app/build.gradle`, `AndroidManifest.xml`, `BAZAAR_RELEASE_CHECKLIST.md` و `UI-COPY.fa.md`.
+- مانع قطعی اتصال به اپ: `MainActivity.java` خودش را test-only WebView shell معرفی می‌کند و تصریح می‌کند JavaScript bridge یا identity injection ندارد؛ همچنین Billing V2 coordinator به جریان اپ متصل نشده است.
+- تنظیمات Android فعلی موقت‌اند: `applicationId='ir.sahamban.pilot'`, `SAHAMBAN_WORKER_BASE_URL=""`, `SAHAMBAN_BAZAAR_PURCHASES_ENABLED=false`. بنابراین این APK تنظیمات نهایی انتشار یا checkout فعال ندارد.
+- `BillingV2PurchaseFlow.kt` و `BillingV2ApiClient.kt` پیاده‌سازی شده‌اند، اما API client به bearer token از بیرون نیاز دارد و منبع session احراز هویت‌شدهٔ واقعی هنوز به آن متصل نشده است.
+- `server/billing/schema.sql` فقط در CI روی D1 محلی ایزوله اعمال شده؛ روی D1 تولیدی/واقعی اعمال نشده است.
+- مسیر Worker بررسی‌شده شامل ایجاد سفارش، verify و entitlement است؛ مسیر کامل refund/reversal هنوز در Worker API دیده نشده و باید جداگانه بررسی/پیاده‌سازی شود.
+- در `settlement.cjs` مقدار ستون `bazaar_product_id` با `planId` پر می‌شود، نه SKU واقعی Bazaar. این مورد باید پیش از انتشار اصلاح شود یا نام/معنای ستون به‌صورت مستند روشن شود؛ نگاشت SKU واقعی باید در رکورد سفارش قابل ردیابی بماند.
+- هنوز هیچ تغییری در کد، schema زنده یا تنظیمات Worker اعمال نشده است؛ این مرحله صرفاً خواندن و بازبینی بوده است.
+
+## اولویت دقیق ادامه
+1. شناسایی package/applicationId واقعی اپ سهمینو که در کافه‌بازار ثبت شده است؛ شناسهٔ موقت `ir.sahamban.pilot` را برای انتشار استفاده نکنید.
+2. شناسایی سازوکار واقعی login/session سهمینو و منبع معتبر صدور bearer token؛ هرگز token را در WebView JavaScript یا فایل ثابت APK قرار ندهید.
+3. طراحی و پیاده‌سازی پل امن Native↔PWA بر اساس origin مجاز و پیام‌های محدود، بدون افشای token به JavaScript.
+4. اتصال صفحهٔ پلن‌های موجود به مسیر Native purchase flow و Worker، همراه با جلوگیری از سفارش تکراری و بررسی وضعیت پس از timeout.
+5. اصلاح ثبت SKU واقعی در settlement و اضافه‌کردن تست رگرسیون.
+6. طراحی و پیاده‌سازی refund/reversal با مستندات رسمی Bazaar و سیاست دسترسی در برگشت وجه.
+7. تست integration روی Cloudflare D1 محیط staging و سپس دستگاه واقعی Bazaar؛ تا قبل از تکمیل موارد فوق checkout خاموش بماند.
+
+## اطلاعاتی که فقط مالک باید فراهم کند
+- applicationId نهایی ثبت‌شده در پنل Bazaar.
+- دسترسی/توضیح سازوکار احراز هویت تولیدی سهمینو (نام سامانه یا endpoint/session contract؛ نه رمز، refresh token یا secret).
+- پنج Product ID واقعی Bazaar پس از ایجاد محصولات در Pishkhan.
+- تأیید اینکه محیط Cloudflare D1 مورد استفاده برای staging کدام است؛ پیش از اجرای migration باید وضعیت schema آن خوانده شود.
