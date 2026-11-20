@@ -35,9 +35,13 @@ wrangler secret put AUTH_HMAC_SECRET --config server/wrangler.myket.toml
 wrangler secret put MYKET_PUBLIC_KEY --config server/wrangler.myket.toml
 ```
 
-The current Worker authentication still uses the private-pilot HMAC contract. It is not the production commercial account session provider; do not use these templates to enable public checkout until the production identity adapter is implemented.
+The Worker uses the native username/password account session. Apply the password-auth migration to the shared D1 database and provision credentials for existing ACTIVE users before enabling the password-auth flag. The legacy pilot-token fallback is disabled unless an isolated test deployment explicitly sets PILOT_TOKEN_AUTH_ENABLED=true; never enable that flag in production.
 
-## 4. Deploy with checkout disabled
+## 4. Prepare username/password authentication
+
+Apply `server/d1-sahmino-password-auth.sql` to the shared private D1 database after a verified backup. Set the same `SAHMINO_AUTH_RATE_LIMIT_SECRET` (at least 32 random bytes) as a Worker secret in both deployments. Keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until existing ACTIVE users have credentials provisioned using the owner-controlled process documented in `android-pilot/README.md`. Do not enable public self-registration or SMS fallback.
+
+## 5. Deploy with checkout disabled
 
 Only after code review and migration approval:
 ```sh
@@ -47,10 +51,10 @@ wrangler deploy --config server/wrangler.myket.toml
 
 Keep `BILLING_V2_ENABLED=false` in both configs. Verify health, CORS origin, account authentication, D1 connectivity, and store-specific SKU mapping without enabling purchase routes.
 
-## 5. Public checkout release gate
+## 6. Public checkout release gate
 
 Do not set `BILLING_V2_ENABLED=true` until:
-- The production commercial session provider is integrated and tested.
+- Username/password authentication, session persistence, and account-to-entitlement binding are integrated and tested.
 - The exact app package ID and PWA HTTPS origin are confirmed.
 - Both store developer panels contain all five products and the maps match exactly.
 - Myket refund/revocation reconciliation is implemented or an approved and tested alternative is accepted.
