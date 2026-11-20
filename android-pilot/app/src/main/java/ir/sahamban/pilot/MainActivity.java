@@ -56,7 +56,7 @@ public final class MainActivity extends ComponentActivity {
         showMessage("در حال بررسی نشست امن حساب…", false);
         authClient.checkSession(result -> {
             if (result instanceof BillingV2NativeAuthClient.Result.Success) {
-                Boolean active = (Boolean) ((BillingV2NativeOtpClient.Result.Success<?>) result).getValue();
+                Boolean active = (Boolean) ((BillingV2NativeAuthClient.Result.Success<?>) result).getValue();
                 if (Boolean.TRUE.equals(active)) showWebApp();
                 else showLogin();
             } else {
