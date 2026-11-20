@@ -1,7 +1,7 @@
 'use strict';
 
-const {webcrypto}=require('node:crypto');
-const cryptoApi=globalThis.crypto||webcrypto;
+const cryptoApi=globalThis.crypto;
+if(!cryptoApi?.subtle)throw new Error('Web Crypto API is required');
 const encoder=new TextEncoder();
 const PASSWORD_ITERATIONS=310000;
 const PASSWORD_BYTES=32;
@@ -68,8 +68,9 @@ function createPasswordAuth(db,{clock=()=>Date.now(),sessionTtlSeconds=SESSION_T
     updated_at=excluded.updated_at
    WHERE sahmino_auth_rate_limits.window_started_epoch<=? OR sahmino_auth_rate_limits.attempts<?`)
    .bind(key,epoch,stamp,windowStart,windowStart,windowStart,limit);
-  const results=await db.batch([upsert(userBucket,USERNAME_LIMIT),upsert(ipBucket,IP_LIMIT)]);
-  return results?.length===2&&results.every(x=>x?.meta?.changes===1);
+  const results=await db.batch([upsert(userBucket,USERNAME_LIMIT),upsert(ipBucket,IP_LIMIT),
+   db.prepare('DELETE FROM sahmino_auth_rate_limits WHERE updated_at<?').bind(iso(now-7*24*60*60*1000))]);
+  return results?.length===3&&results[0]?.meta?.changes===1&&results[1]?.meta?.changes===1;
  }
  async function createSession(userId,authenticatedAt){
   const bearer=randomHex(32),tokenHash=await sha256Hex(bearer),sessionId='ses_'+randomHex(16);
@@ -84,6 +85,8 @@ function createPasswordAuth(db,{clock=()=>Date.now(),sessionTtlSeconds=SESSION_T
  async function login({username,password,ipKey,rateLimitSecret,now=clock()}){
   const normalized=normalizeUsername(username);
   if(!normalized||!validPassword(password))return {ok:false,status:400,error:'INVALID_CREDENTIALS'};
+  if(typeof rateLimitSecret!=='string'||encoder.encode(rateLimitSecret).length<32||typeof ipKey!=='string'||ipKey.length<8)
+   return {ok:false,status:503,error:'AUTH_UNAVAILABLE'};
   const allowed=await reserveLoginAttempt({usernameKey:normalized,ipKey,secret:rateLimitSecret,now});
   if(!allowed)return {ok:false,status:429,error:'LOGIN_RATE_LIMITED'};
   const row=await db.prepare(`SELECT id,status,password_salt AS salt,password_hash AS hash,
