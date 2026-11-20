@@ -1,5 +1,5 @@
 # Separate provider Worker. Bind this service to the authenticated OTP Worker
-# using the [[services]] entry in wrangler.bazaar.toml.
+# using the [[services]] entry in both wrangler.bazaar.toml and wrangler.myket.toml.
 name = "sahmino-shahmiz-sms"
 main = "sms-providers/shahmiz-worker.mjs"
 compatibility_date = "2026-06-01"
