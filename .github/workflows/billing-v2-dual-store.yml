@@ -66,6 +66,12 @@ jobs:
           npm install --no-save wrangler@4.102.0
           npx wrangler deploy --dry-run --config server/wrangler.local.toml --outdir /tmp/sahmino-worker-bundle
           test -n "$(find /tmp/sahmino-worker-bundle -type f -name '*.js' -print -quit)"
+      - name: Apply complete schema and username/password migration to isolated local D1
+        run: |
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/d1-schema.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/billing/schema.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/migrations/0004-username-password-auth.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS auth_tables FROM sqlite_master WHERE type='table' AND name IN ('sahmino_shared_sessions','sahmino_auth_rate_limits');"
       - name: Validate Android host security and flavor workflow wiring
         run: node --test tests/android-pilot-wrapper.test.cjs
       - name: Run password authentication and Worker session tests
