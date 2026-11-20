@@ -1,4 +1,6 @@
 import settlement from './settlement.cjs';
+import catalog from './catalog.cjs';
+const {getPlan}=catalog;
 const {settle}=settlement;
 const PLAN_IDS=['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D','SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D'];
 function skuMap(raw){
@@ -75,11 +77,13 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
  if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
   const query=userId
-   ? "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
-   : "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
+   ? "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
+   : "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
   const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
+  const plan=getPlan(planId);
+  if(!plan||order.amount_irr!==plan.priceRial)return {status:409,body:{error:'ORDER_PRICE_MISMATCH'}};
   await verifySignedPurchase(env,body);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
@@ -98,7 +102,7 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
    const restored=await settle(db,{orderId:body.orderId,subject,userId,planId,
     bazaarOrderId:order.bazaar_order_id||tokenHash,tokenHash,
     purchaseTime:order.paid_at,now});
-   return restored.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:restored.expiresAt,
+   return restored.ok?{status:200,body:{status:'ACTIVE',planId,amountRial:plan.priceRial,expiresAt:restored.expiresAt,
     renewalMode:'MANUAL',daysAdded:0,restored:true}}:
     {status:409,body:{error:restored.error}};
   }
@@ -108,7 +112,7 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
   const result=await settle(db,{orderId:body.orderId,subject,planId,
    bazaarOrderId:verified.receipt.orderId||tokenHash,tokenHash,
    purchaseTime:verified.purchaseTime,now});
-  return result.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:result.expiresAt,
+  return result.ok?{status:200,body:{status:'ACTIVE',planId,amountRial:plan.priceRial,expiresAt:result.expiresAt,
    renewalMode:'MANUAL',daysAdded:result.daysAdded,restored:!!result.restored}}:
    {status:409,body:{error:result.error}};
  }catch(error){
