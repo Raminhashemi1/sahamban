@@ -5,6 +5,7 @@ import android.os.Looper
 import android.webkit.CookieManager
 import org.json.JSONObject
 import java.net.URL
+import java.text.Normalizer
 import javax.net.ssl.HttpsURLConnection
 import java.util.concurrent.Executors
 
@@ -35,11 +36,11 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
     }
 
     fun login(username: String, password: String, callback: (Result<Boolean>) -> Unit) {
-        val normalizedUsername = asciiDigits(username).trim()
-        if (!normalizedUsername.matches(Regex("^(?:\\+98|0098|0)?9[0-9]{9}$")) ||
-            password.length !in 12..128) {
+        val normalizedUsername = normalizeUsername(username)
+        if (normalizedUsername == null || password.length !in 12..128) {
             callback(Result.Failure(400, "INVALID_CREDENTIALS"))
             return
+        }
         }
         postJson("/api/v1/auth/login",
             JSONObject().put("username", normalizedUsername).put("password", password)) { status, body, setCookie ->
@@ -182,6 +183,17 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
         }
     }
 
+    private fun normalizeUsername(value: String): String? {
+        val digits = asciiDigits(Normalizer.normalize(value, Normalizer.Form.NFKC))
+            .trim().replace(Regex("[\\s()-]"), "")
+        return when {
+            digits.matches(Regex("^09[0-9]{9}$")) -> "+98" + digits.drop(1)
+            digits.matches(Regex("^989[0-9]{9}$")) -> "+$digits"
+            digits.matches(Regex("^00989[0-9]{9}$")) -> "+" + digits.drop(2)
+            digits.matches(Regex("^\\+989[0-9]{9}$")) -> digits
+            else -> null
+        }
+    }
     private fun asciiDigits(value: String): String = value
         .replace(Regex("[\\u06f0-\\u06f9]")) { (it.value[0].code - 0x06f0).toString() }
         .replace(Regex("[\\u0660-\\u0669]")) { (it.value[0].code - 0x0660).toString() }
