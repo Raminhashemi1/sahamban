@@ -1,9 +1,11 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {webcrypto}=require('node:crypto');
+const {hashPassword}=require('../server/password-auth.cjs');
 globalThis.crypto ||= webcrypto;
 const SECRET='this_is_a_private_random_64_character_test_secret_in_ci_only_2026';
 const subject='pilot|account:alpha',origin='https://raminhashemi1.github.io';
+const RATE_SECRET='auth_rate_limit_secret_64_chars_long_for_tests_2026';
 const activeRow={user_id:'u1',account_status:'ACTIVE',paid_until:'2099-11-05T07:00:00.000Z',auto_renewing:0};
 function db(value=activeRow,{changes=1}={}){
  const calls=[];
@@ -27,6 +29,7 @@ function request(token,path='/api/v1/me/entitlement',{method='GET',requestOrigin
  return new Request('https://worker.example'+path,{method,headers:{
   ...(requestOrigin===null?{}:{Origin:requestOrigin}),...(token?{Authorization:'Bearer '+token}:{}),
   ...(cookie?{Cookie:cookie}:{}),...(csrf?{'X-Sahmino-CSRF':csrf}:{}),
+  'CF-Connecting-IP':'203.0.113.10',
   ...(body===undefined?{}:{'Content-Type':contentType})
  },...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});
 }
@@ -35,7 +38,7 @@ const DEFAULT_BAZAAR_SKU_MAP=JSON.stringify({
  SAHAMBAN_PRO_90D:'bazaar90',SAHAMBAN_PRO_180D:'bazaar180',
  SAHAMBAN_PRO_365D:'bazaar365'
 });
-function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,
+function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHMINO_AUTH_RATE_LIMIT_SECRET:RATE_SECRET,
  SAHAMBAN_DB:DB,BAZAAR_SKU_MAP:DEFAULT_BAZAAR_SKU_MAP,...extra};}
 
 test('authenticated entitlement lookup is account-bound and reports manual renewal only',async()=>{
@@ -197,114 +200,139 @@ test('client cannot select the store and Myket verify route is selected only by 
 });
 
 
-function otpSessionDb({session={userId:'usr_'+'a'.repeat(32),sessionId:'ses_test'},entitlement=activeRow,changes=1}={}) {
+function authSessionDb({session={userId:'usr_'+'a'.repeat(32),sessionId:'ses_test'},entitlement=activeRow,credential=null,changes=1}={}) {
  const calls=[];
  const storage={
   calls,
   prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {
    async first(){
     if(sql.includes('FROM sahmino_shared_sessions'))return session?{sessionId:session.sessionId,userId:session.userId,expiresAt:'2099-12-31T00:00:00.000Z'}:null;
+    if(sql.includes('FROM sahmino_user_credentials'))return credential;
     if(sql.includes('LEFT JOIN billing_access'))return entitlement;
     return null;
    },
    async run(){return {success:true,meta:{changes}};}
   };}}},
-  async batch(){return [];}
+  async batch(items){calls.push({kind:'batch',items:items.length});return items.map(()=>({meta:{changes:1}}));}
  };
  return storage;
 }
 
-test('OTP HttpOnly session authenticates entitlement by internal user ID, not auth_subject',async()=>{
- const app=await worker(),storage=otpSessionDb(),cookie='sahmino_session='+'b'.repeat(64);
- const response=await app.fetch(request(null,'/api/v1/me/entitlement',{cookie}),env(storage,{SAHMINO_OTP_ENABLED:'true'}));
+test('username/password HttpOnly session authenticates entitlement by internal user ID, not auth_subject',async()=>{
+ const app=await worker(),storage=authSessionDb(),cookie='sahmino_session='+'b'.repeat(64);
+ const response=await app.fetch(request(null,'/api/v1/me/entitlement',{cookie}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
  assert.equal(response.status,200);
  assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
  assert.deepEqual(await response.json(),{proEnabled:true,reason:'ACTIVE',paidUntil:activeRow.paid_until,renewalMode:'MANUAL'});
  const expectedHash=await require('node:crypto').webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('b'.repeat(64))).then(x=>Buffer.from(x).toString('hex'));
  assert.equal(storage.calls[0].values[0],expectedHash);
  assert.ok(Number.isFinite(Date.parse(storage.calls[0].values[1])));
- assert.match(storage.calls[1].sql,/WHERE u.id=\?/);
+ assert.match(storage.calls[1].sql,/WHERE u.id=\\?/);
  assert.doesNotMatch(storage.calls[1].sql,/u.auth_subject/);
 });
 
-test('OTP session creates orders only with CSRF and binds order to the session user ID',async()=>{
- const app=await worker(),storage=otpSessionDb(),cookie='sahmino_session='+'c'.repeat(64);
+test('password login normalizes phone username, verifies PBKDF2 and creates a secure HttpOnly session',async()=>{
+ const app=await worker(),password='Correct horse battery 42!';
+ const passwordHash=await hashPassword(password);
+ const storage=authSessionDb({credential:{userId:'usr_'+'a'.repeat(32),username:'+989123456789',passwordHash,accountStatus:'ACTIVE'}});
+ const response=await app.fetch(request(null,'/api/v1/auth/login',{method:'POST',body:{username:'۰۹۱۲۳۴۵۶۷۸۹',password}}),
+  env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
+ assert.deepEqual((await response.json()).authenticated,true);
+ assert.match(response.headers.get('Set-Cookie'),/^sahmino_session=[a-f0-9]{64}; Path=\\/; HttpOnly; Secure; SameSite=None; Max-Age=2592000$/);
+ assert.deepEqual(storage.calls[0].values,['+989123456789']);
+ assert.equal(storage.calls.filter(c=>c.kind==='batch').length,1);
+ assert.match(storage.calls.find(c=>c.sql?.includes('INSERT INTO sahmino_shared_sessions'))?.sql||'',/INSERT INTO sahmino_shared_sessions/);
+});
+
+test('password login returns the same generic error for unknown users and wrong passwords',async()=>{
+ const app=await worker(),token=await signedToken();
+ const absent=authSessionDb({credential:null});
+ const missing=await app.fetch(request(null,'/api/v1/auth/login',{method:'POST',body:{username:'09123456789',password:'Correct horse battery 42!'}}),
+  env(absent,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(missing.status,401);
+ assert.deepEqual(await missing.json(),{error:'INVALID_CREDENTIALS'});
+ const wrong=authSessionDb({credential:{userId:'usr_'+'a'.repeat(32),username:'+989123456789',
+  passwordHash:await hashPassword('Correct horse battery 42!'),accountStatus:'ACTIVE'}});
+ const denied=await app.fetch(request(null,'/api/v1/auth/login',{method:'POST',body:{username:'+989123456789',password:'Wrong horse battery 42!'}}),
+  env(wrong,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(denied.status,401);
+ assert.deepEqual(await denied.json(),{error:'INVALID_CREDENTIALS'});
+ assert.equal((await app.fetch(request(token,'/api/v1/auth/login',{method:'POST',body:{username:'09123456789',password:'x'}}),env())).status,404);
+});
+
+test('password session creates orders only with CSRF and binds order to session user ID',async()=>{
+ const app=await worker(),storage=authSessionDb(),cookie='sahmino_session='+'c'.repeat(64);
  const blocked=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,body:{planId:'SAHAMBAN_PRO_30D'}}),
-  env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
+  env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(blocked.status,403);
  assert.equal(storage.calls.length,0);
  const allowed=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,csrf:'1',body:{planId:'SAHAMBAN_PRO_30D'}}),
-  env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
+  env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(allowed.status,201);
- assert.match(storage.calls[1].sql,/WHERE id=\?/);
+ assert.match(storage.calls[1].sql,/WHERE id=\\?/);
  assert.equal(storage.calls[1].values[1],'SAHAMBAN_PRO_30D');
  assert.equal(storage.calls[1].values[2],'bazaar30');
  assert.equal(storage.calls[1].values[3],1500000);
  assert.equal(storage.calls[1].values[5],'usr_'+'a'.repeat(32));
 });
 
-test('invalid or disabled OTP cookies fail closed and never fall back to a pilot Authorization token',async()=>{
+test('invalid or disabled password-auth cookies fail closed and never fall back to a pilot Authorization token',async()=>{
  const app=await worker(),token=await signedToken();
  for(const extra of [
-  {cookie:'sahmino_session='+'d'.repeat(64),env:{SAHMINO_OTP_ENABLED:'false'}},
-  {cookie:'sahmino_session='+'e'.repeat(64),env:{SAHMINO_OTP_ENABLED:'true'},session:null},
-  {cookie:'sahmino_session='+'f'.repeat(64)+'; sahmino_session='+'a'.repeat(64),env:{SAHMINO_OTP_ENABLED:'true'}}
+  {cookie:'sahmino_session='+'d'.repeat(64),env:{SAHMINO_PASSWORD_AUTH_ENABLED:'false'}},
+  {cookie:'sahmino_session='+'e'.repeat(64),env:{SAHMINO_PASSWORD_AUTH_ENABLED:'true'},session:null},
+  {cookie:'sahmino_session='+'f'.repeat(64)+'; sahmino_session='+'a'.repeat(64),env:{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}}
  ]){
-  const storage=otpSessionDb({session:extra.session??null});
-  const response=await app.fetch(request(token,'/api/v1/me/entitlement',{cookie:extra.cookie}),
-   env(storage,extra.env));
+  const storage=authSessionDb({session:extra.session??null});
+  const response=await app.fetch(request(token,'/api/v1/me/entitlement',{cookie:extra.cookie}),env(storage,extra.env));
   assert.equal(response.status,401);
  }
 });
 
-
-test('OTP Worker routes remain disabled by default and reject untrusted origins',async()=>{
+test('password-auth routes stay disabled by default and reject untrusted origins',async()=>{
  const app=await worker();
- const request=new Request('https://worker.example/api/v1/auth/otp/request',{
-  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
+ const req=new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
+  body:JSON.stringify({username:'09123456789',password:'Correct horse battery 42!'})
  });
- const disabled=await app.fetch(request,env());
+ const disabled=await app.fetch(req,env());
  assert.equal(disabled.status,404);
  assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
- const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/otp/request',{
-  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
- }),env(undefined,{SAHMINO_OTP_ENABLED:'true'}));
+ const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'
+ }),env(undefined,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
  assert.equal(hostile.status,403);
 });
 
-test('OTP route preflight permits configured origin and required CSRF header',async()=>{
+test('password login rejects malformed, oversized, cross-origin and missing rate-limit configuration before D1 access',async()=>{
  const app=await worker();
- const response=await app.fetch(new Request('https://worker.example/api/v1/auth/logout',{
-  method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Headers':'content-type,x-sahmino-csrf'}
- }),env());
- assert.equal(response.status,204);
- assert.match(response.headers.get('Access-Control-Allow-Headers'),/Content-Type/);
- assert.match(response.headers.get('Access-Control-Allow-Headers'),/X-Sahmino-CSRF/);
- assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
- const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/logout',{
-  method:'OPTIONS',headers:{Origin:'https://evil.example'}
- }),env());
- assert.equal(hostile.status,403);
-});
-
-test('OTP routes fail closed when D1 or dedicated OTP secrets are missing',async()=>{
- const app=await worker();
- const config=env(); config.SAHMINO_OTP_ENABLED='true'; config.SAHAMBAN_DB=undefined;
- const response=await app.fetch(new Request('https://worker.example/api/v1/auth/session',{headers:{Origin:origin}}),config);
- assert.equal(response.status,503);
- assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
-});
-
-test('OTP request and verify reject oversized payloads before provider or database access',async()=>{
- const app=await worker();
- const config=env(); config.SAHMINO_OTP_ENABLED='true';
- config.SAHAMBAN_DB={prepare(){throw new Error('must not query');}};
- config.SAHMINO_OTP_VERIFIER_SECRET='v'.repeat(48); config.SAHMINO_OTP_RATE_LIMIT_SECRET='r'.repeat(48);
- for(const route of ['/api/v1/auth/otp/request','/api/v1/auth/otp/verify']){
-  const response=await app.fetch(new Request('https://worker.example'+route,{
-   method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Content-Length':'257'},body:' '.repeat(257)
-  }),config);
-  assert.equal(response.status,413);
-  assert.deepEqual(await response.json(),{error:'BODY_TOO_LARGE'});
+ const storage=authSessionDb();
+ for(const [body,contentType,status] of [
+  [{username:'bad',password:'123456789012'},'application/json',401],
+  [{username:'09123456789',password:'short'},'application/json',401],
+  [{username:'09123456789',password:'Correct horse battery 42!',extra:true},'application/json',400],
+  ['not-json','application/json',400],
+  [{username:'09123456789',password:'Correct horse battery 42!'},'text/plain',415]
+ ]){
+  const response=await app.fetch(request(null,'/api/v1/auth/login',{method:'POST',body,contentType}),
+   env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+  assert.equal(response.status,status);
  }
+ const missing=env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',SAHMINO_AUTH_RATE_LIMIT_SECRET:undefined});
+ const unavailable=await app.fetch(request(null,'/api/v1/auth/login',{method:'POST',
+  body:{username:'09123456789',password:'Correct horse battery 42!'}}),missing);
+ assert.equal(unavailable.status,503);
+});
+
+test('logout requires CSRF, revokes the server session and clears the cookie',async()=>{
+ const app=await worker(),storage=authSessionDb(),cookie='sahmino_session='+'d'.repeat(64);
+ const blocked=await app.fetch(request(null,'/api/v1/auth/logout',{method:'POST',cookie}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(blocked.status,403);
+ const response=await app.fetch(request(null,'/api/v1/auth/logout',{method:'POST',cookie,csrf:'1'}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(response.status,200);
+ assert.equal((await response.json()).authenticated,false);
+ assert.match(response.headers.get('Set-Cookie'),/Max-Age=0/);
+ assert.match(storage.calls[0].sql,/UPDATE sahmino_shared_sessions SET revoked_at/);
 });
