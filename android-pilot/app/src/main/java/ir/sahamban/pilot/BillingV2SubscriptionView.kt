@@ -42,6 +42,7 @@ class BillingV2SubscriptionView(
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val actionButtons = mutableListOf<Button>()
+    private val purchaseButtons = mutableListOf<Button>()
     private val planPriceViews = mutableMapOf<String, TextView>()
     private lateinit var statusView: TextView
     private var busy = false
@@ -87,6 +88,7 @@ class BillingV2SubscriptionView(
                 setOnClickListener { beginPurchase(plan) }
             }
             actionButtons += buy
+            purchaseButtons += buy
             card.addView(buy, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -113,6 +115,7 @@ class BillingV2SubscriptionView(
         content.addView(statusView)
 
         if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            purchaseButtons.forEach { it.isEnabled = false }
             planPriceViews.values.forEach {
                 it.text = "قیمت نهایی پس از فعال‌سازی پرداخت از فروشگاه دریافت می‌شود."
             }
@@ -122,7 +125,7 @@ class BillingV2SubscriptionView(
                 mainHandler.post {
                     if (prices == null) {
                         planPriceViews.values.forEach { it.text = "قیمت فروشگاه در دسترس نیست." }
-                        actionButtons.forEach { it.isEnabled = false }
+                        purchaseButtons.forEach { it.isEnabled = false }
                         statusView.text = "قیمت پلن‌ها از فروشگاه دریافت نشد؛ امکان خرید موقتاً غیرفعال است."
                     } else {
                         prices.forEach { (planId, displayPrice) ->
