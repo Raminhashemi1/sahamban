@@ -8,7 +8,6 @@ on:
       - 'tests/worker-api.test.cjs'
       - 'tests/password-auth*'
       - 'tests/worker-local-runtime.cjs'
-      - 'tests/password-auth*'
       - 'tests/mint-pilot-token.test.cjs'
       - 'tests/billing-v2*.test.*'
       - '.github/workflows/pilot-worker-build.yml'
@@ -19,6 +18,8 @@ on:
       - 'tests/worker-api.test.cjs'
       - 'tests/pilot-orders-api.test.cjs'
       - 'tests/mint-pilot-token.test.cjs'
+      - 'tests/password-auth*'
+      - 'tests/worker-local-runtime.cjs'
       - 'tests/billing-v2*.test.*'
       - '.github/workflows/pilot-worker-build.yml'
   workflow_dispatch:
