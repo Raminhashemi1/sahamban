@@ -38,7 +38,7 @@ const DEFAULT_BAZAAR_SKU_MAP=JSON.stringify({
  SAHAMBAN_PRO_90D:'bazaar90',SAHAMBAN_PRO_180D:'bazaar180',
  SAHAMBAN_PRO_365D:'bazaar365'
 });
-function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHMINO_AUTH_RATE_LIMIT_SECRET:RATE_SECRET,
+function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,PILOT_TOKEN_AUTH_ENABLED:'true',SAHMINO_AUTH_RATE_LIMIT_SECRET:RATE_SECRET,
  SAHAMBAN_DB:DB,BAZAAR_SKU_MAP:DEFAULT_BAZAAR_SKU_MAP,...extra};}
 
 test('authenticated entitlement lookup is account-bound and reports manual renewal only',async()=>{
