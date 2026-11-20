@@ -1,14 +1,14 @@
 # Sahmino Android pilot — native account and in-app billing host
 
 This module is the Android wrapper for the existing Sahmino PWA at
-`https://raminhashemi1.github.io/sahamban/`. It now includes a native OTP
+`https://raminhashemi1.github.io/sahamban/`. It now includes a native username/password
 sign-in host and a native subscription screen connected to Billing V2. This
 is not a signed production release or a marketplace-ready package.
 
 ## Implemented in source
 
-- `MainActivity` checks the Worker OTP session on cold start, presents the
-  Persian native phone/code login when needed, and exposes a native
+- `MainActivity` checks the Worker password-auth session on cold start, presents the
+  Persian native username/password login when needed, and exposes a native
   **اشتراک سهمینو** entry after authentication.
 - The subscription entry composes
   `BillingV2SubscriptionHost` → `BillingV2CookieSessionProvider` →
@@ -25,7 +25,7 @@ is not a signed production release or a marketplace-ready package.
   entitlement settlement.
 - Session cookies stay in Android's native CookieManager and native HTTPS
   requests; no WebView JavaScript bridge is installed.
-- The Worker, OTP, and billing flags default to disabled. A debug checkout can
+- The Worker password-auth and billing flags default to disabled. A debug checkout can
   only be opted in when the exact package, HTTPS Worker URL, all five unique
   non-placeholder SKUs, and the flavor's public verification key are supplied.
   Release checkout is hard-disabled in Gradle.
@@ -64,21 +64,27 @@ Gradle reads these environment variables:
 Placeholder values beginning with `REPLACE_` are rejected. Do not guess
 package names, product IDs, public keys, or Worker URLs. The Android workflow
 reads public identifiers from GitHub Actions Variables and verification
-public keys from Actions Secrets. Private merchant credentials and OTP
-secrets belong only in Cloudflare Worker Secrets, never in the APK.
+public keys from Actions Secrets. Private merchant credentials and the auth rate-limit secret belong only in Cloudflare Worker Secrets, never in the APK.
 
 ## Worker configuration required before login or checkout
 
 Deploy a matching Worker revision for each flavor. Both Worker configurations
-must point to the same private D1 database and exact PWA origin. Both must
-include the `SAHMINO_SMS_PROVIDER` service binding for the Shahmiz SMS Worker.
-OTP and Billing V2 flags default to false. Apply the user, OTP, and Billing V2
-migrations only after confirming the target database and taking a backup.
+must point to the same private D1 database and exact PWA origin. Keep
+`SAHMINO_PASSWORD_AUTH_ENABLED=false` until the password-auth migration is
+applied and existing users have credentials provisioned securely.
 
-Required Worker secrets include:
-- `SAHMINO_OTP_VERIFIER_SECRET`
-- `SAHMINO_OTP_RATE_LIMIT_SECRET`
-- Shahmiz provider `SHAHMIZ_API_TOKEN`
+Required Worker secret:
+- `SAHMINO_AUTH_RATE_LIMIT_SECRET` (at least 32 random bytes)
+
+Provision credentials only for existing ACTIVE user records through the
+owner-controlled secure process. Use `scripts/create-sahmino-credential.mjs`
+to produce a SQL statement from environment variables; never pass passwords
+as command-line arguments or commit the generated SQL. Remove the temporary
+SQL file after applying it to the intended private D1 database. The script
+does not create accounts and does not expose public self-registration.
+
+No SMS provider, OTP endpoint, or SMS secret is part of the login flow.
+Marketplace secrets remain separate:
 - Bazaar `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`,
   `BAZAAR_REFRESH_TOKEN`, and `BAZAAR_RSA_PUBLIC_KEY`
 - Myket `MYKET_PUBLIC_KEY`
@@ -112,7 +118,7 @@ gradle -p android-pilot :app:assembleBazaarDebug :app:assembleMyketDebug
    current signed-purchase verifier does not independently prove that a
    previously valid purchase was not refunded later.
 5. Run the complete purchase lifecycle on physical devices with store test
-   accounts: OTP, purchase, receipt verification, consume, retry, restore,
+   accounts: password login, purchase, receipt verification, consume, retry, restore,
    repurchase, expiry, account switching, refund, and network loss.
 6. Only after acceptance, configure release signing in an owner-controlled
    secure environment and prepare store submissions.
