@@ -35,10 +35,10 @@ Existing Billing V2 D1: apply `migrations/0002-myket-store-columns.sql` if not a
 1. Confirm the final Android applicationId registered in each marketplace.
 2. Create the five consumable products in each store and record the real, unique SKU IDs.
 3. Set both Worker configurations to the same private D1 database and exact PWA origin.
-4. Configure marketplace public keys and Bazaar OAuth credentials as Worker secrets; configure OTP secrets and SMS-provider binding.
-5. Apply the OTP runtime and Billing V2 migrations to the correct D1 database.
+4. Configure marketplace public keys and Bazaar OAuth credentials as Worker secrets; configure the password-auth rate-limit secret.
+5. Apply the password-auth and Billing V2 migrations to the correct D1 database.
 6. Verify Myket refund/revocation reconciliation against its supported provider contract; signature-only validation does not prove a later refund has not occurred.
 7. Build and test both market flavors on physical devices with store test accounts, including purchase, verification, consume, retry, restore, repurchase, account switching, expiry, refund and network loss.
-8. Keep OTP and billing flags off until the relevant deployment, secrets, migrations and device acceptance tests pass.
+8. Keep password-auth and billing flags off until the relevant deployment, secrets, migrations and device acceptance tests pass.
 
 No checkout, Worker deployment, production migration, or store configuration is performed by CI.
