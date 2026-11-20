@@ -94,12 +94,14 @@ class BillingV2ApiClient(
                 if (status == 201) {
                     val order = json.optJSONObject("order")
                     val id = order?.optString("id").orEmpty()
-                    val days = order?.optInt("days", 0) ?: 0\n                    val priceRial = order?.optLong("priceRial", -1L) ?: -1L\n                    val expectedPrice = mapOf("SAHAMBAN_PRO_30D" to 1500000L, "SAHAMBAN_PRO_60D" to 2850000L, "SAHAMBAN_PRO_90D" to 4050000L, "SAHAMBAN_PRO_180D" to 7650000L, "SAHAMBAN_PRO_365D" to 14600000L)[planId]
+                    val days = order?.optInt("days", 0) ?: 0
+                    val priceRial = order?.optLong("priceRial", -1L) ?: -1L
+                    val expectedPrice = mapOf("SAHAMBAN_PRO_30D" to 1500000L, "SAHAMBAN_PRO_60D" to 2850000L, "SAHAMBAN_PRO_90D" to 4050000L, "SAHAMBAN_PRO_180D" to 7650000L, "SAHAMBAN_PRO_365D" to 14600000L)[planId]
                     val returnedPlan = order?.optString("planId").orEmpty()
                     val returnedStore = order?.optString("store")?.takeIf { it.isNotBlank() } ?: "BAZAAR"
                     if (id.matches(Regex("^ord_[a-f0-9]{32}$")) && days > 0 &&
-                        returnedPlan == planId && returnedStore == storeName)
-                        Result.Success(Order(id, returnedPlan, days, returnedStore))
+                        returnedPlan == planId && returnedStore == storeName && priceRial == expectedPrice)
+                        Result.Success(Order(id, returnedPlan, days, priceRial, returnedStore))
                     else Result.Failure(502, "INVALID_ORDER_RESPONSE")
                 } else Result.Failure(status, json.optString("error", "ORDER_FAILED"))
             }, callback)
