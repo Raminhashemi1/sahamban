@@ -185,3 +185,39 @@ test('native purchase verifies the exact order evidence on the server before con
  assert.match(worker,/verifyAndSettleMyket/);
  assert.match(worker,/verifyAndSettle/);
 });
+
+test('restore recovers durable account access first and verifies pending store receipts before consume',()=>{
+ const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
+ const bazaar=read('android-pilot/app/src/bazaar/kotlin/ir/sahamban/pilot/BillingV2Coordinator.kt');
+ const myket=read('android-pilot/app/src/myket/kotlin/ir/sahamban/pilot/BillingV2Coordinator.kt');
+ const restore=flow.slice(flow.indexOf('fun restore('));
+
+ const entitlementAt=restore.indexOf('api.refreshEntitlement');
+ const billingGateAt=restore.indexOf('if (!BuildConfig.SAHAMBAN_BILLING_ENABLED)');
+ const connectAt=restore.indexOf('storeBilling.connect');
+ assert.ok(entitlementAt >= 0 && billingGateAt > entitlementAt && connectAt > billingGateAt,
+  'durable account entitlement must be checked before optional store restoration');
+ assert.match(restore,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\) \{\s*callback\(listOfNotNull\(durable\)\)/);
+ assert.match(restore,/storeBilling\.loadPlanDetails\(skuByPlan\.values\.toList\(\)\)/);
+ assert.match(restore,/storeBilling\.restore/);
+ assert.match(restore,/evidence\.packageName != expectedPackageName/);
+ assert.match(restore,/evidence\.orderId\.matches\(Regex\("\^ord_\[a-f0-9\]\{32\}\$"\)\)/);
+
+ const verifyAt=restore.indexOf('api.verifyPurchase');
+ const consumeAt=restore.indexOf('storeBilling.consumeAfterSettlement');
+ assert.ok(verifyAt >= 0 && consumeAt > verifyAt,
+  'a recovered pending receipt must be server-verified before store consumption');
+ const verifiedSuccess=restore.indexOf('is BillingV2ApiClient.Result.Success ->',verifyAt);
+ const verifiedFailure=restore.indexOf('is BillingV2ApiClient.Result.Failure ->',verifyAt);
+ assert.ok(verifiedSuccess > verifyAt && verifiedFailure > verifiedSuccess);
+ assert.ok(restore.indexOf('storeBilling.consumeAfterSettlement',verifiedSuccess) > verifiedSuccess);
+ assert.doesNotMatch(restore.slice(verifiedFailure),/storeBilling\.consumeAfterSettlement/,
+  'invalid or unavailable verification must leave the store purchase unconsumed');
+ assert.match(restore,/listOfNotNull\(durable\) \+ results\.toList\(\)/);
+
+ assert.match(bazaar,/fun restore\(callback: \(List<PurchaseEvidence>\?\) -> Unit\)/);
+ assert.match(bazaar,/payment\.getPurchasedProducts/);
+ assert.match(myket,/fun restore\(callback: \(List<PurchaseEvidence>\?\) -> Unit\)/);
+ assert.match(myket,/billing\.queryInventoryAsync\(\s*false,\s*skus/);
+ assert.match(myket,/inventory\.getPurchase\(it\)\?\.toEvidence\(\)/);
+});
