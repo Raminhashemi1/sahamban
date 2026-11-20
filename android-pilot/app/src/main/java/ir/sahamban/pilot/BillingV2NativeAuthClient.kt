@@ -41,7 +41,6 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
             callback(Result.Failure(400, "INVALID_CREDENTIALS"))
             return
         }
-        }
         postJson("/api/v1/auth/login",
             JSONObject().put("username", normalizedUsername).put("password", password)) { status, body, setCookie ->
             if (status != 200 || !body.optBoolean("authenticated")) {
