@@ -47,9 +47,10 @@ keys, or Worker URLs.
 
 Both store Workers must share one private D1 database and exact PWA origin.
 Apply the base schema, existing Billing V2 migrations as appropriate, and
-`server/migrations/0004-username-password-auth.sql`. Provision accounts
-with `scripts/provision-sahmino-user.mjs`; it reads a JSON object from stdin
-and prints a SQL insert containing only the derived PBKDF2 password hash.
+`server/migrations/0004-username-password-auth.sql`. Provision new accounts or set credentials on an existing account with
+`scripts/provision-sahmino-user.mjs`; pass the existing internal `userId` to
+update a backfilled account. It reads JSON from stdin and prints SQL containing
+only the derived PBKDF2 password hash.
 
 Required Worker settings:
 - `SAHMINO_PASSWORD_AUTH_ENABLED=false` until migration and account provisioning are complete.
