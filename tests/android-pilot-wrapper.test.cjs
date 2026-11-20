@@ -70,6 +70,7 @@ test('native subscription selector uses exact marketplace prices and manual-rene
  assert.match(ui,/SAHAMBAN_BILLING_ENABLED/);
  assert.match(ui,/تمدید خودکار نداریم/);
  assert.match(ui,/بازیابی اشتراک/);
+ assert.match(ui,/purchaseButtons\.forEach \{ it\.isEnabled = false \}/);
  assert.match(ui,/purchaseFlow\.purchase\(plan\.id\)/);
  assert.match(ui,/purchaseFlow\.restore/);
  assert.match(ui,/NOT_AUTHENTICATED/);
@@ -77,8 +78,9 @@ test('native subscription selector uses exact marketplace prices and manual-rene
  assert.match(flow,/displayPrice/);
  const restore=flow.slice(flow.indexOf('fun restore('));
  assert.ok(restore.indexOf('api.refreshEntitlement') >= 0);
- assert.ok(restore.indexOf('api.refreshEntitlement') < restore.indexOf('storeBilling.loadPlanDetails'),
-  'durable account entitlement must be restored before consumable store inventory is queried');
+ assert.ok(restore.indexOf('api.refreshEntitlement') < restore.indexOf('storeBilling.connect'),
+  'durable account entitlement must be restored before marketplace availability is checked');
+ assert.match(restore,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
  assert.doesNotMatch(ui,/1_500_000L|2_850_000L|4_050_000L|7_650_000L|14_600_000L/);
 });
 
@@ -134,7 +136,8 @@ test('native subscription entry is reachable only after OTP and fails closed wit
  assert.match(host,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
  for(const sku of ['30D','60D','90D','180D','365D'])
   assert.match(host,new RegExp('SAHAMBAN_SKU_PRO_'+sku));
- assert.match(host,/if \(!configured\)/);
+ assert.match(host,/UNCONFIGURED_SAHAMBAN_PRO_30D/);
+ assert.match(host,/if \(!packageUsable\)/);
  assert.match(host,/BillingV2PurchaseFlow\(/);
  assert.match(host,/BillingV2SubscriptionView\(/);
  assert.match(build,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
