@@ -57,6 +57,15 @@ test('a different purchase token cannot settle an already paid order',async()=>{
  assert.equal((await settle(db,input)).error,'ORDER_ALREADY_SETTLED');
  assert.equal(db.calls.length,0);
 });
+test('settlement accepts an opaque migrated account ID and binds it to the order query',async()=>{
+ const db=fakeDb({id:'order-legacy',user_id:'legacy-user-42',status:'CREATED',plan_id:input.planId,
+  amount_irr:1500000,created_at:now,expires_at:null});
+ const result=await settle(db,{...input,subject:undefined,userId:'legacy-user-42'});
+ assert.equal(result.ok,true);
+ assert.match(db.calls[0][0].sql,/u.id=\\?/);
+ assert.equal(db.calls[0][0].values[1],'legacy-user-42');
+});
+
 test('purchase predating the server order, invalid plan and partial database batch fail closed',async()=>{
  const order={id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,amount_irr:1500000,created_at:now,expires_at:null};
  assert.equal((await settle(fakeDb(order),{...input,purchaseTime:'2025-12-01T00:00:00.000Z'})).error,'PURCHASE_PRECEDES_ORDER');
