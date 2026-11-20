@@ -58,6 +58,7 @@ class BillingV2ApiClient(
                     require(endpoint.protocol == "https" && endpoint.host == base.host &&
                         endpoint.port == base.port)
                     val connection = endpoint.openConnection() as HttpsURLConnection
+                    connection.instanceFollowRedirects = false
                     try {
                         connection.requestMethod = "GET"
                         connection.connectTimeout = 10000
@@ -168,6 +169,7 @@ class BillingV2ApiClient(
                     require(endpoint.protocol == "https" && endpoint.host == base.host &&
                         endpoint.port == base.port)
                     val connection = endpoint.openConnection() as HttpsURLConnection
+                    connection.instanceFollowRedirects = false
                     try {
                         connection.requestMethod = "POST"
                         connection.connectTimeout = 10000
