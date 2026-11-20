@@ -42,7 +42,7 @@ test('debug APK has a temporary identity, no production signing and no checkout'
  assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
 });
 
-test('Billing API client obtains fresh native OTP cookie headers and never uses bearer tokens',()=>{
+test('Billing API client obtains fresh native password-session cookie headers and never uses bearer tokens',()=>{
  const api=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2ApiClient.kt');
  assert.match(api,/fun interface BillingV2AuthProvider/);
  assert.match(api,/private val authProvider: BillingV2AuthProvider/);
@@ -79,68 +79,62 @@ test('native subscription selector uses exact marketplace prices and manual-rene
  assert.match(flow,/displayPrice/);
  const restore=flow.slice(flow.indexOf('fun restore('));
  assert.ok(restore.indexOf('api.refreshEntitlement') >= 0);
- assert.ok(restore.indexOf('api.refreshEntitlement') < restore.indexOf('storeBilling.connect'),
-  'durable account entitlement must be restored before marketplace availability is checked');
+ assert.ok(restore.indexOf('api.refreshEntitlement') < restore.indexOf('storeBilling.connect'));
  assert.match(restore,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
  assert.doesNotMatch(ui,/1_500_000L|2_850_000L|4_050_000L|7_650_000L|14_600_000L/);
 });
 
-
-test('native OTP client obtains session directly from Worker and stores HttpOnly cookie without JS exposure',()=>{
- const otp=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeOtpClient.kt');
- assert.match(otp,/fun requestCode\(/);
- assert.match(otp,/fun verifyCode\(/);
- assert.match(otp,/fun logout\(/);
- assert.match(otp,/https/);
- assert.match(otp,/setCookie\(workerBaseUrl, cookie\)/);
- assert.match(otp,/CookieManager\.getInstance\(\)/);
- assert.match(otp,/HttpOnly/);
- assert.match(otp,/SameSite=None/);
- assert.match(otp,/X-Sahmino-CSRF/);
- assert.match(otp,/Origin", pwaOrigin/);
- assert.doesNotMatch(otp,/Log\.|println\(|addJavascriptInterface|evaluateJavascript/);
- assert.match(otp,/singleOrNull/);
- assert.match(otp,/SESSION_COOKIE_REJECTED/);
+test('native password auth client creates and persists an HttpOnly session without JS exposure',()=>{
+ const auth=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeAuthClient.kt');
+ assert.match(auth,/fun login\(username: String, password: String/);
+ assert.match(auth,/api\/v1\/auth\/login/);
+ assert.match(auth,/fun logout\(/);
+ assert.match(auth,/fun checkSession\(/);
+ assert.match(auth,/setCookie\(workerBaseUrl, cookie\)/);
+ assert.match(auth,/CookieManager\.getInstance\(\)/);
+ assert.match(auth,/HttpOnly/);
+ assert.match(auth,/SameSite=None/);
+ assert.match(auth,/X-Sahmino-CSRF/);
+ assert.match(auth,/Origin", pwaOrigin/);
+ assert.doesNotMatch(auth,/Log\.|println\(|addJavascriptInterface|evaluateJavascript/);
+ assert.match(auth,/singleOrNull/);
+ assert.match(auth,/SESSION_COOKIE_REJECTED/);
+ assert.doesNotMatch(auth,/otp|sms|codeInput|challengeId/i);
 });
 
-
-test('Android host gates PWA startup behind native OTP and revalidates persisted sessions',()=>{
+test('Android host gates PWA startup behind native username/password auth and revalidates sessions',()=>{
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
- const otp=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeOtpClient.kt');
- const login=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2OtpLoginView.kt');
- assert.match(activity,/new BillingV2NativeOtpClient/);
- assert.match(activity,/otpClient\.checkSession/);
+ const auth=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeAuthClient.kt');
+ const login=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2LoginView.kt');
+ assert.match(activity,/new BillingV2NativeAuthClient/);
+ assert.match(activity,/authClient\.checkSession/);
  assert.match(activity,/showLogin\(\)/);
  assert.match(activity,/showWebApp\(\)/);
  assert.match(activity,/performLogout/);
  assert.match(activity,/TrustedNavigation\.isInternal/);
- assert.match(otp,/fun checkSession\(callback: SessionCallback\)/);
- assert.match(otp,/api\/v1\/auth\/session/);
- assert.match(otp,/api\/v1\/auth\/logout/);
- assert.match(login,/fun requestCode\(/);
- assert.match(login,/fun verifyCode\(/);
+ assert.match(auth,/api\/v1\/auth\/session/);
+ assert.match(auth,/api\/v1\/auth\/logout/);
+ assert.match(login,/authClient\.login\(username, password\)/);
+ assert.match(login,/passwordInput/);
  assert.match(login,/asciiDigits/);
  assert.match(login,/AuthenticatedListener/);
- assert.doesNotMatch(activity,/addJavascriptInterface|evaluateJavascript/);
+ assert.doesNotMatch(activity,/addJavascriptInterface|evaluateJavascript|OTP|Sms/);
 });
 
-
-test('native subscription entry is reachable only after OTP and fails closed without owner SKU configuration',()=>{
+test('native subscription entry is reachable only after password session and fails closed without owner SKU configuration',()=>{
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
  const host=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2SubscriptionHost.kt');
  const build=read('android-pilot/app/build.gradle');
- assert.match(activity,/otpClient\.checkSession/);
+ assert.match(activity,/authClient\.checkSession/);
  assert.match(activity,/showSubscription\(\)/);
  assert.match(activity,/new BillingV2SubscriptionHost/);
  assert.match(activity,/showingSubscription/);
  assert.match(activity,/boolean loadPwa = webView == null/);
  assert.match(activity,/if \(loadPwa\) webView\.loadUrl\(START_URL\)/);
- assert.doesNotMatch(activity,/^\s*webView\.loadUrl\(START_URL\);$/m,
-  'returning from subscriptions must not reload the PWA and discard in-memory state');
+ assert.doesNotMatch(activity,/^\s*webView\.loadUrl\(START_URL\);$/m);
  assert.match(activity,/subscriptionHost\.close\(\)/);
  assert.match(host,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
- for(const sku of ['30D','60D','90D','180D','365D'])
-  assert.match(host,new RegExp('SAHAMBAN_SKU_PRO_'+sku));
+ for(const sku of ['30D','60D','90D','180D','365D']) assert.match(host,new RegExp('SAHAMBAN_SKU_PRO_'+sku));
  assert.match(host,/UNCONFIGURED_SAHAMBAN_PRO_30D/);
  assert.match(host,/if \(!packageUsable\)/);
  assert.match(host,/BillingV2PurchaseFlow\(/);
