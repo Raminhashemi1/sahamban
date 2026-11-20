@@ -6,9 +6,11 @@ This runbook prepares two store-specific Worker deployments that share one D1 en
 
 Provision one private production D1 database. Use the same database ID in both Worker configuration files.
 
-Choose exactly one schema path:
-- Fresh database: apply `server/billing/schema.sql`.
-- Existing database already using the earlier Bazaar Billing V2 schema: apply `server/billing/migrations/0002-myket-store-columns.sql` once.
+Choose exactly one billing schema path:
+- Fresh database: apply the base user schema, then `server/billing/schema.sql`.
+- Existing database already using the earlier Bazaar Billing V2 schema: apply `server/billing/migrations/0002-myket-store-columns.sql` once, then `0003-authoritative-irr-prices.sql` exactly once.
+
+After the base/Billing V2 schema path is verified, apply `server/migrations/0004-username-password-auth.sql` once. This migration backfills usernames from existing verified phone identities, leaves password hashes unset, and adds hashed-session and login-rate-limit storage. It does not send SMS or enable authentication.
 
 Do not apply the fresh schema and the upgrade migration to the same database. Take a backup before any production migration and verify the schema after applying it.
 
@@ -35,7 +37,7 @@ wrangler secret put AUTH_RATE_LIMIT_SECRET --config server/wrangler.myket.toml
 wrangler secret put MYKET_PUBLIC_KEY --config server/wrangler.myket.toml
 ```
 
-The Worker uses native username/password authentication and a D1-backed HttpOnly session. Apply `migrations/0004-username-password-auth.sql`, provision real accounts with password hashes, and keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until the owner-controlled identity setup is complete.
+The Worker uses native username/password authentication and a D1-backed HttpOnly session. Provision real accounts with `scripts/provision-sahmino-user.mjs`, set a private `AUTH_RATE_LIMIT_SECRET` of at least 32 bytes, and keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until the migration, account provisioning, and password-recovery procedure are reviewed.
 
 ## 4. Deploy with checkout disabled
 
