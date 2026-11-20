@@ -100,6 +100,7 @@ test('native password auth client creates and persists an HttpOnly session witho
  assert.match(auth,/X-Sahmino-CSRF/);
  assert.match(auth,/Origin", pwaOrigin/);
  assert.doesNotMatch(auth,/Log\.|println\(|addJavascriptInterface|evaluateJavascript/);
+ assert.equal((auth.match(/instanceFollowRedirects = false/g)||[]).length,3);
  assert.match(auth,/singleOrNull/);
  assert.match(auth,/SESSION_COOKIE_REJECTED/);
  assert.doesNotMatch(auth,/otp|sms|codeInput|challengeId/i);
