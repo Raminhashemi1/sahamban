@@ -18,7 +18,7 @@ const credentials=await hashPassword(payload?.password);
 const q=value=>"'"+String(value).replace(/'/g,"''")+"'";
 let sql;
 if(payload.userId!==undefined){
- if(typeof payload.userId!=='string'||payload.userId.length<1||payload.userId.length>128||/[\\u0000-\\u001f\\u007f]/.test(payload.userId))
+ if(typeof payload.userId!=='string'||payload.userId.length<1||payload.userId.length>128||/[\u0000-\u001f\u007f]/.test(payload.userId))
   throw new Error('Existing userId must be a non-empty internal ID of at most 128 characters.');
  sql=`UPDATE sahamban_users
 SET username_normalized=${q(username)},password_salt=${q(credentials.salt)},
