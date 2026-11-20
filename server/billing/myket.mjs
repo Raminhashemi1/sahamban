@@ -12,7 +12,7 @@ export async function verifyAndSettleMyket({db,env,subject,userId,body,now}) {
   return {status:400,body:{error:'INVALID_PURCHASE'}};
  try {
   const query=userId
-   ? "SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
+   ? "SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,amount_irr,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
    : "SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
   const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
@@ -26,7 +26,7 @@ export async function verifyAndSettleMyket({db,env,subject,userId,body,now}) {
    orderId:order.id,subject,userId,planId:order.plan_id,storeOrderId:verified.storeOrderId,
    tokenHash:verified.purchaseTokenHash,purchaseTime:verified.purchaseTime,now
   });
-  return result.ok?{status:200,body:{status:'ACTIVE',planId:order.plan_id,
+  return result.ok?{status:200,body:{status:'ACTIVE',planId:order.plan_id,amountRial:verified.amountIrr,
    expiresAt:result.expiresAt,renewalMode:'MANUAL',daysAdded:result.daysAdded,
    restored:!!result.restored}}:{status:409,body:{error:result.error}};
  } catch (_) {
