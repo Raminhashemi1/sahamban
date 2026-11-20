@@ -17,6 +17,16 @@ test('Myket order persists trusted store, SKU and approved server IRR amount',as
  assert.match(sql,/store,store_product_id,amount_irr,created_at/);
  assert.deepEqual(values,['ord_'+'b'.repeat(32),'SAHAMBAN_PRO_90D','myket_90d',4050000,'2026-01-01T00:00:00.000Z','user-1']);
 });
+test('Myket order creation accepts migrated legacy account IDs',async()=>{
+ let sql='',values=[];
+ const db={prepare(q){sql=q;return {bind(...v){values=v;return {async run(){return {success:true,meta:{changes:1}};}};}};}};
+ const result=await createMyketOrder(db,{userId:'legacy-user-42',planId:'SAHAMBAN_PRO_30D',
+  now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'d'.repeat(32),skuMap:map});
+ assert.equal(result.status,201);
+ assert.match(sql,/WHERE id=\\? AND status='ACTIVE'/);
+ assert.equal(values[5],'legacy-user-42');
+});
+
 test('Myket order fails closed without SKU map or authentication',async()=>{
  assert.equal((await createMyketOrder({},{subject:'user',planId:'SAHAMBAN_PRO_30D',skuMap:null})).status,503);
  assert.equal((await createMyketOrder({},{planId:'SAHAMBAN_PRO_30D',skuMap:map})).status,401);
