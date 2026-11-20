@@ -11,14 +11,25 @@ const input=await new Promise((resolve,reject)=>{
  process.stdin.on('end',()=>resolve(data));
 });
 let payload;
-try{payload=JSON.parse(input);}catch{throw new Error('Provide one JSON object on stdin with username and password.');}
+try{payload=JSON.parse(input);}catch{throw new Error('Provide one JSON object on stdin with username, password, and optional existing userId.');}
 const username=normalizeUsername(payload?.username);
 if(!username)throw new Error('Username must be an Iranian mobile number.');
 const credentials=await hashPassword(payload?.password);
-const userId='usr_'+randomBytes(16).toString('hex');
-const createdAt=new Date().toISOString();
 const q=value=>"'"+String(value).replace(/'/g,"''")+"'";
-const sql=`INSERT INTO sahamban_users
+let sql;
+if(payload.userId!==undefined){
+ if(typeof payload.userId!=='string'||!/^usr_[a-f0-9]{32}$/.test(payload.userId))
+  throw new Error('Existing userId must be a valid internal usr_ ID.');
+ sql=`UPDATE sahamban_users
+SET username_normalized=${q(username)},password_salt=${q(credentials.salt)},
+ password_hash=${q(credentials.hash)},password_iterations=${credentials.iterations}
+WHERE id=${q(payload.userId)} AND status='ACTIVE'
+ AND (username_normalized IS NULL OR username_normalized=${q(username)});`;
+}else{
+ const userId='usr_'+randomBytes(16).toString('hex');
+ const createdAt=new Date().toISOString();
+ sql=`INSERT INTO sahamban_users
 (id,email_normalized,auth_subject,created_at,status,username_normalized,password_salt,password_hash,password_iterations)
 VALUES (${q(userId)},NULL,NULL,${q(createdAt)},'ACTIVE',${q(username)},${q(credentials.salt)},${q(credentials.hash)},${credentials.iterations});`;
-process.stdout.write('-- Execute this statement against the intended D1 database only.\n'+sql+'\n');
+}
+process.stdout.write('-- Execute against the intended D1 database only; verify that exactly one row changes.\n'+sql+'\n');
