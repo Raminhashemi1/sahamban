@@ -97,3 +97,14 @@ An additional source-contract regression now asserts that:
 - The Android client payload fields exactly match the Bazaar and Myket Worker verifier contracts.
 
 Exact-head GitHub Actions validation passed on commit `94240c9e09eafc9b353a4d0d881d0593bfd97656`: [run 44805999905](https://github.com/Raminhashemi1/sahamban/actions/runs/44805999905). The Android dual-flavor debug build passed on the same Android source tree at commit `3992cee4632a2fcdccf6a433d8043e414cea31f2`; the only subsequent source change before the audited head was a test-file change. This is compile/test evidence, not physical-device or live-store acceptance.
+
+## Restore/recovery regression audit (2026-11-20)
+
+Added a further native restore contract regression in `tests/android-pilot-wrapper.test.cjs`. It guards the recovery sequence where the marketplace purchase may have completed but the app was interrupted before server settlement:
+- Refresh the durable account entitlement before optional marketplace restore, so existing access remains visible even if checkout is disabled or the store is unavailable.
+- Require the configured five-product catalog before querying marketplace-owned purchases.
+- Validate package and server order reference for each recovered receipt.
+- Verify each receipt with the Worker before consuming it; failed verification must leave it unconsumed for retry.
+- Keep the durable entitlement result alongside per-receipt restore results.
+
+Regression commit: `a038fc4b3eaf0cebeb5c0b97baf3534a1cf23e66`. Exact-head CI run: [44806694108](https://github.com/Raminhashemi1/sahamban/actions/runs/44806694108) (queued when this note was written; check its final result before treating the new test as passed). This remains source-contract coverage, not physical-device restore acceptance.
