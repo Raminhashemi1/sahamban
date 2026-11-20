@@ -35,7 +35,7 @@ The app still uses the temporary package `ir.sahamban.pilot` by default. The fin
 ## Database and settlement
 - Fresh database: base user schema, then Billing V2 schema, then `server/migrations/0004-username-password-auth.sql`.
 - Existing Billing V2 database: apply `0002-myket-store-columns.sql` if needed, then `0003-authoritative-irr-prices.sql` exactly once, then migration 0004.
-- Migration 0004 backfills canonical usernames from existing verified phone identity records but intentionally leaves password fields empty; no default password is created.
+- Migration 0004 backfills canonical usernames from existing verified phone identity records, intentionally leaves password fields empty, and revokes legacy OTP-issued sessions; no default password is created.
 - Use `scripts/provision-sahmino-user.mjs` to generate an offline SQL insert for a new account or a guarded update for an existing internal user ID; output contains only a PBKDF2 hash. Password recovery must be designed separately and must not use SMS.
 - Both stores use `billing_orders`, `billing_access`, and `billing_events`.
 - Server and D1 enforce the exact plan-to-IRR amount mapping.
