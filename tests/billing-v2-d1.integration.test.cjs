@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {DatabaseSync}=require('node:sqlite');
 const {settle,settleMyket}=require('../server/billing/settlement.cjs');
+const {getPlan}=require('../server/billing/catalog.cjs');
 
 const now='2026-01-01T00:00:00.000Z';
 const planId='SAHAMBAN_PRO_30D';
@@ -39,8 +40,8 @@ function setup({beforeBatch}={}){
  return {sqlite,adapter};
 }
 function createOrder(sqlite,id,createdAt=now){
- sqlite.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,created_at) VALUES(?,?,?,'CREATED',?)")
-  .run(id,'u1',planId,createdAt);
+ sqlite.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,amount_irr,created_at) VALUES(?,?,?,'CREATED',?,?)")
+  .run(id,'u1',planId,getPlan(planId).priceRial,createdAt);
 }
 function input(id,hash){return {orderId:id,subject,planId,bazaarOrderId:'bazaar-'+hash.slice(0,8),
  tokenHash:hash,purchaseTime:now,now};}
@@ -138,8 +139,8 @@ test('a purchase token already used by another order rolls back the entire new s
 
 
 function createMyketOrder(sqlite,id,createdAt=now){
- sqlite.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,store,store_product_id,created_at) VALUES(?,?,?,'CREATED','MYKET',?,?)")
-  .run(id,'u1',planId,'myket_30d',createdAt);
+ sqlite.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,store,store_product_id,amount_irr,created_at) VALUES(?,?,?,'CREATED','MYKET',?,?,?)")
+  .run(id,'u1',planId,'myket_30d',getPlan(planId).priceRial,createdAt);
 }
 function myketInput(id,hash,storeOrderId){
  return {orderId:id,subject,planId,storeOrderId,tokenHash:hash,
