@@ -5,6 +5,7 @@ const {createMyketOrder,parseStoreSkuMap}=require('../server/billing/orders.cjs'
 const map=JSON.stringify({SAHAMBAN_PRO_30D:'myket_30d',SAHAMBAN_PRO_60D:'myket_60d',SAHAMBAN_PRO_90D:'myket_90d',SAHAMBAN_PRO_180D:'myket_180d',SAHAMBAN_PRO_365D:'myket_365d'});
 test('Myket SKU map requires all five unique product IDs',()=>{
  assert.ok(parseStoreSkuMap(map));assert.equal(parseStoreSkuMap('{}'),null);
+ assert.equal(parseStoreSkuMap(JSON.stringify({...JSON.parse(map),SAHAMBAN_PRO_30D:'REPLACE_MYKET_SKU_30D'})),null);
  assert.equal(parseStoreSkuMap(JSON.stringify({SAHAMBAN_PRO_30D:'same',SAHAMBAN_PRO_60D:'same',SAHAMBAN_PRO_90D:'x',SAHAMBAN_PRO_180D:'y',SAHAMBAN_PRO_365D:'z'})),null);
 });
 test('Myket order persists trusted store, SKU and approved server IRR amount',async()=>{
