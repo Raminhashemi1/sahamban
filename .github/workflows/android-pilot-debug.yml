@@ -42,6 +42,17 @@ jobs:
         shell: bash
         env:
           SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
+          SAHAMBAN_BILLING_ENABLED: ${{ vars.SAHAMBAN_BILLING_ENABLED }}
+          SAHAMBAN_SKU_PRO_30D: ${{ vars.SAHAMBAN_SKU_PRO_30D }}
+          SAHAMBAN_SKU_PRO_60D: ${{ vars.SAHAMBAN_SKU_PRO_60D }}
+          SAHAMBAN_SKU_PRO_90D: ${{ vars.SAHAMBAN_SKU_PRO_90D }}
+          SAHAMBAN_SKU_PRO_180D: ${{ vars.SAHAMBAN_SKU_PRO_180D }}
+          SAHAMBAN_SKU_PRO_365D: ${{ vars.SAHAMBAN_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           if [[ -z "${SAHAMBAN_WORKER_BASE_URL:-}" ]]; then
@@ -56,6 +67,17 @@ jobs:
         shell: bash
         env:
           SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
+          SAHAMBAN_BILLING_ENABLED: ${{ vars.SAHAMBAN_BILLING_ENABLED }}
+          SAHAMBAN_SKU_PRO_30D: ${{ vars.SAHAMBAN_SKU_PRO_30D }}
+          SAHAMBAN_SKU_PRO_60D: ${{ vars.SAHAMBAN_SKU_PRO_60D }}
+          SAHAMBAN_SKU_PRO_90D: ${{ vars.SAHAMBAN_SKU_PRO_90D }}
+          SAHAMBAN_SKU_PRO_180D: ${{ vars.SAHAMBAN_SKU_PRO_180D }}
+          SAHAMBAN_SKU_PRO_365D: ${{ vars.SAHAMBAN_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
