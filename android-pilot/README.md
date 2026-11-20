@@ -1,7 +1,7 @@
 # Sahmino Android host — username/password and in-app billing
 
 This module wraps the Sahmino PWA and exposes a native subscription screen.
-It is an unsigned pilot build, not a production release or marketplace-ready package.
+It is an unsigned pilot build, not a signed production release or marketplace-ready package.
 
 ## Implemented
 - Native username/password login gates PWA startup.
