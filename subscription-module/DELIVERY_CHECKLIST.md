@@ -29,13 +29,14 @@ remaining release dependencies.
 4. Set a private AUTH_RATE_LIMIT_SECRET and the store-specific credentials.
 5. Apply migration 0004 for username/password auth after backup and migration review.
 6. Provision existing/new user accounts through the secure offline password-hash process.
-7. Define non-SMS password recovery before public release; a phone number alone
+7. Benchmark 310,000-iteration PBKDF2 against the selected Cloudflare Workers CPU limit before enabling login; Free has a 10 ms limit, while Paid defaults to 30 seconds.
+8. Define non-SMS password recovery before public release; a phone number alone
    is not proof of ownership.
-8. Complete Myket refund/revocation reconciliation.
-9. Run physical-device tests for login, persistence, logout, account switching,
+9. Complete Myket refund/revocation reconciliation.
+10. Run physical-device tests for login, persistence, logout, account switching,
    purchase, receipt verification, consume/retry, restore, repurchase, expiry,
    refunds, network loss, and data backup/import/export.
-10. Configure owner-controlled release signing and marketplace submission.
+11. Configure owner-controlled release signing and marketplace submission.
 
 ## Safety gates
 - `SAHMINO_PASSWORD_AUTH_ENABLED=false` and `BILLING_V2_ENABLED=false`
