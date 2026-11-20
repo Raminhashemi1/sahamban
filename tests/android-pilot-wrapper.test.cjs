@@ -21,12 +21,16 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
 
 test('debug APK has a temporary identity, no production signing and no checkout',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
+ assert.match(build,/def appId = System\.getenv\('SAHAMBAN_APPLICATION_ID'\) \?: 'ir\.sahamban\.pilot'/);
+ assert.match(build,/applicationId appId/);
+ assert.match(build,/expectedPackage == appId/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  assert.match(build,/compileSdk 36/);
  assert.match(build,/bazaarImplementation.*Poolakey/);
  assert.match(build,/myketImplementation.*ir\.myket:billing:2\.2/);
- assert.match(build,/SAHAMBAN_BILLING_ENABLED.*'true'/);\n assert.match(build,/allSkusPresent/);\n assert.match(build,/workerUrl\\.startsWith\\('https:\/\/'\\)/);
+ assert.match(build,/SAHAMBAN_BILLING_ENABLED.*'true'/);
+ assert.match(build,/allSkusPresent/);
+ assert.match(build,/workerUrl\\.startsWith\\('https:\/\/'\\)/);
  const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
  assert.match(flow,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
