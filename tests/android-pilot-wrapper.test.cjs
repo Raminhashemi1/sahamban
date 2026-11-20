@@ -117,7 +117,7 @@ test('native subscription entry is reachable only after password authentication 
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
  const host=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2SubscriptionHost.kt');
  const build=read('android-pilot/app/build.gradle');
- assert.match(activity,/otpClient\.checkSession/);
+ assert.match(activity,/authClient\.checkSession/);
  assert.match(activity,/showSubscription\(\)/);
  assert.match(activity,/new BillingV2SubscriptionHost/);
  assert.match(activity,/showingSubscription/);
