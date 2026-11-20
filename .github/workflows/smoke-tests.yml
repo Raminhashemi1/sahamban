@@ -21,27 +21,19 @@ jobs:
       - run: node tests/sw-offline.cjs
       - run: node --test tests/reliability-security-v149.test.cjs
       - run: node --test tests/portfolio-insights-scroll-v115.test.cjs
-      - run: node --test tests/subscription-entitlements.test.cjs tests/subscription-orders.test.cjs
-      - run: node --test tests/prepaid-plans.test.cjs
-      - run: node --test tests/prepaid-access-gate.test.cjs
-      - run: node --test tests/prepaid-orders-api.test.cjs
-      - run: node --test tests/prepaid-account-overview.test.cjs
-      - run: node --test tests/prepaid-settlement.test.cjs
-      - run: node --test tests/pro-access-gate.test.cjs
+      - run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/billing-v2-feature-gate.test.cjs tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs
       - run: node --test tests/worker-api.test.cjs
+      - run: node --test tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs tests/shahmiz-sms-provider-worker.test.cjs
+      - run: python tests/d1-sahmino-sms-otp-migration.test.py
+      - run: python tests/d1-sahmino-sms-otp-runtime.test.py
       - run: node --test tests/pilot-orders-api.test.cjs
       - run: node --test tests/mint-pilot-token.test.cjs
-      - run: node --test tests/manual-bank-reconciliation.test.cjs
-      - run: node --test tests/manual-subscription-settlement.test.cjs
-      - run: node --test tests/manual-settlement-db.test.cjs
       - run: node --test tests/prospective-signal-ledger.test.cjs
       - run: node --test tests/fixed-rule-evaluator.test.cjs
       - run: node --test tests/android-pilot-wrapper.test.cjs
       - run: node --test tests/generate-pilot-deploy-config.test.cjs
       - run: node --test tests/d1-schema.test.cjs
       - run: python tests/d1-schema.integration.test.py
-      - run: python tests/d1-prepaid-migration.test.py
-      - run: python tests/d1-prepaid-settlement-sqlite.integration.test.py
       - run: node --test tests/decision-support-v129.test.cjs tests/external-screener-v130.test.cjs tests/market-sample-v131.test.cjs tests/signal-audit-v132.test.cjs tests/candidate-ranking-v133.test.cjs tests/temporal-holdout-v134.test.cjs
       - run: node --test tests/fundamental-evidence.test.cjs
       - run: node --test tests/capital-adjustments.test.cjs

@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test private pilot security rules
-        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/billing-v2-feature-gate.test.cjs
+        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/billing-v2-feature-gate.test.cjs tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs tests/shahmiz-sms-provider-worker.test.cjs
       - name: Install pinned Wrangler CLI for offline build
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
@@ -48,6 +48,6 @@ jobs:
       - name: Exercise local Worker HTTP endpoints and D1 authorization (no deployment)
         run: node tests/worker-local-runtime.cjs
       - name: Exercise synthetic-price pending order lifecycle in local Worker+D1 only
-        run: LOCAL_TEST_ENABLE_ORDERS=1 node tests/worker-local-runtime.cjs
+        run: LOCAL_TEST_ENABLE_BILLING_V2=1 node tests/worker-local-runtime.cjs
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"

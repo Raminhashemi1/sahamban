@@ -41,7 +41,7 @@ async function settle(db,{orderId,subject,userId,planId,bazaarOrderId,tokenHash,
   const result=await db.batch([
    db.prepare("UPDATE billing_orders SET status='PAID',paid_at=?,bazaar_product_id=?,bazaar_order_id=?,purchase_token_hash=? WHERE id=? AND status='CREATED'").bind(purchaseTime,planId,bazaarOrderId,tokenHash,orderId),
    db.prepare("INSERT INTO billing_events(event_id,order_id,event_type,created_at) SELECT ?,?,'PURCHASE_VERIFIED',? WHERE changes()=1").bind(tokenHash,orderId,now),
-   db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) SELECT ?,strftime('%Y-%m-%dT%H:%M:%fZ',unixepoch(COALESCE((SELECT CASE WHEN expires_at>? THEN expires_at END FROM billing_access WHERE user_id=?),?),'subsec') + ?*86400,'unixepoch'),0,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,now,order.user_id,now,plan.days,now)
+   db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) SELECT ?,strftime('%Y-%m-%dT%H:%M:%fZ',COALESCE((SELECT CASE WHEN expires_at>? THEN expires_at END FROM billing_access WHERE user_id=?),?), '+' || ? || ' days'),0,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,now,order.user_id,now,plan.days,now)
   ]);
   if(!Array.isArray(result)||result.length!==3||result.some(x=>x?.success!==true||x?.meta?.changes!==1))
    return {ok:false,error:'SETTLEMENT_FAILED'};
@@ -83,7 +83,7 @@ async function settleMyket(db,{orderId,subject,userId,planId,storeOrderId,tokenH
   const result=await db.batch([
    db.prepare("UPDATE billing_orders SET status='PAID',paid_at=?,store_order_id=?,purchase_token_hash=? WHERE id=? AND status='CREATED' AND store='MYKET' AND store_product_id IS NOT NULL").bind(purchaseTime,storeOrderId,tokenHash,orderId),
    db.prepare("INSERT INTO billing_events(event_id,order_id,event_type,created_at) SELECT ?,?,'PURCHASE_VERIFIED',? WHERE changes()=1").bind(tokenHash,orderId,now),
-   db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) SELECT ?,strftime('%Y-%m-%dT%H:%M:%fZ',unixepoch(COALESCE((SELECT CASE WHEN expires_at>? THEN expires_at END FROM billing_access WHERE user_id=?),?),'subsec') + ?*86400,'unixepoch'),0,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,now,order.user_id,now,plan.days,now)
+   db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) SELECT ?,strftime('%Y-%m-%dT%H:%M:%fZ',COALESCE((SELECT CASE WHEN expires_at>? THEN expires_at END FROM billing_access WHERE user_id=?),?), '+' || ? || ' days'),0,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,now,order.user_id,now,plan.days,now)
   ]);
   if(!Array.isArray(result)||result.length!==3||result.some(x=>x?.success!==true||x?.meta?.changes!==1))
    return {ok:false,error:'SETTLEMENT_FAILED'};

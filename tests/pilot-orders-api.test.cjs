@@ -65,10 +65,11 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  const now=Date.now(),token=issuePilotToken({subject:'pilot:subject',secret:SECRET,nowMs:now});
  const storage=mockDB();
  const env={SAHAMBAN_DB:storage,AUTH_HMAC_SECRET:SECRET,PWA_ORIGIN:origin,
-  PILOT_ORDERS_ENABLED:'true',PILOT_ANNUAL_PRICE_RIAL:'1500000'};
+  BILLING_V2_ENABLED:'true'};
  function request(method,auth=null,reqOrigin=origin){
-  return new Request('https://worker.example/api/v1/me/orders',{method,
-   headers:{Origin:reqOrigin,...(auth?{Authorization:'Bearer '+auth}:{})}});
+  return new Request('https://worker.example/api/v2/billing/orders',{method,
+   headers:{Origin:reqOrigin,'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
+   body:method==='POST'?JSON.stringify({planId:'SAHAMBAN_PRO_30D'}):undefined});
  }
  const unauthed=await worker.fetch(request('POST'),env);
  assert.equal(unauthed.status,401);
@@ -76,19 +77,19 @@ test('HTTP worker disallows unauthenticated or unauthorised pilot orders, never 
  assert.equal(invalidOrigin.status,403);
  const accepted=await worker.fetch(request('POST',token),env);
  assert.equal(accepted.status,201);const receipt=await accepted.json();
- assert.equal(receipt.proEnabled,false);assert.equal(receipt.paymentsEnabled,false);
- assert.match(receipt.orderId,/^ord_[a-f0-9]{32}$/);
- assert.equal(storage.calls[1][2],1500000);
- const forgedBody=new Request('https://worker.example/api/v1/me/orders',{
-  method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token},
+ assert.match(receipt.order.id,/^ord_[a-f0-9]{32}$/);
+ assert.equal(receipt.order.planId,'SAHAMBAN_PRO_30D');
+ assert.equal(receipt.order.days,30);
+ const forgedBody=new Request('https://worker.example/api/v2/billing/orders',{
+  method:'POST',headers:{Origin:origin,Authorization:'Bearer '+token,'Content-Type':'application/json'},
   body:JSON.stringify({userId:'victim',amountRial:1,success:true})
  });
  const before=storage.calls.length;
  const refused=await worker.fetch(forgedBody,env);
  assert.equal(refused.status,400);
  assert.equal(storage.calls.length,before);
- const blocked=await worker.fetch(request('POST',token),{...env,PILOT_ORDERS_ENABLED:'false'});
- assert.equal(blocked.status,503);
+ const blocked=await worker.fetch(request('POST',token),{...env,BILLING_V2_ENABLED:'false'});
+ assert.equal(blocked.status,404);
  const checkout=await worker.fetch(new Request('https://worker.example/api/v1/checkout',{method:'POST'}),env);
  assert.equal(checkout.status,404);
 });
