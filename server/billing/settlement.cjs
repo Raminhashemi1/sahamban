@@ -9,7 +9,7 @@ function validIso(value){
  * Grant a fixed-duration entitlement only after the Bazaar in-app product
  * purchase has been verified server-side. Renewal is always user-initiated.
  */
-async function settle(db,{orderId,subject,userId,planId,bazaarOrderId,tokenHash,purchaseTime,now}={}){
+async function settle(db,{orderId,subject,userId,planId,bazaarProductId,bazaarOrderId,tokenHash,purchaseTime,now}={}){
  const plan=getPlan(planId),nowMs=Date.parse(now),purchaseMs=Date.parse(purchaseTime);
  if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))||
    typeof orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(orderId)||
@@ -39,7 +39,7 @@ async function settle(db,{orderId,subject,userId,planId,bazaarOrderId,tokenHash,
   // from the immediately preceding write, so a concurrent/replayed settlement
   // cannot extend access when the order transition did not win.
   const result=await db.batch([
-   db.prepare("UPDATE billing_orders SET status='PAID',paid_at=?,bazaar_product_id=?,bazaar_order_id=?,purchase_token_hash=? WHERE id=? AND status='CREATED'").bind(purchaseTime,planId,bazaarOrderId,tokenHash,orderId),
+   db.prepare("UPDATE billing_orders SET status='PAID',paid_at=?,bazaar_product_id=?,bazaar_order_id=?,purchase_token_hash=? WHERE id=? AND status='CREATED'").bind(purchaseTime,bazaarProductId||planId,bazaarOrderId,tokenHash,orderId),
    db.prepare("INSERT INTO billing_events(event_id,order_id,event_type,created_at) SELECT ?,?,'PURCHASE_VERIFIED',? WHERE changes()=1").bind(tokenHash,orderId,now),
    db.prepare("INSERT INTO billing_access(user_id,expires_at,auto_renewing,updated_at) SELECT ?,strftime('%Y-%m-%dT%H:%M:%fZ',COALESCE((SELECT CASE WHEN expires_at>? THEN expires_at END FROM billing_access WHERE user_id=?),?), '+' || ? || ' days'),0,? WHERE changes()=1 ON CONFLICT(user_id) DO UPDATE SET expires_at=excluded.expires_at,auto_renewing=0,updated_at=excluded.updated_at").bind(order.user_id,now,order.user_id,now,plan.days,now)
   ]);
