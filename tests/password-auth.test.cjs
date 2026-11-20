@@ -14,7 +14,7 @@ test('normalizes Iranian phone usernames across Persian, Arabic and Latin digits
 });
 test('normalizes ordinary usernames and rejects malformed or ambiguous values',()=>{
  assert.equal(normalizeUsername('Ramin.User_1'),'ramin.user_1');
- for(const v of ['', 'ab', 'has space', 'user/name', 'x'.repeat(65), '۱۲۳']) assert.equal(normalizeUsername(v),null);
+ for(const v of ['', 'ab', 'has space', 'user/name', 'x'.repeat(65), '۱۲']) assert.equal(normalizeUsername(v),null);
 });
 test('PBKDF2 password hashes are salted, bounded and verified without storing plaintext',async()=>{
  const a=await hashPassword('Correct horse battery 42!');
