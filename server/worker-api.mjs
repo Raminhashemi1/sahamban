@@ -52,8 +52,10 @@ async function handlePasswordAuthRoutes(request,env,url,nowMs){
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||
      typeof body.username!=='string'||typeof body.password!=='string')
    return authJson(request,{error:'INVALID_REQUEST'},400,origin);
-  const result=await auth.login({username:body.username,password:body.password,
-   ipKey:request.headers.get('CF-Connecting-IP'),rateLimitSecret:env?.AUTH_RATE_LIMIT_SECRET,now:nowMs});
+  let result;
+  try{result=await auth.login({username:body.username,password:body.password,
+   ipKey:request.headers.get('CF-Connecting-IP'),rateLimitSecret:env?.AUTH_RATE_LIMIT_SECRET,now:nowMs});}
+  catch(_){return authJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);}
   return result.ok
    ?authJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie})
    :authJson(request,{error:result.error},result.status,origin,
@@ -63,14 +65,17 @@ async function handlePasswordAuthRoutes(request,env,url,nowMs){
   if(request.method!=='GET')return authJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(!cookie)return authJson(request,{authenticated:false},401,origin,
    hasSessionCookie?{'Set-Cookie':auth.clearSessionCookie()}:{});
-  const active=await auth.findActiveSession(cookie,nowMs);
+  let active;
+  try{active=await auth.findActiveSession(cookie,nowMs);}
+  catch(_){return authJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);}
   return active?authJson(request,{authenticated:true,expiresAt:active.expiresAt},200,origin)
    :authJson(request,{authenticated:false},401,origin,{'Set-Cookie':auth.clearSessionCookie()});
  }
  if(route==='/api/v1/auth/logout'){
   if(request.method!=='POST')return authJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
   if(request.headers.get('X-Sahmino-CSRF')!=='1')return authJson(request,{error:'CSRF_REJECTED'},403,origin);
-  if(cookie)await auth.revokeSession(cookie,new Date(nowMs).toISOString());
+  try{if(cookie)await auth.revokeSession(cookie,new Date(nowMs).toISOString());}
+  catch(_){return authJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);}
   return authJson(request,{authenticated:false},200,origin,{'Set-Cookie':auth.clearSessionCookie()});
  }
  return authJson(request,{error:'NOT_FOUND'},404,origin);
@@ -81,7 +86,7 @@ async function handlePasswordAuthRoutes(request,env,url,nowMs){
  * Private-pilot entitlement lookup and gated Billing V2 manual fixed-term purchase endpoints.
  * Checkout remains disabled by default; production identity and merchant configuration
  * are required before any live payment flow can be enabled.
- * Environment: SAHAMBAN_DB (private D1 binding), AUTH_HMAC_SECRET (secret),
+ * Environment: SAHAMBAN_DB (private D1 binding), AUTH_RATE_LIMIT_SECRET (secret),
  * PWA_ORIGIN (exact origin, e.g. https://raminhashemi1.github.io).
  * The short-lived HMAC token is for a controlled private pilot, not a
  * substitute for a full user login/identity service for commercial launch.
@@ -195,7 +200,7 @@ export default {
   if((isBillingOrders||isBillingVerify)&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(origin&&!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
   if(url.search)return send({error:'QUERY_NOT_ALLOWED'},400,cors);
-  // Prefer the HttpOnly OTP session whenever its cookie is present; never fall back
+  // Prefer the HttpOnly username/password session whenever its cookie is present; never fall back
   // to a pilot JWT after a malformed, revoked, or disabled session cookie.
   const cookieHeader=request.headers.get('Cookie')||'';
   const hasSessionCookie=cookieHeader.split(';').some(part=>part.trim().startsWith('sahmino_session='));
