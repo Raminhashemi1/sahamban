@@ -11,7 +11,7 @@ export async function verifyAndSettleMyket({db,env,subject,body,now}) {
    typeof body.signature!=='string'||body.signature.length<16||body.signature.length>4096)
   return {status:400,body:{error:'INVALID_PURCHASE'}};
  try {
-  const order=await db.prepare("SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
+  const order=await db.prepare("SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,amount_irr,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   const verified=await verifyMyketPurchase({
    order,
@@ -24,7 +24,7 @@ export async function verifyAndSettleMyket({db,env,subject,body,now}) {
    tokenHash:verified.purchaseTokenHash,purchaseTime:verified.purchaseTime,now
   });
   return result.ok?{status:200,body:{status:'ACTIVE',planId:order.plan_id,
-   expiresAt:result.expiresAt,renewalMode:'MANUAL',daysAdded:result.daysAdded,
+   amountRial:verified.amountIrr,expiresAt:result.expiresAt,renewalMode:'MANUAL',daysAdded:result.daysAdded,
    restored:!!result.restored}}:{status:409,body:{error:result.error}};
  } catch (_) {
   return {status:503,body:{error:'PURCHASE_VERIFICATION_UNAVAILABLE'}};
