@@ -15,7 +15,7 @@ on:
       - 'android-pilot/**'
       - 'scripts/provision-sahmino-user.mjs'
       - 'tests/billing-v2-*'
-      - 'tests/password-auth*'
+      - 'tests/password-auth*'\n      - 'tests/provision-sahmino-user.test.cjs'
       - 'tests/worker-api.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
@@ -61,7 +61,7 @@ jobs:
       - name: Validate Android host security and flavor workflow wiring
         run: node --test tests/android-pilot-wrapper.test.cjs
       - name: Run password authentication and Worker session tests
-        run: node --test tests/password-auth.test.cjs tests/worker-api.test.cjs
+        run: node --test tests/password-auth.test.cjs tests/provision-sahmino-user.test.cjs tests/worker-api.test.cjs
       - name: Validate username/password D1 migration
         run: python tests/password-auth-migration.test.py
       - name: Run Bazaar and shared Billing V2 tests
