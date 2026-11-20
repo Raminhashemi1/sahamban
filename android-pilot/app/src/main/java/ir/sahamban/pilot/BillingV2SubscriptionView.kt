@@ -32,11 +32,11 @@ class BillingV2SubscriptionView(
     )
 
     private val plans = listOf(
-        Plan("SAHAMBAN_PRO_30D", 30, "حرفه‌ای ۳۰ روزه"),
-        Plan("SAHAMBAN_PRO_60D", 60, "حرفه‌ای ۶۰ روزه"),
-        Plan("SAHAMBAN_PRO_90D", 90, "حرفه‌ای ۹۰ روزه"),
-        Plan("SAHAMBAN_PRO_180D", 180, "حرفه‌ای ۱۸۰ روزه"),
-        Plan("SAHAMBAN_PRO_365D", 365, "حرفه‌ای یک‌ساله")
+        Plan("SAHAMBAN_PRO_30D", 30, "حرفه‌ای ۳۰ روزه", 1500000),
+        Plan("SAHAMBAN_PRO_60D", 60, "حرفه‌ای ۶۰ روزه", 2850000),
+        Plan("SAHAMBAN_PRO_90D", 90, "حرفه‌ای ۹۰ روزه", 4050000),
+        Plan("SAHAMBAN_PRO_180D", 180, "حرفه‌ای ۱۸۰ روزه", 7650000),
+        Plan("SAHAMBAN_PRO_365D", 365, "حرفه‌ای یک‌ساله", 14600000)
     )
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -125,7 +125,7 @@ class BillingV2SubscriptionView(
                         statusView.text = "قیمت پلن‌ها از فروشگاه دریافت نشد؛ امکان خرید موقتاً غیرفعال است."
                     } else {
                         prices.forEach { (planId, displayPrice) ->
-                            planPriceViews[planId]?.text = displayPrice
+                            planPriceViews[planId]?.text = "${plans.first { it.id == planId }.priceRial} ریال · $displayPrice"
                         }
                     }
                 }
