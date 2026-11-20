@@ -8,9 +8,10 @@ const orderId='ord_'+'a'.repeat(32);
 const input={orderId,subject:'pilot-user',planId:'SAHAMBAN_PRO_30D',
  bazaarOrderId:'bazaar-order',tokenHash:'a'.repeat(64),purchaseTime,now};
 function fakeDb(order,{batchChanges=1}={}){
- const calls=[];
- return {calls,
+ const calls=[],reads=[];
+ return {calls,reads,
   prepare(sql){return {sql,bind(...values){return {sql,values,first:async()=>{
+   reads.push({sql,values});
    if(sql.includes("SELECT expires_at FROM billing_access"))return {expires_at:order.settledExpiresAt||order.expires_at};
    return order;
   }}}}},
@@ -62,8 +63,8 @@ test('settlement accepts an opaque migrated account ID and binds it to the order
   amount_irr:1500000,created_at:now,expires_at:null});
  const result=await settle(db,{...input,subject:undefined,userId:'legacy-user-42'});
  assert.equal(result.ok,true);
- assert.ok(db.calls[0][0].sql.includes('u.id=?'));
- assert.equal(db.calls[0][0].values[1],'legacy-user-42');
+ assert.match(db.reads[0].sql,/u.id=\\?/);
+ assert.deepEqual(db.reads[0].values,[input.orderId,'legacy-user-42']);
 });
 
 test('purchase predating the server order, invalid plan and partial database batch fail closed',async()=>{
