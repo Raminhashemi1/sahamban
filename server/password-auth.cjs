@@ -107,7 +107,8 @@ function createPasswordAuth(db,{clock=()=>Date.now(),sessionTtlSeconds=SESSION_T
   const tokenHash=await sha256Hex(bearer);
   return (await db.prepare(`SELECT s.id AS sessionId,s.user_id AS userId,s.expires_at AS expiresAt
    FROM sahmino_shared_sessions s JOIN sahamban_users u ON u.id=s.user_id
-   WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>? AND u.status='ACTIVE' LIMIT 1`)
+   WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>? AND u.status='ACTIVE'
+    AND u.username_normalized IS NOT NULL AND u.password_hash IS NOT NULL LIMIT 1`)
    .bind(tokenHash,iso(now)).first())||null;
  }
  async function revokeSession(bearer,revokedAt=iso(clock())){
