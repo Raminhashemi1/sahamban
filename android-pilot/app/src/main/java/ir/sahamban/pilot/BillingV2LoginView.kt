@@ -37,7 +37,7 @@ class BillingV2LoginView(
         usernameInput.layoutDirection = View.LAYOUT_DIRECTION_LTR
         addView(usernameInput, matchWidth())
         passwordInput.hint = "رمز عبور"
-        passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         passwordInput.setSingleLine(true)
         passwordInput.layoutDirection = View.LAYOUT_DIRECTION_LTR
         addView(passwordInput, matchWidth())
