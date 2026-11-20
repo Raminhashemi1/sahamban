@@ -75,6 +75,10 @@ test('native subscription selector uses exact marketplace prices and manual-rene
  assert.match(ui,/NOT_AUTHENTICATED/);
  assert.match(flow,/fun loadPlanDetails/);
  assert.match(flow,/displayPrice/);
+ const restore=flow.slice(flow.indexOf('fun restore('));
+ assert.ok(restore.indexOf('api.refreshEntitlement') >= 0);
+ assert.ok(restore.indexOf('api.refreshEntitlement') < restore.indexOf('storeBilling.loadPlanDetails'),
+  'durable account entitlement must be restored before consumable store inventory is queried');
  assert.doesNotMatch(ui,/1_500_000L|2_850_000L|4_050_000L|7_650_000L|14_600_000L/);
 });
 
