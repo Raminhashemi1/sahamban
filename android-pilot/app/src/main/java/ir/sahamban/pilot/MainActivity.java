@@ -97,7 +97,10 @@ public final class MainActivity extends ComponentActivity {
         root.addView(logout, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        webView = webView == null ? new WebView(this) : webView;
+        // Preserve the existing WebView instance when returning from the native subscription screen.
+        // Reloading the PWA here would discard unsaved in-memory user work.
+        boolean loadPwa = webView == null;
+        webView = loadPwa ? new WebView(this) : webView;
         if (webView.getParent() instanceof ViewGroup) {
             ((ViewGroup) webView.getParent()).removeView(webView);
         }
@@ -152,7 +155,7 @@ public final class MainActivity extends ComponentActivity {
                 return true;
             }
         });
-        webView.loadUrl(START_URL);
+        if (loadPwa) webView.loadUrl(START_URL);
     }
 
     private void showSubscription() {
