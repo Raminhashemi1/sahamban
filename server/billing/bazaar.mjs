@@ -5,9 +5,9 @@ const {settle}=settlement;
 const PLAN_IDS=['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D','SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D'];
 function skuMap(raw){
  try{
-  const v=JSON.parse(raw);
+  const v=typeof raw==='string'?JSON.parse(raw):raw;
   if(!v||Array.isArray(v)||typeof v!=='object'||Object.keys(v).length!==5)return null;
-  if(PLAN_IDS.some(k=>typeof v[k]!=='string'||!/^[A-Za-z0-9._-]{1,100}$/.test(v[k])))return null;
+  if(PLAN_IDS.some(k=>typeof v[k]!=='string'||!/^[A-Za-z0-9._-]{1,100}$/.test(v[k])||v[k].startsWith('REPLACE_')))return null;
   if(new Set(Object.values(v)).size!==5)return null;
   return v;
  }catch(_){return null;}
@@ -77,11 +77,12 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
  if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
   const query=userId
-   ? "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
+   ? "SELECT id,plan_id,status,store,store_product_id,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
    : "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
   const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
+  if(order.store!=='BAZAAR'||order.store_product_id!==body.sku)return {status:409,body:{error:'ORDER_STORE_PRODUCT_MISMATCH'}};
   const plan=getPlan(planId);
   if(!plan||order.amount_irr!==plan.priceRial)return {status:409,body:{error:'ORDER_PRICE_MISMATCH'}};
   await verifySignedPurchase(env,body);
@@ -99,7 +100,7 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
       (current.receipt.orderId&&order.bazaar_order_id&&order.bazaar_order_id!==tokenHash&&
        current.receipt.orderId!==order.bazaar_order_id))
     return {status:409,body:{error:'PURCHASE_STATE_MISMATCH'}};
-   const restored=await settle(db,{orderId:body.orderId,subject,userId,planId,
+   const restored=await settle(db,{orderId:body.orderId,subject,userId,planId,bazaarProductId:body.sku,
     bazaarOrderId:order.bazaar_order_id||tokenHash,tokenHash,
     purchaseTime:order.paid_at,now});
    return restored.ok?{status:200,body:{status:'ACTIVE',planId,amountRial:plan.priceRial,expiresAt:restored.expiresAt,
@@ -109,7 +110,7 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
   if(order.status!=='CREATED')return {status:409,body:{error:'ORDER_NOT_PENDING'}};
   const verified=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,nowMs:Date.parse(now)},fetcher);
   if(Date.parse(verified.purchaseTime)<Date.parse(order.created_at)-5*60*1000)return {status:409,body:{error:'PURCHASE_PRECEDES_ORDER'}};
-  const result=await settle(db,{orderId:body.orderId,subject,planId,
+  const result=await settle(db,{orderId:body.orderId,subject,userId,planId,bazaarProductId:body.sku,
    bazaarOrderId:verified.receipt.orderId||tokenHash,tokenHash,
    purchaseTime:verified.purchaseTime,now});
   return result.ok?{status:200,body:{status:'ACTIVE',planId,amountRial:plan.priceRial,expiresAt:result.expiresAt,
