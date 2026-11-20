@@ -1,174 +1,135 @@
-# Sahamban Android pilot wrapper — install test only
+# Sahmino Android pilot — native account and in-app billing host
 
-This module creates a **debug APK** containing a minimal Android WebView shell
-for the existing public GitHub Pages PWA:
-https://raminhashemi1.github.io/sahamban/
+This module is the Android wrapper for the existing Sahmino PWA at
+`https://raminhashemi1.github.io/sahamban/`. It now includes a native OTP
+sign-in host and a native subscription screen connected to Billing V2.
 
-## Strict scope
+## Implemented in source
 
-- This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
-  The temporary `ir.sahamban.pilot` package ID and build-generated debug
-  certificate must **not** become the final app identity/signing key.
-- A store-specific native billing boundary is now split into `bazaar` and `myket` app flavors from one Android codebase. Bazaar uses Poolakey 2.3.0; Myket uses the official Billing Client 2.2 IAB SDK. Both flows use consumable one-time products (not auto-renewing subscriptions), send signed purchase evidence to the server, and consume only after server settlement. The Worker selects the provider from server-side `BILLING_STORE` configuration and grants both stores into the same account entitlement ledger.
-- This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
-  to WebView. Existing users MUST export their backup in the original PWA first,
-  and carefully test an import with synthetic data. Do not uninstall the old
-  PWA or wipe its data.
-- WebView file imports use Android's system file picker. **Backup export
-  and downloads are NOT yet verified in WebView** (blob: download links may
-  not work). Test both directions before considering any real user's portfolio.
-- It relies on HTTPS to load the current public web app, not an embedded offline
-  bundle. Service-worker/offline handling and slow networks require physical
-  device validation. No injected native JavaScript interface is used.
-- Only HTTPS `raminhashemi1.github.io/sahamban/` navigation remains inside
-  the app. Other HTTPS links go to an external browser; non-HTTPS and
-  special-scheme navigation is blocked.
-- Internet is the only declared Android permission; WebView file/content
-  access and cleartext HTTP are explicitly disabled; automatic Android backup
-  of app data is disabled.
-- A user-approved package ID, actual release signing key handled only in a
-  secure owner-controlled build environment, genuine asset/icon and screenshots,
-  store policy compliance, private data handling, and physical Android
-  acceptance are still prerequisites for release.
+- `MainActivity` checks the Worker OTP session on cold start, presents the
+  Persian native phone/code login when needed, and exposes a native
+  **اشتراک سهمینو** entry after authentication.
+- The subscription entry composes
+  `BillingV2SubscriptionHost` → `BillingV2CookieSessionProvider` →
+  `BillingV2ApiClient` → the store-flavor coordinator →
+  `BillingV2PurchaseFlow` → `BillingV2SubscriptionView`.
+- Separate Bazaar and Myket flavors share the same app code and the same
+  server-side entitlement ledger.
+- Exactly five manual, fixed-day products are displayed. No free tier and no
+  automatic renewal are implemented.
+- The approved server prices are shown in Rial. The localized marketplace
+  display price is shown alongside them.
+- Purchase tokens are sent to the Worker for signature/provider verification.
+  The app consumes a store token only after the Worker confirms durable
+  entitlement settlement.
+- Session cookies stay in Android's native CookieManager and native HTTPS
+  requests; no WebView JavaScript bridge is installed.
+- The Worker, OTP, and billing flags default to disabled. A debug checkout can
+  only be opted in when the exact package, HTTPS Worker URL, all five unique
+  non-placeholder SKUs, and the flavor's public verification key are supplied.
+  Release checkout is hard-disabled in Gradle.
 
-## How to build a test APK
+## Five approved products
 
-## Required Worker URL for pilot APKs
+| Duration | Server plan ID | Price (IRR) |
+|---:|---|---:|
+| 30 days | `SAHAMBAN_PRO_30D` | 1,500,000 |
+| 60 days | `SAHAMBAN_PRO_60D` | 2,850,000 |
+| 90 days | `SAHAMBAN_PRO_90D` | 4,050,000 |
+| 180 days | `SAHAMBAN_PRO_180D` | 7,650,000 |
+| 365 days | `SAHAMBAN_PRO_365D` | 14,600,000 |
 
-The repository records a successful earlier pilot deployment at `https://sahamban-pro-pilot.rhashemi284.workers.dev` (see `server/CLOUDFLARE-PILOT-DEPLOY.md` and workflow run 43287886357). Use the origin only after the matching Worker revision has been deployed and its OTP routes have been verified. The earlier deployed revision predates the OTP/session routes in the Billing V2 feature branch, so pointing this APK at that hostname alone does **not** make login work.
+The marketplace products must be configured as consumable one-time in-app
+products, not auto-renewing subscriptions. The Worker remains authoritative
+for price, duration, account ownership, and entitlement expiry.
 
-The Android build intentionally requires the GitHub Actions repository variable `SAHAMBAN_WORKER_BASE_URL`; it is currently unset, and the latest APK workflow correctly failed closed instead of producing another unusable APK. Do not set this variable or rebuild for device login until the updated Worker is deployed with the required D1 OTP schema, OTP secrets, exact PWA origin, and a real configured SMS provider service binding. The current Worker code expects `SAHMINO_SMS_PROVIDER`; no production provider binding/configuration is present in the checked-in pilot deployment configuration. Checkout remains disabled.
+## Build configuration
 
-Set the GitHub repository Actions variable `SAHAMBAN_WORKER_BASE_URL` to the deployed Worker HTTPS origin (for example, `https://<your-worker-subdomain>.<your-account>.workers.dev`; replace this example with the actual deployment). The Android workflow validates that this value exists and is an HTTPS origin, then passes it to Gradle as `SAHAMBAN_WORKER_BASE_URL`. Builds now fail early rather than producing an APK that cannot start OTP login when the variable is missing. Do not use a guessed URL; deploy the Worker and copy its actual HTTPS origin from Cloudflare.
+The temporary default application ID is `ir.sahamban.pilot`. It is not the
+final store identity. The final application ID must be explicitly supplied by
+the owner and must match the package registered in both marketplaces.
 
-GitHub Actions workflow `Sahamban Android pilot debug APK` uses Java 17,
-Android SDK 36, Gradle 8.13, Android Gradle Plugin 8.12.3 and Kotlin 2.2.0
-to build both `assembleBazaarDebug` and `assembleMyketDebug`. It uploads
-**debug artifacts**, not marketplace releases. No key files or signing passwords
-are stored in the repository.
+Gradle reads these environment variables:
 
-For local development with an installed Android SDK:
+- `SAHAMBAN_APPLICATION_ID` and `SAHAMBAN_EXPECTED_PACKAGE_NAME`
+- `SAHAMBAN_WORKER_BASE_URL` and `SAHAMBAN_PWA_ORIGIN`
+- `SAHAMBAN_BILLING_ENABLED=true` (debug opt-in only)
+- `SAHAMBAN_SKU_PRO_30D`, `SAHAMBAN_SKU_PRO_60D`,
+  `SAHAMBAN_SKU_PRO_90D`, `SAHAMBAN_SKU_PRO_180D`,
+  `SAHAMBAN_SKU_PRO_365D`
+- `BAZAAR_RSA_PUBLIC_KEY` for the Bazaar flavor
+- `MYKET_PUBLIC_KEY` for the Myket flavor
+
+Placeholder values beginning with `REPLACE_` are rejected. Do not guess
+package names, product IDs, public keys, or Worker URLs. The Android workflow
+reads public identifiers from GitHub Actions Variables and verification
+public keys from Actions Secrets. Private merchant credentials and OTP
+secrets belong only in Cloudflare Worker Secrets, never in the APK.
+
+## Worker configuration required before login or checkout
+
+Deploy a matching Worker revision for each flavor. Both Worker configurations
+must point to the same private D1 database and exact PWA origin. Both must
+include the `SAHMINO_SMS_PROVIDER` service binding for the Shahmiz SMS Worker.
+OTP and Billing V2 flags default to false. Apply the user, OTP, and Billing V2
+migrations only after confirming the target database and taking a backup.
+
+Required Worker secrets include:
+- `SAHMINO_OTP_VERIFIER_SECRET`
+- `SAHMINO_OTP_RATE_LIMIT_SECRET`
+- Shahmiz provider `SHAHMIZ_API_TOKEN`
+- Bazaar `BAZAAR_CLIENT_ID`, `BAZAAR_CLIENT_SECRET`,
+  `BAZAAR_REFRESH_TOKEN`, and `BAZAAR_RSA_PUBLIC_KEY`
+- Myket `MYKET_PUBLIC_KEY`
+
+The actual package name and five store SKU IDs must be configured in both
+marketplaces and the corresponding Worker `BAZAAR_SKU_MAP` /
+`MYKET_SKU_MAP`. The server rejects missing and placeholder SKU maps before
+creating an order.
+
+## Build and tests
+
+GitHub Actions workflow `Sahamban Android pilot debug APK` builds both
+`assembleBazaarDebug` and `assembleMyketDebug` with Java 17, Android SDK 36,
+Gradle 8.13, AGP 8.12.3, and Kotlin 2.2.0. Artifacts are unsigned debug test
+builds, not marketplace releases.
+
+For local development:
 
 ```sh
 gradle -p android-pilot :app:assembleBazaarDebug :app:assembleMyketDebug
 ```
 
-Run pure Java navigation checks:
+## Still requires owner action or physical/provider access
 
-```sh
-mkdir -p /tmp/sahamban-java-tests
-javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java   android-pilot/tests/TrustedNavigationTest.java
-java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
-```
+1. Confirm the final Android application ID and store publisher accounts.
+2. Create five consumable products in each marketplace at the approved Rial
+   price points and provide the real SKU IDs.
+3. Deploy the current Bazaar and Myket Workers, Shahmiz SMS Worker, shared D1,
+   OTP migrations, secrets, and exact PWA origin.
+4. Configure Myket's authoritative refund/revocation reconciliation. The
+   current signed-purchase verifier does not independently prove that a
+   previously valid purchase was not refunded later.
+5. Run the complete purchase lifecycle on physical devices with store test
+   accounts: OTP, purchase, receipt verification, consume, retry, restore,
+   repurchase, expiry, account switching, refund, and network loss.
+6. Only after acceptance, configure release signing in an owner-controlled
+   secure environment and prepare store submissions.
 
-## OTP route and cross-origin session status
+## Data migration and WebView limitations
 
-The Billing V2 Worker branch now mounts the existing OTP request, verify, session-check, and logout routes using the shared D1 OTP repository/service. This is server-side route integration only; it does not mean the SMS provider binding, secrets, D1 migration, or deployed Worker are configured.
+This wrapper does not migrate Chrome/PWA localStorage into WebView. Existing
+users must export and verify a backup in the original PWA before moving data.
+Backup export/download and import must be physically tested with synthetic
+data. Do not uninstall the existing PWA or wipe its data during testing.
 
-The PWA is currently served from GitHub Pages while the Worker uses a separate origin. The session cookie is therefore cross-site. Do not enable WebView third-party cookies globally as a shortcut: that expands cookie exposure to every third-party origin loaded by this WebView. The native cookie provider fails closed if the Worker cookie is unavailable. Before connecting checkout, choose and validate a reviewed same-site/custom-domain deployment, or implement a native OTP sign-in flow that obtains the session over HTTPS and stores it through Android's native CookieManager without exposing it to JavaScript. The latter must include logout/revocation and account-switch handling. Neither path has passed physical-device acceptance yet.
+Only the Sahmino HTTPS PWA origin is kept inside WebView. Other HTTPS links
+open externally; non-HTTPS and special-scheme navigation is blocked. File and
+content access, cleartext traffic, automatic Android backup, and JavaScript
+bridges are disabled. Physical-device testing is still required for RTL,
+accessibility, slow/offline networks, file import/export, and session-cookie
+persistence.
 
-`MainActivity` uses `BillingV2NativeOtpClient` for OTP login/session checks/logout. The billing components remain standalone and checkout is compile-time disabled. The native cookie provider and API client have not been validated together against a deployed Worker, and the subscription view is not yet reachable from the installed app. Checkout must remain disabled until host wiring, real store identifiers, deployed D1/Worker configuration, and physical-device purchase/settlement tests are complete.
-
-## Native OTP login host integration — 2026-11-19
-
-The Android pilot host now checks the Worker session on cold start, presents a native Persian phone/code sign-in screen when no active session exists, stores the Worker-issued session cookie through Android `CookieManager`, and exposes an explicit native logout action that revokes the server session before clearing the cookie. The PWA WebView is loaded only after a successful session check or OTP verification. The native OTP client is not exposed to WebView JavaScript.
-
-This is still a pilot integration. Set `SAHAMBAN_WORKER_BASE_URL` and the matching `SAHAMBAN_PWA_ORIGIN` at build time, deploy the Worker with OTP enabled, apply the D1 migrations, configure the SMS binding and dedicated secrets, and validate the complete request/verify/restart/logout lifecycle on physical devices. With an empty Worker URL the APK deliberately shows a configuration message rather than bypassing authentication. Billing checkout remains disabled and is not wired into this host.
-
-## Native OTP sign-in transport — 2026-11-19
-
-Added `BillingV2NativeOtpClient` as a native HTTPS client for the existing Worker OTP request, verify, and logout endpoints. It sends the exact configured PWA Origin, validates the OTP challenge/session response, and installs the Worker-issued Secure/HttpOnly/SameSite=None cookie into Android's native `CookieManager`. This removes the requirement that a cross-site GitHub Pages fetch successfully persist the Worker Set-Cookie response: the native HTTPS client receives the response and performs the cookie-jar handoff itself. Logout revokes the server session before clearing the native cookie.
-
-The helper does not expose the cookie to JavaScript, local storage, logs, or URLs. It is now wired into the native OTP login screen and pilot MainActivity. The Worker URL, SMS provider binding, secrets, live D1 migration, and physical-device tests are still required. Billing remains disabled and no purchase can be made from this build.
-
-## Acceptance still required
-
-Physical Android device: PWA loading, RTL, basic navigation, browser
-handoff, permissions, synthetic 20/100-holding portfolio import and export,
-offline/slow network, cold/warm start, font scaling, TalkBack, and secure
-update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach. The Bazaar flavor uses Poolakey manual consumable-product APIs; the Myket flavor uses the official Myket Billing Client 2.2 IAB v3 purchase/query/consume APIs, resolved from Myket's Maven repository (`https://maven.myket.ir`). Both send signed purchase evidence to the canonical Worker. The Worker verifies the store-specific receipt and settles into the shared D1 entitlement ledger. The token is consumed only after the server has durably granted the time-limited entitlement. The native OTP identity/session entry point is wired into `MainActivity`. The store-specific `BillingV2Coordinator`, `BillingV2ApiClient`, `BillingV2PurchaseFlow`, and five-plan `BillingV2SubscriptionView` exist as separate components, but they are not yet composed into the app host. The PWA currently loads after OTP; no native purchase screen is reachable from the installed APK. Do not treat the presence of these components or a successful debug build as an end-to-end purchase integration. A consumed purchase is not restored from Bazaar inventory; the user's durable entitlement must be reloaded from the authenticated Worker account. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
-Trusted Web Activity (TWA) additionally requires domain-root
-`/.well-known/assetlinks.json` associated with the final **real** APK
-signing certificate; a Project Pages path alone cannot satisfy it.
-
-## Current integration checkpoint
-
-Latest branch head at this checkpoint: `c0639d16b15141a77749dc72ea21fbfd3309b6b1`.
-
-Both Bazaar and Myket debug APKs compiled successfully for commit `3e450fe7` in workflow run:
-https://github.com/Raminhashemi1/sahamban/actions/runs/44536533034
-
-The APK artifact is available for seven days. It is an unsigned debug/test artifact, not a release build. The current branch head has advanced since that build, so this change triggers a fresh build from the current source.
-
-The host `MainActivity` still does not wire the billing purchase flow into Sahmino's real UI/session. The commercial session-token provider and production package identity are not available in this pilot. Do not hard-code credentials or enable the billing feature gate to bypass those blockers.
-
-## Native OTP cookie-session bridge
-
-`BillingV2CookieSessionProvider` reads only the `sahmino_session` cookie for the configured HTTPS Worker origin from Android's native `CookieManager` and sends it directly from native `HttpsURLConnection` with the configured exact `SAHAMBAN_PWA_ORIGIN` and `X-Sahmino-CSRF: 1`. `BillingV2ApiClient` accepts only this three-header allowlist, resolves it afresh for every request, and never adds an Authorization bearer token. The cookie is not passed into PWA JavaScript, local storage, logs, or URLs. Configure `SAHAMBAN_WORKER_BASE_URL` and `SAHAMBAN_PWA_ORIGIN` consistently with Worker `PWA_ORIGIN`.
-
-This is an integration seam, not proof that WebView has accepted or persisted the cross-site Worker cookie. Android's third-party-cookie policy can prevent a GitHub Pages PWA from storing a cookie set by a different Worker origin. Do not broadly enable third-party cookies as a workaround without a reviewed origin/cookie policy. Physical-device validation must confirm OTP login, cookie availability to native `CookieManager`, logout/revocation, app restart, and account switching. If the cookie is unavailable, the provider fails closed. `MainActivity` still does not instantiate the purchase flow, and checkout remains disabled.
-
-## Authenticated session integration contract
-
-`BillingV2ApiClient` now accepts a native `BillingV2AuthProvider`; the OTP implementation supplies the cookie, exact PWA origin, and CSRF marker as native request headers. It reports `NOT_AUTHENTICATED` without making a network request when no valid session cookie is available. The earlier bearer-token provider contract has been superseded by this shared OTP cookie-session contract.
-
-Session credentials must remain inside native code. Do not pass them to PWA JavaScript, local storage, URL parameters, logs, or a hard-coded pilot-token generator. The current pilot `MainActivity` does not yet instantiate the provider or purchase flow; store SKU configuration, Worker deployment configuration, and physical cookie validation remain prerequisites.
-
-
-## Rebuild checkpoint — current integration head
-
-The current integration branch includes the native `BillingV2TokenProvider` injection seam and the latest passing dual-store validation. This documentation-only checkpoint intentionally triggers the Android workflow so both Bazaar and Myket debug APKs are rebuilt from the exact current source head. These outputs remain unsigned test artifacts; they are not store-ready release packages.
-
-
-## Current-head artifact rebuild — 2026-11-19
-
-The Billing V2 validation workflow passed on integration head `2be8ce24fbb75a9d4377efbf0443ea47cb5951a4` in run 44541889889. This documentation checkpoint triggers a fresh Bazaar/Myket debug APK build from the exact current head. The outputs remain unsigned test builds and must not be treated as store-ready releases.
-
-
-## Standalone subscription selector
-
-`BillingV2SubscriptionView` is a reusable native Android view that renders the five approved manual-renewal plans, loads each localized display price from the configured marketplace catalog (never from a hard-coded Rial amount), starts an explicitly selected purchase through the injected `BillingV2PurchaseFlow`, exposes restore, and displays success/cancel/failure states in Persian. While the billing feature flag is false, it shows a disabled-state price placeholder and cannot initiate checkout. It does not create identity, hold store credentials, or communicate purchase tokens to WebView JavaScript.
-
-The production host app can attach it after constructing `BillingV2PurchaseFlow` with its authenticated `BillingV2TokenProvider`, exact store SKU map, expected published package name, and the configured store coordinator:
-
-```kotlin
-val subscriptionView = BillingV2SubscriptionView(
-    context = this,
-    purchaseFlow = purchaseFlow,
-    onStatusChanged = { message -> /* update host status if needed */ }
-)
-setContentView(subscriptionView)
-```
-
-This selector is independently implemented and covered by repository checks, but it is not installed by the pilot `MainActivity`: that activity still lacks the real Sahmino account-session provider and published package/store configuration. Checkout remains disabled until the host integration is supplied and release acceptance is complete.
-
-
-## Verified CI state — 2026-11-19
-
-On branch `feat/billing-v2-otp-session-bridge`, commit `fdba34e7ae44b1b67cd82debde8f3d3250ab3860`, the dual-store Billing V2 validation workflow completed successfully and the Android pilot workflow built the Bazaar and Myket debug variants successfully. The uploaded artifact is an unsigned debug APK bundle for installation testing only, not a signed store release. These CI results do not verify live D1, SMS delivery, store developer APIs, real purchases, refunds, or physical-device behavior.
-
-### Remaining owner-provided configuration
-
-- Final Android `applicationId` registered in both stores.
-- Five exact Bazaar product IDs and five exact Myket product IDs, configured as consumable one-time products with the agreed prices.
-- Worker deployment URL, exact PWA origin, production D1 database binding/migrations, and SMS provider binding/secrets.
-- Bazaar merchant/API credentials and matching RSA public key; Myket public key and any officially supported reconciliation credentials.
-- Store account access/device test accounts for end-to-end sandbox or controlled live validation.
-
-Do not add placeholder identifiers as if they were real, do not enable checkout, and do not mark release-ready until the configuration and acceptance checklist are verified.
-
-
-## Native subscription host composition — 2026-11-19
-
-The authenticated Android host now exposes a native “اشتراک سهمینو” entry after the OTP session check succeeds. The entry composes the flavor-specific Bazaar/Myket coordinator, native cookie-session provider, HTTPS Billing API client, purchase orchestration, and five-plan selector. Returning from the selector leaves the authenticated PWA session in place; logout still revokes the server session through the OTP client.
-
-The host fails closed unless the owner supplies the exact published package ID and five distinct store product IDs at build time:
-- `SAHAMBAN_EXPECTED_PACKAGE_NAME`
-- `SAHAMBAN_SKU_PRO_30D`
-- `SAHAMBAN_SKU_PRO_60D`
-- `SAHAMBAN_SKU_PRO_90D`
-- `SAHAMBAN_SKU_PRO_180D`
-- `SAHAMBAN_SKU_PRO_365D`
-
-These are identifiers, not secrets. Do not guess or substitute example SKUs. The purchase feature flag remains compile-time false in debug and release configurations, so the screen can be exercised without opening checkout. The temporary package ID, store credentials, Worker deployment, D1 migrations, production identity provider, refund/revocation process, and physical-device acceptance remain release blockers. A successful compile or visible selector is not evidence of a real store purchase.
+**A successful build or CI run is not a live purchase acceptance test.**
+Checkout remains disabled by default and must not be enabled against
+unconfigured or production systems merely to test the UI.
