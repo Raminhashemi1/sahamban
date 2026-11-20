@@ -27,7 +27,7 @@ function fakeDb(order,{batchChanges=1}={}){
  };
 }
 test('first verified in-app purchase atomically records payment and grants 30 days manually',async()=>{
- const db=fakeDb({id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,created_at:now,expires_at:null});
+ const db=fakeDb({id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,amount_irr:1500000,created_at:now,expires_at:null});
  const result=await settle(db,input);
  assert.deepEqual(result,{ok:true,restored:false,expiresAt:'2026-01-31T00:00:00.000Z',daysAdded:30,renewalMode:'MANUAL'});
  assert.equal(db.calls.length,1);assert.equal(db.calls[0].length,3);
@@ -45,7 +45,7 @@ test('same Bazaar purchase is idempotent and never grants days twice',async()=>{
  assert.equal(db.calls.length,0);
 });
 test('manual repurchase stacks days on top of current unexpired access',async()=>{
- const db=fakeDb({id:'order2',user_id:'u1',status:'CREATED',plan_id:input.planId,created_at:now,
+ const db=fakeDb({id:'order2',user_id:'u1',status:'CREATED',plan_id:input.planId,amount_irr:1500000,created_at:now,
   expires_at:'2026-02-01T00:00:00.000Z'});
  const result=await settle(db,{...input,orderId:'ord_'+'b'.repeat(32),tokenHash:'b'.repeat(64)});
  assert.equal(result.expiresAt,'2026-03-03T00:00:00.000Z');
@@ -58,7 +58,7 @@ test('a different purchase token cannot settle an already paid order',async()=>{
  assert.equal(db.calls.length,0);
 });
 test('purchase predating the server order, invalid plan and partial database batch fail closed',async()=>{
- const order={id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,created_at:now,expires_at:null};
+ const order={id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,amount_irr:1500000,created_at:now,expires_at:null};
  assert.equal((await settle(fakeDb(order),{...input,purchaseTime:'2025-12-01T00:00:00.000Z'})).error,'PURCHASE_PRECEDES_ORDER');
  assert.equal((await settle(fakeDb({...order,created_at:'not-a-date'}),input)).error,'ORDER_STATE_INVALID');
  assert.equal((await settle(fakeDb(order),{...input,planId:'UNKNOWN'})).error,'INVALID_VERIFIED_PURCHASE');
