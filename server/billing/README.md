@@ -10,35 +10,44 @@ Exactly five manually renewed, fixed elapsed-day plans are available. There is n
 | `SAHAMBAN_PRO_180D` | 180 days | 7,650,000 |
 | `SAHAMBAN_PRO_365D` | 365 days | 14,600,000 |
 
-- The server catalog is authoritative. Both Bazaar and Myket order creation persist `amount_irr`; D1 checks the exact plan-to-price pair.
-- Each period is a consumable one-time in-app product, not an auto-renewing subscription. The user explicitly buys again to renew.
-- Both stores use the same account entitlement ledger. Days stack after an unexpired entitlement; expired entitlements restart at settlement time.
-- The app consumes the store purchase token only after the server verifies the receipt and durably settles the entitlement.
-- If consume fails after settlement, the entitlement remains active; the pending store purchase is reconciled on the next app session.
-- The client cannot choose the store, plan duration, price, account ID, or entitlement expiry.
-- Never convert Rial to Toman in server data. Confirm each marketplace's product configuration against these exact Rial amounts before enabling checkout.
+- Server catalog and D1 constraints are authoritative for price and duration.
+- Each period is a consumable one-time in-app product; renewal requires an explicit purchase.
+- Both stores use one shared account entitlement ledger. Early repurchases stack after current expiry.
+- The app consumes a store token only after server verification and durable settlement.
+- The client cannot choose the store, price, account ID, or entitlement expiry.
+
+## Authentication
+
+The Android host authenticates with username/password. The username is the
+canonical Iranian mobile number; no SMS, OTP, or phone verification is used.
+The Worker verifies PBKDF2-HMAC-SHA256 password hashes, rate-limits login
+attempts, and issues a hashed, revocable D1-backed session token in a Secure,
+HttpOnly cookie. The Worker derives the account ID from that session.
+
+Apply `server/migrations/0004-username-password-auth.sql` to the shared D1
+database. Existing verified phone identities are backfilled as usernames,
+but passwords remain unset until securely provisioned. Use
+`scripts/provision-sahmino-user.mjs` to generate a password hash and SQL
+statement offline. Never commit passwords or password hashes generated for
+real users. The old OTP tables are retained only to preserve historical data;
+the new Worker does not use them.
 
 ## Store adapters
 
-- `BILLING_STORE=BAZAAR`: Poolakey + Bazaar RSA signature and Developer API in-app purchase validation.
-- `BILLING_STORE=MYKET`: Myket IAB signed purchase verification and Myket SKU-bound order creation.
-- Both providers settle to `billing_orders`, `billing_access`, and `billing_events`.
-
-## Database
-
-Fresh D1: apply the base user schema, then `server/billing/schema.sql`.
-
-Existing Billing V2 D1: apply `migrations/0002-myket-store-columns.sql` if not already applied, then `migrations/0003-authoritative-irr-prices.sql` exactly once. The latter backfills historic rows and installs plan-price guard triggers. Never run migrations against production until backup and environment have been verified.
+- Bazaar: Poolakey, RSA signature verification, and Bazaar purchase validation API.
+- Myket: Myket Billing Client and signed purchase verification.
+- Both settle to the shared `billing_orders`, `billing_access`, and `billing_events` ledger.
 
 ## Remaining external release gates
 
-1. Confirm the final Android applicationId registered in each marketplace.
-2. Create the five consumable products in each store and record the real, unique SKU IDs.
-3. Set both Worker configurations to the same private D1 database and exact PWA origin.
-4. Configure marketplace public keys and Bazaar OAuth credentials as Worker secrets; configure OTP secrets and SMS-provider binding.
-5. Apply the OTP runtime and Billing V2 migrations to the correct D1 database.
-6. Verify Myket refund/revocation reconciliation against its supported provider contract; signature-only validation does not prove a later refund has not occurred.
-7. Build and test both market flavors on physical devices with store test accounts, including purchase, verification, consume, retry, restore, repurchase, account switching, expiry, refund and network loss.
-8. Keep OTP and billing flags off until the relevant deployment, secrets, migrations and device acceptance tests pass.
+1. Confirm the final Android application ID registered in each marketplace.
+2. Create five consumable products in each store and record their actual unique SKU IDs.
+3. Set both Workers to the same private D1 database and exact PWA origin.
+4. Configure `AUTH_RATE_LIMIT_SECRET`, Bazaar OAuth/RSA secrets, and Myket public key as Worker secrets.
+5. Apply the username/password auth migration and Billing V2 migrations to the intended D1 database after backup and migration-history review.
+6. Provision user accounts through the secure offline process and define a non-SMS password reset procedure.
+7. Verify Myket refund/revocation reconciliation against its supported provider contract.
+8. Run physical-device tests for login/session/logout, account switching, purchase, verification, consume, retry, restore, repurchase, expiry, refund, and network loss.
+9. Keep `SAHMINO_PASSWORD_AUTH_ENABLED` and `BILLING_V2_ENABLED` false until configuration and acceptance pass.
 
-No checkout, Worker deployment, production migration, or store configuration is performed by CI.
+No production deployment, live D1 migration, store configuration, checkout activation, or release signing is performed by CI.
