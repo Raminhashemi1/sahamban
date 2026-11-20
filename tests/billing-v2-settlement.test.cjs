@@ -38,7 +38,7 @@ test('first verified in-app purchase atomically records payment and grants 30 da
  assert.match(db.calls[0][2].sql,/changes\(\)=1/);
 });
 test('same Bazaar purchase is idempotent and never grants days twice',async()=>{
- const db=fakeDb({id:'order',user_id:'u1',status:'PAID',plan_id:input.planId,
+ const db=fakeDb({id:'order',user_id:'u1',status:'PAID',plan_id:input.planId,amount_irr:1500000,
   purchase_token_hash:input.tokenHash,expires_at:'2026-01-31T00:00:00.000Z'});
  const result=await settle(db,input);
  assert.deepEqual(result,{ok:true,restored:true,expiresAt:'2026-01-31T00:00:00.000Z',daysAdded:0,renewalMode:'MANUAL'});
@@ -52,7 +52,7 @@ test('manual repurchase stacks days on top of current unexpired access',async()=
  assert.equal(result.daysAdded,30);
 });
 test('a different purchase token cannot settle an already paid order',async()=>{
- const db=fakeDb({id:'order',user_id:'u1',status:'PAID',plan_id:input.planId,
+ const db=fakeDb({id:'order',user_id:'u1',status:'PAID',plan_id:input.planId,amount_irr:1500000,
   purchase_token_hash:'c'.repeat(64),expires_at:'2026-01-31T00:00:00.000Z'});
  assert.equal((await settle(db,input)).error,'ORDER_ALREADY_SETTLED');
  assert.equal(db.calls.length,0);
