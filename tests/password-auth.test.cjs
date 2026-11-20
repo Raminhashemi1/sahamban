@@ -10,7 +10,7 @@ function mockD1({user=null,session=null,changes=1,rateChanges=[1,1,0]}={}){
  const db={
   calls,
   prepare(sql){return {sql,values:[],bind(...values){this.values=values;return {
-   first:async()=>{calls.push({kind:'first',sql,values});return sql.includes('FROM sahamban_users')?user:session;},
+   first:async()=>{calls.push({kind:'first',sql,values});return sql.includes('FROM sahmino_shared_sessions')?session:user;},
    run:async()=>{calls.push({kind:'run',sql,values});return {meta:{changes}};}
   };}}},
   async batch(items){calls.push({kind:'batch',items});return rateChanges.map(n=>({meta:{changes:n}}));}
@@ -23,7 +23,7 @@ test('normalizes Iranian mobile usernames including Persian and Arabic digits',(
  assert.equal(normalizeUsername('09123456789'),'+989123456789');
  assert.equal(normalizeUsername('+989123456789'),'+989123456789');
  assert.equal(normalizeUsername('۰۰۹۸۹۱۲۳۴۵۶۷۸۹'),'+989123456789');
- assert.equal(normalizeUsername('123456'),'');
+ assert.equal(normalizeUsername('123456'),null);
  assert.equal(normalizeUsername('0912345678'),null);
 });
 
