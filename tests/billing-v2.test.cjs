@@ -14,7 +14,8 @@ test('Billing V2 defines exactly five fixed-day plans with approved IRR prices',
 test('order creation persists and returns the authoritative server IRR price',async()=>{
  let sql='',values=[];
  const db={prepare(q){sql=q;return {bind(...v){values=v;return {async run(){return {success:true,meta:{changes:1}};}};}};}};
- const result=await createOrder(db,{subject:'user-1',planId:'SAHAMBAN_PRO_90D',now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'a'.repeat(32)});
+ const skuMap={SAHAMBAN_PRO_30D:'bazaar30',SAHAMBAN_PRO_60D:'bazaar60',SAHAMBAN_PRO_90D:'bazaar90',SAHAMBAN_PRO_180D:'bazaar180',SAHAMBAN_PRO_365D:'bazaar365'};
+ const result=await createOrder(db,{subject:'user-1',planId:'SAHAMBAN_PRO_90D',skuMap,now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'a'.repeat(32)});
  assert.equal(result.status,201);
  assert.deepEqual(result.order,{id:'ord_'+'a'.repeat(32),planId:'SAHAMBAN_PRO_90D',days:90,priceRial:4050000});
  assert.deepEqual(values,['ord_'+'a'.repeat(32),'SAHAMBAN_PRO_90D',4050000,'2026-01-01T00:00:00.000Z','user-1']);
