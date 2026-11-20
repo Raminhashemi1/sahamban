@@ -246,6 +246,10 @@ export default {
     userId=activeSession.userId;
    }catch(_){return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);}
   }else{
+   // Legacy short-lived pilot tokens are available only in explicitly enabled
+   // isolated test deployments. Production templates never enable this path.
+   if(env?.PILOT_TOKEN_AUTH_ENABLED!=='true')
+    return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
    subject=await verifyPilotToken(request.headers.get('Authorization'),env?.AUTH_HMAC_SECRET,nowMs);
    if(!subject)return send({proEnabled:false,reason:'NOT_AUTHENTICATED'},401,cors);
   }
