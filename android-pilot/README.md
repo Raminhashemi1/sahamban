@@ -2,7 +2,8 @@
 
 This module is the Android wrapper for the existing Sahmino PWA at
 `https://raminhashemi1.github.io/sahamban/`. It now includes a native OTP
-sign-in host and a native subscription screen connected to Billing V2.
+sign-in host and a native subscription screen connected to Billing V2. This
+is not a signed production release or a marketplace-ready package.
 
 ## Implemented in source
 
