@@ -28,7 +28,7 @@ function createD1AuthRepository(db, { sessionTtlSeconds = 30 * 24 * 60 * 60, clo
         c.password_hash AS passwordHash,u.status AS accountStatus
       FROM sahmino_user_credentials c
       JOIN sahamban_users u ON u.id=c.user_id
-      WHERE c.username_normalized=? LIMIT 1
+      WHERE c.username_normalized=? AND c.disabled_at IS NULL LIMIT 1
     \`).bind(username).first();
     return row || null;
   }
