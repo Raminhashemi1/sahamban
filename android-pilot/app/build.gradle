@@ -12,7 +12,7 @@ def configuredSkus = skuKeys.collect { System.getenv(it) ?: '' }
 def allSkusPresent = configuredSkus.every { it.matches('[A-Za-z0-9._-]{1,100}') && !it.startsWith('REPLACE_') } &&
     configuredSkus.toSet().size() == 5
 def commonBillingReady = System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
-    expectedPackage == appId &&
+    appId != 'ir.sahamban.pilot' && expectedPackage == appId &&
     appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
     workerUrl.startsWith('https://') && allSkusPresent
 
