@@ -23,7 +23,7 @@ test('Myket order creation accepts migrated legacy account IDs',async()=>{
  const result=await createMyketOrder(db,{userId:'legacy-user-42',planId:'SAHAMBAN_PRO_30D',
   now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'d'.repeat(32),skuMap:map});
  assert.equal(result.status,201);
- assert.match(sql,/WHERE id=\\? AND status='ACTIVE'/);
+ assert.ok(sql.includes("WHERE id=? AND status='ACTIVE'"));
  assert.equal(values[5],'legacy-user-42');
 });
 
