@@ -1,4 +1,5 @@
-import sqlite3, pathlib, sys
+import sqlite3, pathlib
+
 db=sqlite3.connect(':memory:')
 db.execute('PRAGMA foreign_keys=ON')
 db.executescript("""
@@ -16,8 +17,7 @@ INSERT INTO sahamban_users(id,created_at,status) VALUES('usr_existing','2026-01-
 INSERT INTO sahmino_phone_identities(id,user_id,phone_e164,verified_at,created_at)
  VALUES('phn_1','usr_existing','+989123456789','2026-01-01T00:00:00.000Z','2026-01-01T00:00:00.000Z');
 """)
-migration=pathlib.Path('server/migrations/0004-username-password-auth.sql').read_text()
-db.executescript(migration)
+db.executescript(pathlib.Path('server/migrations/0004-username-password-auth.sql').read_text())
 row=db.execute("SELECT username_normalized,password_salt,password_hash,password_iterations FROM sahamban_users WHERE id='usr_existing'").fetchone()
 assert row==('+989123456789',None,None,None),row
 assert db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sahmino_shared_sessions'").fetchone()
@@ -29,15 +29,15 @@ try:
  VALUES('usr_dup','2026-01-02T00:00:00.000Z','ACTIVE','+989123456789')""")
  raise AssertionError('duplicate username accepted')
 except sqlite3.IntegrityError: pass
-for fields in [
- ("+989222222222",None,None,None),
- ("+989222222222","a"*32,None,310000),
- ("not-a-phone",None,None,None),
+for username,salt,digest,iterations in [
+ ('not-a-phone',None,None,None),
+ ('+989222222222','a'*32,None,310000),
+ ('+989333333333','z'*32,'b'*64,310000),
+ ('+989444444444','a'*32,'b'*64,999),
 ]:
  try:
   db.execute("""INSERT INTO sahamban_users(id,created_at,status,username_normalized,password_salt,password_hash,password_iterations)
-   VALUES('usr_invalid_'||?, '2026-01-02T00:00:00.000Z','ACTIVE',?,?,?,?)""",
-   (str(fields[0]),fields[0],fields[1],fields[2],fields[3]))
-  if fields[0]!=" +989222222222": raise AssertionError('invalid credential record accepted')
+   VALUES(?,?,?,?,?,?,?)""",('usr_invalid_'+str(len(username)+len(str(iterations))), '2026-01-02T00:00:00.000Z','ACTIVE',username,salt,digest,iterations))
+  raise AssertionError('invalid auth fields accepted: '+username)
  except sqlite3.IntegrityError: pass
 print('username/password migration tests passed')
