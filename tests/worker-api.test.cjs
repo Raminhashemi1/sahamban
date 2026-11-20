@@ -259,7 +259,7 @@ test('password login route validates origin, body and configuration; OTP endpoin
  const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
   method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
   body:JSON.stringify({username:'09123456789',password:'Correct Horse Battery 2026!'})
- }),env(undefined,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ }),env(null,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
  assert.equal(hostile.status,403);
  const retired=await app.fetch(request(null,'/api/v1/auth/otp/request',{method:'POST',body:{phone:'09123456789'}}),env());
  assert.equal(retired.status,404);
