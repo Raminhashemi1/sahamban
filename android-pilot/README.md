@@ -112,8 +112,8 @@ gradle -p android-pilot :app:assembleBazaarDebug :app:assembleMyketDebug
 1. Confirm the final Android application ID and store publisher accounts.
 2. Create five consumable products in each marketplace at the approved Rial
    price points and provide the real SKU IDs.
-3. Deploy the current Bazaar and Myket Workers, Shahmiz SMS Worker, shared D1,
-   OTP migrations, secrets, and exact PWA origin.
+3. Deploy the current Bazaar and Myket Workers, shared D1, password-auth
+   migration and secret, and exact PWA origin.
 4. Configure Myket's authoritative refund/revocation reconciliation. The
    current signed-purchase verifier does not independently prove that a
    previously valid purchase was not refunded later.
