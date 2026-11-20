@@ -1,6 +1,10 @@
 name: Sahamban Android pilot debug APK
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'android-pilot/**'
+      - '.github/workflows/android-pilot-debug.yml'
   push:
     paths:
       - 'android-pilot/**'
