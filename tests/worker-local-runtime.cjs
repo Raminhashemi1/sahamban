@@ -45,7 +45,7 @@ async function main(){
  cli('--command',"INSERT OR REPLACE INTO billing_access(user_id,expires_at,auto_renewing,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,'"+stamp+"')");
  const token=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  const app=spawn('npx',['--no-install','wrangler','dev','--local','--config',CONFIG,'--ip','127.0.0.1','--port',String(PORT),
-  '--var','AUTH_HMAC_SECRET:'+SECRET,
+  '--var','AUTH_HMAC_SECRET:'+SECRET,'--var','PILOT_AUTH_ENABLED:true',
   ...(enablePasswordAuth?['--var','SAHMINO_PASSWORD_AUTH_ENABLED:true','--var','AUTH_RATE_LIMIT_SECRET:'+AUTH_SECRET]:[]),
   ...(enableBillingV2?['--var','BILLING_V2_ENABLED:true','--var','BAZAAR_SKU_MAP:{\"SAHAMBAN_PRO_30D\":\"local30\",\"SAHAMBAN_PRO_60D\":\"local60\",\"SAHAMBAN_PRO_90D\":\"local90\",\"SAHAMBAN_PRO_180D\":\"local180\",\"SAHAMBAN_PRO_365D\":\"local365\"}']:[])],{
   cwd:process.cwd(),env:{...process.env,WRANGLER_SEND_METRICS:'false',NO_COLOR:'1'},
