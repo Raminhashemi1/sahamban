@@ -5,7 +5,7 @@ current server contract, not the earlier standalone-adapter checkpoint.
 
 ## Architecture
 
-`MainActivity` → native OTP login/session → `BillingV2SubscriptionHost` →
+`MainActivity` → native username/password login and session → `BillingV2SubscriptionHost` →
 `BillingV2CookieSessionProvider` → `BillingV2ApiClient` →
 flavor-specific `BillingV2Coordinator` → `BillingV2PurchaseFlow` →
 `BillingV2SubscriptionView`.
@@ -31,8 +31,9 @@ term stacks after the current expiry; an expired term starts at settlement.
 
 ## Order and settlement contract
 
-- The authenticated account is resolved server-side from the native OTP
-  session cookie or, for isolated private-pilot tests, the legacy pilot token.
+- The authenticated account is resolved server-side from the native HttpOnly
+  password-auth session cookie. The session maps to the internal user ID; the
+  client cannot supply or override account identity.
 - The server selects the store from `BILLING_STORE`.
 - Both Bazaar and Myket order creation require exactly five unique,
   non-placeholder server SKU IDs. The selected plan is bound to the
@@ -52,20 +53,41 @@ term stacks after the current expiry; an expired term starts at settlement.
 - The Android client verifies that the returned price matches the approved
   plan price before launching the marketplace flow.
 
-## OTP and Worker deployment
+## Username/password authentication and Worker deployment
 
 Both `wrangler.bazaar.toml.example` and
 `wrangler.myket.toml.example` use the same D1 binding name and database
-placeholder, exact PWA origin, OTP feature flag defaulting to false, and
-`SAHMINO_SMS_PROVIDER` service binding. The Shahmiz SMS Worker is deployed
-separately. Both marketplace Workers need the same OTP migrations and
-secrets before enabling login.
+placeholder, exact PWA origin, and `SAHMINO_PASSWORD_AUTH_ENABLED=false`
+by default. No SMS service binding, OTP endpoint, or OTP secret is used.
 
-The native app stores the Secure/HttpOnly session cookie through Android's
-CookieManager and sends it only in native HTTPS requests. No credential is
-exposed to WebView JavaScript, local storage, logs, or URLs. The Worker checks
-the exact PWA Origin and CSRF marker for state-changing authenticated
-requests.
+Users sign in with a username (an Iranian mobile number is accepted as a
+normalized username) and password. Phone-number ownership is not verified by
+SMS. Accounts and credentials are provisioned by an owner-controlled secure
+process; public self-registration is not exposed. Passwords are stored only
+as PBKDF2-HMAC-SHA256 hashes with 600,000 iterations and per-user random salts.
+Login attempts are rate-limited using keyed HMAC pseudonyms of the IP address
+and normalized username; raw IP addresses and passwords are not persisted.
+
+The native app sends credentials only to the configured HTTPS Worker. The
+Worker issues a Secure/HttpOnly session cookie, installed by Android's native
+CookieManager. Credentials never enter WebView JavaScript, local storage,
+logs, or URLs. The Worker enforces the exact PWA Origin and CSRF marker for
+state-changing authenticated requests.
+
+## Database
+
+Fresh database:
+1. Apply the base Sahamban user/account schema.
+2. Apply `server/d1-sahmino-password-auth.sql`.
+3. Apply `server/billing/schema.sql`.
+
+Existing Billing V2 database:
+1. Verify backup and migration history.
+2. Apply `0002-myket-store-columns.sql` if it has not already been applied.
+3. Apply `0003-authoritative-irr-prices.sql` exactly once.
+4. Apply `server/d1-sahmino-password-auth.sql` exactly once.
+
+Do not apply these files to an unverified production database.
 
 ## Database
 
@@ -88,12 +110,12 @@ Do not apply these files to an unverified production database.
 - Actual Bazaar and Myket product IDs do not exist in the repository as
   confirmed store registrations. The proposed/placeholder values are not
   valid production identifiers.
-- Worker URLs, shared production D1, OTP/SMS secrets, Bazaar merchant
+- Worker URLs, shared production D1, password-auth rate-limit secret, Bazaar merchant
   credentials, and store public keys require owner-controlled deployment.
 - Myket signed purchase validation does not independently detect a later
   refund/revocation. Add and test authoritative reconciliation from Myket's
   supported provider API/contract before public checkout.
-- Physical-device acceptance has not yet established live login, cookie
+- Physical-device acceptance has not yet established live password login, cookie
   persistence, purchase, restore, consume/retry, repurchase, account
   switching, refunds, or network-loss behavior.
 - Debug checkout can be opted in only with complete real configuration.
