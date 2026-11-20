@@ -133,6 +133,10 @@ test('native subscription entry is reachable only after OTP and fails closed wit
  assert.match(activity,/showSubscription\(\)/);
  assert.match(activity,/new BillingV2SubscriptionHost/);
  assert.match(activity,/showingSubscription/);
+ assert.match(activity,/boolean loadPwa = webView == null/);
+ assert.match(activity,/if \(loadPwa\) webView\.loadUrl\(START_URL\)/);
+ assert.doesNotMatch(activity,/^\s*webView\.loadUrl\(START_URL\);$/m,
+  'returning from subscriptions must not reload the PWA and discard in-memory state');
  assert.match(activity,/subscriptionHost\.close\(\)/);
  assert.match(host,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
  for(const sku of ['30D','60D','90D','180D','365D'])
