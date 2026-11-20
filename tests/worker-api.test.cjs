@@ -119,7 +119,7 @@ test('manual order creation accepts only a plan ID and derives order identity an
  const body=await response.json();
  assert.deepEqual(body,{status:201,order:{id:body.order.id,planId:'SAHAMBAN_PRO_90D',days:90,priceRial:4050000}});
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
- assert.deepEqual(storage.calls[0].values,[body.order.id,'SAHAMBAN_PRO_90D',4050000,storage.calls[0].values[3],subject]);
+ assert.deepEqual(storage.calls[0].values,[body.order.id,'SAHAMBAN_PRO_90D','bazaar90',4050000,storage.calls[0].values[4],subject]);
  assert.match(storage.calls[0].sql,/INSERT INTO billing_orders/);
  assert.match(storage.calls[0].sql,/status='ACTIVE'/);
 });
@@ -157,7 +157,7 @@ test('receipt verification requires JSON and configured exact SKU mapping before
   method:'POST',body,contentType:'text/plain'}),env(storage,{BILLING_V2_ENABLED:'true'}));
  assert.equal(badType.status,415);assert.equal(storage.calls.length,0);
  const unconfigured=await app.fetch(request(token,'/api/v2/billing/verify',{
-  method:'POST',body}),env(storage,{BILLING_V2_ENABLED:'true'}));
+  method:'POST',body}),env(storage,{BILLING_V2_ENABLED:'true',BAZAAR_SKU_MAP:null}));
  assert.equal(unconfigured.status,503);
  assert.deepEqual(await unconfigured.json(),{error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'});
 });
@@ -238,8 +238,9 @@ test('OTP session creates orders only with CSRF and binds order to the session u
  assert.equal(allowed.status,201);
  assert.match(storage.calls[1].sql,/WHERE id=\?/);
  assert.equal(storage.calls[1].values[1],'SAHAMBAN_PRO_30D');
- assert.equal(storage.calls[1].values[2],1500000);
- assert.equal(storage.calls[1].values[4],'usr_'+'a'.repeat(32));
+ assert.equal(storage.calls[1].values[2],'bazaar30');
+ assert.equal(storage.calls[1].values[3],1500000);
+ assert.equal(storage.calls[1].values[5],'usr_'+'a'.repeat(32));
 });
 
 test('invalid or disabled OTP cookies fail closed and never fall back to a pilot Authorization token',async()=>{
