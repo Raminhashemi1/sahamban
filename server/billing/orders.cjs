@@ -9,10 +9,10 @@ async function createOrder(db,{subject,planId,now,makeId}={}){
  const id=typeof makeId==='function'?makeId():null;
  if(typeof id!=='string'||!ORDER.test(id))return {status:503,error:'ORDER_ID_UNAVAILABLE'};
  try{
-  const result=await db.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,created_at) SELECT ?,id,?,'CREATED',? FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE'")
-   .bind(id,p.id,now,subject).run();
+  const result=await db.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,amount_irr,created_at) SELECT ?,id,?,'CREATED',?,? FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE'")
+   .bind(id,p.id,p.priceRial,now,subject).run();
   if(result?.success!==true||result?.meta?.changes!==1)return {status:403,error:'ACCOUNT_NOT_ELIGIBLE'};
-  return {status:201,order:{id,planId:p.id,days:p.days}};
+  return {status:201,order:{id,planId:p.id,days:p.days,priceRial:p.priceRial}};
  }catch(_){return {status:503,error:'ORDER_CREATE_FAILED'};}
 }
 
@@ -30,7 +30,7 @@ function parseStoreSkuMap(raw) {
  } catch (_) { return null; }
 }
 
-/** Creates an order bound to the server-selected Myket deployment and its SKU. */
+/** Creates an order bound to the server-selected Myket deployment, SKU, and approved IRR price. */
 async function createMyketOrder(db, {subject, planId, now, makeId, skuMap: rawSkuMap} = {}) {
  const plan = getPlan(planId);
  if (!subject) return {status:401,error:'UNAUTHENTICATED'};
@@ -41,13 +41,12 @@ async function createMyketOrder(db, {subject, planId, now, makeId, skuMap: rawSk
  const id = typeof makeId === 'function' ? makeId() : null;
  if (typeof id !== 'string' || !ORDER.test(id)) return {status:503,error:'ORDER_ID_UNAVAILABLE'};
  try {
-  const result = await db.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,store,store_product_id,created_at) SELECT ?,id,?,'CREATED','MYKET',?,? FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE'")
-   .bind(id,plan.id,mapping[plan.id],now,subject).run();
+  const result = await db.prepare("INSERT INTO billing_orders(id,user_id,plan_id,status,store,store_product_id,amount_irr,created_at) SELECT ?,id,?,'CREATED','MYKET',?,?,? FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE'")
+   .bind(id,plan.id,mapping[plan.id],plan.priceRial,now,subject).run();
   if (result?.success !== true || result?.meta?.changes !== 1)
    return {status:403,error:'ACCOUNT_NOT_ELIGIBLE'};
-  return {status:201,order:{id,planId:plan.id,days:plan.days,store:'MYKET'}};
+  return {status:201,order:{id,planId:plan.id,days:plan.days,priceRial:plan.priceRial,store:'MYKET'}};
  } catch (_) { return {status:503,error:'ORDER_CREATE_FAILED'}; }
 }
 
 module.exports = {createOrder, createMyketOrder, parseStoreSkuMap};
-
