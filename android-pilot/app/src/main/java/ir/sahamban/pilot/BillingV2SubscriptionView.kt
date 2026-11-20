@@ -28,7 +28,8 @@ class BillingV2SubscriptionView(
     private data class Plan(
         val id: String,
         val days: Int,
-        val title: String
+        val title: String,
+        val priceRial: Long
     )
 
     private val plans = listOf(
