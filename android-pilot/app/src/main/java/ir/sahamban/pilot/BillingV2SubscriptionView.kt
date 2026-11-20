@@ -74,7 +74,7 @@ class BillingV2SubscriptionView(
                 }
             }
             card.addView(text(plan.title, 18f, true))
-            val price = text("در حال دریافت قیمت فروشگاه…", 16f, true).apply {
+            val price = text("${plan.priceRial} ریال · در حال دریافت قیمت فروشگاه…", 16f, true).apply {
                 setPadding(0, dp(8), 0, dp(10))
             }
             planPriceViews[plan.id] = price
