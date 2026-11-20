@@ -355,3 +355,24 @@ test('password login returns bounded rate-limit response and generic credentials
  assert.deepEqual(await rejected.json(),{error:'INVALID_CREDENTIALS'});
  assert.match(rejected.headers.get('Cache-Control'),/no-store/);
 });
+
+
+test('password login/session/logout and pilot JWT are disabled unless explicitly enabled',async()=>{
+ const app=await worker(),storage=passwordSessionDb();
+ for(const [route,method,body] of [
+  ['/api/v1/auth/login','POST',{username:'09123456789',password:'Correct Horse Battery 2026!'}],
+  ['/api/v1/auth/session','GET',undefined],
+  ['/api/v1/auth/logout','POST',{}]
+ ]){
+  const response=await app.fetch(new Request('https://worker.example'+route,{
+   method,headers:{Origin:origin,...(body===undefined?{}:{'Content-Type':'application/json'})},
+   ...(body===undefined?{}:{body:JSON.stringify(body)})
+  }),env(storage));
+  assert.equal(response.status,404);
+  assert.deepEqual(await response.json(),{error:'FEATURE_DISABLED'});
+ }
+ const token=await signedToken();
+ const pilot=await app.fetch(request(token),{PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHAMBAN_DB:storage});
+ assert.equal(pilot.status,401);
+ assert.equal(storage.calls.length,0);
+});
