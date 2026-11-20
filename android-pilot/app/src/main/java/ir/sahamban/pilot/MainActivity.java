@@ -1,6 +1,6 @@
 package ir.sahamban.pilot;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
@@ -17,9 +17,10 @@ import android.webkit.WebViewClient;
 
 /**
  * Test-only HTTPS WebView shell for the existing public PWA.
- * No JavaScript bridge, injected identity, payment integration or browser data import.
+ * No JavaScript bridge or injected identity. Billing V2 coordinator requires a ComponentActivity,
+ * but checkout remains deliberately unwired until a trusted native identity/session is available.
  */
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private static final String START_URL = "https://raminhashemi1.github.io/sahamban/";
     private static final int PICK_FILE = 3040;
     private WebView webView;
