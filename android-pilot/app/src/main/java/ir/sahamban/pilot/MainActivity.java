@@ -185,7 +185,7 @@ public final class MainActivity extends ComponentActivity {
     private void performLogout(Button button) {
         button.setEnabled(false);
         authClient.logout(result -> {
-            if (result instanceof BillingV2NativeOtpClient.Result.Success) showLogin();
+            if (result instanceof BillingV2NativeAuthClient.Result.Success) showLogin();
             else {
                 button.setEnabled(true);
                 Toast.makeText(this, "خروج از حساب انجام نشد؛ دوباره تلاش کنید.", Toast.LENGTH_LONG).show();
