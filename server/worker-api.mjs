@@ -281,7 +281,7 @@ export default {
      b=>b.toString(16).padStart(2,'0')).join(''))};
    const result=store==='MYKET'
     ?await createMyketOrder(env?.SAHAMBAN_DB,{...orderArgs,skuMap:env?.MYKET_SKU_MAP})
-    :await createOrder(env?.SAHAMBAN_DB,orderArgs);
+    :await createOrder(env?.SAHAMBAN_DB,{...orderArgs,skuMap:env?.BAZAAR_SKU_MAP});
    return send(result,result.status||503,cors);
   }
   const result=await lookupEntitlement(env?.SAHAMBAN_DB,subject,nowMs,userId);
