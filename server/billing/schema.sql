@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS billing_orders(
  status TEXT NOT NULL CHECK(status IN ('CREATED','PAID','CANCELLED','REVERSED')),
  store TEXT NOT NULL DEFAULT 'BAZAAR' CHECK(store IN ('BAZAAR','MYKET')),
  store_product_id TEXT,store_order_id TEXT,
+ amount_irr INTEGER NOT NULL CHECK(amount_irr IN (1500000,2850000,4050000,7650000,14600000)),
  created_at TEXT NOT NULL,paid_at TEXT,bazaar_product_id TEXT,bazaar_order_id TEXT,purchase_token_hash TEXT,
  UNIQUE(bazaar_order_id),UNIQUE(store_order_id),UNIQUE(purchase_token_hash),
  CHECK((store='BAZAAR' AND (store_product_id IS NULL OR length(store_product_id)>0)) OR
