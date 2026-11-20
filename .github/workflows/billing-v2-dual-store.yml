@@ -30,6 +30,7 @@ on:
       - 'server/migrations/**'
       - 'server/wrangler.bazaar.toml.example'
       - 'server/wrangler.myket.toml.example'
+      - 'server/wrangler.local.toml'
       - 'scripts/provision-sahmino-user.mjs'
       - 'tests/password-auth*'
       - 'tests/billing-v2-*'
