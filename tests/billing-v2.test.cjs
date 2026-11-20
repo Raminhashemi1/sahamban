@@ -22,6 +22,12 @@ test('order creation persists and returns the authoritative server IRR price',as
  assert.deepEqual(values,['ord_'+'a'.repeat(32),'SAHAMBAN_PRO_90D','bazaar90',4050000,'2026-01-01T00:00:00.000Z','user-1']);
  assert.match(sql,/amount_irr/);
 });
+test('Bazaar checkout refuses missing and placeholder server SKU mappings before creating orders',async()=>{
+ const base={subject:'user-1',planId:'SAHAMBAN_PRO_30D',now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'a'.repeat(32)};
+ assert.equal((await createOrder({},base)).status,503);
+ const placeholder={...skuMap,SAHAMBAN_PRO_30D:'REPLACE_BAZAAR_SKU_30D'};
+ assert.equal((await createOrder({}, {...base,skuMap:placeholder})).status,503);
+});
 test('unknown plans and missing authentication cannot create orders',async()=>{
  assert.equal((await createOrder({}, {subject:'user',planId:'bad'})).status,400);
  assert.equal((await createOrder({}, {planId:'SAHAMBAN_PRO_30D'})).status,401);
