@@ -108,6 +108,8 @@ public final class MainActivity extends ComponentActivity {
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
 
+        // The HTTPS Worker is cross-origin from the hosted PWA; allow its Secure, HttpOnly session cookie.
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
