@@ -114,25 +114,25 @@ class BillingV2PurchaseFlow(
     }
 
     fun restore(callback: (List<Outcome>) -> Unit) {
-        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
-            callback(listOf(Outcome.Failed("BILLING_DISABLED")))
-            return
-        }
-        // The account ledger is authoritative. Fetch it before asking the store
-        // for inventory because consumable purchases may already have been consumed.
-        storeBilling.connect { connected ->
-            if (!connected) {
-                callback(listOf(Outcome.Failed("STORE_CONNECTION_FAILED")))
-                return@connect
+        // Account entitlement is independent of current marketplace availability
+        // and remains restorable when checkout is disabled or products are consumed.
+        api.refreshEntitlement { entitlementResult ->
+            val durable = when (entitlementResult) {
+                is BillingV2ApiClient.Result.Success ->
+                    if (entitlementResult.value.proEnabled)
+                        Outcome.EntitlementRestored(entitlementResult.value)
+                    else null
+                is BillingV2ApiClient.Result.Failure ->
+                    Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
             }
-            api.refreshEntitlement { entitlementResult ->
-                val durable = when (entitlementResult) {
-                    is BillingV2ApiClient.Result.Success ->
-                        if (entitlementResult.value.proEnabled)
-                            Outcome.EntitlementRestored(entitlementResult.value)
-                        else null
-                    is BillingV2ApiClient.Result.Failure ->
-                        Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
+            if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+                callback(listOfNotNull(durable))
+                return@refreshEntitlement
+            }
+            storeBilling.connect { connected ->
+                if (!connected) {
+                    callback(listOfNotNull(durable) + Outcome.Failed("STORE_CONNECTION_FAILED"))
+                    return@connect
                 }
                 storeBilling.loadPlanDetails(skuByPlan.values.toList()) { productDetails ->
                     if (productDetails == null) {
@@ -184,4 +184,5 @@ class BillingV2PurchaseFlow(
                 }
             }
         }
-    }}
+    }
+}
