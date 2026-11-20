@@ -85,3 +85,15 @@ provider, physical device, or real purchase behavior.
 Do not duplicate the existing host or purchase flow. Any further code work
 should begin by checking this checklist, the current integration branch, and
 the related PR history.
+
+## Additional native checkout contract audit (2026-11-20)
+
+The active app integration is consolidated in draft PR [#191](https://github.com/Raminhashemi1/sahamban/pull/191); do not port the standalone `subscription-module/worker` ledger or duplicate the host purchase flow into the app. The canonical host is `android-pilot` + `server/worker-api.mjs` + `server/billing/`.
+
+An additional source-contract regression now asserts that:
+- The selected store connection is established before a server order is created.
+- Purchase evidence is bound to the expected package, SKU, and server order.
+- Server verification succeeds before the native client consumes a Bazaar or Myket purchase token; verification failure never reaches consumption.
+- The Android client payload fields exactly match the Bazaar and Myket Worker verifier contracts.
+
+Exact-head GitHub Actions validation passed on commit `94240c9e09eafc9b353a4d0d881d0593bfd97656`: [run 44805999905](https://github.com/Raminhashemi1/sahamban/actions/runs/44805999905). The Android dual-flavor debug build passed on the same Android source tree at commit `3992cee4632a2fcdccf6a433d8043e414cea31f2`; the only subsequent source change before the audited head was a test-file change. This is compile/test evidence, not physical-device or live-store acceptance.
