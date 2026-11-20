@@ -77,7 +77,7 @@ test('manual purchase is verified then settles fixed duration with no auto-renew
 });
 test('verification rejects unauthenticated, malformed and wrong-account orders before provider calls',async()=>{
  let calls=0;const fetcher=async()=>{calls++;throw Error('unexpected');};
- const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',user_id:'u1',expires_at:null});
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',user_id:'u1',amount_irr:1500000,expires_at:null});
  const base={db,env,body:validBody,now,fetcher};
  assert.equal((await verifyAndSettle({...base,subject:null})).status,401);
  assert.equal((await verifyAndSettle({...base,body:{...validBody,extra:true},subject:'u'})).status,400);
