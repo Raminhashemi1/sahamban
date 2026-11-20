@@ -91,7 +91,8 @@ WHEN
     (length(NEW.username_normalized)<>13 OR NEW.username_normalized NOT GLOB '+989[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'))
   OR
   (NEW.password_salt IS NOT NULL AND
-    (length(NEW.password_salt)<>32 OR NEW.password_salt GLOB '*[^a-f0-9]*' OR
+    (NEW.password_hash IS NULL OR NEW.password_iterations IS NULL OR
+     length(NEW.password_salt)<>32 OR NEW.password_salt GLOB '*[^a-f0-9]*' OR
      length(NEW.password_hash)<>64 OR NEW.password_hash GLOB '*[^a-f0-9]*' OR
      NEW.password_iterations NOT BETWEEN 200000 AND 600000))
   OR
