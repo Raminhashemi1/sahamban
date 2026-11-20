@@ -11,6 +11,7 @@ database_id = "REPLACE_WITH_SAME_PRODUCTION_D1_ID_IN_BOTH_CONFIGS"
 
 [vars]
 BILLING_V2_ENABLED = "false"
+SAHMINO_OTP_ENABLED = "false"
 BILLING_STORE = "MYKET"
 PWA_ORIGIN = "https://REPLACE_WITH_EXACT_PRODUCTION_PWA_ORIGIN"
 MYKET_PACKAGE_NAME = "REPLACE_WITH_REAL_APPLICATION_ID"
@@ -18,4 +19,13 @@ MYKET_SKU_MAP = '{"SAHAMBAN_PRO_30D":"REPLACE_MYKET_SKU_30D","SAHAMBAN_PRO_60D":
 
 # Set these as Worker secrets; never commit values:
 # wrangler secret put AUTH_HMAC_SECRET --config wrangler.myket.toml
+# wrangler secret put SAHMINO_OTP_VERIFIER_SECRET --config wrangler.myket.toml
+# wrangler secret put SAHMINO_OTP_RATE_LIMIT_SECRET --config wrangler.myket.toml
 # wrangler secret put MYKET_PUBLIC_KEY --config wrangler.myket.toml
+
+# Apply the same OTP identity and runtime migrations to the shared D1 database
+# before enabling OTP. Deploy the Shahmiz SMS provider separately and configure
+# SHAHMIZ_API_TOKEN on that provider Worker.
+[[services]]
+binding = "SAHMINO_SMS_PROVIDER"
+service = "sahmino-shahmiz-sms"
