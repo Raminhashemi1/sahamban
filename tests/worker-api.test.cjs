@@ -241,7 +241,8 @@ test('password login normalizes phone username, verifies PBKDF2 and creates a se
  assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
  assert.deepEqual((await response.json()).authenticated,true);
  assert.match(response.headers.get('Set-Cookie'),/^sahmino_session=[a-f0-9]{64}; Path=\\/; HttpOnly; Secure; SameSite=None; Max-Age=2592000$/);
- assert.deepEqual(storage.calls[0].values,['+989123456789']);
+ const credentialLookup=storage.calls.find(c=>c.sql?.includes('FROM sahmino_user_credentials'));
+ assert.deepEqual(credentialLookup.values,['+989123456789']);
  assert.equal(storage.calls.filter(c=>c.kind==='batch').length,1);
  assert.match(storage.calls.find(c=>c.sql?.includes('INSERT INTO sahmino_shared_sessions'))?.sql||'',/INSERT INTO sahmino_shared_sessions/);
 });
