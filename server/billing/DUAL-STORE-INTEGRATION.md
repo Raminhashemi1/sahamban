@@ -89,20 +89,6 @@ Existing Billing V2 database:
 
 Do not apply these files to an unverified production database.
 
-## Database
-
-Fresh database:
-1. Apply the base Sahamban user/account schema.
-2. Apply OTP identity/session migrations.
-3. Apply `server/billing/schema.sql`.
-
-Existing Billing V2 database:
-1. Verify backup and migration history.
-2. Apply `0002-myket-store-columns.sql` if it has not already been applied.
-3. Apply `0003-authoritative-irr-prices.sql` exactly once.
-
-Do not apply these files to an unverified production database.
-
 ## Known limitations and release blockers
 
 - The temporary default Android package is `ir.sahamban.pilot`. The final
