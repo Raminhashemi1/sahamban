@@ -52,6 +52,7 @@ test('Billing API client obtains fresh native password-session cookie headers an
  assert.match(api,/BuildConfig\.SAHAMBAN_PWA_ORIGIN/);
  assert.match(api,/NOT_AUTHENTICATED/);
  assert.doesNotMatch(api,/Authorization|Bearer|BillingV2TokenProvider/);
+ assert.equal((api.match(/instanceFollowRedirects = false/g)||[]).length,2);
  const provider=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2CookieSessionProvider.kt');
  assert.match(provider,/CookieManager\.getInstance\(\)\.getCookie/);
  assert.match(provider,/singleOrNull/);
