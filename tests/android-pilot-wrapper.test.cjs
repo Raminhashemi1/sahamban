@@ -86,44 +86,45 @@ test('native subscription selector uses exact marketplace prices and manual-rene
 });
 
 
-test('native OTP client obtains session directly from Worker and stores HttpOnly cookie without JS exposure',()=>{
- const otp=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeOtpClient.kt');
- assert.match(otp,/fun requestCode\(/);
- assert.match(otp,/fun verifyCode\(/);
- assert.match(otp,/fun logout\(/);
- assert.match(otp,/https/);
- assert.match(otp,/setCookie\(workerBaseUrl, cookie\)/);
- assert.match(otp,/CookieManager\.getInstance\(\)/);
- assert.match(otp,/HttpOnly/);
- assert.match(otp,/SameSite=None/);
- assert.match(otp,/X-Sahmino-CSRF/);
- assert.match(otp,/Origin", pwaOrigin/);
- assert.doesNotMatch(otp,/Log\.|println\(|addJavascriptInterface|evaluateJavascript/);
- assert.match(otp,/singleOrNull/);
- assert.match(otp,/SESSION_COOKIE_REJECTED/);
+test('native username-password client obtains HttpOnly session directly from Worker without exposing credentials',()=>{
+ const auth=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeAuthClient.kt');
+ assert.match(auth,/fun login\\(username: String, password: String/);
+ assert.match(auth,/fun checkSession\\(callback: SessionCallback\\)/);
+ assert.match(auth,/fun logout\\(callback: LogoutCallback\\)/);
+ assert.match(auth,/api\\/v1\\/auth\\/login/);
+ assert.match(auth,/api\\/v1\\/auth\\/session/);
+ assert.match(auth,/api\\/v1\\/auth\\/logout/);
+ assert.match(auth,/setCookie\\(workerBaseUrl, cookie\\)/);
+ assert.match(auth,/CookieManager\\.getInstance\\(\\)/);
+ assert.match(auth,/HttpOnly/);
+ assert.match(auth,/SameSite=None/);
+ assert.match(auth,/X-Sahmino-CSRF/);
+ assert.match(auth,/Origin", pwaOrigin/);
+ assert.doesNotMatch(auth,/Log\\.|println\\(|addJavascriptInterface|evaluateJavascript|SharedPreferences/);
+ const login=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PasswordLoginView.kt');
+ assert.match(login,/نام کاربری یا شماره تلفن همراه/);
+ assert.match(login,/رمز عبور/);
+ assert.match(login,/authClient\\.login/);
+ assert.match(login,/passwordInput\\.text\\?\\.clear\\(\\)/);
+ assert.doesNotMatch(login,/پیامک|OTP|کد یک.?بارمصرف/);
 });
 
-
-test('Android host gates PWA startup behind native OTP and revalidates persisted sessions',()=>{
+test('Android host gates PWA and native subscription entry behind username-password session validation',()=>{
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
- const otp=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeOtpClient.kt');
- const login=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2OtpLoginView.kt');
- assert.match(activity,/new BillingV2NativeOtpClient/);
- assert.match(activity,/otpClient\.checkSession/);
- assert.match(activity,/showLogin\(\)/);
- assert.match(activity,/showWebApp\(\)/);
+ const auth=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeAuthClient.kt');
+ const login=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PasswordLoginView.kt');
+ assert.match(activity,/new BillingV2NativeAuthClient/);
+ assert.match(activity,/authClient\\.checkSession/);
+ assert.match(activity,/new BillingV2PasswordLoginView/);
+ assert.match(activity,/showLogin\\(\\)/);
+ assert.match(activity,/showWebApp\\(\\)/);
  assert.match(activity,/performLogout/);
- assert.match(activity,/TrustedNavigation\.isInternal/);
- assert.match(otp,/fun checkSession\(callback: SessionCallback\)/);
- assert.match(otp,/api\/v1\/auth\/session/);
- assert.match(otp,/api\/v1\/auth\/logout/);
- assert.match(login,/fun requestCode\(/);
- assert.match(login,/fun verifyCode\(/);
- assert.match(login,/asciiDigits/);
- assert.match(login,/AuthenticatedListener/);
- assert.doesNotMatch(activity,/addJavascriptInterface|evaluateJavascript/);
+ assert.match(auth,/fun checkSession\\(callback: SessionCallback\\)/);
+ assert.match(auth,/api\\/v1\\/auth\\/session/);
+ assert.match(login,/authClient\\.login/);
+ assert.doesNotMatch(activity,/OTP|otp|addJavascriptInterface|evaluateJavascript/);
+ assert.doesNotMatch(auth,/OTP|otp|addJavascriptInterface|evaluateJavascript/);
 });
-
 
 test('native subscription entry is reachable only after OTP and fails closed without owner SKU configuration',()=>{
  const activity=read('android-pilot/app/src/main/java/ir/sahamban/pilot/MainActivity.java');
