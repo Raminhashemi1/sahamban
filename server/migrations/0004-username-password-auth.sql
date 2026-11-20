@@ -67,6 +67,11 @@ CREATE INDEX IF NOT EXISTS idx_sahmino_shared_sessions_user
 CREATE INDEX IF NOT EXISTS idx_sahmino_shared_sessions_expiry
   ON sahmino_shared_sessions(expires_at);
 
+-- Old OTP-issued sessions must not survive the authentication cutover.
+UPDATE sahmino_shared_sessions
+SET revoked_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
+WHERE revoked_at IS NULL;
+
 CREATE TRIGGER IF NOT EXISTS sahamban_user_auth_fields_insert
 BEFORE INSERT ON sahamban_users
 WHEN
