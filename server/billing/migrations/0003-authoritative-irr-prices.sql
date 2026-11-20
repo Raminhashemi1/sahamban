@@ -9,3 +9,29 @@ UPDATE billing_orders SET amount_irr = CASE plan_id
  WHEN 'SAHAMBAN_PRO_180D' THEN 7650000
  WHEN 'SAHAMBAN_PRO_365D' THEN 14600000
  ELSE amount_irr END;
+
+CREATE TRIGGER IF NOT EXISTS billing_orders_plan_price_insert
+BEFORE INSERT ON billing_orders
+WHEN NOT (
+ (NEW.plan_id='SAHAMBAN_PRO_30D' AND NEW.amount_irr=1500000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_60D' AND NEW.amount_irr=2850000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_90D' AND NEW.amount_irr=4050000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_180D' AND NEW.amount_irr=7650000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_365D' AND NEW.amount_irr=14600000)
+)
+BEGIN
+ SELECT RAISE(ABORT,'BILLING_PLAN_PRICE_MISMATCH');
+END;
+
+CREATE TRIGGER IF NOT EXISTS billing_orders_plan_price_update
+BEFORE UPDATE OF plan_id,amount_irr ON billing_orders
+WHEN NOT (
+ (NEW.plan_id='SAHAMBAN_PRO_30D' AND NEW.amount_irr=1500000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_60D' AND NEW.amount_irr=2850000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_90D' AND NEW.amount_irr=4050000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_180D' AND NEW.amount_irr=7650000) OR
+ (NEW.plan_id='SAHAMBAN_PRO_365D' AND NEW.amount_irr=14600000)
+)
+BEGIN
+ SELECT RAISE(ABORT,'BILLING_PLAN_PRICE_MISMATCH');
+END;
