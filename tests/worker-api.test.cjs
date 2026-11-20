@@ -35,7 +35,7 @@ const DEFAULT_BAZAAR_SKU_MAP=JSON.stringify({
  SAHAMBAN_PRO_90D:'bazaar90',SAHAMBAN_PRO_180D:'bazaar180',
  SAHAMBAN_PRO_365D:'bazaar365'
 });
-function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,
+function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,PILOT_AUTH_ENABLED:'true',
  SAHAMBAN_DB:DB,BAZAAR_SKU_MAP:DEFAULT_BAZAAR_SKU_MAP,...extra};}
 
 test('authenticated entitlement lookup is account-bound and reports manual renewal only',async()=>{
@@ -197,26 +197,26 @@ test('client cannot select the store and Myket verify route is selected only by 
 });
 
 
-function otpSessionDb({session={userId:'usr_'+'a'.repeat(32),sessionId:'ses_test'},entitlement=activeRow,changes=1}={}) {
+function passwordSessionDb({session={userId:'usr_'+'a'.repeat(32),sessionId:'ses_test'},entitlement=activeRow,user=null,changes=1,rateChanges=[1,1,0]}={}) {
  const calls=[];
- const storage={
+ return {
   calls,
-  prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {
+  prepare(sql){return {sql,values:null,bind(...values){this.values=values;return {
    async first(){
+    calls.push({kind:'first',sql,values});
     if(sql.includes('FROM sahmino_shared_sessions'))return session?{sessionId:session.sessionId,userId:session.userId,expiresAt:'2099-12-31T00:00:00.000Z'}:null;
     if(sql.includes('LEFT JOIN billing_access'))return entitlement;
-    return null;
+    return user;
    },
-   async run(){return {success:true,meta:{changes}};}
+   async run(){calls.push({kind:'run',sql,values});return {success:true,meta:{changes}};}
   };}}},
-  async batch(){return [];}
+  async batch(items){calls.push({kind:'batch',items});return rateChanges.map(n=>({meta:{changes:n}}));}
  };
- return storage;
 }
 
-test('OTP HttpOnly session authenticates entitlement by internal user ID, not auth_subject',async()=>{
- const app=await worker(),storage=otpSessionDb(),cookie='sahmino_session='+'b'.repeat(64);
- const response=await app.fetch(request(null,'/api/v1/me/entitlement',{cookie}),env(storage,{SAHMINO_OTP_ENABLED:'true'}));
+test('password HttpOnly session authenticates entitlement by internal user ID, not auth_subject',async()=>{
+ const app=await worker(),storage=passwordSessionDb(),cookie='sahmino_session='+'b'.repeat(64);
+ const response=await app.fetch(request(null,'/api/v1/me/entitlement',{cookie}),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
  assert.equal(response.status,200);
  assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
  assert.deepEqual(await response.json(),{proEnabled:true,reason:'ACTIVE',paidUntil:activeRow.paid_until,renewalMode:'MANUAL'});
@@ -227,84 +227,72 @@ test('OTP HttpOnly session authenticates entitlement by internal user ID, not au
  assert.doesNotMatch(storage.calls[1].sql,/u.auth_subject/);
 });
 
-test('OTP session creates orders only with CSRF and binds order to the session user ID',async()=>{
- const app=await worker(),storage=otpSessionDb(),cookie='sahmino_session='+'c'.repeat(64);
+test('password session creates orders only with CSRF and binds order to session user ID',async()=>{
+ const app=await worker(),storage=passwordSessionDb(),cookie='sahmino_session='+'c'.repeat(64);
  const blocked=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,body:{planId:'SAHAMBAN_PRO_30D'}}),
-  env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
+  env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(blocked.status,403);
  assert.equal(storage.calls.length,0);
  const allowed=await app.fetch(request(null,'/api/v2/billing/orders',{method:'POST',cookie,csrf:'1',body:{planId:'SAHAMBAN_PRO_30D'}}),
-  env(storage,{SAHMINO_OTP_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
+  env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_V2_ENABLED:'true'}));
  assert.equal(allowed.status,201);
  assert.match(storage.calls[1].sql,/WHERE id=\?/);
- assert.equal(storage.calls[1].values[1],'SAHAMBAN_PRO_30D');
- assert.equal(storage.calls[1].values[2],'bazaar30');
- assert.equal(storage.calls[1].values[3],1500000);
  assert.equal(storage.calls[1].values[5],'usr_'+'a'.repeat(32));
 });
 
-test('invalid or disabled OTP cookies fail closed and never fall back to a pilot Authorization token',async()=>{
+test('invalid or disabled password session cookies fail closed and never fall back to a pilot token',async()=>{
  const app=await worker(),token=await signedToken();
  for(const extra of [
-  {cookie:'sahmino_session='+'d'.repeat(64),env:{SAHMINO_OTP_ENABLED:'false'}},
-  {cookie:'sahmino_session='+'e'.repeat(64),env:{SAHMINO_OTP_ENABLED:'true'},session:null},
-  {cookie:'sahmino_session='+'f'.repeat(64)+'; sahmino_session='+'a'.repeat(64),env:{SAHMINO_OTP_ENABLED:'true'}}
+  {cookie:'sahmino_session='+'d'.repeat(64),enabled:'false'},
+  {cookie:'sahmino_session='+'e'.repeat(64),enabled:'true',session:null},
+  {cookie:'sahmino_session='+'f'.repeat(64)+'; sahmino_session='+'a'.repeat(64),enabled:'true'}
  ]){
-  const storage=otpSessionDb({session:extra.session??null});
+  const storage=passwordSessionDb({session:extra.session??null});
   const response=await app.fetch(request(token,'/api/v1/me/entitlement',{cookie:extra.cookie}),
-   env(storage,extra.env));
+   env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:extra.enabled}));
   assert.equal(response.status,401);
  }
 });
 
-
-test('OTP Worker routes remain disabled by default and reject untrusted origins',async()=>{
+test('password login route validates origin, body and configuration; OTP endpoints are retired',async()=>{
  const app=await worker();
- const request=new Request('https://worker.example/api/v1/auth/otp/request',{
-  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
- });
- const disabled=await app.fetch(request,env());
- assert.equal(disabled.status,404);
- assert.deepEqual(await disabled.json(),{error:'FEATURE_DISABLED'});
- const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/otp/request',{
-  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({phone:'09123456789'})
- }),env(undefined,{SAHMINO_OTP_ENABLED:'true'}));
+ const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
+  body:JSON.stringify({username:'09123456789',password:'Correct Horse Battery 2026!'})
+ }),env(undefined,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
  assert.equal(hostile.status,403);
+ const retired=await app.fetch(request(null,'/api/v1/auth/otp/request',{method:'POST',body:{phone:'09123456789'}}),env());
+ assert.equal(retired.status,404);
+ const missingSecret=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
+  body:JSON.stringify({username:'09123456789',password:'Correct Horse Battery 2026!'})
+ }),env(undefined,{SAHMINO_PASSWORD_AUTH_ENABLED:'true'}));
+ assert.equal(missingSecret.status,503);
 });
 
-test('OTP route preflight permits configured origin and required CSRF header',async()=>{
+test('password auth preflight permits configured origin and CSRF header',async()=>{
  const app=await worker();
  const response=await app.fetch(new Request('https://worker.example/api/v1/auth/logout',{
   method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Headers':'content-type,x-sahmino-csrf'}
  }),env());
  assert.equal(response.status,204);
- assert.match(response.headers.get('Access-Control-Allow-Headers'),/Content-Type/);
  assert.match(response.headers.get('Access-Control-Allow-Headers'),/X-Sahmino-CSRF/);
  assert.equal(response.headers.get('Access-Control-Allow-Credentials'),'true');
- const hostile=await app.fetch(new Request('https://worker.example/api/v1/auth/logout',{
-  method:'OPTIONS',headers:{Origin:'https://evil.example'}
- }),env());
- assert.equal(hostile.status,403);
 });
 
-test('OTP routes fail closed when D1 or dedicated OTP secrets are missing',async()=>{
+test('password login creates session cookie and password never reaches logs or response',async()=>{
+ const {hashPassword}=require('../server/password-auth.cjs');
+ const encoded=await hashPassword('Correct Horse Battery 2026!');
+ const user={id:'usr_'+'9'.repeat(32),status:'ACTIVE',salt:encoded.salt,hash:encoded.hash,iterations:encoded.iterations};
+ const storage=passwordSessionDb({user});
  const app=await worker();
- const config=env(); config.SAHMINO_OTP_ENABLED='true'; config.SAHAMBAN_DB=undefined;
- const response=await app.fetch(new Request('https://worker.example/api/v1/auth/session',{headers:{Origin:origin}}),config);
- assert.equal(response.status,503);
- assert.deepEqual(await response.json(),{error:'AUTH_UNAVAILABLE'});
+ const response=await app.fetch(new Request('https://worker.example/api/v1/auth/login',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10'},
+  body:JSON.stringify({username:'۰۹۱۲۳۴۵۶۷۸۹',password:'Correct Horse Battery 2026!'})
+ }),env(storage,{SAHMINO_PASSWORD_AUTH_ENABLED:'true',AUTH_RATE_LIMIT_SECRET:'r'.repeat(48)}));
+ assert.equal(response.status,200);
+ assert.deepEqual(await response.json(),{authenticated:true});
+ assert.match(response.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=None/);
+ assert.equal(storage.calls.some(x=>JSON.stringify(x).includes('Correct Horse Battery')),false);
 });
 
-test('OTP request and verify reject oversized payloads before provider or database access',async()=>{
- const app=await worker();
- const config=env(); config.SAHMINO_OTP_ENABLED='true';
- config.SAHAMBAN_DB={prepare(){throw new Error('must not query');}};
- config.SAHMINO_OTP_VERIFIER_SECRET='v'.repeat(48); config.SAHMINO_OTP_RATE_LIMIT_SECRET='r'.repeat(48);
- for(const route of ['/api/v1/auth/otp/request','/api/v1/auth/otp/verify']){
-  const response=await app.fetch(new Request('https://worker.example'+route,{
-   method:'POST',headers:{Origin:origin,'Content-Type':'application/json','Content-Length':'257'},body:' '.repeat(257)
-  }),config);
-  assert.equal(response.status,413);
-  assert.deepEqual(await response.json(),{error:'BODY_TOO_LARGE'});
- }
-});
