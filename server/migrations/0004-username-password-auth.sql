@@ -12,6 +12,19 @@ ALTER TABLE sahamban_users ADD COLUMN password_iterations INTEGER;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sahamban_users_username
   ON sahamban_users(username_normalized) WHERE username_normalized IS NOT NULL;
 
+-- Preserve verified phone-to-account links from the former SMS identity schema.
+CREATE TABLE IF NOT EXISTS sahmino_phone_identities (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES sahamban_users(id),
+  phone_e164 TEXT NOT NULL UNIQUE CHECK(
+    length(phone_e164)=13 AND phone_e164 GLOB '+989[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+  ),
+  verified_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  revoked_at TEXT,
+  UNIQUE(id,user_id)
+);
+
 -- Existing phone identities can be used as usernames after canonicalization.
 -- Passwords are intentionally NULL and must be provisioned separately; no
 -- account is silently given a default or guessable password.
