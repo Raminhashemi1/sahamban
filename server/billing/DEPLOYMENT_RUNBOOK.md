@@ -18,7 +18,7 @@ Copy `server/wrangler.bazaar.toml.example` to `server/wrangler.bazaar.toml`, the
 
 From the repository root, set secrets:
 ```sh
-wrangler secret put AUTH_HMAC_SECRET --config server/wrangler.bazaar.toml
+wrangler secret put AUTH_RATE_LIMIT_SECRET --config server/wrangler.bazaar.toml
 wrangler secret put BAZAAR_CLIENT_ID --config server/wrangler.bazaar.toml
 wrangler secret put BAZAAR_CLIENT_SECRET --config server/wrangler.bazaar.toml
 wrangler secret put BAZAAR_REFRESH_TOKEN --config server/wrangler.bazaar.toml
@@ -31,11 +31,11 @@ Copy `server/wrangler.myket.toml.example` to `server/wrangler.myket.toml`, then 
 
 Set the Myket public key as a secret:
 ```sh
-wrangler secret put AUTH_HMAC_SECRET --config server/wrangler.myket.toml
+wrangler secret put AUTH_RATE_LIMIT_SECRET --config server/wrangler.myket.toml
 wrangler secret put MYKET_PUBLIC_KEY --config server/wrangler.myket.toml
 ```
 
-The current Worker authentication still uses the private-pilot HMAC contract. It is not the production commercial account session provider; do not use these templates to enable public checkout until the production identity adapter is implemented.
+The Worker uses native username/password authentication and a D1-backed HttpOnly session. Apply `migrations/0004-username-password-auth.sql`, provision real accounts with password hashes, and keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until the owner-controlled identity setup is complete.
 
 ## 4. Deploy with checkout disabled
 
@@ -50,7 +50,7 @@ Keep `BILLING_V2_ENABLED=false` in both configs. Verify health, CORS origin, acc
 ## 5. Public checkout release gate
 
 Do not set `BILLING_V2_ENABLED=true` until:
-- The production commercial session provider is integrated and tested.
+- Username/password login, secure session persistence, rate limits, and account provisioning are configured and tested.
 - The exact app package ID and PWA HTTPS origin are confirmed.
 - Both store developer panels contain all five products and the maps match exactly.
 - Myket refund/revocation reconciliation is implemented or an approved and tested alternative is accepted.
