@@ -90,7 +90,7 @@ test('native password auth client creates and persists an HttpOnly session witho
  assert.match(auth,/api\/v1\/auth\/login/);
  assert.match(auth,/fun logout\(/);
  assert.match(auth,/fun checkSession\(/);
- assert.match(auth,/setCookie\(workerBaseUrl, cookie\)/);
+ assert.match(auth,/setCookie\(workerBaseUrl, cookie\)/);\n assert.match(auth,/Normalizer\.Form\.NFKC/);\n assert.match(auth,/digits\.matches\(Regex\(\"\^00989/);
  assert.match(auth,/CookieManager\.getInstance\(\)/);
  assert.match(auth,/HttpOnly/);
  assert.match(auth,/SameSite=None/);
@@ -110,7 +110,7 @@ test('Android host gates PWA startup behind native username/password auth and re
  assert.match(activity,/authClient\.checkSession/);
  assert.match(activity,/showLogin\(\)/);
  assert.match(activity,/showWebApp\(\)/);
- assert.match(activity,/performLogout/);
+ assert.match(activity,/performLogout/);\n assert.match(activity,/setAcceptThirdPartyCookies\(webView, true\)/);
  assert.match(activity,/TrustedNavigation\.isInternal/);
  assert.match(auth,/api\/v1\/auth\/session/);
  assert.match(auth,/api\/v1\/auth\/logout/);
