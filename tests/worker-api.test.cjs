@@ -30,7 +30,13 @@ function request(token,path='/api/v1/me/entitlement',{method='GET',requestOrigin
   ...(body===undefined?{}:{'Content-Type':contentType})
  },...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});
 }
-function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHAMBAN_DB:DB,...extra};}
+const DEFAULT_BAZAAR_SKU_MAP=JSON.stringify({
+ SAHAMBAN_PRO_30D:'bazaar30',SAHAMBAN_PRO_60D:'bazaar60',
+ SAHAMBAN_PRO_90D:'bazaar90',SAHAMBAN_PRO_180D:'bazaar180',
+ SAHAMBAN_PRO_365D:'bazaar365'
+});
+function env(DB=db(),extra={}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,
+ SAHAMBAN_DB:DB,BAZAAR_SKU_MAP:DEFAULT_BAZAAR_SKU_MAP,...extra};}
 
 test('authenticated entitlement lookup is account-bound and reports manual renewal only',async()=>{
  const app=await worker(),storage=db();
