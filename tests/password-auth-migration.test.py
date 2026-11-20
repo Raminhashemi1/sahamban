@@ -40,4 +40,12 @@ for username,salt,digest,iterations in [
    VALUES(?,?,?,?,?,?,?)""",('usr_invalid_'+str(len(username)+len(str(iterations))), '2026-01-02T00:00:00.000Z','ACTIVE',username,salt,digest,iterations))
   raise AssertionError('invalid auth fields accepted: '+username)
  except sqlite3.IntegrityError: pass
+try:
+ db.execute("UPDATE sahamban_users SET password_hash=NULL WHERE id='usr_new'")
+ raise AssertionError('partial password update accepted')
+except sqlite3.IntegrityError: pass
+try:
+ db.execute("UPDATE sahamban_users SET password_salt='z'*32 WHERE id='usr_new'")
+ raise AssertionError('invalid salt update accepted')
+except sqlite3.IntegrityError: pass
 print('username/password migration tests passed')
