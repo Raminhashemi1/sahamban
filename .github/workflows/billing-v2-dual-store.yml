@@ -3,17 +3,21 @@ name: Sahmino dual-store Billing V2 validation
 on:
   push:
     branches:
+      - feature/sahmino-username-password-auth
       - integration/sahmino-billing-v2-dual-store
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
-      - 'server/d1-sms-otp-repository.cjs'
-      - 'server/d1-sahmino-sms-otp*.sql'
-      - 'server/sms-providers/**'
-      - 'server/wrangler.shahmiz.toml.example'
-      - 'server/SHAHMIZ-SMS-INTEGRATION.md'
+      - 'server/password-auth.cjs'
+      - 'server/migrations/**'
+      - 'server/wrangler.bazaar.toml.example'
+      - 'server/wrangler.myket.toml.example'
+      - 'server/wrangler.local.toml'
       - 'android-pilot/**'
+      - 'scripts/provision-sahmino-user.mjs'
       - 'tests/billing-v2-*'
+      - 'tests/password-auth*'
+      - 'tests/provision-sahmino-user.test.cjs'
       - 'tests/worker-api.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
@@ -22,16 +26,15 @@ on:
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
-      - 'server/d1-sms-otp-repository.cjs'
-      - 'server/d1-sahmino-sms-otp*.sql'
-      - 'tests/d1-sms-otp-session.test.cjs'
-      - 'tests/sahmino-sms-otp-*.test.cjs'
-      - 'tests/shahmiz-sms-provider-worker.test.cjs'
-      - 'server/sms-providers/**'
-      - 'server/wrangler.shahmiz.toml.example'
-      - 'server/SHAHMIZ-SMS-INTEGRATION.md'
-      - 'tests/d1-sahmino-sms-otp-*.test.py'
+      - 'server/password-auth.cjs'
+      - 'server/migrations/**'
+      - 'server/wrangler.bazaar.toml.example'
+      - 'server/wrangler.myket.toml.example'
+      - 'server/wrangler.local.toml'
+      - 'scripts/provision-sahmino-user.mjs'
+      - 'tests/password-auth*'
       - 'tests/billing-v2-*'
+      - 'tests/worker-api.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - 'android-pilot/**'
       - '.github/workflows/billing-v2-dual-store.yml'
@@ -48,29 +51,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Syntax-check Billing V2 services
+      - name: Syntax-check Worker and authentication services
         run: |
           node --check server/worker-api.mjs
+          node --check server/password-auth.cjs
+          node --check scripts/provision-sahmino-user.mjs
           node --check server/billing/bazaar.mjs
           node --check server/billing/myket.mjs
           node --check server/billing/myket-verifier.mjs
           node --check server/billing/orders.cjs
           node --check server/billing/settlement.cjs
+      - name: Bundle Cloudflare Worker without deploying
+        run: |
+          npm install --no-save wrangler@4.102.0
+          npx wrangler deploy --dry-run --config server/wrangler.local.toml --outdir /tmp/sahmino-worker-bundle
+          test -n "$(find /tmp/sahmino-worker-bundle -type f -name '*.js' -print -quit)"
+      - name: Apply complete schema and username/password migration to isolated local D1
+        run: |
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/d1-schema.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/billing/schema.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/migrations/0004-username-password-auth.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS auth_tables FROM sqlite_master WHERE type='table' AND name IN ('sahmino_shared_sessions','sahmino_auth_rate_limits');"
       - name: Validate Android host security and flavor workflow wiring
         run: node --test tests/android-pilot-wrapper.test.cjs
+      - name: Run password authentication and Worker session tests
+        run: node --test tests/password-auth.test.cjs tests/provision-sahmino-user.test.cjs tests/worker-api.test.cjs
+      - name: Validate username/password D1 migration
+        run: python tests/password-auth-migration.test.py
       - name: Run Bazaar and shared Billing V2 tests
-        run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/worker-api.test.cjs
+        run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs
       - name: Run Myket verifier, order and shared settlement tests
         run: node --test tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs
-      - name: Run OTP session repository, service and Shahmiz provider tests
-        run: node --test tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs tests/shahmiz-sms-provider-worker.test.cjs
-      - name: Syntax-check Shahmiz provider Worker
-        run: node --check server/sms-providers/shahmiz-worker.mjs
-      - name: Validate OTP D1 migrations
-        run: |
-          python tests/d1-sahmino-sms-otp-migration.test.py
-          python tests/d1-sahmino-sms-otp-runtime.test.py
-      - name: Validate fresh and existing D1 schema paths
+      - name: Validate fresh and existing D1 billing schema paths
         run: python tests/billing-v2-dual-store-schema.test.py
-
-# OTP session bridge, service contract, migration fixtures, and Shahmiz provider adapter tests are included in this workflow.

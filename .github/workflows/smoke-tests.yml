@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, integration/sahmino-app-billing-complete]
   workflow_dispatch:
 jobs:
   smoke:
@@ -23,9 +23,8 @@ jobs:
       - run: node --test tests/portfolio-insights-scroll-v115.test.cjs
       - run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/billing-v2-feature-gate.test.cjs tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs
       - run: node --test tests/worker-api.test.cjs
-      - run: node --test tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs tests/shahmiz-sms-provider-worker.test.cjs
-      - run: python tests/d1-sahmino-sms-otp-migration.test.py
-      - run: python tests/d1-sahmino-sms-otp-runtime.test.py
+      - run: node --test tests/password-auth.test.cjs tests/provision-sahmino-user.test.cjs tests/worker-api.test.cjs
+      - run: python tests/password-auth-migration.test.py
       - run: node --test tests/pilot-orders-api.test.cjs
       - run: node --test tests/mint-pilot-token.test.cjs
       - run: node --test tests/prospective-signal-ledger.test.cjs

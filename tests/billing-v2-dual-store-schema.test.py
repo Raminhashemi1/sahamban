@@ -68,9 +68,9 @@ def test_worker_templates_select_distinct_stores_and_share_one_database():
     assert bazaar["d1_databases"][0]["binding"] == myket["d1_databases"][0]["binding"] == "SAHAMBAN_DB"
     assert bazaar["d1_databases"][0]["database_id"] == myket["d1_databases"][0]["database_id"]
     assert bazaar["vars"]["BILLING_V2_ENABLED"] == myket["vars"]["BILLING_V2_ENABLED"] == "false"
-    assert bazaar["vars"]["SAHMINO_OTP_ENABLED"] == myket["vars"]["SAHMINO_OTP_ENABLED"] == "false"
-    assert bazaar["services"][0]["binding"] == myket["services"][0]["binding"] == "SAHMINO_SMS_PROVIDER"
-    assert bazaar["services"][0]["service"] == myket["services"][0]["service"] == "sahmino-shahmiz-sms"
+    assert bazaar["vars"]["SAHMINO_PASSWORD_AUTH_ENABLED"] == myket["vars"]["SAHMINO_PASSWORD_AUTH_ENABLED"] == "false"
+    assert bazaar["vars"]["PILOT_AUTH_ENABLED"] == myket["vars"]["PILOT_AUTH_ENABLED"] == "false"
+    assert "services" not in bazaar and "services" not in myket
 
 if __name__ == "__main__":
     test_fresh_schema_supports_both_stores_in_one_ledger()

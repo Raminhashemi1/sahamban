@@ -1,10 +1,12 @@
+import userIdValidation from './user-id.cjs';
+const {isValidUserId}=userIdValidation;
 import verifier from './settlement.cjs';
 const {settleMyket}=verifier;
 import {verifyMyketPurchase} from './myket-verifier.mjs';
 
 export async function verifyAndSettleMyket({db,env,subject,userId,body,now}) {
  if(env.BILLING_V2_ENABLED!=='true')return {status:404,body:{error:'BILLING_DISABLED'}};
- if(!(typeof subject==='string'&&subject.length>0)&&!(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))return {status:401,body:{error:'UNAUTHENTICATED'}};
+ if(!(typeof subject==='string'&&subject.length>0)&&!(isValidUserId(userId)))return {status:401,body:{error:'UNAUTHENTICATED'}};
  if(!body||Object.keys(body).sort().join(',')!=='orderId,originalJson,signature'||
    typeof body.orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.orderId)||
    typeof body.originalJson!=='string'||body.originalJson.length<2||body.originalJson.length>16384||

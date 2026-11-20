@@ -9,7 +9,7 @@ import java.util.concurrent.Executors
 
 /**
  * Supplies native-only request headers for the current authenticated account.
- * OTP implementations read the HttpOnly cookie from WebView's cookie jar.
+ * Username/password sessions are read from WebView's native cookie jar.
  * Credentials must never be exposed to WebView JavaScript. Callback exactly once.
  */
 fun interface BillingV2AuthProvider {
@@ -58,6 +58,7 @@ class BillingV2ApiClient(
                     require(endpoint.protocol == "https" && endpoint.host == base.host &&
                         endpoint.port == base.port)
                     val connection = endpoint.openConnection() as HttpsURLConnection
+                    connection.instanceFollowRedirects = false
                     try {
                         connection.requestMethod = "GET"
                         connection.connectTimeout = 10000
@@ -168,6 +169,7 @@ class BillingV2ApiClient(
                     require(endpoint.protocol == "https" && endpoint.host == base.host &&
                         endpoint.port == base.port)
                     val connection = endpoint.openConnection() as HttpsURLConnection
+                    connection.instanceFollowRedirects = false
                     try {
                         connection.requestMethod = "POST"
                         connection.connectTimeout = 10000
