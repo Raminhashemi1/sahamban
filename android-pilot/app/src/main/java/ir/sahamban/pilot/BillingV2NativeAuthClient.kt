@@ -86,6 +86,7 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
                 val result: Result<Boolean> = try {
                     val endpoint = URL(URL(workerBaseUrl), "/api/v1/auth/session")
                     val connection = endpoint.openConnection() as HttpsURLConnection
+                    connection.instanceFollowRedirects = false
                     try {
                         connection.requestMethod = "GET"
                         connection.connectTimeout = 10000
@@ -120,6 +121,7 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
             val result = try {
                 val endpoint = URL(URL(workerBaseUrl), "/api/v1/auth/logout")
                 val connection = endpoint.openConnection() as HttpsURLConnection
+                connection.instanceFollowRedirects = false
                 try {
                     connection.requestMethod = "POST"
                     connection.connectTimeout = 10000
@@ -155,6 +157,7 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
                 val endpoint = URL(URL(workerBaseUrl), path)
                 require(endpoint.protocol == "https")
                 val connection = endpoint.openConnection() as HttpsURLConnection
+                connection.instanceFollowRedirects = false
                 try {
                     connection.requestMethod = "POST"
                     connection.connectTimeout = 10000
