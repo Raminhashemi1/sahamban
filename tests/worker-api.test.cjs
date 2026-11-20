@@ -117,7 +117,7 @@ test('manual order creation accepts only a plan ID and derives order identity an
   method:'POST',body:{planId:'SAHAMBAN_PRO_90D'}}),env(storage,{BILLING_V2_ENABLED:'true'}));
  assert.equal(response.status,201);
  const body=await response.json();
- assert.deepEqual(body,{status:201,order:{id:body.order.id,planId:'SAHAMBAN_PRO_90D',days:90,priceRial:4050000}});
+ assert.deepEqual(body,{status:201,order:{id:body.order.id,planId:'SAHAMBAN_PRO_90D',days:90,priceRial:4050000,store:'BAZAAR'}});
  assert.match(body.order.id,/^ord_[a-f0-9]{32}$/);
  assert.deepEqual(storage.calls[0].values,[body.order.id,'SAHAMBAN_PRO_90D','bazaar90',4050000,storage.calls[0].values[4],subject]);
  assert.match(storage.calls[0].sql,/INSERT INTO billing_orders/);
