@@ -6,7 +6,7 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 | Stage | Work | Status |
 |---|---|---|
-| 1. App integration | Connect selector, native bridge, real commercial session provider, and host WebView | PARTIAL: Bazaar/Myket native coordinators, fresh-token API client, and standalone Persian five-plan Rial-priced subscription selector are coded and statically tested. MainActivity/PWA wiring remains blocked on the actual commercial session provider, exact SKU/package configuration, and host integration |
+| 1. App integration | Connect selector, native bridge, real commercial session provider, and host WebView | PARTIAL: MainActivity already exposes «اشتراک سهمینو» and calls BillingV2SubscriptionHost; the host composes the cookie-session provider, BillingV2ApiClient, store-specific coordinator, BillingV2PurchaseFlow, and five-plan selector when package/SKU configuration is valid. End-to-end checkout remains gated off; PR #185 OTP routes/PWA account integration, exact package/SKUs, deployed Worker/session config, and physical-device validation are outstanding |
 | 2. Backend consolidation | One Billing V2 Worker contract, one D1 entitlement ledger, Bazaar and Myket provider adapters | CODED ON THIS BRANCH; supplemental draft PR [#188](https://github.com/Raminhashemi1/sahamban/pull/188) opened against PR #187's head branch |
 | 3. Store configuration | Create exact five products in both developer panels and configure SKU maps/package/public keys/OAuth | TEMPLATES READY; owner must supply exact five product IDs per store, real package ID, public keys and Bazaar OAuth credentials |
 | 4. Deployment | Apply migration, deploy per-store Worker configurations, configure secrets and exact HTTPS origins | RUNBOOK READY; both templates are configured to use one shared D1 ID; no production resources or secrets changed |
@@ -31,12 +31,12 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 
 ## Important limitations
 
-1. Android now has separate Bazaar and Myket flavor coordinators and an HTTPS Billing V2 client. The host `MainActivity` remains a test-only WebView shell and intentionally does not instantiate the billing bridge: it has no production commercial login/session token provider. The temporary package ID is `ir.sahamban.pilot`, not confirmed as the published Sahmino package.
+1. Android has separate Bazaar and Myket flavor coordinators and an HTTPS Billing V2 client. `MainActivity` is a test-only WebView shell, but it does expose the subscription entry point and instantiates `BillingV2SubscriptionHost`; the host composes the native cookie-session provider and purchase flow when configuration is valid. The current build gate `SAHAMBAN_BILLING_ENABLED` is hard-coded false for debug and release. The temporary package ID is `ir.sahamban.pilot`, not confirmed as the published Sahmino package.
 2. Existing Worker authentication is short-lived private-pilot HMAC JWT, explicitly not the commercial account identity implementation.
 3. Myket signed receipt verification does not provide a live refund/revocation query. An authoritative Myket API contract or approved reconciliation process is still required before public launch.
 4. Myket package name, public key, and five product IDs must come from the real developer panel. Bazaar OAuth credentials and RSA key must also be configured as secrets.
 5. The schema migration is prepared and tested only against SQLite test databases; it has not been run against production D1.
-6. The native billing coordinators, injectable session-token API client, and reusable five-plan subscription selector are implemented in the pilot app. `MainActivity` still does not instantiate the billing flow: the actual production identity/session-token provider, production store SKU/package configuration, and host integration are not present. The temporary application ID is `ir.sahamban.pilot`, not the confirmed published Sahmino package.
+6. The native billing coordinators, cookie-session API client, reusable five-plan selector, and `MainActivity` → `BillingV2SubscriptionHost` → `BillingV2PurchaseFlow` composition are present in the pilot app. This is not yet a releasable end-to-end flow: OTP routes/PWA account UI are a separate unmerged PR #185 dependency; exact store SKU/package values and Worker deployment are not configured; `SAHAMBAN_BILLING_ENABLED` remains false; and physical-device account/session and purchase tests have not run. The temporary application ID is `ir.sahamban.pilot`, not the confirmed published Sahmino package.
 
 ## CI evidence
 
@@ -73,3 +73,16 @@ This is the six-stage completion tracker. "Implemented" means source code is com
 - Added repository static validation for all five plan IDs, five Rial prices, manual-renewal disclosure, restore and purchase flow calls.
 - Documented the exact host-side construction seam in `android-pilot/README.md`.
 - This UI is reusable and independently coded, but intentionally not attached to test-only `MainActivity` until the actual commercial account-session provider and store/package settings are available. No real purchase is enabled.
+
+
+## Corrected app-wiring checkpoint — 2026-11-20
+
+A fresh source inspection corrected stale statements in earlier checkpoints:
+
+- `MainActivity.showWebApp()` creates the «اشتراک سهمینو» entry point.
+- `MainActivity.showSubscription()` creates `BillingV2SubscriptionHost` and calls `createView()`.
+- When package/SKU configuration passes, the host composes `BillingV2CookieSessionProvider`, `BillingV2ApiClient`, the flavor-specific `BillingV2Coordinator`, `BillingV2PurchaseFlow`, and `BillingV2SubscriptionView`.
+- The current app wiring is therefore present in the pilot host; it is not accurate to say that MainActivity never instantiates the billing bridge.
+- It remains intentionally non-operational for purchases: `SAHAMBAN_BILLING_ENABLED=false` is hard-coded for both debug and release. The package is still `ir.sahamban.pilot`, store SKU environment values are not supplied, and Worker/OTP routes still depend on the unmerged PR #185 account implementation.
+- PR #189 backend/session bridge CI passed on commit `5834d9ca8f1ce44cb580ef3b071a3790684b6a1a` ([run 44607013630](https://github.com/Raminhashemi1/sahamban/actions/runs/44607013630)). This is backend validation, not proof of a current Android APK build or physical-device acceptance.
+- No production configuration, D1 migration, live checkout, release signing, or PR merge was performed.
