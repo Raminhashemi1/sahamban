@@ -8,7 +8,7 @@ def expectedPackage = System.getenv('SAHAMBAN_EXPECTED_PACKAGE_NAME') ?: appId
 def workerUrl = System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: ''
 def pwaOrigin = System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io'
 def skuKeys = ['SAHAMBAN_SKU_PRO_30D','SAHAMBAN_SKU_PRO_60D','SAHAMBAN_SKU_PRO_90D','SAHAMBAN_SKU_PRO_180D','SAHAMBAN_SKU_PRO_365D']
-def allSkusPresent = skuKeys.every { (System.getenv(it) ?: '').matches('^[A-Za-z0-9._-]{1,100} } &&
+def allSkusPresent = skuKeys.every { (System.getenv(it) ?: '').matches('[A-Za-z0-9._-]{1,100}') } &&
     skuKeys.collect { System.getenv(it) }.toSet().size() == 5
 def commonBillingReady = System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
     expectedPackage == appId &&
