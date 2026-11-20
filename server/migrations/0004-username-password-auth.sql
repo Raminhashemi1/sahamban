@@ -66,3 +66,35 @@ CREATE INDEX IF NOT EXISTS idx_sahmino_shared_sessions_user
   ON sahmino_shared_sessions(user_id,expires_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sahmino_shared_sessions_expiry
   ON sahmino_shared_sessions(expires_at);
+
+CREATE TRIGGER IF NOT EXISTS sahamban_user_auth_fields_insert
+BEFORE INSERT ON sahamban_users
+WHEN
+  (NEW.username_normalized IS NOT NULL AND
+    (length(NEW.username_normalized)<>13 OR NEW.username_normalized NOT GLOB '+989[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'))
+  OR
+  (NEW.password_salt IS NOT NULL AND
+    (length(NEW.password_salt)<>32 OR NEW.password_salt GLOB '*[^a-f0-9]*' OR
+     length(NEW.password_hash)<>64 OR NEW.password_hash GLOB '*[^a-f0-9]*' OR
+     NEW.password_iterations NOT BETWEEN 200000 AND 600000))
+  OR
+  ((NEW.password_hash IS NOT NULL OR NEW.password_iterations IS NOT NULL) AND NEW.password_salt IS NULL)
+BEGIN
+  SELECT RAISE(ABORT,'INVALID_AUTH_CREDENTIAL_FIELDS');
+END;
+
+CREATE TRIGGER IF NOT EXISTS sahamban_user_auth_fields_update
+BEFORE UPDATE OF username_normalized,password_salt,password_hash,password_iterations ON sahamban_users
+WHEN
+  (NEW.username_normalized IS NOT NULL AND
+    (length(NEW.username_normalized)<>13 OR NEW.username_normalized NOT GLOB '+989[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'))
+  OR
+  (NEW.password_salt IS NOT NULL AND
+    (length(NEW.password_salt)<>32 OR NEW.password_salt GLOB '*[^a-f0-9]*' OR
+     length(NEW.password_hash)<>64 OR NEW.password_hash GLOB '*[^a-f0-9]*' OR
+     NEW.password_iterations NOT BETWEEN 200000 AND 600000))
+  OR
+  ((NEW.password_hash IS NOT NULL OR NEW.password_iterations IS NOT NULL) AND NEW.password_salt IS NULL)
+BEGIN
+  SELECT RAISE(ABORT,'INVALID_AUTH_CREDENTIAL_FIELDS');
+END;
