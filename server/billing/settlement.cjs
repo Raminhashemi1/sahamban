@@ -20,11 +20,12 @@ async function settle(db,{orderId,subject,userId,planId,bazaarOrderId,tokenHash,
   return {ok:false,error:'INVALID_VERIFIED_PURCHASE'};
  try{
   const query=userId
-   ? "SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.id=? AND u.status='ACTIVE' LIMIT 1"
-   : "SELECT o.id,o.user_id,o.status,o.plan_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1";
+   ? "SELECT o.id,o.user_id,o.status,o.plan_id,o.amount_irr,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.id=? AND u.status='ACTIVE' LIMIT 1"
+   : "SELECT o.id,o.user_id,o.status,o.plan_id,o.amount_irr,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1";
   const order=await db.prepare(query).bind(orderId,userId||subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
   if(order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
+  if(order.amount_irr!==plan.priceRial)return {ok:false,error:'ORDER_PRICE_MISMATCH'};
   if(order.status==='PAID'){
    if(order.purchase_token_hash!==tokenHash)return {ok:false,error:'ORDER_ALREADY_SETTLED'};
    if(!validIso(order.expires_at))return {ok:false,error:'ACCESS_STATE_INVALID'};
@@ -63,11 +64,12 @@ async function settleMyket(db,{orderId,subject,userId,planId,storeOrderId,tokenH
   return {ok:false,error:'INVALID_VERIFIED_PURCHASE'};
  try {
   const query=userId
-   ? "SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.id=? AND u.status='ACTIVE' LIMIT 1"
-   : "SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1";
+   ? "SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.amount_irr,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.id=? AND u.status='ACTIVE' LIMIT 1"
+   : "SELECT o.id,o.user_id,o.status,o.plan_id,o.store,o.store_product_id,o.store_order_id,o.amount_irr,o.purchase_token_hash,o.created_at,a.expires_at FROM billing_orders o JOIN sahamban_users u ON u.id=o.user_id LEFT JOIN billing_access a ON a.user_id=o.user_id WHERE o.id=? AND u.auth_subject=? AND u.status='ACTIVE' LIMIT 1";
   const order=await db.prepare(query).bind(orderId,userId||subject).first();
   if(!order)return {ok:false,error:'ORDER_NOT_FOUND'};
   if(order.store!=='MYKET'||order.plan_id!==planId)return {ok:false,error:'ORDER_MISMATCH'};
+  if(order.amount_irr!==plan.priceRial)return {ok:false,error:'ORDER_PRICE_MISMATCH'};
   if(order.status==='PAID'){
    if(order.purchase_token_hash!==tokenHash||order.store_order_id!==storeOrderId)
     return {ok:false,error:'ORDER_ALREADY_SETTLED'};
