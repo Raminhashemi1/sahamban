@@ -4,7 +4,7 @@ import {verifyAndSettleMyket} from './billing/myket.mjs';
 import passwordAuthModule from './password-auth.cjs';
 const {createPasswordAuth}=passwordAuthModule;
 const {createOrder,createMyketOrder}=billingOrders;
-function otpJson(request,body,status,origin,extraHeaders={}){
+function authJson(request,body,status,origin,extraHeaders={}){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin',...extraHeaders};
  if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
  return new Response(JSON.stringify(body),{status,headers});
@@ -35,45 +35,45 @@ async function handlePasswordAuthRoutes(request,env,url,nowMs){
  const route=url.pathname,origin=request.headers.get('Origin');
  const routes=['/api/v1/auth/login','/api/v1/auth/session','/api/v1/auth/logout'];
  if(!routes.includes(route))return null;
- if(env?.SAHMINO_PASSWORD_AUTH_ENABLED!=='true')return otpJson(request,{error:'FEATURE_DISABLED'},404,null);
- if(!requestOriginAllowed(request,env))return otpJson(request,{error:'ORIGIN_NOT_ALLOWED'},403,null);
- if(url.search)return otpJson(request,{error:'QUERY_NOT_ALLOWED'},400,origin);
- if(!env?.SAHAMBAN_DB)return otpJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
+ if(env?.SAHMINO_PASSWORD_AUTH_ENABLED!=='true')return authJson(request,{error:'FEATURE_DISABLED'},404,null);
+ if(!requestOriginAllowed(request,env))return authJson(request,{error:'ORIGIN_NOT_ALLOWED'},403,null);
+ if(url.search)return authJson(request,{error:'QUERY_NOT_ALLOWED'},400,origin);
+ if(!env?.SAHAMBAN_DB)return authJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);
  const auth=createPasswordAuth(env.SAHAMBAN_DB);
  const cookie=parseCookie(request,'sahmino_session');
  const rawCookies=(request.headers.get('Cookie')||'').split(';').map(x=>x.trim());
  const hasSessionCookie=rawCookies.some(x=>x.startsWith('sahmino_session='));
  if(route==='/api/v1/auth/login'){
-  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
-  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return otpJson(request,{error:'JSON_REQUIRED'},415,origin);
+  if(request.method!=='POST')return authJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')return authJson(request,{error:'JSON_REQUIRED'},415,origin);
   const parsed=await readSmallJson(request,1024);
-  if(parsed.error)return otpJson(request,{error:parsed.error},parsed.status,origin);
+  if(parsed.error)return authJson(request,{error:parsed.error},parsed.status,origin);
   const body=parsed.body;
   if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==2||
      typeof body.username!=='string'||typeof body.password!=='string')
-   return otpJson(request,{error:'INVALID_REQUEST'},400,origin);
+   return authJson(request,{error:'INVALID_REQUEST'},400,origin);
   const result=await auth.login({username:body.username,password:body.password,
    ipKey:request.headers.get('CF-Connecting-IP'),rateLimitSecret:env?.AUTH_RATE_LIMIT_SECRET,now:nowMs});
   return result.ok
-   ?otpJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie})
-   :otpJson(request,{error:result.error},result.status,origin,
+   ?authJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie})
+   :authJson(request,{error:result.error},result.status,origin,
      result.status===429?{'Retry-After':'900'}:{});
  }
  if(route==='/api/v1/auth/session'){
-  if(request.method!=='GET')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
-  if(!cookie)return otpJson(request,{authenticated:false},401,origin,
+  if(request.method!=='GET')return authJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(!cookie)return authJson(request,{authenticated:false},401,origin,
    hasSessionCookie?{'Set-Cookie':auth.clearSessionCookie()}:{});
   const active=await auth.findActiveSession(cookie,nowMs);
-  return active?otpJson(request,{authenticated:true,expiresAt:active.expiresAt},200,origin)
-   :otpJson(request,{authenticated:false},401,origin,{'Set-Cookie':auth.clearSessionCookie()});
+  return active?authJson(request,{authenticated:true,expiresAt:active.expiresAt},200,origin)
+   :authJson(request,{authenticated:false},401,origin,{'Set-Cookie':auth.clearSessionCookie()});
  }
  if(route==='/api/v1/auth/logout'){
-  if(request.method!=='POST')return otpJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
-  if(request.headers.get('X-Sahmino-CSRF')!=='1')return otpJson(request,{error:'CSRF_REJECTED'},403,origin);
+  if(request.method!=='POST')return authJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('X-Sahmino-CSRF')!=='1')return authJson(request,{error:'CSRF_REJECTED'},403,origin);
   if(cookie)await auth.revokeSession(cookie,new Date(nowMs).toISOString());
-  return otpJson(request,{authenticated:false},200,origin,{'Set-Cookie':auth.clearSessionCookie()});
+  return authJson(request,{authenticated:false},200,origin,{'Set-Cookie':auth.clearSessionCookie()});
  }
- return otpJson(request,{error:'NOT_FOUND'},404,origin);
+ return authJson(request,{error:'NOT_FOUND'},404,origin);
 }
 
 /*
