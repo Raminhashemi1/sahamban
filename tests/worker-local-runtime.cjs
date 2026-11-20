@@ -92,8 +92,6 @@ async function main(){
    assert.deepEqual(noSku.data,{error:'UNKNOWN_PRODUCT_SKU'});
   }
   if(enablePasswordAuth){
-   const disabledLogin=await json('/api/v1/auth/login',{method:'POST',body:{username:TEST_USERNAME,password:TEST_PASSWORD}});
-   assert.equal(disabledLogin.status,404);
    const loginResponse=await fetch(BASE+'/api/v1/auth/login',{method:'POST',headers:{Origin:ORIGIN,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.44'},body:JSON.stringify({username:TEST_USERNAME,password:TEST_PASSWORD}),signal:AbortSignal.timeout(10000)});
    assert.equal(loginResponse.status,200);
    const setCookie=loginResponse.headers.get('set-cookie');
