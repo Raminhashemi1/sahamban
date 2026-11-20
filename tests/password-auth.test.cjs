@@ -81,7 +81,7 @@ test('session lookup hashes bearer and logout revokes only the digest',async()=>
  const found=await auth.findActiveSession(bearer,Date.parse('2026-11-20T12:00:00Z'));
  assert.equal(found.userId,'usr_'+'f'.repeat(32));
  assert.match(db.calls[0].values[0],/^[a-f0-9]{64}$/);
- assert.match(db.calls[0].sql,/u\\.username_normalized IS NOT NULL AND u\\.password_hash IS NOT NULL/);
+ assert.match(db.calls[0].sql,/u\.username_normalized IS NOT NULL AND u\.password_hash IS NOT NULL/);
  assert.notEqual(db.calls[0].values[0],bearer);
  assert.equal(await auth.revokeSession(bearer,'2026-11-20T12:01:00.000Z'),true);
  assert.match(db.calls[1].sql,/UPDATE sahmino_shared_sessions SET revoked_at/);
