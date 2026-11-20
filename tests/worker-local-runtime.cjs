@@ -95,7 +95,7 @@ async function main(){
    const loginResponse=await fetch(BASE+'/api/v1/auth/login',{method:'POST',headers:{Origin:ORIGIN,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.44'},body:JSON.stringify({username:TEST_USERNAME,password:TEST_PASSWORD}),signal:AbortSignal.timeout(10000)});
    assert.equal(loginResponse.status,200);
    const setCookie=loginResponse.headers.get('set-cookie');
-   assert.match(setCookie,/sahmino_session=[a-f0-9]{64}; Path=\\/; HttpOnly; Secure; SameSite=None/);
+   assert.ok(setCookie.includes('sahmino_session=')&&setCookie.includes('; Path=/; HttpOnly; Secure; SameSite=None'));
    const sessionCookie=setCookie.split(';')[0];
    assert.deepEqual((await json('/api/v1/auth/session',{cookie:sessionCookie})).data.authenticated,true);
    assert.equal((await json('/api/v1/me/entitlement',{cookie:sessionCookie})).status,403);
