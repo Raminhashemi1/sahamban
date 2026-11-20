@@ -24,13 +24,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/** Test-only host with native OTP sign-in and a credential-isolated HTTPS PWA WebView. */
+/** Test-only host with native username/password sign-in and a credential-isolated HTTPS PWA WebView. */
 public final class MainActivity extends ComponentActivity {
     private static final String START_URL = "https://raminhashemi1.github.io/sahamban/";
     private static final int PICK_FILE = 3040;
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
-    private BillingV2NativeOtpClient otpClient;
+    private BillingV2NativeAuthClient authClient;
     private BillingV2SubscriptionHost subscriptionHost;
     private boolean showingSubscription;
 
@@ -44,7 +44,7 @@ public final class MainActivity extends ComponentActivity {
             return;
         }
         try {
-            otpClient = new BillingV2NativeOtpClient(worker);
+            authClient = new BillingV2NativeAuthClient(worker);
         } catch (IllegalArgumentException error) {
             showMessage("پیکربندی آدرس سرویس ورود معتبر نیست.", false);
             return;
@@ -54,8 +54,8 @@ public final class MainActivity extends ComponentActivity {
 
     private void checkSession() {
         showMessage("در حال بررسی نشست امن حساب…", false);
-        otpClient.checkSession(result -> {
-            if (result instanceof BillingV2NativeOtpClient.Result.Success) {
+        authClient.checkSession(result -> {
+            if (result instanceof BillingV2NativeAuthClient.Result.Success) {
                 Boolean active = (Boolean) ((BillingV2NativeOtpClient.Result.Success<?>) result).getValue();
                 if (Boolean.TRUE.equals(active)) showWebApp();
                 else showLogin();
@@ -70,7 +70,7 @@ public final class MainActivity extends ComponentActivity {
             webView.destroy();
             webView = null;
         }
-        setContentView(new BillingV2OtpLoginView(this, otpClient, this::showWebApp));
+        setContentView(new BillingV2PasswordLoginView(this, authClient, this::showWebApp));
     }
 
     private void showWebApp() {
@@ -184,7 +184,7 @@ public final class MainActivity extends ComponentActivity {
 
     private void performLogout(Button button) {
         button.setEnabled(false);
-        otpClient.logout(result -> {
+        authClient.logout(result -> {
             if (result instanceof BillingV2NativeOtpClient.Result.Success) showLogin();
             else {
                 button.setEnabled(true);
@@ -243,7 +243,7 @@ public final class MainActivity extends ComponentActivity {
             fileCallback = null;
         }
         if (webView != null) webView.destroy();
-        if (otpClient != null) otpClient.close();
+        if (authClient != null) authClient.close();
         if (subscriptionHost != null) subscriptionHost.close();
         super.onDestroy();
     }
