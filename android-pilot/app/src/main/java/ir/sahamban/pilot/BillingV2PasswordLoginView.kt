@@ -10,6 +10,9 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 
+/** Java-friendly completion callback for the native sign-in screen. */
+fun interface AuthenticatedListener { fun onAuthenticated() }
+
 /** Minimal Persian native username/password screen. Credentials never enter the WebView. */
 class BillingV2PasswordLoginView(
     context: Context,
