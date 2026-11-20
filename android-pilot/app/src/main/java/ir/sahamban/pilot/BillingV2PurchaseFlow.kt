@@ -69,6 +69,17 @@ class BillingV2PurchaseFlow(
                         callback(Outcome.Failed(orderResult.code))
                     is BillingV2ApiClient.Result.Success -> {
                         val order = orderResult.value
+                        val expectedPriceRial = mapOf(
+                            "SAHAMBAN_PRO_30D" to 1500000L,
+                            "SAHAMBAN_PRO_60D" to 2850000L,
+                            "SAHAMBAN_PRO_90D" to 4050000L,
+                            "SAHAMBAN_PRO_180D" to 7650000L,
+                            "SAHAMBAN_PRO_365D" to 14600000L
+                        )[planId]
+                        if (order.priceRial != expectedPriceRial) {
+                            callback(Outcome.Failed("ORDER_PRICE_MISMATCH"))
+                            return@createOrder
+                        }
                         storeBilling.buy(sku, order.id) { purchaseResult ->
                             when (purchaseResult) {
                                 BillingV2Coordinator.PurchaseResult.Cancelled ->
