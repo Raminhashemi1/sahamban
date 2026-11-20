@@ -34,7 +34,7 @@ test('migrated legacy account IDs can create server-priced orders',async()=>{
  const result=await createOrder(db,{userId:'legacy-user-42',planId:'SAHAMBAN_PRO_30D',skuMap,
   now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'c'.repeat(32)});
  assert.equal(result.status,201);
- assert.match(sql,/WHERE id=\\? AND status='ACTIVE'/);
+ assert.ok(sql.includes("WHERE id=? AND status='ACTIVE'"));
  assert.equal(values[5],'legacy-user-42');
 });
 
