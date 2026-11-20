@@ -78,7 +78,7 @@ export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fe
  try{
   const query=userId
    ? "SELECT id,plan_id,status,store,store_product_id,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
-   : "SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
+   : "SELECT id,plan_id,status,store,store_product_id,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
   const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
