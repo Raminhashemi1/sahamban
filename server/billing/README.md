@@ -22,7 +22,7 @@ The Android host authenticates with username/password. The username is the
 canonical Iranian mobile number; no SMS, OTP, or phone verification is used.
 The Worker verifies PBKDF2-HMAC-SHA256 password hashes, rate-limits login
 attempts, and issues a hashed, revocable D1-backed session token in a Secure,
-HttpOnly cookie. The Worker derives the account ID from that session.
+HttpOnly cookie. The Worker derives the account ID from that session. Account IDs are opaque D1 primary keys; legacy IDs are preserved and never rewritten to fit a generated-ID pattern.
 
 Apply `server/migrations/0004-username-password-auth.sql` to the shared D1
 database. Existing verified phone identities are backfilled as usernames,
