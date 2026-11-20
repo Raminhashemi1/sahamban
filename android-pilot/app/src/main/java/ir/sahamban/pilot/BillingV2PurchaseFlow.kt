@@ -118,71 +118,70 @@ class BillingV2PurchaseFlow(
             callback(listOf(Outcome.Failed("BILLING_DISABLED")))
             return
         }
-        // Establish the store connection before reading inventory. Durable account
-        // entitlement is still fetched from the server, including already-consumed items.
+        // The account ledger is authoritative. Fetch it before asking the store
+        // for inventory because consumable purchases may already have been consumed.
         storeBilling.connect { connected ->
             if (!connected) {
                 callback(listOf(Outcome.Failed("STORE_CONNECTION_FAILED")))
                 return@connect
             }
-            storeBilling.loadPlanDetails(skuByPlan.values.toList()) { productDetails ->
-            if (productDetails == null) {
-                callback(listOf(Outcome.Failed("STORE_PRODUCTS_UNAVAILABLE")))
-                return@loadPlanDetails
-            }
             api.refreshEntitlement { entitlementResult ->
-            val durable = when (entitlementResult) {
-                is BillingV2ApiClient.Result.Success ->
-                    if (entitlementResult.value.proEnabled)
-                        Outcome.EntitlementRestored(entitlementResult.value)
-                    else null
-                is BillingV2ApiClient.Result.Failure ->
-                    Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
-            }
-            storeBilling.restore { purchases ->
-                if (purchases == null) {
-                    callback(listOfNotNull(durable) + Outcome.Failed("RESTORE_UNAVAILABLE"))
-                    return@restore
+                val durable = when (entitlementResult) {
+                    is BillingV2ApiClient.Result.Success ->
+                        if (entitlementResult.value.proEnabled)
+                            Outcome.EntitlementRestored(entitlementResult.value)
+                        else null
+                    is BillingV2ApiClient.Result.Failure ->
+                        Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
                 }
-                if (purchases.isEmpty()) {
-                    callback(listOfNotNull(durable))
-                    return@restore
-                }
-                val results = java.util.Collections.synchronizedList(mutableListOf<Outcome>())
-                var remaining = purchases.size
-                fun completeOne() {
-                    val done = synchronized(results) {
-                        remaining--
-                        remaining == 0
+                storeBilling.loadPlanDetails(skuByPlan.values.toList()) { productDetails ->
+                    if (productDetails == null) {
+                        callback(listOfNotNull(durable) + Outcome.Failed("STORE_PRODUCTS_UNAVAILABLE"))
+                        return@loadPlanDetails
                     }
-                    if (done) callback(listOfNotNull(durable) + results.toList())
-                }
-                purchases.forEach { evidence ->
-                    val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
-                    if (sku == null || evidence.packageName != expectedPackageName ||
-                        !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
-                        results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
-                        completeOne()
-                    } else {
-                        api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
-                            evidence.originalJson, evidence.dataSignature) { verification ->
-                            when (verification) {
-                                is BillingV2ApiClient.Result.Success ->
-                                    storeBilling.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
-                                        results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
-                                        completeOne()
+                    storeBilling.restore { purchases ->
+                        if (purchases == null) {
+                            callback(listOfNotNull(durable) + Outcome.Failed("RESTORE_UNAVAILABLE"))
+                            return@restore
+                        }
+                        if (purchases.isEmpty()) {
+                            callback(listOfNotNull(durable))
+                            return@restore
+                        }
+                        val results = java.util.Collections.synchronizedList(mutableListOf<Outcome>())
+                        var remaining = purchases.size
+                        fun completeOne() {
+                            val done = synchronized(results) {
+                                remaining--
+                                remaining == 0
+                            }
+                            if (done) callback(listOfNotNull(durable) + results.toList())
+                        }
+                        purchases.forEach { evidence ->
+                            val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
+                            if (sku == null || evidence.packageName != expectedPackageName ||
+                                !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
+                                results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
+                                completeOne()
+                            } else {
+                                api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
+                                    evidence.originalJson, evidence.dataSignature) { verification ->
+                                    when (verification) {
+                                        is BillingV2ApiClient.Result.Success ->
+                                            storeBilling.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                                results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
+                                                completeOne()
+                                            }
+                                        is BillingV2ApiClient.Result.Failure -> {
+                                            results.add(Outcome.Failed(verification.code))
+                                            completeOne()
+                                        }
                                     }
-                                is BillingV2ApiClient.Result.Failure -> {
-                                    results.add(Outcome.Failed(verification.code))
-                                    completeOne()
                                 }
                             }
                         }
                     }
                 }
             }
-            }
-            }
         }
-    }
-}
+    }}
