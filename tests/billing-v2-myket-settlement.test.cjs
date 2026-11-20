@@ -32,7 +32,7 @@ function fakeDb(order){
 }
 
 test('Myket settlement grants one fixed term in the shared access ledger',async()=>{
- const order={id:orderId,user_id:'u1',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',
+ const order={id:orderId,user_id:'u1',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',amount_irr:1500000,
   store:'MYKET',store_product_id:'myket_30d',store_order_id:null,purchase_token_hash:null,
   created_at:now,expires_at:null};
  const db=fakeDb(order);
@@ -47,7 +47,7 @@ test('Myket settlement grants one fixed term in the shared access ledger',async(
 
 test('Myket replay of the same settled order is idempotent',async()=>{
  const expiresAt='2026-01-31T00:00:00.000Z';
- const order={id:orderId,user_id:'u1',status:'PAID',plan_id:'SAHAMBAN_PRO_30D',
+ const order={id:orderId,user_id:'u1',status:'PAID',plan_id:'SAHAMBAN_PRO_30D',amount_irr:1500000,
   store:'MYKET',store_product_id:'myket_30d',store_order_id:'myket-order-789',
   purchase_token_hash:tokenHash,created_at:now,expires_at:expiresAt};
  const db=fakeDb(order);
@@ -61,7 +61,7 @@ test('Myket replay of the same settled order is idempotent',async()=>{
 });
 
 test('Myket settlement rejects wrong provider, account, order and token replay',async()=>{
- const order={id:orderId,user_id:'u1',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',
+ const order={id:orderId,user_id:'u1',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',amount_irr:1500000,
   store:'BAZAAR',store_product_id:null,store_order_id:null,purchase_token_hash:null,
   created_at:now,expires_at:null};
  const db=fakeDb(order);
