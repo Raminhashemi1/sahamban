@@ -3,7 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahamban.pilot'
+def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahamban.sahmino'
 def expectedPackage = System.getenv('SAHAMBAN_EXPECTED_PACKAGE_NAME') ?: appId
 def workerUrl = System.getenv('SAHAMBAN_WORKER_BASE_URL') ?: ''
 def pwaOrigin = System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io'
