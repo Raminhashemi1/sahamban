@@ -13,7 +13,7 @@ export async function verifyAndSettleMyket({db,env,subject,userId,body,now}) {
  try {
   const query=userId
    ? "SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,amount_irr,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
-   : "SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
+   : "SELECT id,plan_id,status,store,store_product_id,store_order_id,purchase_token_hash,amount_irr,created_at FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
   const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   const verified=await verifyMyketPurchase({
