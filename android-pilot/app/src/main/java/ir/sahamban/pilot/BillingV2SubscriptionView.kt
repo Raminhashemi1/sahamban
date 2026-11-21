@@ -28,16 +28,15 @@ class BillingV2SubscriptionView(
     private data class Plan(
         val id: String,
         val days: Int,
-        val title: String,
-        val priceRial: Long
+        val title: String
     )
 
     private val plans = listOf(
-        Plan("SAHAMBAN_PRO_30D", 30, "حرفه‌ای ۳۰ روزه", 1500000),
-        Plan("SAHAMBAN_PRO_60D", 60, "حرفه‌ای ۶۰ روزه", 2850000),
-        Plan("SAHAMBAN_PRO_90D", 90, "حرفه‌ای ۹۰ روزه", 4050000),
-        Plan("SAHAMBAN_PRO_180D", 180, "حرفه‌ای ۱۸۰ روزه", 7650000),
-        Plan("SAHAMBAN_PRO_365D", 365, "حرفه‌ای یک‌ساله", 14600000)
+        Plan("SAHAMBAN_PRO_30D", 30, "حرفه‌ای ۳۰ روزه"),
+        Plan("SAHAMBAN_PRO_60D", 60, "حرفه‌ای ۶۰ روزه"),
+        Plan("SAHAMBAN_PRO_90D", 90, "حرفه‌ای ۹۰ روزه"),
+        Plan("SAHAMBAN_PRO_180D", 180, "حرفه‌ای ۱۸۰ روزه"),
+        Plan("SAHAMBAN_PRO_365D", 365, "حرفه‌ای یک‌ساله")
     )
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -76,7 +75,7 @@ class BillingV2SubscriptionView(
                 }
             }
             card.addView(text(plan.title, 18f, true))
-            val price = text("${plan.priceRial} ریال · در حال دریافت قیمت فروشگاه…", 16f, true).apply {
+            val price = text("در حال دریافت قیمت از فروشگاه…", 16f, true).apply {
                 setPadding(0, dp(8), 0, dp(10))
             }
             planPriceViews[plan.id] = price
@@ -121,16 +120,22 @@ class BillingV2SubscriptionView(
             }
             statusView.text = "پرداخت در این نسخه غیرفعال است؛ هیچ خریدی انجام نمی‌شود."
         } else {
+            // Never let checkout start until every store-local price is available.
+            // The marketplace price is authoritative and avoids showing a second,
+            // potentially confusing hard-coded currency representation.
+            purchaseButtons.forEach { it.isEnabled = false }
             purchaseFlow.loadPlanDetails { prices ->
                 mainHandler.post {
-                    if (prices == null) {
+                    if (prices == null || prices.keys != plans.map { it.id }.toSet()) {
                         planPriceViews.values.forEach { it.text = "قیمت فروشگاه در دسترس نیست." }
                         purchaseButtons.forEach { it.isEnabled = false }
                         statusView.text = "قیمت پلن‌ها از فروشگاه دریافت نشد؛ امکان خرید موقتاً غیرفعال است."
                     } else {
                         prices.forEach { (planId, displayPrice) ->
-                            planPriceViews[planId]?.text = "${plans.first { it.id == planId }.priceRial} ریال · $displayPrice"
+                            planPriceViews[planId]?.text = "قیمت فروشگاه: $displayPrice"
                         }
+                        purchaseButtons.forEach { it.isEnabled = true }
+                        statusView.text = "قیمت هر پنج پلن از فروشگاه دریافت شد."
                     }
                 }
             }
@@ -176,7 +181,7 @@ class BillingV2SubscriptionView(
         when (outcome) {
             is BillingV2PurchaseFlow.Outcome.Active ->
                 if (outcome.consumptionPending)
-                    "پرداخت تأیید شد و اشتراک فعال است؛ تکمیل ثبت نهایی در فروشگاه در صف تلاش مجدد است. اعتبار تا ${outcome.access.expiresAt}"
+                    "پرداخت تأیید شد و اشتراک فعال است؛ برای تکمیل ثبت نهایی فروشگاه، «بازیابی اشتراک» را اجرا کنید. اعتبار تا ${outcome.access.expiresAt}"
                 else "پرداخت تأیید شد و اشتراک فعال است. اعتبار تا ${outcome.access.expiresAt}"
             is BillingV2PurchaseFlow.Outcome.EntitlementRestored ->
                 "اشتراک حساب شما فعال است. اعتبار تا ${outcome.entitlement.paidUntil.orEmpty()}"
