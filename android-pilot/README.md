@@ -47,9 +47,7 @@ for price, duration, account ownership, and entitlement expiry.
 
 ## Build configuration
 
-The temporary default application ID is `ir.sahamban.pilot`. It is not the
-final store identity. The final application ID must be explicitly supplied by
-the owner and must match the package registered in both marketplaces.
+The owner-approved application ID is `ir.sahamban.sahmino` for both Bazaar and Myket. Gradle uses this as the default; CI/release configuration must still set `SAHAMBAN_APPLICATION_ID` and `SAHAMBAN_EXPECTED_PACKAGE_NAME` to the exact same value and the marketplace listing must use that package.
 
 Gradle reads these environment variables:
 
