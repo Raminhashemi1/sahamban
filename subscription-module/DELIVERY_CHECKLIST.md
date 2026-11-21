@@ -122,3 +122,9 @@ Changes: 0e4225f (native UI), 0081adaa (regression test), cec4424 (push validati
 A final UI state audit found that completing the Restore action could re-enable purchase buttons while the marketplace catalog was still loading or had failed. The subscription view now tracks catalog readiness independently from its busy state: purchase buttons are enabled only when the full five-plan localized catalog has loaded and no operation is in progress. Restore completion and asynchronous catalog callbacks both use the same gate, so neither can bypass it. Added a source regression test for the state transition.
 
 Commits: `d4bdc85f` (UI fix), `3dd33bef` (regression). Exact-head validation: [Billing V2 workflow 44869910445](https://github.com/Raminhashemi1/sahamban/actions/runs/44869910445); [Bazaar/Myket debug build 44869910497](https://github.com/Raminhashemi1/sahamban/actions/runs/44869910497). These runs were queued when recorded; check final status before marking this change green.
+
+## Myket subject-session settlement audit (2026-11-21)
+
+A source audit found that the Myket order lookup used by the authenticated subject/pilot-session branch omitted `amount_irr`, while the OTP user-ID branch selected it. The shared settlement routine correctly enforces the canonical plan price, so the subject-authenticated branch would fail closed with `ORDER_PRICE_MISMATCH` for every valid Myket purchase. The query now selects `amount_irr` consistently, and a regression test asserts the subject-session query includes the trusted server amount.
+
+Fix: `f8465642`; regression: `c0f993ed` + import correction `f7667cfe`. Exact-head dual-store Billing V2 validation passed: [run 44870595363](https://github.com/Raminhashemi1/sahamban/actions/runs/44870595363). The two preceding failures were caused by the regression test's missing `readFile` import, not by production service code; the corrected exact-head run is green.
