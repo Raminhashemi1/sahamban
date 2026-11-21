@@ -65,3 +65,8 @@ test('Myket route service rejects an altered signed receipt before entitlement s
  assert.equal(result.body.error,'INVALID_PURCHASE_SIGNATURE');
  assert.equal(order.status,'CREATED');
 });
+
+test('subject-authenticated Myket settlement selects the canonical IRR amount for settlement', async () => {
+  const source = await readFile(new URL('../server/billing/myket.mjs', import.meta.url), 'utf8');
+  assert.match(source, /purchase_token_hash,amount_irr,created_at FROM billing_orders WHERE id=\? AND user_id IN \(SELECT id FROM sahamban_users WHERE auth_subject=\? AND status='ACTIVE'\)/);
+});
