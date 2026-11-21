@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - integration/sahmino-billing-v2-dual-store
+      - integration/sahmino-app-billing-complete
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
