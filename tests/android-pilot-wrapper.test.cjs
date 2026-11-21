@@ -21,7 +21,7 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
 
 test('debug APK uses the owner-approved permanent identity, no production signing and no checkout',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/def appId = System\.getenv\('SAHAMBAN_APPLICATION_ID'\) \?: 'ir\\.sahmino\\.app'/);
+ assert.ok(build.includes("def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahmino.app'"));
  assert.match(build,/applicationId appId/);
  assert.match(build,/expectedPackage == appId/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
