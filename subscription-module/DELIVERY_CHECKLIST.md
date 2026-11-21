@@ -116,3 +116,9 @@ The native subscription selector now starts with all purchase buttons disabled w
 The consumption-failure message was corrected: it no longer claims an automatic retry is queued. It directs the user to run **بازیابی اشتراک**, which re-verifies the still-owned store receipt and retries consumption after server confirmation.
 
 Changes: 0e4225f (native UI), 0081adaa (regression test), cec4424 (push validation workflow). CI run [44868952578](https://github.com/Raminhashemi1/sahamban/actions/runs/44868952578) passed all billing, D1 SQLite, Myket, OTP and schema tests. Android debug build run [44868890953](https://github.com/Raminhashemi1/sahamban/actions/runs/44868890953) was still running when this entry was prepared; do not treat the APK build as passed until its final result is green.
+
+## Checkout catalog gate regression (2026-11-21)
+
+A final UI state audit found that completing the Restore action could re-enable purchase buttons while the marketplace catalog was still loading or had failed. The subscription view now tracks catalog readiness independently from its busy state: purchase buttons are enabled only when the full five-plan localized catalog has loaded and no operation is in progress. Restore completion and asynchronous catalog callbacks both use the same gate, so neither can bypass it. Added a source regression test for the state transition.
+
+Commits: `d4bdc85f` (UI fix), `3dd33bef` (regression). Exact-head validation: [Billing V2 workflow 44869910445](https://github.com/Raminhashemi1/sahamban/actions/runs/44869910445); [Bazaar/Myket debug build 44869910497](https://github.com/Raminhashemi1/sahamban/actions/runs/44869910497). These runs were queued when recorded; check final status before marking this change green.
