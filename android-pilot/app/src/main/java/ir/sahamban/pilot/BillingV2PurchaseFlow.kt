@@ -1,15 +1,19 @@
 package ir.sahamban.pilot
 
 /**
- * Native orchestration for one manually renewed Bazaar time-plan purchase.
+ * Native orchestration for one manually renewed store-specific time-plan purchase.
  * The UI must call this only after explicit user intent; server settlement is authoritative.
  */
 class BillingV2PurchaseFlow(
     private val api: BillingV2ApiClient,
-    private val bazaar: BillingV2Coordinator,
+    private val storeBilling: BillingV2Coordinator,
     private val skuByPlan: Map<String, String>,
     private val expectedPackageName: String
 ) {
+    init {
+        require(skuByPlan.keys == setOf("SAHAMBAN_PRO_30D", "SAHAMBAN_PRO_60D", "SAHAMBAN_PRO_90D", "SAHAMBAN_PRO_180D", "SAHAMBAN_PRO_365D"))
+        require(skuByPlan.values.size == skuByPlan.values.toSet().size)
+    }
     sealed interface Outcome {
         data class Active(val access: BillingV2ApiClient.Access, val consumptionPending: Boolean = false) : Outcome
         data class EntitlementRestored(val entitlement: BillingV2ApiClient.Entitlement) : Outcome
@@ -17,17 +21,46 @@ class BillingV2PurchaseFlow(
         data class Failed(val reason: String) : Outcome
     }
 
+    /** Load the exact localized prices returned by the configured marketplace. */
+    fun loadPlanDetails(callback: (Map<String, String>?) -> Unit) {
+        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            callback(null)
+            return
+        }
+        storeBilling.connect { connected ->
+            if (!connected) {
+                callback(null)
+                return@connect
+            }
+            storeBilling.loadPlanDetails(skuByPlan.values.toList()) { details ->
+                if (details == null) {
+                    callback(null)
+                } else {
+                    val bySku = details.associateBy { it.sku }
+                    val prices = skuByPlan.mapNotNull { (planId, sku) ->
+                        bySku[sku]?.displayPrice?.takeIf { it.isNotBlank() }?.let { planId to it }
+                    }.toMap()
+                    callback(prices.takeIf { it.size == skuByPlan.size })
+                }
+            }
+        }
+    }
+
     fun purchase(planId: String, callback: (Outcome) -> Unit) {
+        if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+            callback(Outcome.Failed("BILLING_DISABLED"))
+            return
+        }
         val sku = skuByPlan[planId]
         if (sku == null || !sku.matches(Regex("^[A-Za-z0-9._-]{1,100}$"))) {
             callback(Outcome.Failed("PLAN_NOT_CONFIGURED"))
             return
         }
-        // Establish the Bazaar connection before creating an order; otherwise a
+        // Establish the store connection before creating an order; otherwise a
         // disconnected client leaves an avoidable orphan CREATED order on the server.
-        bazaar.connect { connected ->
+        storeBilling.connect { connected ->
             if (!connected) {
-                callback(Outcome.Failed("BAZAAR_CONNECTION_FAILED"))
+                callback(Outcome.Failed("STORE_CONNECTION_FAILED"))
                 return@connect
             }
             api.createOrder(planId) { orderResult ->
@@ -36,7 +69,18 @@ class BillingV2PurchaseFlow(
                         callback(Outcome.Failed(orderResult.code))
                     is BillingV2ApiClient.Result.Success -> {
                         val order = orderResult.value
-                        bazaar.buy(sku, order.id) { purchaseResult ->
+                        val expectedPriceRial = mapOf(
+                            "SAHAMBAN_PRO_30D" to 1500000L,
+                            "SAHAMBAN_PRO_60D" to 2850000L,
+                            "SAHAMBAN_PRO_90D" to 4050000L,
+                            "SAHAMBAN_PRO_180D" to 7650000L,
+                            "SAHAMBAN_PRO_365D" to 14600000L
+                        )[planId]
+                        if (order.priceRial != expectedPriceRial) {
+                            callback(Outcome.Failed("ORDER_PRICE_MISMATCH"))
+                            return@createOrder
+                        }
+                        storeBilling.buy(sku, order.id) { purchaseResult ->
                             when (purchaseResult) {
                                 BillingV2Coordinator.PurchaseResult.Cancelled ->
                                     callback(Outcome.Cancelled)
@@ -53,7 +97,7 @@ class BillingV2PurchaseFlow(
                                         evidence.originalJson, evidence.dataSignature) { verification ->
                                         when (verification) {
                                             is BillingV2ApiClient.Result.Success ->
-                                                bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                                storeBilling.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
                                                     callback(Outcome.Active(verification.value, consumptionPending = !consumed))
                                                 }
                                             is BillingV2ApiClient.Result.Failure ->
@@ -70,14 +114,9 @@ class BillingV2PurchaseFlow(
     }
 
     fun restore(callback: (List<Outcome>) -> Unit) {
-        // Establish the store connection before reading inventory. Durable account
-        // entitlement is still fetched from the server, including already-consumed items.
-        bazaar.connect { connected ->
-            if (!connected) {
-                callback(listOf(Outcome.Failed("BAZAAR_CONNECTION_FAILED")))
-                return@connect
-            }
-            api.refreshEntitlement { entitlementResult ->
+        // Account entitlement is independent of current marketplace availability
+        // and remains restorable when checkout is disabled or products are consumed.
+        api.refreshEntitlement { entitlementResult ->
             val durable = when (entitlementResult) {
                 is BillingV2ApiClient.Result.Success ->
                     if (entitlementResult.value.proEnabled)
@@ -86,48 +125,63 @@ class BillingV2PurchaseFlow(
                 is BillingV2ApiClient.Result.Failure ->
                     Outcome.Failed("ENTITLEMENT_UNAVAILABLE")
             }
-            bazaar.restore { purchases ->
-                if (purchases == null) {
-                    callback(listOfNotNull(durable) + Outcome.Failed("RESTORE_UNAVAILABLE"))
-                    return@restore
+            if (!BuildConfig.SAHAMBAN_BILLING_ENABLED) {
+                callback(listOfNotNull(durable))
+                return@refreshEntitlement
+            }
+            storeBilling.connect { connected ->
+                if (!connected) {
+                    callback(listOfNotNull(durable) + Outcome.Failed("STORE_CONNECTION_FAILED"))
+                    return@connect
                 }
-                if (purchases.isEmpty()) {
-                    callback(listOfNotNull(durable))
-                    return@restore
-                }
-                val results = java.util.Collections.synchronizedList(mutableListOf<Outcome>())
-                var remaining = purchases.size
-                fun completeOne() {
-                    val done = synchronized(results) {
-                        remaining--
-                        remaining == 0
+                storeBilling.loadPlanDetails(skuByPlan.values.toList()) { productDetails ->
+                    if (productDetails == null) {
+                        callback(listOfNotNull(durable) + Outcome.Failed("STORE_PRODUCTS_UNAVAILABLE"))
+                        return@loadPlanDetails
                     }
-                    if (done) callback(listOfNotNull(durable) + results.toList())
-                }
-                purchases.forEach { evidence ->
-                    val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
-                    if (sku == null || evidence.packageName != expectedPackageName ||
-                        !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
-                        results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
-                        completeOne()
-                    } else {
-                        api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
-                            evidence.originalJson, evidence.dataSignature) { verification ->
-                            when (verification) {
-                                is BillingV2ApiClient.Result.Success ->
-                                    bazaar.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
-                                        results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
-                                        completeOne()
+                    storeBilling.restore { purchases ->
+                        if (purchases == null) {
+                            callback(listOfNotNull(durable) + Outcome.Failed("RESTORE_UNAVAILABLE"))
+                            return@restore
+                        }
+                        if (purchases.isEmpty()) {
+                            callback(listOfNotNull(durable))
+                            return@restore
+                        }
+                        val results = java.util.Collections.synchronizedList(mutableListOf<Outcome>())
+                        var remaining = purchases.size
+                        fun completeOne() {
+                            val done = synchronized(results) {
+                                remaining--
+                                remaining == 0
+                            }
+                            if (done) callback(listOfNotNull(durable) + results.toList())
+                        }
+                        purchases.forEach { evidence ->
+                            val sku = skuByPlan.entries.firstOrNull { it.value == evidence.planSku }?.value
+                            if (sku == null || evidence.packageName != expectedPackageName ||
+                                !evidence.orderId.matches(Regex("^ord_[a-f0-9]{32}$"))) {
+                                results.add(Outcome.Failed("RESTORE_EVIDENCE_MISMATCH"))
+                                completeOne()
+                            } else {
+                                api.verifyPurchase(evidence.orderId, sku, evidence.purchaseToken,
+                                    evidence.originalJson, evidence.dataSignature) { verification ->
+                                    when (verification) {
+                                        is BillingV2ApiClient.Result.Success ->
+                                            storeBilling.consumeAfterSettlement(evidence.purchaseToken) { consumed ->
+                                                results.add(Outcome.Active(verification.value, consumptionPending = !consumed))
+                                                completeOne()
+                                            }
+                                        is BillingV2ApiClient.Result.Failure -> {
+                                            results.add(Outcome.Failed(verification.code))
+                                            completeOne()
+                                        }
                                     }
-                                is BillingV2ApiClient.Result.Failure -> {
-                                    results.add(Outcome.Failed(verification.code))
-                                    completeOne()
                                 }
                             }
                         }
                     }
                 }
-            }
             }
         }
     }

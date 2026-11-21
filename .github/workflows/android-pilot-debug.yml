@@ -34,17 +34,67 @@ jobs:
           fi
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11.1'
-      - name: Build TEST-ONLY debug APK without owner signing credentials
-        run: gradle -p android-pilot --no-daemon :app:assembleDebug
+          gradle-version: '8.13'
+      - name: Validate optional Worker endpoint configuration
+        shell: bash
+        env:
+          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
+          SAHAMBAN_BILLING_ENABLED: ${{ vars.SAHAMBAN_BILLING_ENABLED }}
+          SAHAMBAN_SKU_PRO_30D: ${{ vars.SAHAMBAN_SKU_PRO_30D }}
+          SAHAMBAN_SKU_PRO_60D: ${{ vars.SAHAMBAN_SKU_PRO_60D }}
+          SAHAMBAN_SKU_PRO_90D: ${{ vars.SAHAMBAN_SKU_PRO_90D }}
+          SAHAMBAN_SKU_PRO_180D: ${{ vars.SAHAMBAN_SKU_PRO_180D }}
+          SAHAMBAN_SKU_PRO_365D: ${{ vars.SAHAMBAN_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SAHAMBAN_WORKER_BASE_URL:-}" ]]; then
+            echo "::notice::Worker URL is not configured. Build is compile-only; the APK will show the safe configuration screen and cannot sign in or purchase."
+            exit 0
+          fi
+          python3 -c 'import os,sys,urllib.parse; u=urllib.parse.urlparse(os.environ["SAHAMBAN_WORKER_BASE_URL"]); sys.exit(0 if u.scheme=="https" and u.netloc and not u.path.rstrip("/") and not u.query and not u.fragment else 1)' || {
+            echo "::error::SAHAMBAN_WORKER_BASE_URL must be an HTTPS origin without path, query, or fragment."
+            exit 1
+          }
+      - name: Build TEST-ONLY Bazaar and Myket debug APKs without owner signing credentials
+        shell: bash
+        env:
+          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
+          SAHAMBAN_BILLING_ENABLED: ${{ vars.SAHAMBAN_BILLING_ENABLED }}
+          SAHAMBAN_SKU_PRO_30D: ${{ vars.SAHAMBAN_SKU_PRO_30D }}
+          SAHAMBAN_SKU_PRO_60D: ${{ vars.SAHAMBAN_SKU_PRO_60D }}
+          SAHAMBAN_SKU_PRO_90D: ${{ vars.SAHAMBAN_SKU_PRO_90D }}
+          SAHAMBAN_SKU_PRO_180D: ${{ vars.SAHAMBAN_SKU_PRO_180D }}
+          SAHAMBAN_SKU_PRO_365D: ${{ vars.SAHAMBAN_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle -p android-pilot --no-daemon :app:assembleBazaarDebug :app:assembleMyketDebug; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              echo "Gradle dependency resolution/build failed on attempt $attempt; retrying after a short delay."
+              sleep 20
+            fi
+          done
+          exit 1
       - name: Print reproducibility digest (never a private certificate)
-        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
+        run: sha256sum android-pilot/app/build/outputs/apk/*/debug/*.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: sahamban-android-pilot-debug-UNSIGNED-FOR-STORE
-          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          name: sahamban-android-pilot-dual-store-debug-COMPILE-ONLY-NOT-STORE-READY
+          path: android-pilot/app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
           retention-days: 7

@@ -1,0 +1,77 @@
+name: Sahmino dual-store Billing V2 validation
+
+on:
+  push:
+    branches:
+      - integration/sahmino-billing-v2-dual-store
+      - integration/sahmino-app-billing-complete
+    paths:
+      - 'server/billing/**'
+      - 'server/worker-api.mjs'
+      - 'server/d1-sms-otp-repository.cjs'
+      - 'server/d1-sahmino-sms-otp*.sql'
+      - 'server/sms-providers/**'
+      - 'server/wrangler.shahmiz.toml.example'
+      - 'server/SHAHMIZ-SMS-INTEGRATION.md'
+      - 'android-pilot/**'
+      - 'tests/billing-v2-*'
+      - 'tests/worker-api.test.cjs'
+      - 'tests/android-pilot-wrapper.test.cjs'
+      - '.github/workflows/android-pilot-debug.yml'
+      - '.github/workflows/billing-v2-dual-store.yml'
+  pull_request:
+    paths:
+      - 'server/billing/**'
+      - 'server/worker-api.mjs'
+      - 'server/d1-sms-otp-repository.cjs'
+      - 'server/d1-sahmino-sms-otp*.sql'
+      - 'tests/d1-sms-otp-session.test.cjs'
+      - 'tests/sahmino-sms-otp-*.test.cjs'
+      - 'tests/shahmiz-sms-provider-worker.test.cjs'
+      - 'server/sms-providers/**'
+      - 'server/wrangler.shahmiz.toml.example'
+      - 'server/SHAHMIZ-SMS-INTEGRATION.md'
+      - 'tests/d1-sahmino-sms-otp-*.test.py'
+      - 'tests/billing-v2-*'
+      - 'tests/android-pilot-wrapper.test.cjs'
+      - 'android-pilot/**'
+      - '.github/workflows/billing-v2-dual-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  billing-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax-check Billing V2 services
+        run: |
+          node --check server/worker-api.mjs
+          node --check server/billing/bazaar.mjs
+          node --check server/billing/myket.mjs
+          node --check server/billing/myket-verifier.mjs
+          node --check server/billing/orders.cjs
+          node --check server/billing/settlement.cjs
+      - name: Validate Android host security and flavor workflow wiring
+        run: node --test tests/android-pilot-wrapper.test.cjs
+      - name: Run Bazaar and shared Billing V2 tests
+        run: node --test tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/worker-api.test.cjs
+      - name: Run Myket verifier, order and shared settlement tests
+        run: node --test tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs
+      - name: Run OTP session repository, service and Shahmiz provider tests
+        run: node --test tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs tests/shahmiz-sms-provider-worker.test.cjs
+      - name: Syntax-check Shahmiz provider Worker
+        run: node --check server/sms-providers/shahmiz-worker.mjs
+      - name: Validate OTP D1 migrations
+        run: |
+          python tests/d1-sahmino-sms-otp-migration.test.py
+          python tests/d1-sahmino-sms-otp-runtime.test.py
+      - name: Validate fresh and existing D1 schema paths
+        run: python tests/billing-v2-dual-store-schema.test.py
+
+# OTP session bridge, service contract, migration fixtures, and Shahmiz provider adapter tests are included in this workflow.

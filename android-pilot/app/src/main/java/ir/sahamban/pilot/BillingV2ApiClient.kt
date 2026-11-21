@@ -7,9 +7,22 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import java.util.concurrent.Executors
 
+/**
+ * Supplies native-only request headers for the current authenticated account.
+ * OTP implementations read the HttpOnly cookie from WebView's cookie jar.
+ * Credentials must never be exposed to WebView JavaScript. Callback exactly once.
+ */
+fun interface BillingV2AuthProvider {
+    fun getHeaders(callback: (Map<String, String>?) -> Unit)
+}
+
 /** HTTPS-only adapter for authenticated Billing V2 Worker endpoints. */
-class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: String) {
-    data class Order(val id: String, val planId: String, val days: Int)
+class BillingV2ApiClient(
+    private val baseUrl: String,
+    private val authProvider: BillingV2AuthProvider,
+    private val storeName: String = BuildConfig.BILLING_STORE
+) {
+    data class Order(val id: String, val planId: String, val days: Int, val priceRial: Long, val store: String)
     data class Access(val planId: String, val expiresAt: String, val renewalMode: String)
     data class Entitlement(val proEnabled: Boolean, val paidUntil: String?, val renewalMode: String?)
 
@@ -24,42 +37,52 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
     init {
         val parsed = URL(baseUrl)
         require(parsed.protocol == "https" && parsed.userInfo == null &&
-            parsed.query == null && parsed.fragment == null && bearerToken.isNotBlank())
+            parsed.query == null && parsed.ref == null)
+        require(storeName == "BAZAAR" || storeName == "MYKET")
     }
 
-    /** Reload durable account entitlement; consumed Bazaar purchases are not restorable from store inventory. */
+    /**
+     * Reload durable account entitlement using a fresh token from the host app's
+     * authenticated session. No token is cached across requests.
+     */
     fun refreshEntitlement(callback: (Result<Entitlement>) -> Unit) {
-        executor.execute {
-            val result: Result<Entitlement> = try {
-                val base = URL(baseUrl)
-                val endpoint = URL(base, "/api/v1/me/entitlement")
-                require(endpoint.protocol == "https" && endpoint.host == base.host &&
-                    endpoint.port == base.port)
-                val connection = endpoint.openConnection() as HttpsURLConnection
-                try {
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 10000
-                    connection.readTimeout = 15000
-                    connection.setRequestProperty("Authorization", "Bearer $bearerToken")
-                    connection.setRequestProperty("Accept", "application/json")
-                    connection.setRequestProperty("Cache-Control", "no-store")
-                    val status = connection.responseCode
-                    val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-                    val json = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
-                    val body = JSONObject(json)
-                    if (status == 200 && body.optBoolean("proEnabled") &&
-                        body.optString("renewalMode") == "MANUAL") {
-                        val until = body.optString("paidUntil").takeIf { it.isNotBlank() }
-                        if (until != null) Result.Success(Entitlement(true, until, "MANUAL"))
-                        else Result.Failure(502, "INVALID_ENTITLEMENT_RESPONSE")
-                    } else if (status == 403) {
-                        Result.Success(Entitlement(false, body.optString("paidUntil").takeIf { it.isNotBlank() }, "MANUAL"))
-                    } else Result.Failure(status, body.optString("reason", "ENTITLEMENT_UNAVAILABLE"))
-                } finally { connection.disconnect() }
-            } catch (_: Exception) {
-                Result.Failure(0, "NETWORK_UNAVAILABLE")
+        withAuth { authHeaders ->
+            if (authHeaders == null) {
+                callback(Result.Failure(401, "NOT_AUTHENTICATED"))
+                return@withAuth
             }
-            main.post { callback(result) }
+            executor.execute {
+                val result: Result<Entitlement> = try {
+                    val base = URL(baseUrl)
+                    val endpoint = URL(base, "/api/v1/me/entitlement")
+                    require(endpoint.protocol == "https" && endpoint.host == base.host &&
+                        endpoint.port == base.port)
+                    val connection = endpoint.openConnection() as HttpsURLConnection
+                    try {
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 10000
+                        connection.readTimeout = 15000
+                        authHeaders.forEach { (name, value) -> connection.setRequestProperty(name, value) }
+                        connection.setRequestProperty("Accept", "application/json")
+                        connection.setRequestProperty("Cache-Control", "no-store")
+                        val status = connection.responseCode
+                        val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+                        val json = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
+                        val body = JSONObject(json)
+                        if (status == 200 && body.optBoolean("proEnabled") &&
+                            body.optString("renewalMode") == "MANUAL") {
+                            val until = body.optString("paidUntil").takeIf { it.isNotBlank() }
+                            if (until != null) Result.Success(Entitlement(true, until, "MANUAL"))
+                            else Result.Failure(502, "INVALID_ENTITLEMENT_RESPONSE")
+                        } else if (status == 403) {
+                            Result.Success(Entitlement(false, body.optString("paidUntil").takeIf { it.isNotBlank() }, "MANUAL"))
+                        } else Result.Failure(status, body.optString("reason", "ENTITLEMENT_UNAVAILABLE"))
+                    } finally { connection.disconnect() }
+                } catch (_: Exception) {
+                    Result.Failure(0, "NETWORK_UNAVAILABLE")
+                }
+                main.post { callback(result) }
+            }
         }
     }
 
@@ -72,9 +95,13 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
                     val order = json.optJSONObject("order")
                     val id = order?.optString("id").orEmpty()
                     val days = order?.optInt("days", 0) ?: 0
+                    val priceRial = order?.optLong("priceRial", -1L) ?: -1L
+                    val expectedPrice = mapOf("SAHAMBAN_PRO_30D" to 1500000L, "SAHAMBAN_PRO_60D" to 2850000L, "SAHAMBAN_PRO_90D" to 4050000L, "SAHAMBAN_PRO_180D" to 7650000L, "SAHAMBAN_PRO_365D" to 14600000L)[planId]
                     val returnedPlan = order?.optString("planId").orEmpty()
+                    val returnedStore = order?.optString("store")?.takeIf { it.isNotBlank() } ?: "BAZAAR"
                     if (id.matches(Regex("^ord_[a-f0-9]{32}$")) && days > 0 &&
-                        returnedPlan == planId) Result.Success(Order(id, returnedPlan, days))
+                        returnedPlan == planId && returnedStore == storeName && priceRial == expectedPrice)
+                        Result.Success(Order(id, returnedPlan, days, priceRial, returnedStore))
                     else Result.Failure(502, "INVALID_ORDER_RESPONSE")
                 } else Result.Failure(status, json.optString("error", "ORDER_FAILED"))
             }, callback)
@@ -87,9 +114,14 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
         require(sku.matches(Regex("^[A-Za-z0-9._-]{1,100}$")))
         require(purchaseToken.length in 8..4096 && originalJson.length in 1..8192 &&
             dataSignature.length in 1..4096)
-        val body = JSONObject().put("orderId", orderId).put("sku", sku)
-            .put("token", purchaseToken).put("originalJson", originalJson)
-            .put("dataSignature", dataSignature)
+        val body = if (storeName == "MYKET") {
+            JSONObject().put("orderId", orderId)
+                .put("originalJson", originalJson).put("signature", dataSignature)
+        } else {
+            JSONObject().put("orderId", orderId).put("sku", sku)
+                .put("token", purchaseToken).put("originalJson", originalJson)
+                .put("dataSignature", dataSignature)
+        }
         request("/api/v2/billing/verify", body, { status, json ->
             if (status == 200 && json.optString("status") == "ACTIVE") {
                 val plan = json.optString("planId")
@@ -101,38 +133,61 @@ class BillingV2ApiClient(private val baseUrl: String, private val bearerToken: S
         }, callback)
     }
 
+    /** Resolve fresh native session headers for every request; never cache credentials. */
+    private fun withAuth(callback: (Map<String, String>?) -> Unit) {
+        try {
+            authProvider.getHeaders { candidate ->
+                val safe = candidate?.takeIf { headers ->
+                    headers["Cookie"]?.matches(Regex("^sahmino_session=[a-f0-9]{64}$")) == true &&
+                        headers["Origin"] == BuildConfig.SAHAMBAN_PWA_ORIGIN &&
+                        headers["X-Sahmino-CSRF"] == "1" &&
+                        headers.keys.all { it in setOf("Cookie", "Origin", "X-Sahmino-CSRF") }
+                }
+                main.post { callback(safe) }
+            }
+        } catch (_: Exception) {
+            main.post { callback(null) }
+        }
+    }
+
     private fun <T> request(
         path: String,
         body: JSONObject,
         map: (Int, JSONObject) -> Result<T>,
         callback: (Result<T>) -> Unit
     ) {
-        executor.execute {
-            val result: Result<T> = try {
-                val base = URL(baseUrl)
-                val endpoint = URL(base, path)
-                require(endpoint.protocol == "https" && endpoint.host == base.host &&
-                    endpoint.port == base.port)
-                val connection = endpoint.openConnection() as HttpsURLConnection
-                try {
-                    connection.requestMethod = "POST"
-                    connection.connectTimeout = 10000
-                    connection.readTimeout = 15000
-                    connection.doOutput = true
-                    connection.setRequestProperty("Authorization", "Bearer $bearerToken")
-                    connection.setRequestProperty("Content-Type", "application/json")
-                    connection.setRequestProperty("Accept", "application/json")
-                    connection.setRequestProperty("Cache-Control", "no-store")
-                    connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-                    val status = connection.responseCode
-                    val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-                    val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
-                    map(status, JSONObject(text))
-                } finally { connection.disconnect() }
-            } catch (_: Exception) {
-                Result.Failure(0, "NETWORK_UNAVAILABLE")
+        withAuth { authHeaders ->
+            if (authHeaders == null) {
+                callback(Result.Failure(401, "NOT_AUTHENTICATED"))
+                return@withAuth
             }
-            main.post { callback(result) }
+            executor.execute {
+                val result: Result<T> = try {
+                    val base = URL(baseUrl)
+                    val endpoint = URL(base, path)
+                    require(endpoint.protocol == "https" && endpoint.host == base.host &&
+                        endpoint.port == base.port)
+                    val connection = endpoint.openConnection() as HttpsURLConnection
+                    try {
+                        connection.requestMethod = "POST"
+                        connection.connectTimeout = 10000
+                        connection.readTimeout = 15000
+                        connection.doOutput = true
+                        authHeaders.forEach { (name, value) -> connection.setRequestProperty(name, value) }
+                        connection.setRequestProperty("Content-Type", "application/json")
+                        connection.setRequestProperty("Accept", "application/json")
+                        connection.setRequestProperty("Cache-Control", "no-store")
+                        connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                        val status = connection.responseCode
+                        val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+                        val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
+                        map(status, JSONObject(text))
+                    } finally { connection.disconnect() }
+                } catch (_: Exception) {
+                    Result.Failure(0, "NETWORK_UNAVAILABLE")
+                }
+                main.post { callback(result) }
+            }
         }
     }
 

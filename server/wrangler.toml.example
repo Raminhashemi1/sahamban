@@ -8,6 +8,11 @@ workers_dev = true
 
 [vars]
 PWA_ORIGIN = "https://raminhashemi1.github.io"
+# Set to BAZAAR for the Bazaar deployment or MYKET for the Myket deployment.
+# Store selection is server-side; the client cannot choose the provider.
+BILLING_STORE = "BAZAAR"
+# For the Myket deployment also set MYKET_PACKAGE_NAME and MYKET_SKU_MAP.
+# Keep MYKET_PUBLIC_KEY in a Worker secret, never in this file.
 
 [[d1_databases]]
 binding = "SAHAMBAN_DB"
