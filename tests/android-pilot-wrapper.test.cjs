@@ -30,7 +30,7 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(build,/myketImplementation.*ir\.myket:billing:2\.2/);
  assert.match(build,/System\.getenv\('SAHAMBAN_BILLING_ENABLED'\) == 'true'/);
  assert.match(build,/allSkusPresent/);
- assert.match(build,/appId != 'ir\\.sahamban\\.pilot'|appId != 'ir\\.sahmino\\.app'/);
+ assert.ok(build.includes("appId != 'ir.sahamban.pilot'"));
  assert.match(build,/workerUrl\.startsWith\('https:\/\/'\)/);
  const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
  assert.match(flow,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
