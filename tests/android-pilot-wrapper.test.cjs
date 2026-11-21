@@ -239,3 +239,15 @@ test('subscription UI disables checkout until all five authoritative store price
   'UI must not display stale hard-coded prices beside marketplace-localized prices');
  assert.match(ui,/برای تکمیل ثبت نهایی فروشگاه، «بازیابی اشتراک» را اجرا کنید/);
 });
+
+test('restore and busy-state transitions cannot bypass the complete marketplace catalog gate',()=>{
+ const ui=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2SubscriptionView.kt');
+ assert.match(ui,/private var catalogReady = false/);
+ assert.match(ui,/catalogReady = true/);
+ assert.match(ui,/catalogReady = false/);
+ assert.match(ui,/purchaseButtons\.forEach \{ it\.isEnabled = !busy && catalogReady \}/);
+ assert.match(ui,/setBusy\(value: Boolean, message: String\)[\s\S]*?updateActionButtons\(\)/);
+ assert.match(ui,/if \(prices == null \|\| prices\.keys != plans\.map \{ it\.id \}\.toSet\(\)\)[\s\S]*?updateActionButtons\(\)/);
+ assert.doesNotMatch(ui,/purchaseButtons\.forEach \{ it\.isEnabled = true \}/,
+  'no asynchronous callback may enable checkout without consulting catalog readiness and busy state');
+});
