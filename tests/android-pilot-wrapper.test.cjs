@@ -227,12 +227,13 @@ test('subscription UI disables checkout until all five authoritative store price
  const enabled=ui.indexOf('} else {',ui.indexOf('if (!BuildConfig.SAHAMBAN_BILLING_ENABLED)'));
  const load=ui.indexOf('purchaseFlow.loadPlanDetails',enabled);
  const failed=ui.indexOf('if (prices == null || prices.keys !=',load);
- const success=ui.indexOf('purchaseButtons.forEach { it.isEnabled = true }',failed);
+ const success=ui.indexOf('catalogReady = true',failed);
  assert.ok(enabled>=0 && load>enabled);
  assert.ok(ui.indexOf('purchaseButtons.forEach { it.isEnabled = false }',enabled)<load,
   'purchase buttons must remain disabled while marketplace prices are loading');
- assert.ok(failed>load && success>failed,
-  'only a complete five-plan price response may enable checkout');
+ assert.ok(failed>load && success>failed &&
+  ui.indexOf('updateActionButtons()',success)>success,
+  'only a complete five-plan price response may enable checkout through the shared state gate');
  assert.match(ui,/prices\.keys != plans\.map \{ it\.id \}\.toSet\(\)/);
  assert.match(ui,/قیمت فروشگاه: \$displayPrice/);
  assert.doesNotMatch(ui,/1_500_000|2_850_000|4_050_000|7_650_000|14_600_000|1500000|2850000|4050000|7650000|14600000/,
