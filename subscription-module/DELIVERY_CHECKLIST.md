@@ -108,3 +108,11 @@ Added a further native restore contract regression in `tests/android-pilot-wrapp
 - Keep the durable entitlement result alongside per-receipt restore results.
 
 Regression commit: `a038fc4b3eaf0cebeb5c0b97baf3534a1cf23e66`. Exact-head CI run: [44806694108](https://github.com/Raminhashemi1/sahamban/actions/runs/44806694108) (queued when this note was written; check its final result before treating the new test as passed). This remains source-contract coverage, not physical-device restore acceptance.
+
+## Marketplace price-display safety (2026-11-21)
+
+The native subscription selector now starts with all purchase buttons disabled while it requests the five exact localized product prices from the selected marketplace. Checkout is enabled only when all five plan IDs have valid returned prices; partial or unavailable catalog responses leave every purchase button disabled. The UI now displays the marketplace-localized price only, avoiding a potentially confusing second hard-coded currency representation. The server continues to enforce the canonical IRR price independently during order creation and settlement.
+
+The consumption-failure message was corrected: it no longer claims an automatic retry is queued. It directs the user to run **بازیابی اشتراک**, which re-verifies the still-owned store receipt and retries consumption after server confirmation.
+
+Changes: 0e4225f (native UI), 0081adaa (regression test), cec4424 (push validation workflow). CI run [44868952578](https://github.com/Raminhashemi1/sahamban/actions/runs/44868952578) passed all billing, D1 SQLite, Myket, OTP and schema tests. Android debug build run [44868890953](https://github.com/Raminhashemi1/sahamban/actions/runs/44868890953) was still running when this entry was prepared; do not treat the APK build as passed until its final result is green.
