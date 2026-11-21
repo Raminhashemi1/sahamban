@@ -128,3 +128,29 @@ Commits: `d4bdc85f` (UI fix), `3dd33bef` (regression). Exact-head validation: [B
 A source audit found that the Myket order lookup used by the authenticated subject/pilot-session branch omitted `amount_irr`, while the OTP user-ID branch selected it. The shared settlement routine correctly enforces the canonical plan price, so the subject-authenticated branch would fail closed with `ORDER_PRICE_MISMATCH` for every valid Myket purchase. The query now selects `amount_irr` consistently, and a regression test asserts the subject-session query includes the trusted server amount.
 
 Fix: `f8465642`; regression: `c0f993ed` + import correction `f7667cfe`. Exact-head dual-store Billing V2 validation passed: [run 44870595363](https://github.com/Raminhashemi1/sahamban/actions/runs/44870595363). The two preceding failures were caused by the regression test's missing `readFile` import, not by production service code; the corrected exact-head run is green.
+
+## Final closure boundary (2026-11-21)
+
+This section is the single authoritative closeout boundary for PR #191. It replaces rolling audits and ad-hoc follow-up lists. Do not add new scope or reopen completed source work unless a reproducible failing test, security defect, or owner-approved requirement is found.
+
+### Completed and evidenced in this branch
+- Native Android subscription host and five-plan selector are wired to the authenticated Worker API.
+- Bazaar and Myket have separate flavor-specific billing clients and server-side receipt verification paths.
+- Both stores use the shared D1 billing ledger and canonical server-owned plan/price catalog.
+- Purchase consumption is gated on successful server settlement; restore and catalog readiness have regression coverage.
+- OTP/session routes, CSRF checks, origin checks, and Shahmiz provider adapter have automated source tests.
+- Myket subject-session settlement now loads the canonical `amount_irr` field; regression is covered.
+- Exact-head dual-store validation passed at `d828ec1d7b6114563072ce6ad5a550b66dd8c8cb`: [run 44870640996](https://github.com/Raminhashemi1/sahamban/actions/runs/44870640996).
+
+### Remaining owner-controlled release gates (finite; not autonomous coding tasks)
+1. Confirm final Android application ID.
+2. Create the five real consumable product IDs in Bazaar and Myket; provide their exact mappings and confirm store-side prices.
+3. Provide/authorize production Cloudflare D1, Worker, PWA origin, and secure secrets. Owner applies/approves the documented migrations and deployment; keep feature flags off until acceptance.
+4. Choose and configure the production identity/SMS session arrangement. The current runbook explicitly says the private-pilot HMAC contract is not the production commercial account session provider.
+5. Supply the supported Myket refund/revocation API or contract and approve its reconciliation behavior. No undocumented endpoint may be guessed.
+6. Run the physical acceptance matrix on real Bazaar and Myket accounts/devices, including real purchase, restore, consume, refund, and interruption scenarios.
+7. Supply the owner-controlled release signing key/environment and approve store submission.
+8. Review and merge draft PR #191 after the above acceptance gates; then release.
+
+### Stop rule
+Until one of the eight owner-controlled gates above is unblocked, no additional speculative code audits, feature additions, or repeated test-only changes are in scope. When the owner supplies a gate's missing input, perform only the corresponding documented integration/acceptance step and update this checklist. Completion means all eight gates have evidence, not merely green simulated CI.
