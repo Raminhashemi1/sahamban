@@ -17,7 +17,7 @@ def commonBillingReady = System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
     workerUrl.startsWith('https://') && allSkusPresent
 
 android {
-    namespace 'ir.sahmino.app'
+    namespace 'ir.sahamban.pilot'
     compileSdk 36
 
     defaultConfig {
