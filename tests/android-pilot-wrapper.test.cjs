@@ -221,3 +221,21 @@ test('restore recovers durable account access first and verifies pending store r
  assert.match(myket,/billing\.queryInventoryAsync\(\s*false,\s*skus/);
  assert.match(myket,/inventory\.getPurchase\(it\)\?\.toEvidence\(\)/);
 });
+
+test('subscription UI disables checkout until all five authoritative store prices load and shows no conflicting hard-coded prices',()=>{
+ const ui=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2SubscriptionView.kt');
+ const enabled=ui.indexOf('} else {',ui.indexOf('if (!BuildConfig.SAHAMBAN_BILLING_ENABLED)'));
+ const load=ui.indexOf('purchaseFlow.loadPlanDetails',enabled);
+ const failed=ui.indexOf('if (prices == null || prices.keys !=',load);
+ const success=ui.indexOf('purchaseButtons.forEach { it.isEnabled = true }',failed);
+ assert.ok(enabled>=0 && load>enabled);
+ assert.ok(ui.indexOf('purchaseButtons.forEach { it.isEnabled = false }',enabled)<load,
+  'purchase buttons must remain disabled while marketplace prices are loading');
+ assert.ok(failed>load && success>failed,
+  'only a complete five-plan price response may enable checkout');
+ assert.match(ui,/prices\.keys != plans\.map \{ it\.id \}\.toSet\(\)/);
+ assert.match(ui,/قیمت فروشگاه: \$displayPrice/);
+ assert.doesNotMatch(ui,/1_500_000|2_850_000|4_050_000|7_650_000|14_600_000|1500000|2850000|4050000|7650000|14600000/,
+  'UI must not display stale hard-coded prices beside marketplace-localized prices');
+ assert.match(ui,/برای تکمیل ثبت نهایی فروشگاه، «بازیابی اشتراک» را اجرا کنید/);
+});
