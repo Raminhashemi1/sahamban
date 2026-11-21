@@ -18,8 +18,9 @@ is not a signed production release or a marketplace-ready package.
   server-side entitlement ledger.
 - Exactly five manual, fixed-day products are displayed. No free tier and no
   automatic renewal are implemented.
-- The approved server prices are shown in Rial. The localized marketplace
-  display price is shown alongside them.
+- The UI displays the localized marketplace price only after all five
+  product prices load successfully; incomplete catalog responses keep checkout
+  disabled. The server independently enforces the approved Rial price table.
 - Purchase tokens are sent to the Worker for signature/provider verification.
   The app consumes a store token only after the Worker confirms durable
   entitlement settlement.
