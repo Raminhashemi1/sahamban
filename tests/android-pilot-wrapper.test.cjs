@@ -19,9 +19,9 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
  assert.ok(!java.includes('addJavascriptInterface'));
 });
 
-test('debug APK has a temporary identity, no production signing and no checkout',()=>{
+test('Android pilot uses the owner-approved permanent package ID, no production signing and no checkout',()=>{
  const build=read('android-pilot/app/build.gradle');
- assert.match(build,/applicationId 'ir\.sahamban\.pilot'/);
+ assert.match(build,/applicationId 'ir\\.sahmino\\.app'/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
  assert.match(wf,/assembleDebug/);
