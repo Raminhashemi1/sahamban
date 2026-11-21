@@ -28,8 +28,7 @@ server is authoritative for plan, price, duration, account, and expiry.
 
 ## Build configuration
 
-The default application ID `ir.sahamban.pilot` is temporary. The owner must
-supply the real package registered in both marketplaces.
+The owner-approved permanent application ID is `ir.sahmino.app`. Both Bazaar and Myket listings must use this exact package ID.
 
 Gradle environment variables:
 - `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
