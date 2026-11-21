@@ -81,25 +81,11 @@ Existing Billing V2 database:
 
 Do not apply these files to an unverified production database.
 
-## Known limitations and release blockers
+## Release closeout
 
-- The temporary default Android package is `ir.sahamban.pilot`. The final
-  package must be supplied by the owner and match both marketplaces.
-- Actual Bazaar and Myket product IDs do not exist in the repository as
-  confirmed store registrations. The proposed/placeholder values are not
-  valid production identifiers.
-- Worker URLs, shared production D1, OTP/SMS secrets, Bazaar merchant
-  credentials, and store public keys require owner-controlled deployment.
-- Myket signed purchase validation does not independently detect a later
-  refund/revocation. Add and test authoritative reconciliation from Myket's
-  supported provider API/contract before public checkout.
-- Physical-device acceptance has not yet established live login, cookie
-  persistence, purchase, restore, consume/retry, repurchase, account
-  switching, refunds, or network-loss behavior.
-- Debug checkout can be opted in only with complete real configuration.
-  Release checkout remains hard-disabled.
-- No production migration, deployment, live payment, or signed release was
-  performed during source integration.
+All unresolved owner inputs, environment setup, acceptance and release actions are listed only in [خط پایان](../../subscription-module/LINE-END.md). This document is architecture and deployment reference, not a second pending-work tracker.
+
+
 
 ## Operational rule
 
