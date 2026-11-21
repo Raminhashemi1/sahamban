@@ -45,6 +45,7 @@ class BillingV2SubscriptionView(
     private val planPriceViews = mutableMapOf<String, TextView>()
     private lateinit var statusView: TextView
     private var busy = false
+    private var catalogReady = false
 
     init {
         isFillViewport = true
@@ -127,16 +128,17 @@ class BillingV2SubscriptionView(
             purchaseFlow.loadPlanDetails { prices ->
                 mainHandler.post {
                     if (prices == null || prices.keys != plans.map { it.id }.toSet()) {
+                        catalogReady = false
                         planPriceViews.values.forEach { it.text = "قیمت فروشگاه در دسترس نیست." }
-                        purchaseButtons.forEach { it.isEnabled = false }
                         statusView.text = "قیمت پلن‌ها از فروشگاه دریافت نشد؛ امکان خرید موقتاً غیرفعال است."
                     } else {
+                        catalogReady = true
                         prices.forEach { (planId, displayPrice) ->
                             planPriceViews[planId]?.text = "قیمت فروشگاه: $displayPrice"
                         }
-                        purchaseButtons.forEach { it.isEnabled = true }
                         statusView.text = "قیمت هر پنج پلن از فروشگاه دریافت شد."
                     }
+                    updateActionButtons()
                 }
             }
         }
@@ -200,9 +202,15 @@ class BillingV2SubscriptionView(
 
     private fun setBusy(value: Boolean, message: String) {
         busy = value
-        actionButtons.forEach { it.isEnabled = !value }
+        updateActionButtons()
         statusView.text = message
         onStatusChanged(message)
+    }
+
+    /** Checkout stays gated by a complete store catalog even after restore/busy transitions. */
+    private fun updateActionButtons() {
+        actionButtons.forEach { it.isEnabled = !busy }
+        purchaseButtons.forEach { it.isEnabled = !busy && catalogReady }
     }
 
     private fun text(value: String, sizeSp: Float, bold: Boolean) =
