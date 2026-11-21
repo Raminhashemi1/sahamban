@@ -7,8 +7,9 @@ https://raminhashemi1.github.io/sahamban/
 ## Strict scope
 
 - This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
-  The temporary `ir.sahamban.pilot` package ID and build-generated debug
-  certificate must **not** become the final app identity/signing key.
+  The owner-approved permanent Android package ID is `ir.sahmino.app`;
+  the build-generated debug certificate is temporary and must **not** become
+  the production signing key.
 - No checkout, Pro subscription, account registration or payments are added.
 - This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
   to WebView. Existing users MUST export their backup in the original PWA first,
