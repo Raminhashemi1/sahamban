@@ -47,7 +47,7 @@ for price, duration, account ownership, and entitlement expiry.
 
 ## Build configuration
 
-The owner-approved application ID is `ir.sahamban.sahmino` for both Bazaar and Myket. Gradle uses this as the default; CI/release configuration must still set `SAHAMBAN_APPLICATION_ID` and `SAHAMBAN_EXPECTED_PACKAGE_NAME` to the exact same value and the marketplace listing must use that package.
+The owner-approved permanent application ID is `ir.sahmino.app` for both Bazaar and Myket. Gradle uses this as the default; CI/release configuration must still set `SAHAMBAN_APPLICATION_ID` and `SAHAMBAN_EXPECTED_PACKAGE_NAME` to the exact same value and the marketplace listing must use that package.
 
 Gradle reads these environment variables:
 
