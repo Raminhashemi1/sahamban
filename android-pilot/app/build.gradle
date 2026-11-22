@@ -28,3 +28,8 @@ android {
         }
     }
 }
+
+dependencies {
+    // Origin-scoped WebMessageListener; no general-purpose addJavascriptInterface bridge.
+    implementation 'androidx.webkit:webkit:1.18.0'
+}
