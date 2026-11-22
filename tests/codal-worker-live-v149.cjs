@@ -25,7 +25,7 @@ function finish(status,extra={}) {
  report.status=status;Object.assign(report,extra);
  fs.mkdirSync('test-artifacts',{recursive:true});
  fs.writeFileSync('test-artifacts/codal-worker-live-v149.json',JSON.stringify(report,null,2)+'\n');
- console.log('CODAL_WORKER_STATUS: '+status);
+ console.log('CODAL_WORKER_STATUS: '+status);\n console.log('CODAL_WORKER_EVIDENCE: '+JSON.stringify(report));
 }
 async function main(){
  try{
