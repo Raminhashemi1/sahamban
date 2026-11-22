@@ -149,3 +149,13 @@ test('native subscription entry is reachable only after password session and fai
  assert.match(build,/SAHAMBAN_SKU_PRO_365D/);
  assert.match(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
 });
+
+test('native password login exposes one-time recovery without passing credentials to WebView',()=>{
+ const client=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeAuthClient.kt');
+ const view=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2LoginView.kt');
+ assert.match(client,/\/api\/v1\/auth\/recover/);
+ assert.match(client,/recoveryCode/);
+ assert.match(view,/بازیابی رمز عبور با کد یک‌بارمصرف/);
+ assert.match(view,/هر کد فقط یک‌بار قابل استفاده است/);
+ assert.match(view,/INVALID_RECOVERY/);
+});
