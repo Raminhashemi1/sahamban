@@ -76,9 +76,9 @@ async function main(){
   await page.locator('#pfExisting').selectOption('آزمایشی02');
   await page.locator('#pfDelete').click();
   assert.match(await page.locator('#pfStatus').innerText(),/هنوز چیزی حذف نشده/);
-  assert.equal((await page.locator('#portfolioData').inputValue()).includes('آزمایشی02'),true);
+  assert.equal(asciiDigits(await page.locator('#portfolioData').inputValue()).includes('آزمایشی02'),true);
   await page.locator('#pfDelete').click();
-  assert.equal((await page.locator('#portfolioData').inputValue()).includes('آزمایشی02'),false);
+  assert.equal(asciiDigits(await page.locator('#portfolioData').inputValue()).includes('آزمایشی02'),false);
   assert.equal(await page.locator('#pfUndo').isEnabled(),true);
   pass('delete requires a second explicit confirmation and exposes a guarded undo');
 
@@ -89,7 +89,7 @@ async function main(){
   await page.locator('#pfExisting').selectOption('آزمایشی02');
   await page.locator('#pfDelete').click();
   await page.locator('#pfDelete').click();
-  assert.equal((await page.locator('#portfolioData').inputValue()).includes('آزمایشی02'),false);
+  assert.equal(asciiDigits(await page.locator('#portfolioData').inputValue()).includes('آزمایشی02'),false);
   await page.locator('#portfolioSave').click();
   await page.reload({waitUntil:'load'});
   await page.locator('#portfolioLoad').click();
