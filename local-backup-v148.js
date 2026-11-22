@@ -164,7 +164,7 @@
     const url=win.URL.createObjectURL(new Blob([encoded],{type:'application/json;charset=utf-8'}));
     const a=doc.createElement('a');a.href=url;a.download='sahamban-local-backup-v1.json';doc.body.append(a);a.click();a.remove();
     win.setTimeout(()=>win.URL.revokeObjectURL(url),1000);
-    status('پشتیبان محلی آماده دانلود شد؛ فایل JSON رمزگذاری نشده است. شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
+    status('پشتیبان محلی آماده دانلود شد؛ فایل JSON رمزگذاری نشده است. شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده. اگر در محیط نصب‌شده پنجره ذخیره باز نشد، از نسخه مرورگر استفاده کنید.');
    }catch(e){status('پشتیبان‌گیری ناموفق: '+e.message);}
   });
   byId('sb148File').addEventListener('change',async()=>{
