@@ -49,7 +49,11 @@ async function main(){
    return;
   }
   if(!response.ok){
-   finish(response.status===429?'UNVERIFIED_RATE_LIMIT':'UNVERIFIED_WORKER_OR_UPSTREAM_HTTP',{httpStatus:response.status,contentType});
+   const failure=await response.json().catch(()=>({}));
+   finish(response.status===429?'UNVERIFIED_RATE_LIMIT':'UNVERIFIED_WORKER_OR_UPSTREAM_HTTP',{
+    httpStatus:response.status,contentType,workerError:failure.error||null,
+    upstreamStatus:failure.upstreamStatus??null
+   });
    return;
   }
   const payload=await response.json();
