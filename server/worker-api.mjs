@@ -21,6 +21,26 @@ const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
  LEFT JOIN prepaid_subscription_entitlements pe ON pe.user_id=u.id
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
+const CODAL_SYMBOL=/^[\\p{L}\\p{M}0-9‌‍]{1,20}$/u;
+async function proxyCodalSearch(symbol,fetchImpl=fetch){
+ if(typeof symbol!=='string'||!CODAL_SYMBOL.test(symbol)||/[\\s\\p{C}]/u.test(symbol))return {status:400,body:{error:'INVALID_SYMBOL'}};
+ const endpoint=new URL('https://search.codal.ir/api/search/v2/q');
+ endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+ try{
+  const upstream=await fetchImpl(endpoint.toString(),{method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,headers:{Accept:'application/json, application/xml, text/xml'}});
+  if(upstream.status===429)return {status:429,body:{error:'UPSTREAM_RATE_LIMIT'}};
+  if(!upstream.ok)return {status:502,body:{error:'UPSTREAM_HTTP_ERROR',upstreamStatus:upstream.status}};
+  const contentType=upstream.headers.get('content-type')||'';
+  if(!/json|xml/i.test(contentType))return {status:502,body:{error:'UPSTREAM_CONTENT_TYPE_UNVERIFIED'}};
+  const length=Number(upstream.headers.get('content-length')||0);
+  if(length>1048576)return {status:502,body:{error:'UPSTREAM_RESPONSE_TOO_LARGE'}};
+  const raw=await upstream.text();
+  if(!raw||raw.length>1048576)return {status:502,body:{error:'UPSTREAM_RESPONSE_INVALID_SIZE'}};
+  return {status:200,body:{contentType,raw}};
+ }catch(error){return {status:502,body:{error:error?.name==='AbortError'?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_ERROR'}};}
+ finally{clearTimeout(timer);}
+}
 function send(body,status=200,origin=null){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
  if(origin)headers['Access-Control-Allow-Origin']=origin;
@@ -83,6 +103,13 @@ export default {
   }
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
+  if(url.pathname==='/api/v1/public/codal-search'){
+   if(request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+   if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
+   if([...url.searchParams.keys()].some(k=>k!=='symbol')||url.searchParams.getAll('symbol').length!==1)return send({error:'INVALID_QUERY'},400,cors);
+   const result=await proxyCodalSearch(url.searchParams.get('symbol'));
+   return send(result.body,result.status,cors);
+  }
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isOrders=url.pathname==='/api/v1/me/orders';
   const isPrepaidOrders=url.pathname==='/api/v1/me/prepaid-orders';
@@ -160,4 +187,4 @@ export default {
   return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,autoRenewCancelled:result.autoRenewCancelled},200,cors);
  }
 };
-export {verifyPilotToken,lookupEntitlement};
+export {verifyPilotToken,lookupEntitlement,proxyCodalSearch};
