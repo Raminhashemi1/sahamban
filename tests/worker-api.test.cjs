@@ -159,7 +159,7 @@ test('CODAL proxy route rejects foreign origins, duplicate query and non-GET met
 test('CODAL proxy helper validates symbol and classifies upstream responses',async()=>{
  const {proxyCodalSearch}=await api();let called=0;
  const invalid=await proxyCodalSearch('bad symbol',async()=>{called++;throw Error('must not call');});assert.equal(invalid.status,400);assert.equal(called,0);
- const good=await proxyCodalSearch('ونوین',async(url,options)=>{called++;assert.match(url,/search\\.codal\\.ir\\/api\\/search\\/v2\\/q/);assert.equal(options.method,'GET');return new Response(JSON.stringify({Letters:[],Total:0,Page:1}),{status:200,headers:{'Content-Type':'application/json'}});});
+ const good=await proxyCodalSearch('ونوین',async(url,options)=>{called++;assert.ok(url.includes('search.codal.ir/api/search/v2/q'));assert.equal(options.method,'GET');return new Response(JSON.stringify({Letters:[],Total:0,Page:1}),{status:200,headers:{'Content-Type':'application/json'}});});
  assert.equal(good.status,200);assert.match(good.body.raw,/Letters/);
  const limited=await proxyCodalSearch('ونوین',async()=>new Response('',{status:429}));assert.equal(limited.status,429);
  const failed=await proxyCodalSearch('ونوین',async()=>{throw Error('offline');});assert.equal(failed.status,502);assert.equal(failed.body.error,'UPSTREAM_NETWORK_ERROR');
