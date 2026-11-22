@@ -88,3 +88,27 @@ the page retains its browser Blob-download fallback; that fallback is not
 claimed as working on Android. A physical-device test must verify both the
 native save-picker route and a complete export → app restart → file import →
 restore cycle with synthetic data.
+
+
+## Manual Android acceptance checklist (synthetic data only)
+
+Run this only after the WebView bridge and matching PWA assets are available
+together on the test deployment:
+
+1. Record the device model, Android version and Android System WebView version.
+2. Open the installed app and create two synthetic portfolio rows. Add one,
+   edit its quantity/price, delete it with the two-step confirmation, and use
+   Undo once. Save the final synthetic portfolio.
+3. Export the consolidated local backup. Confirm Android's document picker
+   opens, save the JSON under Downloads, and verify the file is present.
+4. Force-stop and relaunch the app. Import that same JSON through the Android
+   file picker, confirm restore, and verify the synthetic portfolio and local
+   settings return exactly.
+5. Import a synthetic CSV and a synthetic XLSX file. Confirm preview/validation
+   is shown before the user commits imported rows.
+6. Repeat export after cancelling the picker and confirm no portfolio data is
+   lost or silently changed.
+7. Record screenshots and the exact result of each step. Never use real broker
+   credentials or real portfolio data for this acceptance run.
+
+Passing browser automation or APK compilation does not replace this checklist.
