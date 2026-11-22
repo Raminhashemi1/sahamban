@@ -376,3 +376,19 @@ test('password login/session/logout and pilot JWT are disabled unless explicitly
  assert.equal(pilot.status,401);
  assert.equal(storage.calls.length,0);
 });
+
+test('recovery endpoint requires exact PWA origin, JSON shape and returns no session token',async()=>{
+ const {default:worker}=await import('../server/worker-api.mjs');
+ const env={SAHMINO_PASSWORD_AUTH_ENABLED:'true',PWA_ORIGIN:origin,SAHAMBAN_DB:{prepare(){throw Error('not reached');},batch(){throw Error('not reached');}},AUTH_RATE_LIMIT_SECRET:SECRET};
+ const bad=await worker.fetch(new Request('https://worker.example/api/v1/auth/recover',{
+  method:'POST',headers:{Origin:'https://attacker.example','Content-Type':'application/json'},
+  body:JSON.stringify({username:'09123456789',recoveryCode:'AABBCC-DDEEFF-001122-334455',newPassword:'A new secure password 2026!'})
+ }),env);
+ assert.equal(bad.status,403);
+ const invalid=await worker.fetch(new Request('https://worker.example/api/v1/auth/recover',{
+  method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},
+  body:JSON.stringify({username:'09123456789',recoveryCode:'x',newPassword:'A new secure password 2026!',extra:true})
+ }),env);
+ assert.equal(invalid.status,400);
+ assert.equal((await invalid.json()).error,'INVALID_REQUEST');
+});
