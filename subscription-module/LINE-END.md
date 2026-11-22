@@ -87,7 +87,7 @@
 - انتخاب مسیر schema تازه یا migration دیتابیس موجود طبق runbook؛ هر دو مسیر با هم اجرا نشوند.
 - تهیه backup و ثبت migration history.
 - اعمال schema پایه کاربران و Billing V2 و migrationهای لازم دقیقاً یک‌بار؛ سپس migration افزایشی `server/migrations/0004-username-password-auth.sql` مطابق runbook احراز هویت، فقط یک‌بار اجرا شود. مسیر فعال OTP/SMS دوباره راه‌اندازی نشود؛ فایل‌های تاریخی فقط برای سازگاری داده حفظ شوند.
-- تنظیم دو Worker با همان D1 و Origin، کلیدهای عمومی/اعتبارسنجی و secretهای تجاری؛ برای احراز هویت نام کاربری/رمز عبور، `AUTH_RATE_LIMIT_SECRET` باید در هر دو Worker یکسان و محرمانه باشد.
+- تنظیم دو Worker با همان D1 و Origin، کلیدهای عمومی/اعتبارسنجی و secretهای تجاری؛ `AUTH_RATE_LIMIT_SECRET` باید در هر دو Worker یکسان، خصوصی و حداقل ۳۲ بایت باشد. پرچم‌های `SAHMINO_PASSWORD_AUTH_ENABLED=false`، `PILOT_AUTH_ENABLED=false` و `BILLING_V2_ENABLED=false` تا پایان پذیرش حفظ شوند.
 - استقرار staging با `SAHMINO_PASSWORD_AUTH_ENABLED=false` و `BILLING_V2_ENABLED=false` در ابتدا؛ بررسی health، CORS، نشست، D1 و SKU mapping پیش از فعال‌سازی آزمایشی کنترل‌شده. هیچ SMS binding یا OTP flag برای مسیر جدید فرض نشود.
 
 **خروجی بسته‌شدن:** URLهای staging، شناسه D1 (بدون secret)، نسخه Worker، migration history و شواهد health/auth/database.
