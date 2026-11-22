@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {webcrypto}=require('node:crypto');
 globalThis.crypto ||= webcrypto;
-const {createPasswordAuth,normalizeUsername,hashPassword}=require('../server/password-auth.cjs');
+const {createPasswordAuth,normalizeUsername,hashPassword,createRecoveryCodes}=require('../server/password-auth.cjs');
 
 function mockD1({user=null,session=null,changes=1,rateChanges=[1,1,0]}={}){
  const calls=[];
@@ -86,4 +86,28 @@ test('session lookup hashes bearer and logout revokes only the digest',async()=>
  assert.equal(await auth.revokeSession(bearer,'2026-11-20T12:01:00.000Z'),true);
  assert.match(db.calls[1].sql,/UPDATE sahmino_shared_sessions SET revoked_at/);
  assert.match(auth.clearSessionCookie(),/HttpOnly; Secure; SameSite=None; Max-Age=0$/);
+});
+
+test('recovery codes are ten unique high-entropy single-use display values',()=>{
+ const codes=createRecoveryCodes();
+ assert.equal(codes.length,10);
+ assert.equal(new Set(codes).size,10);
+ for(const code of codes)assert.match(code,/^[A-F0-9]{6}(?:-[A-F0-9]{6}){3}$/);
+});
+test('password recovery consumes one code atomically, replaces password and revokes all sessions',async()=>{
+ const calls=[];let batchCount=0;
+ const db={
+  prepare(sql){return {sql,bind(...values){return {sql,values};}}},
+  async batch(items){calls.push(items);batchCount++;return (batchCount===1?[1,1,0]:[1,1,1]).map(n=>({meta:{changes:n}}));}
+ };
+ const auth=createPasswordAuth(db,{clock:()=>Date.parse('2026-11-22T12:00:00.000Z')});
+ const result=await auth.recoverPassword({username:'09123456789',recoveryCode:'AABBCC-DDEEFF-001122-334455',
+  newPassword:'A new secure password 2026!',ipKey:IP,rateLimitSecret:RATE_SECRET});
+ assert.deepEqual({ok:result.ok,status:result.status},{ok:true,status:200});
+ assert.equal(calls.length,2);
+ assert.match(calls[1][0].sql,/UPDATE sahmino_recovery_codes SET used_at=\?,reset_id=\?/);
+ assert.match(calls[1][0].sql,/used_at IS NULL/);
+ assert.match(calls[1][1].sql,/UPDATE sahamban_users SET password_salt=\?/);
+ assert.match(calls[1][2].sql,/UPDATE sahmino_shared_sessions SET revoked_at=\?/);
+ assert.ok(calls[1][0].values.includes('AABBCCDDEEFF001122334455'));
 });
