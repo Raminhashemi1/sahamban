@@ -15,9 +15,14 @@ https://raminhashemi1.github.io/sahamban/
   to WebView. Existing users MUST export their backup in the original PWA first,
   and carefully test an import with synthetic data. Do not uninstall the old
   PWA or wipe its data.
-- WebView file imports use Android's system file picker. **Backup export
-  and downloads are NOT yet verified in WebView** (blob: download links may
-  not work). Test both directions before considering any real user's portfolio.
+- WebView file imports use Android's system file picker. The consolidated local
+  backup export now uses AndroidX `WebMessageListener` restricted to the exact
+  GitHub Pages origin and main frame, then Android's `ACTION_CREATE_DOCUMENT`
+  picker. The native handler accepts only the known backup filename/schema,
+  allowlisted local-storage keys and a 256 KiB maximum; it does not expose a
+  general-purpose JavaScript interface or request storage permissions. Other
+  browser downloads still use the web Blob path. Physical-device export, save,
+  cancellation and re-import must pass before this path is accepted for real data.
 - It relies on HTTPS to load the current public web app, not an embedded offline
   bundle. Service-worker/offline handling and slow networks require physical
   device validation. No injected native JavaScript interface is used.
@@ -63,3 +68,23 @@ Only afterwards choose a market-specific release wrapper/signing approach.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
+
+
+## Local backup export implementation — v149
+
+The Android wrapper registers `sahambanNativeBackup` with AndroidX WebKit
+`WebViewCompat.addWebMessageListener` only when the installed WebView supports
+`WEB_MESSAGE_LISTENER`. The allowed origin is exactly
+`https://raminhashemi1.github.io`; native code independently checks that the
+message came from the main frame and that the active page path is under
+`/sahamban/`. It accepts only `sahamban-local-backup-v1.json`, the
+`sahamban-local-backup` schema version 1, the five allowlisted local storage
+keys, JSON MIME type and at most 256 KiB. The user chooses the destination via
+Android's Storage Access Framework; the app receives no broad filesystem
+permission. No `addJavascriptInterface` API is used.
+
+If the Android System WebView does not support the WebMessageListener feature,
+the page retains its browser Blob-download fallback; that fallback is not
+claimed as working on Android. A physical-device test must verify both the
+native save-picker route and a complete export → app restart → file import →
+restore cycle with synthetic data.
