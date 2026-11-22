@@ -50,7 +50,7 @@ async function main(){
 
   await page.locator('#pfExisting').selectOption('آزمایشی02');
   await page.locator('#pfEdit').click();
-  assert.equal(await page.locator('#pfQty').inputValue(),'5');
+  assert.equal(asciiDigits(await page.locator('#pfQty').inputValue()),'5');
   await page.locator('#pfQty').fill('12');
   await page.locator('#pfCurrent').fill('230');
   await page.locator('#pfAdd').click();
