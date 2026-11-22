@@ -30,7 +30,7 @@ function finish(status,extra={}) {
 async function main(){
  try{
   const preflight=await fetch(endpoint,{method:'OPTIONS',headers:{
-   Origin:ORIGIN,'Access-Control-Request-Method':'GET','Access-Control-Request-Headers':'accept'
+   Origin:ORIGIN,'Access-Control-Request-Method':'GET'
   },signal:AbortSignal.timeout(15000)});
   if(preflight.status!==204||preflight.headers.get('access-control-allow-origin')!==ORIGIN){
    finish('UNVERIFIED_PREFLIGHT',{preflightStatus:preflight.status,allowOrigin:preflight.headers.get('access-control-allow-origin')});
