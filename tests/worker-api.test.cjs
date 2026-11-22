@@ -149,3 +149,18 @@ test('prepaid overview route is disabled by default, private and read only',asyn
  assert.equal(info.orders.length,1);
  assert.equal(info.orders[0].amountRial,4500000);
 });
+
+test('CODAL proxy route rejects foreign origins, duplicate query and non-GET methods',async()=>{
+ const worker=(await api()).default;
+ const blocked=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=x',{headers:{Origin:'https://evil.example'}}),env());assert.equal(blocked.status,403);
+ const duplicate=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=a&symbol=b',{headers:{Origin:origin}}),env());assert.equal(duplicate.status,400);
+ const method=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=a',{method:'POST',headers:{Origin:origin}}),env());assert.equal(method.status,405);
+});
+test('CODAL proxy helper validates symbol and classifies upstream responses',async()=>{
+ const {proxyCodalSearch}=await api();let called=0;
+ const invalid=await proxyCodalSearch('bad symbol',async()=>{called++;throw Error('must not call');});assert.equal(invalid.status,400);assert.equal(called,0);
+ const good=await proxyCodalSearch('ونوین',async(url,options)=>{called++;assert.ok(url.includes('search.codal.ir/api/search/v2/q'));assert.equal(options.method,'GET');return new Response(JSON.stringify({Letters:[],Total:0,Page:1}),{status:200,headers:{'Content-Type':'application/json'}});});
+ assert.equal(good.status,200);assert.match(good.body.raw,/Letters/);
+ const limited=await proxyCodalSearch('ونوین',async()=>new Response('',{status:429}));assert.equal(limited.status,429);
+ const failed=await proxyCodalSearch('ونوین',async()=>{throw Error('offline');});assert.equal(failed.status,502);assert.equal(failed.body.error,'UPSTREAM_NETWORK_ERROR');
+});
