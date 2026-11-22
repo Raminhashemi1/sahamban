@@ -1,0 +1,35 @@
+name: Sahamban deployed CODAL Worker read-only probe v149
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/codal-worker-live-v149.cjs'
+      - 'tests/codal-search-quality.cjs'
+      - '.github/workflows/codal-worker-live-v149.yml'
+  push:
+    paths:
+      - 'tests/codal-worker-live-v149.cjs'
+      - 'tests/codal-search-quality.cjs'
+      - '.github/workflows/codal-worker-live-v149.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-codal-worker-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: node --check tests/codal-worker-live-v149.cjs
+      - run: node tests/codal-worker-live-v149.cjs
+      - name: Preserve live CODAL Worker evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-codal-worker-live-v149
+          path: test-artifacts/codal-worker-live-v149.json
+          if-no-files-found: warn
+          retention-days: 14
