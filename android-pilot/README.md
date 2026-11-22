@@ -9,6 +9,7 @@ It is an unsigned pilot build, not a signed production release or marketplace-re
 - Passwords are sent only over HTTPS to the Worker. The native form clears its password field after successful login.
 - The Worker issues a Secure, HttpOnly session cookie. Android stores it in CookieManager and keeps it out of WebView JavaScript, local storage, logs, and URLs.
 - Cold starts revalidate the stored session; logout revokes the server-side session.
+- Native login includes one-time recovery-code password reset. Ten random recovery codes are provisioned offline, shown once, stored only as SHA-256 digests, and each successful reset revokes all active sessions.
 - The authenticated native subscription host composes the cookie provider, Billing V2 API, Bazaar/Myket coordinator, purchase flow, and five-plan UI.
 - The WebView instance is preserved when returning from the native subscription screen.
 - Both marketplace flavors use the shared server entitlement ledger. Release checkout remains hard-disabled.
@@ -74,9 +75,10 @@ proof of live purchase behavior.
 2. Provide the real five SKU IDs for each marketplace and verify exact prices.
 3. Provision actual user accounts and communicate initial passwords through
    a separate secure channel; this repository does not contain user passwords.
-4. Decide and implement a non-SMS password reset process before public launch
-   (for example, verified administrator-assisted reset). Do not use phone
-   number possession as proof of identity.
+4. Define and rehearse the secure offline delivery and ownership-verification
+   process for the ten one-time recovery codes. If all codes are lost or used,
+   an authorized operator must verify ownership and perform a controlled
+   credential/code rotation; phone-number possession alone is not proof.
 5. Deploy the two Workers with the same D1 database, configure Worker secrets,
    and apply migrations only after backup and environment verification.
 6. Complete Myket refund/revocation reconciliation.
