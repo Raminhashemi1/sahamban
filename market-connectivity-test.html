@@ -124,16 +124,15 @@ small{opacity:.75}
   if(!symbol||symbol.length>20){status.textContent='نماد معتبر وارد کنید.';return;}
   button.disabled=true;
   status.textContent='در حال بررسی اتصال کدال؛ نتیجه هنوز تأیید نشده است...';
-  const endpoint=new URL('https://search.codal.ir/api/search/v2/q');
-  endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
+  const endpoint=new URL('https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/public/codal-search');
+  endpoint.searchParams.set('symbol',symbol);
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   try{
    const response=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
-   const type=response.headers.get('content-type')||'';
-   if(response.status===429)throw Error('کدال محدودیت تعداد درخواست (HTTP 429) برگرداند. درخواست جدید را متوقف کنید و بعداً با فاصله دوباره امتحان کنید.');
-   if(!response.ok)throw Error('کدال HTTP '+response.status+' برگرداند.');
-   const raw=await response.text();
-   const body=parseCodalSearchPayload(raw,type);
+   if(!response.ok){const failure=await response.json().catch(()=>({}));throw Error(failure.error||('درگاه کدال HTTP '+response.status));}
+   const payload=await response.json();
+   if(!payload||typeof payload.raw!=='string'||typeof payload.contentType!=='string')throw Error('پاسخ درگاه کدال معتبر نیست.');
+   const body=parseCodalSearchPayload(payload.raw,payload.contentType);
    const quality=codalValidMetadata(body,symbol);
    const items=quality.items.slice(0,5);
    if(quality.status!=='SEARCH_METADATA_VALIDATED'){
