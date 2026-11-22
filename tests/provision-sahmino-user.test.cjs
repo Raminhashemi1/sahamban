@@ -16,7 +16,7 @@ test('existing account provisioning rotates password and emits ten one-time reco
  assert.match(result.sql,/WHERE id='legacy-user-42' AND status='ACTIVE'/);
  assert.match(result.sql,/UPDATE sahmino_shared_sessions SET revoked_at=/);
  assert.match(result.sql,/WHERE user_id='legacy-user-42' AND revoked_at IS NULL/);
- assert.match(result.sql,/username_normalized='\\+989123456789' AND status='ACTIVE'/);
+ assert.ok(result.sql.includes("AND username_normalized='+989123456789' AND status='ACTIVE'"));
  assert.match(result.sql,/DELETE FROM sahmino_recovery_codes/);
  assert.equal((result.sql.match(/INSERT INTO sahmino_recovery_codes/g)||[]).length,10);
  assert.equal(result.recoveryCodes.length,10);
