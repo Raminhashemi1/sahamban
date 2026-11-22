@@ -25,6 +25,7 @@ INSERT INTO sahmino_shared_sessions(id,user_id,token_hash,created_at,expires_at,
  '2026-01-01T00:00:00.000Z','2099-01-01T00:00:00.000Z','2026-01-01T00:00:00.000Z');
 """)
 db.executescript((root/'server/migrations/0004-username-password-auth.sql').read_text())
+db.executescript((root/'server/migrations/0005-password-recovery-codes.sql').read_text())
 row=db.execute("""
  SELECT username_normalized,password_salt,password_hash,password_iterations
  FROM sahamban_users WHERE id='usr_existing'
@@ -35,6 +36,9 @@ assert db.execute("""
 """).fetchone()
 assert db.execute("""
  SELECT name FROM sqlite_master WHERE type='table' AND name='sahmino_auth_rate_limits'
+""").fetchone()
+assert db.execute("""
+ SELECT name FROM sqlite_master WHERE type='table' AND name='sahmino_recovery_codes'
 """).fetchone()
 assert db.execute("""
  SELECT revoked_at IS NOT NULL FROM sahmino_shared_sessions WHERE id='ses_legacy'
