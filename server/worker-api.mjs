@@ -21,7 +21,7 @@ const QUERY=`SELECT u.id AS user_id, u.status AS account_status,
  LEFT JOIN prepaid_subscription_entitlements pe ON pe.user_id=u.id
  WHERE u.auth_subject=? LIMIT 1`;
 const encoder=new TextEncoder();
-const CODAL_SYMBOL=/^[\\p{L}\\p{M}0-9‌‍]{1,20}$/u;
+const CODAL_SYMBOL=/^[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFFA-Za-z0-9‌‍]{1,20}$/u;
 async function proxyCodalSearch(symbol,fetchImpl=fetch){
  if(typeof symbol!=='string'||!CODAL_SYMBOL.test(symbol)||/[\\s\\p{C}]/u.test(symbol))return {status:400,body:{error:'INVALID_SYMBOL'}};
  const endpoint=new URL('https://search.codal.ir/api/search/v2/q');
