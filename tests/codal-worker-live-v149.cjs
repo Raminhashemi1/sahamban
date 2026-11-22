@@ -15,7 +15,7 @@ function parsePayload(raw,contentType){
  if(/json/i.test(contentType)||source.startsWith('{'))return JSON.parse(source);
  if(!source.startsWith('<'))throw Error('UNSUPPORTED_UPSTREAM_FORMAT');
  const tag=(chunk,name)=>{const m=chunk.match(new RegExp('<(?:[\\w.-]+:)?'+name+'(?:\\s[^>]*)?>([\\s\\S]*?)</(?:[\\w.-]+:)?'+name+'\\s*>','i'));return m?decodeXml(m[1].replace(/<[^>]+>/g,'').trim()):'';};
- const matches=[...source.matchAll(/<(?:[\\w.-]+:)?CodalLetterHeaderDto(?:\\s[^>]*)?>([\\s\\S]*?)<\\/(?:[\\w.-]+:)?CodalLetterHeaderDto\\s*>/gi)];
+ const matches=[...source.matchAll(/<(?:[\w.-]+:)?CodalLetterHeaderDto(?:\s[^>]*)?>([\s\S]*?)<\/(?:[\w.-]+:)?CodalLetterHeaderDto\s*>/gi)];
  if(!/<(?:[\w.-]+:)?SearchReportListDto(?:\s|>)/i.test(source)&&!matches.length)throw Error('UNRECOGNIZED_CODAL_XML');
  const letters=matches.map(m=>({Symbol:tag(m[1],'Symbol'),Title:tag(m[1],'Title'),TracingNo:tag(m[1],'TracingNo'),PublishDateTime:tag(m[1],'PublishDateTime'),SentDateTime:tag(m[1],'SentDateTime'),HasExcel:/^true$/i.test(tag(m[1],'HasExcel')),HasPdf:/^true$/i.test(tag(m[1],'HasPdf'))}));
  const total=tag(source,'Total');
