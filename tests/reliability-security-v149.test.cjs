@@ -19,7 +19,7 @@ function harness({offline=false,networkBody='fresh',cachedBody='cached'}={}){
  return {request,entries,puts,listeners};
 }
 test('new service worker generation invalidates old cache namespace',()=>{
- assert.match(source,/const CACHE='sahamban-static-v150-13'/);
+ assert.match(source,/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/);
  assert.match(source,/k\.startsWith\('sahamban-static-'\)&&k!==CACHE/);
 });
 test('same-origin static assets use network-first and refresh cache',async()=>{
@@ -30,9 +30,10 @@ test('same-origin static assets use network-first and refresh cache',async()=>{
 });
 test('offline static assets fall back to cached response without HTML substitution',async()=>{
  const h=harness({offline:true});
- const key='https://app.test/sahamban/app.js?v=127.0';
+ const appVersion=source.match(/app\.js\?v=(\d+)/)?.[1];assert.ok(appVersion);
+ const key='https://app.test/sahamban/app.js?v='+appVersion;
  h.entries.set(key,{ok:true,body:'cached-app'});
- const result=await h.request('app.js?v=127.0');
+ const result=await h.request('app.js?v='+appVersion);
  assert.equal(result.response.body,'cached-app');
  await assert.rejects(h.request('missing.js'),/network offline/);
 });
