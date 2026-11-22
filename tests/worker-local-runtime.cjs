@@ -4,6 +4,7 @@
  * No cloud account, real secrets, network payments or customer data.
  */
 const {spawn,spawnSync}=require('node:child_process');
+const {createHash}=require('node:crypto');
 const assert=require('node:assert/strict');
 const {issuePilotToken}=require('../server/mint-pilot-token.cjs');
 const {hashPassword}=require('../server/password-auth.cjs');
@@ -16,6 +17,8 @@ const NOW=Date.now(),ID='pilot|billing-v2-local-runtime',stamp=new Date(NOW).toI
 const enableBillingV2=process.env.LOCAL_TEST_ENABLE_BILLING_V2==='1';
 const enablePasswordAuth=process.env.LOCAL_TEST_ENABLE_PASSWORD_AUTH==='1';
 const AUTH_SECRET='local_password_auth_rate_limit_secret_only_2026_never_production';
+const RECOVERY_CODE='AABBCC-DDEEFF-001122-334455';
+const RECOVERY_NEW_PASSWORD='Recovered local runtime password 2026!';
 const TEST_USERNAME='09123456789',TEST_PASSWORD='Local runtime password test 2026!';
 const timeout=75000,nap=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
@@ -27,7 +30,7 @@ function cli(...args){
   throw Error('Local D1 setup failed ('+(result.error?.code||result.status)+'): '+String(result.stderr||result.stdout||'').slice(-700));
 }
 async function json(path,{token,cookie,csrf,method='GET',origin=ORIGIN,body}={}){
- const headers={'Origin':origin,...(body===undefined?{}:{'Content-Type':'application/json'})};
+ const headers={'Origin':origin,'CF-Connecting-IP':'203.0.113.44',...(body===undefined?{}:{'Content-Type':'application/json'})};
  if(token)headers.Authorization='Bearer '+token;
  if(cookie)headers.Cookie=cookie;
  if(csrf)headers['X-Sahmino-CSRF']=csrf;
@@ -40,6 +43,8 @@ async function main(){
   const encoded=await hashPassword(TEST_PASSWORD);
   const q=x=>"'"+String(x).replace(/'/g,"''")+"'";
   cli('--command',`INSERT OR REPLACE INTO sahamban_users(id,email_normalized,auth_subject,created_at,status,username_normalized,password_salt,password_hash,password_iterations) VALUES (${q('local-password-user')},NULL,NULL,${q(stamp)},'ACTIVE',${q('+989123456789')},${q(encoded.salt)},${q(encoded.hash)},${encoded.iterations})`);
+  const recoveryDigest=createHash('sha256').update(RECOVERY_CODE.replace(/-/g,''),'utf8').digest('hex');
+  cli('--command',`INSERT OR REPLACE INTO sahmino_recovery_codes(id,user_id,code_hash,created_at) VALUES ('local-recovery-code','local-password-user',${q(recoveryDigest)},${q(stamp)})`);
  }
  cli('--command',"INSERT OR IGNORE INTO sahamban_users(id,auth_subject,created_at,status) VALUES ('local-runtime-u1','"+ID+"','"+stamp+"','ACTIVE')");
  cli('--command',"INSERT OR REPLACE INTO billing_access(user_id,expires_at,auto_renewing,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,'"+stamp+"')");
@@ -107,9 +112,26 @@ async function main(){
     assert.equal(order.data.order.days,30);
     assert.equal(order.data.order.priceRial,1500000);
    }
-   const loggedOut=await json('/api/v1/auth/logout',{cookie:sessionCookie,csrf:'1',method:'POST',body:{}});
-   assert.equal(loggedOut.status,200);
+   const recovered=await json('/api/v1/auth/recover',{method:'POST',body:{
+    username:TEST_USERNAME,recoveryCode:RECOVERY_CODE,newPassword:RECOVERY_NEW_PASSWORD
+   }});
+   assert.equal(recovered.status,200);
+   assert.deepEqual(recovered.data,{passwordReset:true});
    assert.equal((await json('/api/v1/auth/session',{cookie:sessionCookie})).status,401);
+   const reused=await json('/api/v1/auth/recover',{method:'POST',body:{
+    username:TEST_USERNAME,recoveryCode:RECOVERY_CODE,newPassword:TEST_PASSWORD
+   }});
+   assert.equal(reused.status,400);
+   assert.deepEqual(reused.data,{error:'INVALID_RECOVERY'});
+   const relogin=await fetch(BASE+'/api/v1/auth/login',{method:'POST',headers:{
+    Origin:ORIGIN,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.44'
+   },body:JSON.stringify({username:TEST_USERNAME,password:RECOVERY_NEW_PASSWORD}),signal:AbortSignal.timeout(10000)});
+   assert.equal(relogin.status,200);
+   const newCookie=relogin.headers.get('set-cookie').split(';')[0];
+   assert.equal((await json('/api/v1/auth/session',{cookie:newCookie})).status,200);
+   const loggedOut=await json('/api/v1/auth/logout',{cookie:newCookie,csrf:'1',method:'POST',body:{}});
+   assert.equal(loggedOut.status,200);
+   assert.equal((await json('/api/v1/auth/session',{cookie:newCookie})).status,401);
   }
   assert.equal((await json('/api/v1/checkout',{method:'POST'})).status,404);
   const preflight=await fetch(BASE+'/api/v1/me/entitlement',{method:'OPTIONS',headers:{Origin:ORIGIN},signal:AbortSignal.timeout(5000)});
