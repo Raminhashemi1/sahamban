@@ -83,7 +83,7 @@ async function main(){
   pass('delete requires a second explicit confirmation and exposes a guarded undo');
 
   await page.locator('#pfUndo').click();
-  assert.match(await page.locator('#portfolioData').inputValue(),/آزمایشی02,12,200,230,180,280/);
+  assert.match(asciiDigits(await page.locator('#portfolioData').inputValue()),/آزمایشی02,12,200,230,180,280/);
   pass('undo restores the exact pre-delete text without changing the saved snapshot');
 
   await page.locator('#pfExisting').selectOption('آزمایشی02');
