@@ -39,13 +39,13 @@ VALUES (${q(userId)},NULL,NULL,${q(stamp)},'ACTIVE',${q(username)},${q(credentia
 const recoveryRows=recoveryCodes.map((code,index)=>{
  const digest=createHash('sha256').update(code.replace(/-/g,''),'utf8').digest('hex');
  return `INSERT INTO sahmino_recovery_codes(id,user_id,code_hash,created_at)
- VALUES(${q('rcv_'+randomBytes(16).toString('hex'))},${q(userId)},${q(digest)},${q(stamp)});`;
+ SELECT ${q('rcv_'+randomBytes(16).toString('hex'))},${q(userId)},${q(digest)},${q(stamp)}
+ WHERE EXISTS(SELECT 1 FROM sahamban_users WHERE id=${q(userId)} AND username_normalized=${q(username)} AND status='ACTIVE');`;
 });
-const sql=`BEGIN IMMEDIATE;
-${upsert}
-DELETE FROM sahmino_recovery_codes WHERE user_id=${q(userId)};
-${recoveryRows.join('\n')}
-COMMIT;`;
+const sql=`${upsert}
+DELETE FROM sahmino_recovery_codes WHERE user_id=${q(userId)}
+ AND EXISTS(SELECT 1 FROM sahamban_users WHERE id=${q(userId)} AND username_normalized=${q(username)} AND status='ACTIVE');
+${recoveryRows.join('\n')}`;
 process.stdout.write(JSON.stringify({
  instructions:'Execute the sql field against the intended D1 database and securely save the recoveryCodes now. They are shown only once and cannot be retrieved later.',
  sql,
