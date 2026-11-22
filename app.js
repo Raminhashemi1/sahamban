@@ -83,7 +83,7 @@ function invalidatePortfolioReport(){
  latestPortfolioReport=null;portfolioReportSnapshot=null;
 }
 function portfolioNumber(v,line){
- const digits=String(v).trim().replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٬/g,'').replace(/٫/g,'.');
+ const digits=String(v).trim().replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٬،,\s]/g,'').replace(/٫/g,'.');
  const val=Number(digits);
  if(digits===''||!Number.isFinite(val))throw Error('عدد نامعتبر در سطر '+line);
  if(Number.isInteger(val)&&!Number.isSafeInteger(val))throw Error('عدد خارج از دقت امن محاسبات مالی در سطر '+line);
@@ -95,8 +95,32 @@ function parsePortfolio(raw){
  if(lines.length>100)throw Error('حداکثر ۱۰۰ سهم پشتیبانی می‌شود.');
  const names=new Set();
  const positions=lines.map((line,i)=>{
-   const cols=line.split(/[,،;\t]/).map(s=>s.trim());
-   if(cols.length!==6)throw Error(`در سطر ${i+1} باید دقیقاً ۶ مقدار باشد.`);
+   // پشتیبانی از CSV معمولی، جداکننده‌های صریح ; و Tab و اعداد دارای جداکننده هزارگان.
+   const splitExplicit=line.split(/[;\t|]/).map(s=>s.trim());
+   let cols=splitExplicit.length===6?splitExplicit:line.split(/[,،]/).map(s=>s.trim());
+   if(cols.length!==6){
+    const symbol=cols.shift();
+    const groups=cols.map(s=>s.replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s٬]/g,''));
+    if(!symbol||groups.length<5||groups.some(s=>!/^\d+$/.test(s)))throw Error(`در سطر ${i+1} باید نماد و پنج عدد وارد شود. برای اعداد دارای جداکننده هزارگان، ستون‌ها را با ; یا Tab جدا کنید.`);
+    const candidates=[];
+    const build=(field,start,values)=>{
+     if(candidates.length>1)return;
+     if(field===5){if(start===groups.length)candidates.push([symbol,...values]);return;}
+     for(let end=start+1;end<=groups.length-(4-field);end++){
+      const parts=groups.slice(start,end);
+      if(parts[0].length<1||parts[0].length>3||parts.slice(1).some(x=>x.length!==3))continue;
+      build(field+1,end,[...values,parts.join('')]);
+     }
+    };
+    build(0,0,[]);
+    const valid=candidates.filter(c=>{
+     const nums=c.slice(1).map(Number);
+     return nums.every(Number.isFinite)&&Number.isSafeInteger(nums[0])&&nums[0]>0&&nums.slice(1).every(x=>x>0)&&nums[3]<nums[2]&&nums[4]>nums[2];
+    });
+    if(valid.length===1)cols=valid[0];
+    else if(valid.length>1)throw Error(`جداکننده‌های سطر ${i+1} مبهم‌اند. ستون‌ها را با ; یا Tab جدا کنید.`);
+    else throw Error(`در سطر ${i+1} شش مقدار قابل تشخیص نیست. ستون‌ها را با ; یا Tab جدا کنید و برای هزارگان از ٬ استفاده کنید.`);
+   }
    const symbol=cols[0];
    if(!symbol||symbol.length>35||names.has(symbol))throw Error(`نام نماد خالی، تکراری یا نامعتبر در سطر ${i+1}`);
    names.add(symbol);
