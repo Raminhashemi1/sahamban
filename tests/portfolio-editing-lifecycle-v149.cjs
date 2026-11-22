@@ -41,7 +41,7 @@ async function main(){
   await page.locator('#pfStop').fill('180');
   await page.locator('#pfTarget').fill('280');
   await page.locator('#pfAdd').click();
-  let rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\\r?\\n/);
+  let rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,2,'adding a new symbol should create exactly one new row');
   assert.match(rows[1],/^آزمایشی02,5,200,220,180,280$/);
   assert.match(await page.locator('#pfStatus').innerText(),/نماد به سبد اضافه شد/);
@@ -53,7 +53,7 @@ async function main(){
   await page.locator('#pfQty').fill('12');
   await page.locator('#pfCurrent').fill('230');
   await page.locator('#pfAdd').click();
-  rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\\r?\\n/);
+  rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,2,'editing must update in place, not append a duplicate');
   assert.match(rows[1],/^آزمایشی02,12,200,230,180,280$/);
   assert.match(await page.locator('#pfStatus').innerText(),/اطلاعات نماد به‌روزرسانی شد/);
@@ -67,7 +67,7 @@ async function main(){
 
   await page.reload({waitUntil:'load'});
   await page.locator('#portfolioLoad').click();
-  rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\\r?\\n/);
+  rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,2);
   assert.match(rows[1],/^آزمایشی02,12,200,230,180,280$/);
   pass('saved portfolio is restored after a full page reload');
@@ -92,7 +92,7 @@ async function main(){
   await page.locator('#portfolioSave').click();
   await page.reload({waitUntil:'load'});
   await page.locator('#portfolioLoad').click();
-  rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\\r?\\n/);
+  rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,1,'persisted deletion should remain absent after reload and restore');
   assert.match(rows[0],/^آزمایشی01,10,100,120,90,150$/);
   pass('confirmed deletion persists only after explicit save and survives reload/restore');
@@ -106,7 +106,7 @@ async function main(){
   report.status='FAIL';report.error=String(error.stack||error);throw error;
  }finally{
   fs.mkdirSync('test-artifacts',{recursive:true});
-  fs.writeFileSync('test-artifacts/portfolio-editing-lifecycle-v149.json',JSON.stringify(report,null,2)+'\\n');
+  fs.writeFileSync('test-artifacts/portfolio-editing-lifecycle-v149.json',JSON.stringify(report,null,2)+'\n');
   await browser?.close();
   await new Promise(resolve=>server.close(resolve));
  }
