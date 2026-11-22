@@ -25,7 +25,7 @@ https://raminhashemi1.github.io/sahamban/
   cancellation and re-import must pass before this path is accepted for real data.
 - It relies on HTTPS to load the current public web app, not an embedded offline
   bundle. Service-worker/offline handling and slow networks require physical
-  device validation. No injected native JavaScript interface is used.
+  device validation. No `addJavascriptInterface` or unrestricted JavaScript bridge is used.
 - Only HTTPS `raminhashemi1.github.io/sahamban/` navigation remains inside
   the app. Other HTTPS links go to an external browser; non-HTTPS and
   special-scheme navigation is blocked.
