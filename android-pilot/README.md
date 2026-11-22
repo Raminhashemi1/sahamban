@@ -1,4 +1,4 @@
-# Sahamban Android pilot wrapper — install test only
+# Sahmino Android pilot wrapper — install test only
 
 This module creates a **debug APK** containing a minimal Android WebView shell
 for the existing public GitHub Pages PWA:
@@ -34,7 +34,7 @@ https://raminhashemi1.github.io/sahamban/
 
 ## How to build a test APK
 
-GitHub Actions workflow `Sahamban Android pilot debug APK` uses Java 17,
+GitHub Actions workflow `Sahmino Android pilot debug APK` uses Java 17,
 Android SDK 35, Gradle 8.11.1 and Android Gradle Plugin 8.9.2 to build
 `app-debug.apk` in CI. It uploads a **debug artifact**, not a marketplace
 release. No key files or signing passwords are stored in the repository.
@@ -63,3 +63,7 @@ Only afterwards choose a market-specific release wrapper/signing approach.
 Trusted Web Activity (TWA) additionally requires domain-root
 `/.well-known/assetlinks.json` associated with the final **real** APK
 signing certificate; a Project Pages path alone cannot satisfy it.
+
+
+## Product brand
+The current product name shown to users is **سهمینو (Sahmino)**. Historical repository slug, source identifiers, storage keys and URL paths containing `sahamban` are compatibility identifiers and are intentionally retained unless a separate migration is designed and tested.
