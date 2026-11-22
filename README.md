@@ -1,1 +1,1 @@
-Sahamban - سهام‌بان
+Sahmino - سهمینو
