@@ -43,6 +43,10 @@ const recoveryRows=recoveryCodes.map((code,index)=>{
  WHERE EXISTS(SELECT 1 FROM sahamban_users WHERE id=${q(userId)} AND username_normalized=${q(username)} AND status='ACTIVE');`;
 });
 const sql=`${upsert}
+UPDATE sahmino_shared_sessions SET revoked_at=${q(stamp)}
+WHERE user_id=${q(userId)} AND revoked_at IS NULL
+ AND EXISTS(SELECT 1 FROM sahamban_users WHERE id=${q(userId)}
+  AND username_normalized=${q(username)} AND status='ACTIVE');
 DELETE FROM sahmino_recovery_codes WHERE user_id=${q(userId)}
  AND EXISTS(SELECT 1 FROM sahamban_users WHERE id=${q(userId)} AND username_normalized=${q(username)} AND status='ACTIVE');
 ${recoveryRows.join('\n')}`;
