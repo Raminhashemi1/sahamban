@@ -18,11 +18,6 @@ const credentials=await hashPassword(payload?.password);
 const recoveryCodes=createRecoveryCodes(10);
 const q=value=>"'"+String(value).replace(/'/g,"''")+"'";
 const stamp=new Date().toISOString();
-const recoveryRows=recoveryCodes.map((code,index)=>{
- const digest=createHash('sha256').update(code.replace(/-/g,''),'utf8').digest('hex');
- return `INSERT INTO sahmino_recovery_codes(id,user_id,code_hash,created_at)
- VALUES(${q('rcv_'+randomBytes(16).toString('hex'))},${q(userId)},${q(digest)},${q(stamp)});`;
-});
 let userId,upsert;
 if(payload.userId!==undefined){
  if(typeof payload.userId!=='string'||payload.userId.length<1||payload.userId.length>128||Array.from(payload.userId).some(ch=>ch.charCodeAt(0)<32||ch.charCodeAt(0)===127))
@@ -41,6 +36,11 @@ WHERE id=${q(userId)} AND status='ACTIVE'
 VALUES (${q(userId)},NULL,NULL,${q(stamp)},'ACTIVE',${q(username)},${q(credentials.salt)},${q(credentials.hash)},${credentials.iterations});
 `;
 }
+const recoveryRows=recoveryCodes.map((code,index)=>{
+ const digest=createHash('sha256').update(code.replace(/-/g,''),'utf8').digest('hex');
+ return `INSERT INTO sahmino_recovery_codes(id,user_id,code_hash,created_at)
+ VALUES(${q('rcv_'+randomBytes(16).toString('hex'))},${q(userId)},${q(digest)},${q(stamp)});`;
+});
 const sql=`BEGIN IMMEDIATE;
 ${upsert}
 DELETE FROM sahmino_recovery_codes WHERE user_id=${q(userId)};
