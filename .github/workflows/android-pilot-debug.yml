@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'android-pilot/**'
+      - 'local-backup-v148.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'tests/local-backup-v148.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
   push:
