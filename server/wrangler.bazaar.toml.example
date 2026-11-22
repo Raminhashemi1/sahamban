@@ -1,4 +1,4 @@
-# Example only. Keep checkout disabled until production authentication and tests pass.
+# Example only. Keep both auth and checkout disabled until provisioning and acceptance pass.
 name = "sahmino-billing-bazaar"
 main = "worker-api.mjs"
 compatibility_date = "2026-06-01"
@@ -11,25 +11,13 @@ database_id = "REPLACE_WITH_SAME_PRODUCTION_D1_ID_IN_BOTH_CONFIGS"
 
 [vars]
 BILLING_V2_ENABLED = "false"
-SAHMINO_OTP_ENABLED = "false"
+SAHMINO_PASSWORD_AUTH_ENABLED = "false"
+PILOT_AUTH_ENABLED = "false"
 BILLING_STORE = "BAZAAR"
 PWA_ORIGIN = "https://REPLACE_WITH_EXACT_PRODUCTION_PWA_ORIGIN"
 BAZAAR_PACKAGE_NAME = "REPLACE_WITH_REAL_APPLICATION_ID"
 BAZAAR_SKU_MAP = '{"SAHAMBAN_PRO_30D":"REPLACE_BAZAAR_SKU_30D","SAHAMBAN_PRO_60D":"REPLACE_BAZAAR_SKU_60D","SAHAMBAN_PRO_90D":"REPLACE_BAZAAR_SKU_90D","SAHAMBAN_PRO_180D":"REPLACE_BAZAAR_SKU_180D","SAHAMBAN_PRO_365D":"REPLACE_BAZAAR_SKU_365D"}'
 
-# Set these as Worker secrets; never commit values:
-# wrangler secret put AUTH_HMAC_SECRET --config wrangler.bazaar.toml
-# wrangler secret put SAHMINO_OTP_VERIFIER_SECRET --config wrangler.bazaar.toml
-# wrangler secret put SAHMINO_OTP_RATE_LIMIT_SECRET --config wrangler.bazaar.toml
-# wrangler secret put BAZAAR_CLIENT_ID --config wrangler.bazaar.toml
-# wrangler secret put BAZAAR_CLIENT_SECRET --config wrangler.bazaar.toml
-# wrangler secret put BAZAAR_REFRESH_TOKEN --config wrangler.bazaar.toml
-# wrangler secret put BAZAAR_RSA_PUBLIC_KEY --config wrangler.bazaar.toml
-
-# Keep SAHMINO_OTP_ENABLED=false until the OTP runtime migration has been
-# applied to this exact D1 database and the three OTP secrets are configured.
-# Internal SMS provider Worker. Deploy server/wrangler.shahmiz.toml.example
-# separately and set its SHAHMIZ_API_TOKEN secret before enabling OTP.
-[[services]]
-binding = "SAHMINO_SMS_PROVIDER"
-service = "sahmino-shahmiz-sms"
+# Store only as a Worker secret; never commit the value.
+# wrangler secret put AUTH_RATE_LIMIT_SECRET --config wrangler.bazaar.toml
+# Bazaar OAuth and RSA secrets remain separate and owner-managed.
