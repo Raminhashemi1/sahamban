@@ -1,0 +1,39 @@
+name: Sahamban portfolio editing lifecycle v149
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'tests/portfolio-editing-lifecycle-v149.cjs'
+      - '.github/workflows/portfolio-editing-lifecycle-v149.yml'
+  push:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'tests/portfolio-editing-lifecycle-v149.cjs'
+      - '.github/workflows/portfolio-editing-lifecycle-v149.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-portfolio-crud:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node --check tests/portfolio-editing-lifecycle-v149.cjs
+      - run: node tests/portfolio-editing-lifecycle-v149.cjs
+      - name: Preserve synthetic lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-portfolio-editing-lifecycle-v149
+          path: test-artifacts/portfolio-editing-lifecycle-v149.json
+          if-no-files-found: warn
+          retention-days: 14
