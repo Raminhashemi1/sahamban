@@ -55,7 +55,7 @@ async function main(){
   if(browserSearch.errorMessage){
    const cors=consoleErrors.some(x=>/cors|cross-origin|access-control-allow-origin/i.test(x));
    const nodeOk=nodeSearch?.ok===true;
-   finish(cors&&nodeOk?'UNVERIFIED_CORS_BLOCKED':nodeOk?'UNVERIFIED_BROWSER_POLICY_OR_NETWORK':'UNVERIFIED_NETWORK',{
+   finish(cors&&nodeOk?'UNVERIFIED_CORS_BLOCKED':browserSearch.errorName==='TimeoutError'?'UNVERIFIED_BROWSER_TIMEOUT':nodeOk?'UNVERIFIED_BROWSER_POLICY_OR_NETWORK':'UNVERIFIED_NETWORK',{
     corsConsoleEvidence:cors,nodeSearch:report.nodeSearch
    });
    return;
@@ -86,7 +86,7 @@ async function main(){
   report.nodeQuote=nodeQuote;
   const quoteCors=Boolean(browserQuote.errorMessage&&consoleErrors.some(x=>/cors|cross-origin|access-control-allow-origin/i.test(x)));
   if(browserQuote.errorMessage){
-   finish(quoteCors&&nodeQuote.ok?'UNVERIFIED_CORS_BLOCKED':'UNVERIFIED_BROWSER_NETWORK',{corsConsoleEvidence:quoteCors});
+   finish(quoteCors&&nodeQuote.ok?'UNVERIFIED_CORS_BLOCKED':browserQuote.errorName==='TimeoutError'?'UNVERIFIED_BROWSER_TIMEOUT':'UNVERIFIED_BROWSER_NETWORK',{corsConsoleEvidence:quoteCors});
    return;
   }
   const historyUrl=API+'/ClosingPrice/GetClosingPriceDailyList/'+code+'/0';
@@ -106,7 +106,7 @@ async function main(){
   report.nodeHistory=nodeHistory;
   if(browserHistory.errorMessage){
    const historyCors=consoleErrors.some(x=>/cors|cross-origin|access-control-allow-origin/i.test(x));
-   finish(historyCors&&nodeHistory.ok?'UNVERIFIED_CORS_BLOCKED':'UNVERIFIED_BROWSER_NETWORK',{corsConsoleEvidence:historyCors});
+   finish(historyCors&&nodeHistory.ok?'UNVERIFIED_CORS_BLOCKED':browserHistory.errorName==='TimeoutError'?'UNVERIFIED_BROWSER_TIMEOUT':'UNVERIFIED_BROWSER_NETWORK',{corsConsoleEvidence:historyCors});
    return;
   }
   const historyLag=Boolean(browserQuote.marketDate&&browserHistory.latestDate&&browserHistory.latestDate<browserQuote.marketDate);
