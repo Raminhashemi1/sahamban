@@ -3,12 +3,13 @@ plugins {
 }
 
 android {
+    // Keep the source/resource namespace stable; applicationId is the store identity.
     namespace 'ir.sahamban.pilot'
     compileSdk 35
 
     defaultConfig {
-        // Temporary test-only identifier. Owner must approve final package ID.
-        applicationId 'ir.sahamban.pilot'
+        // Owner-approved permanent Android package ID for Sahmino.
+        applicationId 'ir.sahmino.app'
         minSdk 26
         targetSdk 35
         versionCode 1
