@@ -130,3 +130,13 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - Reversal idempotency now requires both the namespaced provider event ID and the exact normalized payload hash to match a previously applied event. Reusing an event ID with different content is rejected.
 - Added a regression test for a provider event ID replayed with a different payload hash.
 - GitHub Actions run [44601709782](https://github.com/Raminhashemi1/sahamban/actions/runs/44601709782) passed on commit `e0c7f185cc35bfa63c8f42d793b3d2ed6acd8bcc`: 52 Node.js tests and 10 SQLite contract tests passed.
+
+
+## Branch audit — 2026-11-22
+
+- Audited the current branch head `15f5e07d304ad7d6a6f932cef40fb7687e25939c`; the branch contains the independent module and the latest change before this audit only updated this status record.
+- Confirmed GitHub Actions run [44601792293](https://github.com/Raminhashemi1/sahamban/actions/runs/44601792293) passed on the current branch head: 52 Node.js tests and 10 SQLite contract tests.
+- Re-read the settlement/reversal services, D1 schema, unit tests, and SQLite contract tests. No production D1 migration or live provider call is evidenced by these tests.
+- The stale-pre-read replay test remains sequential SQLite execution, not concurrent Cloudflare D1 requests. A controlled D1 integration test is still a release gate.
+- The internal reversal primitive remains intentionally unwired: authoritative Bazaar/Myket refund or revocation event contracts are not yet verified.
+- Next engineering step: add and run a controlled Cloudflare D1 integration/concurrency suite against a dedicated non-production database before claiming live D1 settlement validation. No production credentials or infrastructure were changed.
