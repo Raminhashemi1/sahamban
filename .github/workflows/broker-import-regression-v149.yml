@@ -1,0 +1,31 @@
+name: Sahamban broker import regression tests v149
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'broker-import.js'
+      - 'index.html'
+      - 'tests/broker-import-race-v146.test.cjs'
+      - 'tests/broker-import-security-v145.test.cjs'
+      - '.github/workflows/broker-import-regression-v149.yml'
+  push:
+    paths:
+      - 'broker-import.js'
+      - 'index.html'
+      - 'tests/broker-import-race-v146.test.cjs'
+      - 'tests/broker-import-security-v145.test.cjs'
+      - '.github/workflows/broker-import-regression-v149.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  broker-import-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: node --check broker-import.js
+      - run: node --test tests/broker-import-race-v146.test.cjs tests/broker-import-security-v145.test.cjs
