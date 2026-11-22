@@ -1,4 +1,4 @@
-سهام‌بان — راهنمای نصب نسخهٔ وب‌اپ (PWA)
+سهمینو — راهنمای نصب نسخهٔ وب‌اپ (PWA)
 
 لینک نصب و راهنما:
 https://raminhashemi1.github.io/sahamban/install.html
@@ -6,7 +6,7 @@ https://raminhashemi1.github.io/sahamban/install.html
 لینک اجرای مستقیم برنامه:
 https://raminhashemi1.github.io/sahamban/
 
-اندروید (Chrome): لینک نصب را باز کنید و اگر دکمهٔ «نصب سهام‌بان» ظاهر شد آن را بزنید. در غیر این صورت از منوی سه‌نقطه، گزینهٔ «نصب برنامه / Install app» یا «افزودن به صفحهٔ اصلی / Add to Home screen» را انتخاب کنید.
+اندروید (Chrome): لینک نصب را باز کنید و اگر دکمهٔ «نصب سهمینو» ظاهر شد آن را بزنید. در غیر این صورت از منوی سه‌نقطه، گزینهٔ «نصب برنامه / Install app» یا «افزودن به صفحهٔ اصلی / Add to Home screen» را انتخاب کنید.
 
 آیفون (Safari): لینک نصب را در Safari باز کنید، Share را بزنید و Add to Home Screen را انتخاب کنید.
 
