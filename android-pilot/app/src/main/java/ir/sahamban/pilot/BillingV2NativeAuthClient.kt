@@ -72,6 +72,24 @@ class BillingV2NativeAuthClient @JvmOverloads constructor(
         }
     }
 
+    fun recoverPassword(username: String, recoveryCode: String, newPassword: String,
+        callback: (Result<Boolean>) -> Unit) {
+        val normalizedUsername = normalizeUsername(username)
+        val normalizedCode = recoveryCode.trim().uppercase().replace(Regex("[ -]"), "")
+        if (normalizedUsername == null || !normalizedCode.matches(Regex("^[A-F0-9]{24}$")) ||
+            newPassword.length !in 12..128) {
+            callback(Result.Failure(400, "INVALID_RECOVERY"))
+            return
+        }
+        postJson("/api/v1/auth/recover",
+            JSONObject().put("username", normalizedUsername)
+                .put("recoveryCode", normalizedCode)
+                .put("newPassword", newPassword)) { status, body, _ ->
+            if (status == 200 && body.optBoolean("passwordReset")) callback(Result.Success(true))
+            else callback(Result.Failure(status, body.optString("error", "RECOVERY_FAILED")))
+        }
+    }
+
     fun checkSession(callback: SessionCallback) {
         main.post {
             val raw = try { CookieManager.getInstance().getCookie(workerBaseUrl) } catch (_: Exception) { null }
