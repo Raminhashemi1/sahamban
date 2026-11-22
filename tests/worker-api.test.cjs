@@ -153,8 +153,8 @@ test('prepaid overview route is disabled by default, private and read only',asyn
 test('CODAL proxy route rejects foreign origins, duplicate query and non-GET methods',async()=>{
  const worker=(await api()).default;
  const blocked=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=x',{headers:{Origin:'https://evil.example'}}),env());assert.equal(blocked.status,403);
- const duplicate=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=a&symbol=b',{headers:{Origin}}),env());assert.equal(duplicate.status,400);
- const method=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=a',{method:'POST',headers:{Origin}}),env());assert.equal(method.status,405);
+ const duplicate=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=a&symbol=b',{headers:{Origin:origin}}),env());assert.equal(duplicate.status,400);
+ const method=await worker.fetch(new Request('https://worker.example/api/v1/public/codal-search?symbol=a',{method:'POST',headers:{Origin:origin}}),env());assert.equal(method.status,405);
 });
 test('CODAL proxy helper validates symbol and classifies upstream responses',async()=>{
  const {proxyCodalSearch}=await api();let called=0;
