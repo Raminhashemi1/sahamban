@@ -33,7 +33,7 @@ function requestOriginAllowed(request,env){
 }
 async function handlePasswordAuthRoutes(request,env,url,nowMs){
  const route=url.pathname,origin=request.headers.get('Origin');
- const routes=['/api/v1/auth/login','/api/v1/auth/session','/api/v1/auth/logout'];
+ const routes=['/api/v1/auth/login','/api/v1/auth/recover','/api/v1/auth/session','/api/v1/auth/logout'];
  if(!routes.includes(route))return null;
  if(env?.SAHMINO_PASSWORD_AUTH_ENABLED!=='true')return authJson(request,{error:'FEATURE_DISABLED'},404,null);
  if(!requestOriginAllowed(request,env))return authJson(request,{error:'ORIGIN_NOT_ALLOWED'},403,null);
@@ -58,6 +58,26 @@ async function handlePasswordAuthRoutes(request,env,url,nowMs){
   catch(_){return authJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);}
   return result.ok
    ?authJson(request,{authenticated:true},200,origin,{'Set-Cookie':result.sessionCookie})
+   :authJson(request,{error:result.error},result.status,origin,
+     result.status===429?{'Retry-After':'900'}:{});
+ }
+ if(route==='/api/v1/auth/recover'){
+  if(request.method!=='POST')return authJson(request,{error:'METHOD_NOT_ALLOWED'},405,origin);
+  if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
+   return authJson(request,{error:'JSON_REQUIRED'},415,origin);
+  const parsed=await readSmallJson(request,2048);
+  if(parsed.error)return authJson(request,{error:parsed.error},parsed.status,origin);
+  const body=parsed.body;
+  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).length!==3||
+     typeof body.username!=='string'||typeof body.recoveryCode!=='string'||typeof body.newPassword!=='string')
+   return authJson(request,{error:'INVALID_REQUEST'},400,origin);
+  let result;
+  try{result=await auth.recoverPassword({username:body.username,recoveryCode:body.recoveryCode,
+   newPassword:body.newPassword,ipKey:request.headers.get('CF-Connecting-IP'),
+   rateLimitSecret:env?.AUTH_RATE_LIMIT_SECRET,now:nowMs});}
+  catch(_){return authJson(request,{error:'AUTH_UNAVAILABLE'},503,origin);}
+  return result.ok
+   ?authJson(request,{passwordReset:true},200,origin)
    :authJson(request,{error:result.error},result.status,origin,
      result.status===429?{'Retry-After':'900'}:{});
  }
