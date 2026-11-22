@@ -94,7 +94,7 @@ async function main(){
    try{
     const response=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
     const body=await response.json(),rows=body?.closingPriceDaily;
-    const valid=Array.isArray(rows)?rows.filter(x=>/^\\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0):[];
+    const valid=Array.isArray(rows)?rows.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0):[];
     return {httpStatus:response.status,ok:response.ok,rows:valid.length,latestDate:valid.map(x=>String(x.dEven)).sort().at(-1)||null,
      latestPrice:Number(valid.slice().sort((a,b)=>String(a.dEven).localeCompare(String(b.dEven))).at(-1)?.pClosing)||null};
    }catch(error){return {errorName:error?.name||null,errorMessage:String(error?.message||error).slice(0,200)};}
