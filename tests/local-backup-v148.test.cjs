@@ -103,6 +103,7 @@ function uiHarness(initial={},nativeBridge=null){
  const fakeWin={
   document:{getElementById:element},
   localStorage:state,
+  ...(nativeBridge?{sahambanNativeBackup:nativeBridge}:{}),
   confirm(message){confirms.push(message);return true;}
  };
  api.mount(fakeWin);
