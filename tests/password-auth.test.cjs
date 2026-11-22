@@ -109,5 +109,7 @@ test('password recovery consumes one code atomically, replaces password and revo
  assert.match(calls[1][0].sql,/used_at IS NULL/);
  assert.match(calls[1][1].sql,/UPDATE sahamban_users SET password_salt=\?/);
  assert.match(calls[1][2].sql,/UPDATE sahmino_shared_sessions SET revoked_at=\?/);
- assert.ok(calls[1][0].values.includes('AABBCCDDEEFF001122334455'));
+ const expectedDigest=require('node:crypto').createHash('sha256').update('AABBCCDDEEFF001122334455').digest('hex');
+ assert.ok(calls[1][0].values.includes(expectedDigest));
+ assert.ok(!calls[1][0].values.includes('AABBCCDDEEFF001122334455'));
 });
