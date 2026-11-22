@@ -89,9 +89,34 @@ async function main(){
    finish(quoteCors&&nodeQuote.ok?'UNVERIFIED_CORS_BLOCKED':'UNVERIFIED_BROWSER_NETWORK',{corsConsoleEvidence:quoteCors});
    return;
   }
-  finish('CORS_FETCH_PASSED',{instrumentCode:code,searchHttpStatus:browserSearch.httpStatus,quoteHttpStatus:browserQuote.httpStatus,
-   quotePayloadPresent:browserQuote.hasClosingPriceInfo,
-   note:'Browser-origin fetch completed. This does not certify quote freshness or same-day history agreement.'});
+  const historyUrl=API+'/ClosingPrice/GetClosingPriceDailyList/'+code+'/0';
+  const browserHistory=await page.evaluate(async url=>{
+   try{
+    const response=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
+    const body=await response.json(),rows=body?.closingPriceDaily;
+    const valid=Array.isArray(rows)?rows.filter(x=>/^\\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0):[];
+    return {httpStatus:response.status,ok:response.ok,rows:valid.length,latestDate:valid.map(x=>String(x.dEven)).sort().at(-1)||null,
+     latestPrice:Number(valid.slice().sort((a,b)=>String(a.dEven).localeCompare(String(b.dEven))).at(-1)?.pClosing)||null};
+   }catch(error){return {errorName:error?.name||null,errorMessage:String(error?.message||error).slice(0,200)};}
+  },historyUrl);
+  report.browserHistory=browserHistory;
+  let nodeHistory;
+  try{const h=await nodeGet(historyUrl);const rows=h.body?.closingPriceDaily;nodeHistory={httpStatus:h.httpStatus,ok:h.ok,rows:Array.isArray(rows)?rows.length:0};}
+  catch(error){nodeHistory={status:'UNVERIFIED_NETWORK',errorName:error?.name||null,code:error?.cause?.code||error?.code||null};}
+  report.nodeHistory=nodeHistory;
+  if(browserHistory.errorMessage){
+   const historyCors=consoleErrors.some(x=>/cors|cross-origin|access-control-allow-origin/i.test(x));
+   finish(historyCors&&nodeHistory.ok?'UNVERIFIED_CORS_BLOCKED':'UNVERIFIED_BROWSER_NETWORK',{corsConsoleEvidence:historyCors});
+   return;
+  }
+  const historyLag=Boolean(browserQuote.marketDate&&browserHistory.latestDate&&browserHistory.latestDate<browserQuote.marketDate);
+  finish(historyLag?'UNVERIFIED_HISTORY_NOT_PUBLISHED':'CORS_FETCH_PASSED',{
+   instrumentCode:code,searchHttpStatus:browserSearch.httpStatus,quoteHttpStatus:browserQuote.httpStatus,
+   quotePayloadPresent:browserQuote.hasClosingPriceInfo,quoteDate:browserQuote.marketDate,
+   historyHttpStatus:browserHistory.httpStatus,historyRows:browserHistory.rows,
+   latestHistoryDate:browserHistory.latestDate,
+   note:historyLag?'Browser CORS works, but the daily-history endpoint has not yet published the quote date. Do not treat the quote as history-verified.':'Browser-origin fetch completed; freshness and same-day history/price agreement still require separate validation.'
+  });
  }catch(error){
   finish('UNVERIFIED_DIAGNOSTIC_ERROR',{errorName:error?.name||null,errorMessage:String(error?.message||error).slice(0,200)});
  }finally{await browser?.close();}
