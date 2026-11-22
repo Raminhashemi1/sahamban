@@ -30,7 +30,7 @@ test('same-origin static assets use network-first and refresh cache',async()=>{
 });
 test('offline static assets fall back to cached response without HTML substitution',async()=>{
  const h=harness({offline:true});
- const appVersion=source.match(/app\\.js\\?v=(\\d+)/)?.[1];assert.ok(appVersion);
+ const appVersion=source.match(/app\.js\?v=(\d+)/)?.[1];assert.ok(appVersion);
  const key='https://app.test/sahamban/app.js?v='+appVersion;
  h.entries.set(key,{ok:true,body:'cached-app'});
  const result=await h.request('app.js?v='+appVersion);
