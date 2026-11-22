@@ -102,6 +102,36 @@ function createPasswordAuth(db,{clock=()=>Date.now(),sessionTtlSeconds=SESSION_T
   if(!session)return {ok:false,status:503,error:'SESSION_UNAVAILABLE'};
   return {ok:true,status:200,userId:row.id,sessionCookie:session.cookie};
  }
+ async function recoverPassword({username,recoveryCode,newPassword,ipKey,rateLimitSecret,now=clock()}){
+  const normalized=normalizeUsername(username);
+  if(!normalized||typeof recoveryCode!=='string'||!validPassword(newPassword))
+   return {ok:false,status:400,error:'INVALID_RECOVERY'};
+  const code=recoveryCode.toUpperCase().replace(/[ -]/g,'');
+  if(!/^[A-F0-9]{24}$/.test(code))
+   return {ok:false,status:400,error:'INVALID_RECOVERY'};
+  if(typeof rateLimitSecret!=='string'||encoder.encode(rateLimitSecret).length<32||
+     typeof ipKey!=='string'||ipKey.length<8)
+   return {ok:false,status:503,error:'AUTH_UNAVAILABLE'};
+  const allowed=await reserveLoginAttempt({usernameKey:normalized,ipKey,secret:rateLimitSecret,now});
+  if(!allowed)return {ok:false,status:429,error:'LOGIN_RATE_LIMITED'};
+  const digest=await sha256Hex(code);
+  const credentials=await hashPassword(newPassword);
+  const resetId='rst_'+randomHex(16),stamp=iso(now);
+  const results=await db.batch([
+   db.prepare(`UPDATE sahmino_recovery_codes SET used_at=?,reset_id=?
+    WHERE user_id=(SELECT id FROM sahamban_users WHERE username_normalized=? AND status='ACTIVE')
+     AND code_hash=? AND used_at IS NULL`).bind(stamp,resetId,normalized,digest),
+   db.prepare(`UPDATE sahamban_users SET password_salt=?,password_hash=?,password_iterations=?
+    WHERE id=(SELECT user_id FROM sahmino_recovery_codes WHERE reset_id=?) AND status='ACTIVE'`)
+    .bind(credentials.salt,credentials.hash,credentials.iterations,resetId),
+   db.prepare(`UPDATE sahmino_shared_sessions SET revoked_at=?
+    WHERE user_id=(SELECT user_id FROM sahmino_recovery_codes WHERE reset_id=?) AND revoked_at IS NULL`)
+    .bind(stamp,resetId)
+  ]);
+  if(results?.length!==3||results[0]?.meta?.changes!==1||results[1]?.meta?.changes!==1)
+   return {ok:false,status:400,error:'INVALID_RECOVERY'};
+  return {ok:true,status:200};
+ }
  async function findActiveSession(bearer,now=clock()){
   if(typeof bearer!=='string'||!/^[a-f0-9]{64}$/.test(bearer))return null;
   const tokenHash=await sha256Hex(bearer);
@@ -119,6 +149,10 @@ function createPasswordAuth(db,{clock=()=>Date.now(),sessionTtlSeconds=SESSION_T
   return result.meta?.changes===1;
  }
  function clearSessionCookie(){return 'sahmino_session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0';}
- return Object.freeze({login,findActiveSession,revokeSession,clearSessionCookie});
+ return Object.freeze({login,recoverPassword,findActiveSession,revokeSession,clearSessionCookie});
 }
-module.exports={createPasswordAuth,normalizeUsername,validPassword,hashPassword,PASSWORD_ITERATIONS};
+function createRecoveryCodes(count=10){
+ if(!Number.isSafeInteger(count)||count<1||count>20)throw new TypeError('Invalid recovery-code count');
+ return Array.from({length:count},()=>randomHex(12).toUpperCase().match(/.{1,6}/g).join('-'));
+}
+module.exports={createPasswordAuth,normalizeUsername,validPassword,hashPassword,createRecoveryCodes,PASSWORD_ITERATIONS};
