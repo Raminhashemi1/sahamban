@@ -10,7 +10,7 @@ Sahmino password recovery uses owner-issued one-time recovery codes. SMS, email 
 - Invalid, expired-by-rotation, or already-used codes produce the same generic recovery failure.
 - Recovery requests share the username/IP rate-limit buckets used by login.
 - The reset endpoint accepts requests only from the exact configured PWA origin.
-- Re-running provisioning for an existing account changes its password and rotates its entire recovery-code set. All previous codes are invalidated.
+- Re-running provisioning for an existing account changes its password, revokes all active shared sessions, and rotates its entire recovery-code set. All previous codes are invalidated.
 
 ## Provisioning procedure
 
