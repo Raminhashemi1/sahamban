@@ -9,6 +9,7 @@ const {chromium}=require('playwright');
 
 const report={version:149,synthetic:true,physical_device:false,live_market_verified:false,checks:[],status:'RUNNING'};
 function pass(label){report.checks.push(label);}
+const asciiDigits=value=>String(value).replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
 async function main(){
  const root=process.cwd();
  const server=http.createServer((req,res)=>{
@@ -43,7 +44,7 @@ async function main(){
   await page.locator('#pfAdd').click();
   let rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,2,'adding a new symbol should create exactly one new row');
-  assert.match(rows[1],/^آزمایشی02,5,200,220,180,280$/);
+  assert.match(asciiDigits(rows[1]),/^آزمایشی02,5,200,220,180,280$/);
   assert.match(await page.locator('#pfStatus').innerText(),/نماد به سبد اضافه شد/);
   pass('new synthetic holding added through the real form without duplicating existing rows');
 
@@ -55,21 +56,21 @@ async function main(){
   await page.locator('#pfAdd').click();
   rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,2,'editing must update in place, not append a duplicate');
-  assert.match(rows[1],/^آزمایشی02,12,200,230,180,280$/);
+  assert.match(asciiDigits(rows[1]),/^آزمایشی02,12,200,230,180,280$/);
   assert.match(await page.locator('#pfStatus').innerText(),/اطلاعات نماد به‌روزرسانی شد/);
   pass('existing synthetic holding edited in place with no duplicate row');
 
   await page.locator('#portfolioSave').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('sahamban-portfolio-local-v1')||'null'));
   assert.equal(saved.version,2);
-  assert.match(saved.data,/آزمایشی02,12,200,230,180,280/);
+  assert.match(asciiDigits(saved.data),/آزمایشی02,12,200,230,180,280/);
   pass('explicit save writes the edited portfolio and risk settings to local browser storage');
 
   await page.reload({waitUntil:'load'});
   await page.locator('#portfolioLoad').click();
   rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,2);
-  assert.match(rows[1],/^آزمایشی02,12,200,230,180,280$/);
+  assert.match(asciiDigits(rows[1]),/^آزمایشی02,12,200,230,180,280$/);
   pass('saved portfolio is restored after a full page reload');
 
   await page.locator('#pfExisting').selectOption('آزمایشی02');
@@ -94,7 +95,7 @@ async function main(){
   await page.locator('#portfolioLoad').click();
   rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
   assert.equal(rows.length,1,'persisted deletion should remain absent after reload and restore');
-  assert.match(rows[0],/^آزمایشی01,10,100,120,90,150$/);
+  assert.match(asciiDigits(rows[0]),/^آزمایشی01,10,100,120,90,150$/);
   pass('confirmed deletion persists only after explicit save and survives reload/restore');
 
   assert.deepEqual(errors,[]);
