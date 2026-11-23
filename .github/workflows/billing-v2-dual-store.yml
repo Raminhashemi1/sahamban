@@ -22,6 +22,7 @@ on:
       - 'tests/worker-api.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
+      - '.github/workflows/android-pilot-signed-billing-release.yml'
       - '.github/workflows/billing-v2-dual-store.yml'
   pull_request:
     paths:
