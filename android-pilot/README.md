@@ -47,7 +47,8 @@ keys, or Worker URLs.
 
 Both store Workers must share one private D1 database and exact PWA origin.
 Apply the base schema, existing Billing V2 migrations as appropriate, and
-`server/migrations/0004-username-password-auth.sql`. Provision new accounts or set credentials on an existing account with
+both `server/migrations/0004-username-password-auth.sql` and
+`server/migrations/0005-password-recovery-codes.sql` exactly once. Provision new accounts or set credentials on an existing account with
 `scripts/provision-sahmino-user.mjs`; pass the existing internal `userId` to
 update a backfilled account. It reads JSON from stdin and prints SQL containing
 only the derived PBKDF2 password hash.
