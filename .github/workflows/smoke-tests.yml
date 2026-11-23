@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, integration/sahmino-app-billing-complete]
+    branches: [main, integration/sahmino-app-billing-complete, codex/reengineering-audit]
   workflow_dispatch:
 jobs:
   smoke:
