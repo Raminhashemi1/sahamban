@@ -1,4 +1,4 @@
-# Sahmino Android host — username/password and in-app billing
+# Sahmino Android app — username/password and in-app billing
 
 This module wraps the Sahmino PWA and exposes a native subscription screen.
 The source can produce unsigned verification builds and, after owner-managed signing secrets are configured, signed initial-release APKs with subscription checkout forcibly disabled. Until signing, live Worker setup, device acceptance, and store submission are complete, generated APKs are not marketplace-ready.
