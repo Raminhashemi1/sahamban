@@ -23,6 +23,8 @@ Do not apply the fresh schema and the upgrade migration to the same database. Ta
 
 Copy `server/wrangler.bazaar.toml.example` to `server/wrangler.bazaar.toml`, then replace the PWA origin, actual application ID, shared D1 database name/ID, and all five Bazaar SKUs from the developer panel.
 
+Record the deployed HTTPS Worker origin as the repository Actions variable `SAHAMBAN_BAZAAR_WORKER_BASE_URL`. This URL is injected only into the Bazaar Android flavor.
+
 From the repository root, set secrets:
 ```sh
 wrangler secret put AUTH_RATE_LIMIT_SECRET --config server/wrangler.bazaar.toml
@@ -35,6 +37,8 @@ wrangler secret put BAZAAR_RSA_PUBLIC_KEY --config server/wrangler.bazaar.toml
 ## 3. Prepare the Myket Worker
 
 Copy `server/wrangler.myket.toml.example` to `server/wrangler.myket.toml`, then replace the exact PWA origin, actual application ID, same D1 database name/ID, and all five Myket SKUs from the developer panel.
+
+Record the deployed HTTPS Worker origin as the repository Actions variable `SAHAMBAN_MYKET_WORKER_BASE_URL`. This URL is injected only into the Myket Android flavor; do not point both flavors at the same store-configured Worker.
 
 Set the Myket public key as a secret:
 ```sh
