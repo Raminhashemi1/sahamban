@@ -84,6 +84,10 @@ class BillingV2LoginView(
             .setNegativeButton("انصراف", null)
             .setPositiveButton("تغییر رمز", null)
             .create()
+        dialog.setOnDismissListener {
+            codeInput.text?.clear()
+            newPasswordInput.text?.clear()
+        }
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 if (busy) return@setOnClickListener
