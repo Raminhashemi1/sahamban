@@ -13,6 +13,27 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Validate production Worker endpoint required by native login
+        shell: bash
+        env:
+          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SAHAMBAN_WORKER_BASE_URL:-}" ]]; then
+            echo "::error::Configure the repository Actions variable SAHAMBAN_WORKER_BASE_URL with the production HTTPS Worker origin before creating a signed app. Without it, native login cannot start."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os, sys, urllib.parse
+          value = os.environ["SAHAMBAN_WORKER_BASE_URL"]
+          parsed = urllib.parse.urlparse(value)
+          valid = (parsed.scheme == "https" and bool(parsed.hostname) and
+                   parsed.username is None and parsed.password is None and
+                   parsed.path in ("", "/") and not parsed.query and not parsed.fragment)
+          if not valid:
+              raise SystemExit("SAHAMBAN_WORKER_BASE_URL must be an HTTPS origin without credentials, path, query, or fragment.")
+          print("PASS production Worker origin configured")
+          PY
       - name: Validate owner-managed signing secrets
         shell: bash
         env:
@@ -49,6 +70,7 @@ jobs:
           SAHAMBAN_APPLICATION_ID: ir.sahmino.app
           SAHAMBAN_EXPECTED_PACKAGE_NAME: ir.sahmino.app
           SAHAMBAN_PWA_ORIGIN: https://raminhashemi1.github.io
+          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
           SAHAMBAN_BILLING_ENABLED: 'false'
           SAHMINO_RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/sahmino-release.jks
           SAHMINO_RELEASE_STORE_PASSWORD: ${{ secrets.SAHMINO_RELEASE_STORE_PASSWORD }}
