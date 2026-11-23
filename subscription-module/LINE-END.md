@@ -111,6 +111,8 @@
 
 **خروجی فنی تکمیل‌شده:** دو APK نوع Release برای Bazaar و Myket بدون SKU و بدون secret خصوصی ساخته شدند؛ package و خاموش‌بودن checkout بررسی شد. artifact شماره `14800616251` غیرامضاشده است. **باقی‌مانده برای بسته‌شدن مرحله:** امضای معتبر با کلید Release، پیکربندی نهایی Worker و پذیرش فیزیکی روی دستگاه. checkout در هر دو Flavor خاموش است.
 
+**به‌روزرسانی 2026-11-23 پس از ادغام احراز هویت:** گیت Release مجدداً روی commit `9a88d0bd4ce1a8b08aaedd358226ef167064c15e` موفق شد ([run 45142658012](https://github.com/Raminhashemi1/sahamban/actions/runs/45142658012)، artifact `14803350452`). خروجی ZIP شامل `app-bazaar-release-unsigned.apk` و `app-myket-release-unsigned.apk` است؛ هر دو با package `ir.sahmino.app` و checkout خاموش ساخته شدند. SHA-256 بازار: `0f1f48b38858deb0ef0ea219ec7a9944268e1cb5d8c481f8be09ac6cc418c533`؛ مایکت: `ff0eeae6151374e9e41eb9de309266b7008d080e424bc3591c02e0950285a76d`. این APKها عمداً unsigned هستند و قابل ارسال به فروشگاه نیستند. هیچ SKU در این مرحله استفاده یا درخواست نشده است.
+
 ### 7. پذیرش واقعی خرید روی دستگاه و حساب آزمایشی هر فروشگاه — فقط پس از انتشار اولیه و تکمیل مرحله ۲؛ مالک/آزمایشگر + اجرای فنی
 برای هر دو Flavor جداگانه، ماتریس `server/billing/PHYSICAL_ACCEPTANCE_MATRIX.md` اجرا و نتیجه ثبت شود:
 - ورود نام کاربری/رمز عبور، ماندگاری نشست، خروج، تعویض حساب و بازیابی رمز طبق فرایند تأییدشده.
