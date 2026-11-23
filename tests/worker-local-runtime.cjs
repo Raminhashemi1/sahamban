@@ -76,7 +76,7 @@ async function main(){
     orderId:disabled.data.order.id,sku:'unknown',token:'synthetic-purchase-token',
     originalJson:'{}',dataSignature:'AAAAAAAAAAAAAAAA'
    }});
-   assert.equal(noSku.status,503);
+   assert.equal(noSku.status,400);
    assert.deepEqual(noSku.data,{error:'UNKNOWN_PRODUCT_SKU'});
   }
   assert.equal((await json('/api/v1/checkout',{method:'POST'})).status,404);
