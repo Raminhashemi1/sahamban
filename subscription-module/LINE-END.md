@@ -14,9 +14,14 @@
 
 ## وضعیت فعلی
 
-پیاده‌سازی منبع، اتصال میزبان اندروید به Worker، مسیرهای اختصاصی Bazaar/Myket، دفترکل مشترک D1، کنترل قیمت/رسید، بازیابی و تست‌های خودکار در شاخه موجودند. این موارد دوباره در صف توسعه قرار نمی‌گیرند.
+## وضعیت فعلی
 
-آخرین شواهد CI ثبت‌شده در سابقه مخزن، آزمون یکپارچگی دو فروشگاه است؛ CI شبیه‌سازی‌شده جایگزین استقرار و خرید واقعی نیست. PR #191 هنوز Draft است و تا پذیرش نهایی ادغام نمی‌شود.
+**آخرین وضعیت خودکار روی HEAD `debaca90083e34150455262e6bfa9a96e2893353` (2026-11-23):** Billing V2 و Android Debug در حال اجرای مجدد پس از تغییر workflow و README هستند؛ Release build gate نیز مجدداً در حال اجراست. آخرین نتایج قطعی قبل از این مستندات، روی commit `c221f0e9c0f7c4951cd73378c9eeb610d49d4f71` هر دو سبز بودند: [Billing CI run 45149894408](https://github.com/Raminhashemi1/sahamban/actions/runs/45149894408)، [Android Debug run 45149894464](https://github.com/Raminhashemi1/sahamban/actions/runs/45149894464). Release build gate روی commit `0a74df3e6390dfcd3fbc53f5f22871eb8c05ba5d` نیز موفق بود: [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084)، artifact unsigned شماره `14806550004`. Debug artifact روی HEAD قبلی `c221f0e9` با شناسه `14804944127` ساخته شد. همه این APKها آزمایشی/unsigned هستند و برای ارسال فروشگاه نیستند.
+
+**سخت‌سازی انتشار امضاشده:** کشف شد که اپ در شروع به Worker URL نیاز دارد و بدون آن حتی ورود به PWA ممکن نیست. Workflow امضای دستی اکنون fail-closed است و متغیر مخزن Actions به نام `SAHAMBAN_WORKER_BASE_URL` را به‌عنوان HTTPS origin معتبر الزامی می‌کند و در هر دو Flavor تزریق می‌کند. این متغیر باید فقط پس از آماده‌شدن Worker production تنظیم شود؛ endpoint عمومی است و نباید به‌عنوان secret ثبت شود. بنابراین workflow امضا تا آماده‌شدن endpoint و چهار secret امضا عمداً متوقف می‌ماند.
+
+**وضعیت ادغام:** PR #191 باز و Draft است؛ HEAD با base قابل ادغام گزارش شده، اما به‌دلیل نیاز به Worker/D1، کلید امضا، تست فیزیکی و مدارک فروشگاه هنوز آماده ادغام/انتشار نهایی نیست.
+
 
 ## ترتیب قطعی اجرا
 
