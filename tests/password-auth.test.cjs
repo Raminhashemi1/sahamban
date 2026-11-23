@@ -107,7 +107,7 @@ test('password recovery consumes one code atomically, replaces password and revo
  assert.equal(calls.length,2);
  assert.match(calls[1][0].sql,/UPDATE sahamban_users SET password_salt=\?/);
  assert.match(calls[1][0].sql,/rc\.code_hash=\? AND rc\.used_at IS NULL/);
- assert.match(calls[1][1].sql,/UPDATE sahmino_recovery_codes SET used_at=\\?,reset_id=\\?/);
+ assert.match(calls[1][1].sql,/UPDATE sahmino_recovery_codes SET used_at=\?,reset_id=\?/);
  assert.match(calls[1][1].sql,/used_at IS NULL AND changes\(\)=1/);
  assert.match(calls[1][2].sql,/UPDATE sahmino_shared_sessions SET revoked_at=\?/);
  assert.match(calls[1][2].sql,/changes\(\)=1/);
