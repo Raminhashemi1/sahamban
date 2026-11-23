@@ -49,3 +49,14 @@ Use store-specific manifest placeholders and public keys per flavor. This is the
 
 ## Verification boundary
 The verifier has automated cryptographic tests using generated RSA keys. It still requires a real Myket app-specific public key and real test purchase on a device distributed/tested through Myket before release certification.
+
+
+## Current official SDK documentation cross-check — 2026-11-23
+
+The official Myket Android sample README currently documents the `ir.myket:billing:2.2` artifact, multi-store Gradle flavors, the app-specific Base64 RSA public key, signed `originalJson` / `signature` purchase evidence, and consumable-product handling. It also explicitly recommends server-side purchase validation through the Myket Developer API for critical transactions.
+
+The public sample README reviewed for this cross-check does **not** specify a backend Developer API endpoint, authentication scheme, request/response schema, refund/revocation lookup, or retry contract. Therefore:
+- Keep the current RSA signature verification as a cryptographic authenticity check only.
+- Do not describe it as live Myket ownership or refund-state verification.
+- Do not invent a Developer API URL or payload.
+- Before production, obtain the current API contract from the authenticated Myket developer panel/support and add contract tests with real sandbox/test credentials.
