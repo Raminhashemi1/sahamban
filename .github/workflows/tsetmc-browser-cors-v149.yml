@@ -1,0 +1,35 @@
+name: Sahamban TSETMC browser CORS diagnostic v149
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/tsetmc-browser-cors-v149.cjs'
+      - '.github/workflows/tsetmc-browser-cors-v149.yml'
+  push:
+    paths:
+      - 'tests/tsetmc-browser-cors-v149.cjs'
+      - '.github/workflows/tsetmc-browser-cors-v149.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-origin-cors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node --check tests/tsetmc-browser-cors-v149.cjs
+      - run: node tests/tsetmc-browser-cors-v149.cjs
+      - name: Preserve browser-origin CORS evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sahamban-tsetmc-browser-cors-v149
+          path: test-artifacts/tsetmc-browser-cors-v149.json
+          if-no-files-found: warn
+          retention-days: 14
