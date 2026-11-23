@@ -29,9 +29,9 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(build,/myketImplementation.*ir\.myket:billing:2\.2/);
  assert.match(build,/System\.getenv\('SAHAMBAN_BILLING_ENABLED'\) == 'true'/);
  assert.match(build,/allSkusPresent/);
- assert.match(build,/appId == 'ir\\.sahmino\\.app' && expectedPackage == 'ir\\.sahmino\\.app'/);
+ assert.ok(build.includes("appId == 'ir.sahmino.app' && expectedPackage == 'ir.sahmino.app'"));
  assert.match(build,/validWorkerOrigin/);
- assert.match(build,/pwaOrigin == 'https:\/\/raminhashemi1\\.github\\.io'/);
+ assert.ok(build.includes("pwaOrigin == 'https://raminhashemi1.github.io'"));
  const releaseBlock=build.slice(build.indexOf('release {'));
  assert.match(releaseBlock,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/,
   'release checkout must remain hard-disabled regardless of debug configuration');
