@@ -116,3 +116,14 @@ Do not run this workflow until the initial app is published, actual store produc
 
 No production deployment, live D1 migration, real purchase, or release
 signing is performed by this source integration.
+
+
+## Latest automated verification (2026-11-23)
+
+- Billing V2, both store adapters, local D1 schema/migrations, password-auth integration, and Worker bundle: [GitHub Actions run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422) — passed.
+- Full application smoke/browser checks: [GitHub Actions run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384) — passed.
+- Bazaar and Myket Android Debug flavors: [GitHub Actions run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447) — passed; compile/test artifact only.
+- The checkout-disabled Release APK gate last passed at [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084). A new run is required after Android source/workflow changes; unsigned output is never a store submission artifact.
+
+These automated checks do not replace owner-controlled production deployment,
+release signing, or physical-device and marketplace acceptance.
