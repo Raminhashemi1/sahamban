@@ -103,3 +103,33 @@ test('settlement returns the entitlement read from inside the atomic batch', asy
   assert.equal(db.calls[0].length, 4);
   assert.match(db.calls[0][2].sql, /EXISTS\s*\(\s*SELECT 1 FROM billing_events/);
 });
+
+test('settlement rejects a persisted order whose amount no longer matches the canonical plan', async () => {
+  const db = makeDb({ order: { ...order, amount_irr: 1 } });
+  const result = await settleVerifiedPurchase(db, {
+    orderId: 'order-1', authenticatedUserId: 'user-1',
+    verifiedPurchase: { ...verifiedPurchase, amountIrr: 1 }
+  });
+  assert.equal(result.error, 'ORDER_CATALOG_MISMATCH');
+  assert.equal(db.calls.length, 0);
+});
+
+test('settlement rejects oversized provider transaction references before writing', async () => {
+  const db = makeDb({ order });
+  const result = await settleVerifiedPurchase(db, {
+    orderId: 'order-1', authenticatedUserId: 'user-1',
+    verifiedPurchase: { ...verifiedPurchase, storeOrderId: 'x'.repeat(257) }
+  });
+  assert.equal(result.error, 'INVALID_VERIFIED_PURCHASE');
+  assert.equal(db.calls.length, 0);
+});
+
+test('settlement rejects malformed order references before database access', async () => {
+  const db = makeDb({ order });
+  const result = await settleVerifiedPurchase(db, {
+    orderId: 'x'.repeat(129), authenticatedUserId: 'user-1',
+    verifiedPurchase
+  });
+  assert.equal(result.error, 'INVALID_ORDER_REFERENCE');
+  assert.equal(db.calls.length, 0);
+});
