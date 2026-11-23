@@ -48,7 +48,8 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  for(const secret of ['SAHMINO_RELEASE_KEYSTORE_BASE64','SAHMINO_RELEASE_STORE_PASSWORD','SAHMINO_RELEASE_KEY_ALIAS','SAHMINO_RELEASE_KEY_PASSWORD']) assert.ok(signedWf.includes(secret),secret);
  assert.match(signedWf,/assembleBazaarRelease/);
  assert.match(signedWf,/assembleMyketRelease/);
- assert.match(signedWf,/apksigner.*verify/);
+ assert.match(signedWf,/APKSIGNER=/);
+ assert.match(signedWf,/"\$APKSIGNER" verify/);
  assert.match(signedWf,/SAHAMBAN_BILLING_ENABLED: 'false'/);
  assert.match(read('android-pilot/README.md'),/generated APKs are not marketplace-ready/i);
 });
