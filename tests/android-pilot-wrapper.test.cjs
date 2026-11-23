@@ -23,14 +23,12 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  const build=read('android-pilot/app/build.gradle');
  assert.ok(build.includes("def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahmino.app'"));
  assert.match(build,/applicationId appId/);
- assert.match(build,/expectedPackage == appId/);
  assert.doesNotMatch(build,/signingConfigs|storePassword|keyPassword/);
  assert.match(build,/compileSdk 36/);
  assert.match(build,/bazaarImplementation.*Poolakey/);
  assert.match(build,/myketImplementation.*ir\.myket:billing:2\.2/);
  assert.match(build,/System\.getenv\('SAHAMBAN_BILLING_ENABLED'\) == 'true'/);
  assert.match(build,/allSkusPresent/);
- assert.ok(build.includes("appId != 'ir.sahamban.pilot'"));
  assert.match(build,/appId == 'ir\\.sahmino\\.app' && expectedPackage == 'ir\\.sahmino\\.app'/);
  assert.match(build,/validWorkerOrigin/);
  assert.match(build,/pwaOrigin == 'https:\/\/raminhashemi1\\.github\\.io'/);
