@@ -31,7 +31,7 @@ android {
         minSdk 26
         targetSdk 35
         versionCode 1
-        versionName '0.1.0-pilot'
+        versionName '1.0.0'
         buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + workerUrl + '"'
         buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + pwaOrigin + '"'
         buildConfigField 'String', 'SAHAMBAN_EXPECTED_PACKAGE_NAME', '"' + expectedPackage + '"'
