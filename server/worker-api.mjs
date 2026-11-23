@@ -247,7 +247,9 @@ export default {
    if(env?.BILLING_V2_ENABLED!=='true')return send({error:'FEATURE_DISABLED'},404,cors);
    if(request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase()!=='application/json')
     return send({error:'JSON_REQUIRED'},415,cors);
-   const parsed=await readJsonLimited(request,8192);
+   // Myket originalJson may be up to 16 KiB and its signature/envelope adds overhead.
+   // Keep a bounded 24 KiB limit so valid provider evidence is not rejected before verification.
+   const parsed=await readJsonLimited(request,24*1024);
    if(parsed.error)return send({error:parsed.error},parsed.error==='BODY_TOO_LARGE'?413:400,cors);
    const store=env?.BILLING_STORE||'BAZAAR';
    if(store!=='BAZAAR'&&store!=='MYKET')return send({error:'BILLING_STORE_NOT_CONFIGURED'},503,cors);
