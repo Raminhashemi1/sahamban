@@ -71,6 +71,15 @@
 - ارائه مستند رسمی/قرارداد تجاری یا پاسخ پشتیبانی رسمی مایکت درباره API یا روش معتبر تشخیص refund/revocation و وضعیت خرید پس از برگشت وجه.
 - اگر مایکت API یا webhook قابل استفاده ارائه نمی‌کند، تأیید کتبی روش جایگزین مورد قبول (مثلاً فرایند reconciliation پشتیبانی‌شده).
 
+**چک‌لیست دقیق درخواست از پشتیبانی/پنل مایکت:** قرارداد رسمی باید برای خرید یک‌باره مصرف‌شدنی این موارد را روشن کند:
+- endpoint رسمی server-to-server برای استعلام purchase token و احراز package، product ID، وضعیت خرید، زمان و شناسه سفارش.
+- روش احراز هویت سرور، scope/مجوز لازم، محدودیت نرخ، محیط sandbox و حساب آزمایشی.
+- نحوه تشخیص refund، لغو، chargeback و revocation بعد از settlement؛ آیا API استعلام دوره‌ای، webhook یا هر دو وجود دارد؟
+- شکل payload و امضای webhook، تضمین تحویل/تکرار، سیاست retry و زمان نهایی‌شدن وضعیت برگشت وجه.
+- روش رسمی تطبیق تراکنش‌های برگشت‌خورده برای خریدهای مصرف‌شدنی که قبلاً consume شده‌اند.
+
+مستند رسمی نمونه اندروید مایکت در بخش Server-Side Validation اعتبارسنجی با Developer API را توصیه می‌کند، اما در README عمومی endpoint، مدل احراز هویت و قرارداد refund/revocation را منتشر نکرده است ([نمونه رسمی مایکت](https://github.com/myketstore/billing-sample-android#security-best-practices)). بنابراین تا دریافت پاسخ رسمی، ساخت endpoint حدسی یا فعال‌سازی خرید امن نیست.
+
 **خروجی بسته‌شدن:** روش مستند و تأییدشده؛ سپس فقط همان قرارداد پیاده‌سازی/پیکربندی و آزمون می‌شود. تا آن زمان خرید عمومی مایکت فعال نمی‌شود.
 
 ### 4. نهایی‌سازی احراز هویت نام کاربری/رمز عبور و بازیابی حساب — مالک + اجرای فنی
@@ -122,6 +131,8 @@
 **به‌روزرسانی 2026-11-23 پس از ادغام احراز هویت:** گیت Release روی commit `9a88d0bd4ce1a8b08aaedd358226ef167064c15e` موفق شد ([run 45142658012](https://github.com/Raminhashemi1/sahamban/actions/runs/45142658012)، artifact `14803350452`). خروجی ZIP شامل دو APK با package `ir.sahmino.app` و checkout خاموش است؛ SHA-256 هر دو در سابقه artifact ثبت شده‌اند. این APKها unsigned هستند و قابل ارسال به فروشگاه نیستند. هیچ SKU در این مرحله استفاده یا درخواست نشده است.
 
 **به‌روزرسانی خط لوله امضا:** Gradle اکنون امضای Release را فقط با keystore و متغیرهای محیطی ارائه‌شده از سمت مالک فعال می‌کند؛ هیچ کلید یا رمز در مخزن نیست. Workflow دستی `.github/workflows/android-pilot-signed-release.yml` اضافه شده است. چهار GitHub Actions Secret لازم: `SAHMINO_RELEASE_KEYSTORE_BASE64`، `SAHMINO_RELEASE_STORE_PASSWORD`، `SAHMINO_RELEASE_KEY_ALIAS` و `SAHMINO_RELEASE_KEY_PASSWORD`. این Workflow دو APK امضاشده فاز اولیه را با checkout اجباری خاموش می‌سازد و امضا/package/BuildConfig را بررسی می‌کند. README اندروید دستورالعمل آن را دارد. تا وقتی مالک Secretها را در GitHub Actions ثبت نکند، Workflow امضا عمداً قابل اجرا نیست.
+
+**پیش‌نیاز جدید خط لوله امضا:** چون ورود native شرط شروع اپ است، متغیر GitHub Actions مخزن `SAHAMBAN_WORKER_BASE_URL` نیز باید به origin واقعی HTTPS Worker production اشاره کند. Workflow امضای دستی در نبود یا نامعتبر بودن آن fail-closed می‌شود و مقدار را به هر دو Flavor تزریق می‌کند. این URL محرمانه نیست؛ اما نباید placeholder یا Worker آزمایشی/غیرآماده باشد. Worker باید پیش از ساخت نسخه امضاشده با D1 مشترک، migrationهای لازم، PWA Origin دقیق، حساب‌های provisionشده و احراز هویت فعال آماده باشد.
 
 **نسخه Release بدون خرید — تأیید مجدد:** Workflow `.github/workflows/android-pilot-release-gate.yml` روی commit `203295d46e4c6ea7a73c972638cd695bdf1e2095` موفق شد ([run 45145020963](https://github.com/Raminhashemi1/sahamban/actions/runs/45145020963)، artifact `14802989344`). هر دو APK با package `ir.sahmino.app`، نسخه `1.0.0` و checkout خاموش ساخته شدند؛ فایل‌ها عمداً unsigned هستند. SHA-256 بازار: `e97f5fa188ec3852de1573ecc579d09049b60c7855eb899e745af261d40ab906`؛ مایکت: `8a7933a437ab6f35f1522f9db74ea588c579aa75a07e064fb181bd5b3051cced`. Billing V2 CI روی commit جدیدتر `0f4cfc24919da463861f8d643d6ea12021a5a697` موفق شد ([run 45145389574](https://github.com/Raminhashemi1/sahamban/actions/runs/45145389574)). آزمون Debug همین commit هنوز در حال اجراست ([run 45145400039](https://github.com/Raminhashemi1/sahamban/actions/runs/45145400039)).
 
