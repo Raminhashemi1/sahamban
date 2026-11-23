@@ -29,7 +29,7 @@ async function main() {
   check(index.toString('utf8').includes('install.html'), 'public app links to installation entry');
   const { bytes: install } = await fetchAsset('install.html');
   const installText = install.toString('utf8');
-  check(/نصب سهام‌بان/.test(installText) && /Add to Home Screen/.test(installText),
+  check(/نصب سهمینو/.test(installText) && /Add to Home Screen/.test(installText),
     'public Persian install instructions for Android/iPhone');
   check(/serviceWorker\.register/.test(installText), 'public install page registers service worker');
   const { bytes: manifestBytes } = await fetchAsset('manifest.webmanifest');
