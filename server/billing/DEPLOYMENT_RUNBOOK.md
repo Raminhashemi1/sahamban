@@ -10,10 +10,17 @@ Choose exactly one billing schema path:
 - Fresh database: apply the base user schema, then `server/billing/schema.sql`.
 - Existing database already using the earlier Bazaar Billing V2 schema: apply `server/billing/migrations/0002-myket-store-columns.sql` once, then `0003-authoritative-irr-prices.sql` exactly once.
 
-After the base/Billing V2 schema path is verified, apply these additive migrations exactly once and in order:
+After the base/Billing V2 schema path is verified, prepare the legacy identity/session tables before the password-auth cutover:
 
-1. `server/migrations/0004-username-password-auth.sql` — backfills usernames from existing verified phone identities, leaves password hashes unset, and adds hashed-session and login-rate-limit storage.
+- Apply `server/d1-sahmino-sms-otp.sql` before migration 0004 when preserving or importing previously verified phone identities. This creates `sahmino_phone_identities`; migration 0004 deliberately does not invent or import phone ownership from unverified data. If no verified phone identities exist, the table may remain empty and accounts must be provisioned through the approved account-provisioning process.
+- Apply `server/d1-sahmino-sms-otp-runtime.sql` before migration 0004 when retaining the prior OTP runtime schema/history. It creates the shared-session and OTP send-event tables. Migration 0004 also creates the shared-session table if absent and revokes every existing unrevoked session during the authentication cutover.
+
+Then apply these additive migrations exactly once and in order:
+
+1. `server/migrations/0004-username-password-auth.sql` — adds username/password fields and rate-limit storage; it backfills usernames only from existing, non-revoked verified phone identities and leaves password hashes unset.
 2. `server/migrations/0005-password-recovery-codes.sql` — creates the one-time recovery-code table required by the password-reset endpoint.
+
+Do not apply the SMS schema merely to enable SMS login: the current commercial Worker uses username/password authentication, and no SMS provider or OTP route is enabled by this runbook. The SMS identity schema is only a compatibility/preservation prerequisite when verified legacy phone identities must be retained.
 
 Do not enable `SAHMINO_PASSWORD_AUTH_ENABLED` until both migrations have succeeded and their resulting tables/indexes have been verified. Migration 0004 revokes legacy sessions as part of the authentication cutover. Neither migration sends SMS or enables authentication.
 
