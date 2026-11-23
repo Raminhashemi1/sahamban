@@ -21,7 +21,7 @@ def releaseKeyPassword = System.getenv('SAHMINO_RELEASE_KEY_PASSWORD') ?: ''
 def releaseSigningReady = !releaseStoreFile.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty() && file(releaseStoreFile).isFile()
 def commonBillingReady = { endpoint ->
     System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
-    appId != 'ir.sahamban.pilot' && expectedPackage == appId &&
+    appId != 'ir.sahamban.pilot' && !distinctPilotIds && expectedPackage == appId &&
     appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
     endpoint.startsWith('https://') && allSkusPresent
 }
