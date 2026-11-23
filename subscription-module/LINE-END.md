@@ -88,7 +88,7 @@
 
 **وضعیت کد:** احراز هویت نام کاربری/رمز عبور، نشست HttpOnly، محدودسازی تلاش‌ها، بازیابی با ده کد یک‌بارمصرف، provision حساب و اتصال native در شاخه یکپارچه پیاده‌سازی شده‌اند. Migrationهای 0004 و 0005 هر دو در CI روی D1 محلی اجرا و بررسی می‌شوند. PR #209 تغییرات auth را به شاخه یکپارچه منتقل کرده و PR #191 Draft باقی مانده است.
 
-**آخرین شواهد:** Billing V2 روی HEAD `484d6dff396b56d805a86e4426cb20491340e7a2` موفق است ([run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422)). Smoke و Android Debug همین HEAD هنگام آخرین بررسی در حال اجرا بودند ([Smoke run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384)، [Android Debug run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447)). اجرای کامل Smoke روی commit قبلی `261e5503e3455e500293e57eaddd31d09fb68d4f` موفق شد ([run 45151751817](https://github.com/Raminhashemi1/sahamban/actions/runs/45151751817)). این نتایج، تست محلی/CI هستند و پذیرش روی D1 واقعی یا دستگاه فیزیکی را اثبات نمی‌کنند.
+**آخرین شواهد:** هر سه بررسی روی commit `484d6dff396b56d805a86e4426cb20491340e7a2` کامل و موفق‌اند: Billing V2 و مهاجرت‌های D1 محلی ([run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422))، Smoke و مرورگر ([run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384)) و Android Debug هر دو Flavor ([run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447)). این نتایج تست محلی/CI هستند و پذیرش روی D1 واقعی یا دستگاه فیزیکی را اثبات نمی‌کنند.
 
 **نیاز از مالک**
 - فراهم‌کردن `AUTH_RATE_LIMIT_SECRET` خصوصی، حداقل ۳۲ بایت و دقیقاً یکسان برای هر دو Worker؛ فقط از Cloudflare Secrets استفاده شود.
