@@ -239,10 +239,12 @@ public final class MainActivity extends Activity {
                 if (output == null) throw new java.io.IOException("OUTPUT_STREAM_UNAVAILABLE");
                 output.write(pendingBackupBytes);
                 output.flush();
-                reportBackupResult("saved");
             } catch (Exception error) {
                 reportBackupResult("failed");
+                return;
             }
+            // Report success only after the stream has closed without error.
+            reportBackupResult("saved");
             return;
         }
 
