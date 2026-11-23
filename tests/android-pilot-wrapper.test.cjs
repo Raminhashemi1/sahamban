@@ -35,7 +35,11 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(build,/System\.getenv\('SAHAMBAN_BILLING_ENABLED'\) == 'true'/);
  assert.match(build,/allSkusPresent/);
  assert.ok(build.includes("appId != 'ir.sahamban.pilot'"));
- assert.match(build,/workerUrl\.startsWith\('https:\/\/'\)/);
+ assert.match(build,/endpoint\.startsWith\('https:\/\/'\)/);
+ assert.match(build,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
+ assert.match(build,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
+ assert.match(build,/SAHAMBAN_WORKER_BASE_URL', '"\s*\+ bazaarWorkerUrl/);
+ assert.match(build,/SAHAMBAN_WORKER_BASE_URL', '"\s*\+ myketWorkerUrl/);
  const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
  assert.match(flow,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
@@ -51,6 +55,10 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(signedWf,/APKSIGNER=/);
  assert.match(signedWf,/"\$APKSIGNER" verify/);
  assert.match(signedWf,/SAHAMBAN_BILLING_ENABLED: 'false'/);
+ assert.match(signedWf,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
+ assert.match(signedWf,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
+ assert.match(signedWf,/PASS BAZAAR Worker health/);
+ assert.match(signedWf,/PASS MYKET Worker health/);
  assert.match(read('android-pilot/README.md'),/generated APKs are not marketplace-ready/i);
 });
 
