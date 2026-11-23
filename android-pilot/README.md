@@ -1,7 +1,7 @@
 # Sahmino Android host — username/password and in-app billing
 
 This module wraps the Sahmino PWA and exposes a native subscription screen.
-It is an unsigned pilot build, not a signed production release or marketplace-ready package.
+The source can produce unsigned verification builds and, after owner-managed signing secrets are configured, signed initial-release APKs with subscription checkout forcibly disabled. Until signing, live Worker setup, device acceptance, and store submission are complete, generated APKs are not marketplace-ready.
 
 ## Implemented
 - Native username/password login gates PWA startup.
@@ -69,10 +69,21 @@ session contract, Android host, and both store adapters. The Android workflow
 builds unsigned Bazaar and Myket debug artifacts only. A green CI run is not
 proof of live purchase behavior.
 
+## Owner-managed signed initial release
+
+The workflow `.github/workflows/android-pilot-signed-release.yml` builds Bazaar and Myket Release APKs with checkout forcibly disabled. It is manual (`workflow_dispatch`) and requires these GitHub Actions secrets:
+
+- `SAHMINO_RELEASE_KEYSTORE_BASE64`: base64-encoded Android release keystore.
+- `SAHMINO_RELEASE_STORE_PASSWORD`: keystore password.
+- `SAHMINO_RELEASE_KEY_ALIAS`: signing key alias.
+- `SAHMINO_RELEASE_KEY_PASSWORD`: signing key password.
+
+Configure these in the repository's Actions secrets using the publisher-owned signing key. Never commit the keystore or passwords. Run the workflow manually only after verifying the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
+
 ## Owner actions still required
 
-1. Confirm the final Android application ID and marketplace publisher accounts.
-2. Provide the real five SKU IDs for each marketplace and verify exact prices.
+1. Configure the final marketplace publisher accounts; the approved Android application ID is `ir.sahmino.app`.
+2. Only after the initial checkout-disabled app is published, create the real marketplace product entries according to each store's official contract, then provide their actual IDs and verify exact prices.
 3. Provision actual user accounts and communicate initial passwords through
    a separate secure channel; this repository does not contain user passwords.
 4. Define and rehearse the secure offline delivery and ownership-verification
