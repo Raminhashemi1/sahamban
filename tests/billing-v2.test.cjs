@@ -28,6 +28,16 @@ test('Bazaar checkout refuses missing and placeholder server SKU mappings before
  const placeholder={...skuMap,SAHAMBAN_PRO_30D:'REPLACE_BAZAAR_SKU_30D'};
  assert.equal((await createOrder({}, {...base,skuMap:placeholder})).status,503);
 });
+test('migrated legacy account IDs can create server-priced orders',async()=>{
+ let sql='',values=[];
+ const db={prepare(q){sql=q;return {bind(...v){values=v;return {async run(){return {success:true,meta:{changes:1}};}};}};}};
+ const result=await createOrder(db,{userId:'legacy-user-42',planId:'SAHAMBAN_PRO_30D',skuMap,
+  now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'c'.repeat(32)});
+ assert.equal(result.status,201);
+ assert.ok(sql.includes("WHERE id=? AND status='ACTIVE'"));
+ assert.equal(values[5],'legacy-user-42');
+});
+
 test('unknown plans and missing authentication cannot create orders',async()=>{
  assert.equal((await createOrder({}, {subject:'user',planId:'bad'})).status,400);
  assert.equal((await createOrder({}, {planId:'SAHAMBAN_PRO_30D'})).status,401);
