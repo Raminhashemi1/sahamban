@@ -14,16 +14,16 @@
 
 ## وضعیت فعلی
 
-**آخرین شواهد خودکار قطعی (2026-11-23، HEAD `ba68adf3d376002d5f38f30455afbdde41293837`):**
-- Billing V2، شامل تست‌های auth، Bazaar، Myket و D1 محلی، موفق: [run 45161687193](https://github.com/Raminhashemi1/sahamban/actions/runs/45161687193).
-- Smoke و تمام تست‌های مرورگر/Chromium موفق: [run 45161687465](https://github.com/Raminhashemi1/sahamban/actions/runs/45161687465).
-- Android Debug هر دو Flavor بازار و مایکت با package identity مجزای pilot موفق: [run 45161687217](https://github.com/Raminhashemi1/sahamban/actions/runs/45161687217)، artifact `14810134361` با نام `COMPILE-ONLY-NOT-STORE-READY`. این APKها فقط برای تست‌اند و برای ارسال فروشگاه یا نصب به‌عنوان نسخه تولیدی نیستند.
-- Release build gate با checkout خاموش هنوز روی HEAD فعلی اجرا نشده است؛ آخرین اجرای مستقل ثبت‌شده همچنان [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084) روی commit قدیمی‌تر است. بنابراین APK Release فعلی نه ساخته‌شده و نه امضاشده/آماده ارسال است.
+**آخرین شواهد خودکار قطعی (2026-11-23، شاخه HEAD `a8f29f238eeffeca3c5be53d396beff4cf825045`):**
+- Billing V2، تست‌های auth، Bazaar/Myket، D1 محلی، migrationها و Worker bundle موفق: [run 45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951).
+- Smoke و همه jobهای مرورگر/Chromium موفق: [run 45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860).
+- Android Debug هر دو Flavor موفق: [run 45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930).
+- Release build gate هر دو Flavor با checkout خاموش موفق: [run 45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353)، artifact `14814135913`. هر دو APK unsigned و صراحتاً `NOT-STORE-READY` هستند. Artifact دریافت و محتوایش بررسی شد؛ Bazaar SHA-256: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`؛ Myket SHA-256: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`. package/version و checkout-off gate موفق‌اند؛ امضای مالک وجود ندارد.
+- هر چهار اجرای بالا روی یک HEAD مشترک انجام شده‌اند و همه موفق‌اند. این CI محلی/ساختی است؛ استقرار Worker/D1 واقعی، احراز هویت production، نصب/پذیرش فیزیکی و ارسال فروشگاه را اثبات نمی‌کند.
 
-**سخت‌سازی انتشار امضاشده:** Workflow `.github/workflows/android-pilot-signed-release.yml` برای فاز اولیه، هر دو Worker را پیش‌پرواز می‌کند و نیازمند دو متغیر عمومی Actions به نام‌های `SAHAMBAN_BAZAAR_WORKER_BASE_URL` و `SAHAMBAN_MYKET_WORKER_BASE_URL` است. هر URL باید origin واقعی HTTPS Worker همان فروشگاه باشد؛ health باید package `ir.sahmino.app`، احراز هویت فعال و پرداخت/checkout خاموش را تأیید کند. چهار secret امضای مالک نیز الزامی‌اند. Workflow در نبود هرکدام fail-closed می‌شود؛ هیچ secret یا endpoint ساختگی وارد مخزن نشده است.
+**وضعیت امضای اولیه:** Workflow دستی `.github/workflows/android-pilot-signed-release.yml` آماده است. اجرای آن فقط پس از آماده‌بودن هر دو Worker واقعی (auth روشن، پرداخت خاموش، package درست، D1 مشترک) و تنظیم دو Actions Variable مربوط به Worker URL و چهار Secret امضای متعلق به مالک ممکن است. در نبود هر ورودی fail-closed می‌شود.
 
-**وضعیت ادغام:** PR #191 باز و Draft است. CI سبز است، اما انتشار اولیه هنوز به Workerهای production، D1 مشترک و migrationهای اعمال‌شده، حساب‌های provisionشده، benchmark احراز هویت، چهار secret امضا، دو URL Worker و پذیرش فیزیکی دستگاه نیاز دارد. هیچ deploy یا migration عملیاتی انجام نشده است.
-
+**وضعیت ادغام:** PR #191 باز و Draft است؛ head آن همین شاخه است و base فعلی `codex/reengineering-audit` است. CI سبز، اما هیچ production deploy، migration واقعی یا امضای مالک انجام نشده است.
 
 ## ترتیب قطعی اجرا
 
@@ -88,7 +88,7 @@
 
 **وضعیت کد:** احراز هویت نام کاربری/رمز عبور، نشست HttpOnly، محدودسازی تلاش‌ها، بازیابی با ده کد یک‌بارمصرف، provision حساب و اتصال native در شاخه یکپارچه پیاده‌سازی شده‌اند. Migrationهای 0004 و 0005 هر دو در CI روی D1 محلی اجرا و بررسی می‌شوند. PR #209 تغییرات auth را به شاخه یکپارچه منتقل کرده و PR #191 Draft باقی مانده است.
 
-**آخرین شواهد:** Billing V2، Smoke/مرورگر و Android Debug هر دو Flavor روی HEAD `8a628d3cca4f7e9b0bef68ec6dfb131254bd3d13` همگی موفق‌اند: [Billing run 45161121007](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121007)، [Smoke run 45161121150](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121150)، [Android Debug run 45161120994](https://github.com/Raminhashemi1/sahamban/actions/runs/45161120994). تست auth شامل regression عدم مصرف کد بازیابی در شکست update حساب است. این نتایج تست محلی/CI هستند و پذیرش روی D1 واقعی یا دستگاه فیزیکی را اثبات نمی‌کنند.
+**آخرین شواهد روی HEAD یکپارچه `a8f29f238eeffeca3c5be53d396beff4cf825045`:** Billing V2 [run 45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951)، Smoke/مرورگر [run 45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860) و Android Debug [run 45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930) همگی موفق‌اند. تست auth شامل جلوگیری از مصرف کد بازیابی در شکست update حساب است. این نتایج CI جایگزین تست روی D1 واقعی یا دستگاه فیزیکی نیستند.
 
 **نیاز از مالک**
 - فراهم‌کردن `AUTH_RATE_LIMIT_SECRET` خصوصی، حداقل ۳۲ بایت و دقیقاً یکسان برای هر دو Worker؛ فقط از Cloudflare Secrets استفاده شود.
@@ -136,7 +136,7 @@
 
 **نسخه Release بدون خرید — تأیید مجدد:** Workflow `.github/workflows/android-pilot-release-gate.yml` روی commit `203295d46e4c6ea7a73c972638cd695bdf1e2095` موفق شد ([run 45145020963](https://github.com/Raminhashemi1/sahamban/actions/runs/45145020963)، artifact `14802989344`). هر دو APK با package `ir.sahmino.app`، نسخه `1.0.0` و checkout خاموش ساخته شدند؛ فایل‌ها عمداً unsigned هستند. SHA-256 بازار: `e97f5fa188ec3852de1573ecc579d09049b60c7855eb899e745af261d40ab906`؛ مایکت: `8a7933a437ab6f35f1522f9db74ea588c579aa75a07e064fb181bd5b3051cced`. Billing V2 CI روی commit جدیدتر `0f4cfc24919da463861f8d643d6ea12021a5a697` موفق شد ([run 45145389574](https://github.com/Raminhashemi1/sahamban/actions/runs/45145389574)). آزمون Debug همین commit هنوز در حال اجراست ([run 45145400039](https://github.com/Raminhashemi1/sahamban/actions/runs/45145400039)).
 
-**وضعیت نهایی CI روی HEAD فعلی:** commit `a2e9f7f508580c411126c0f2908d5fb7e0b9a499` هر دو بررسی را سبز دارد: Billing V2 [run 45145574014](https://github.com/Raminhashemi1/sahamban/actions/runs/45145574014) و Android Debug [run 45145574138](https://github.com/Raminhashemi1/sahamban/actions/runs/45145574138). Artifact تست Debug شماره `14803882856` است و عمداً فقط compile/test است، نه Release قابل ارسال. این سبزشدن CI هیچ‌کدام از نیازهای امضای مالک، استقرار Worker/D1، تست دستگاه واقعی یا تأیید فروشگاه را جایگزین نمی‌کند.
+**وضعیت نهایی CI و Release روی HEAD فعلی:** commit `a8f29f238eeffeca3c5be53d396beff4cf825045` در هر چهار workflow جاری موفق است: Billing V2 [45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951)، Smoke/Browser [45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860)، Android Debug [45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930) و Release build gate [45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353). Artifact Release شماره `14814135913` دریافت و بررسی شد؛ دو APK unsigned هستند و برای فروشگاه آماده نیستند. هش‌ها در بالای این سند ثبت شده‌اند.
 
 **اصلاح رگرسیون تست:** تغییرات امضای اختیاری ابتدا یک تست ساختاری قدیمی را شکست؛ تست با قرارداد جدید امضای owner-managed هماهنگ شد. اجرای Billing CI روی commit `873cda7689f7ce35083f9b8db527b645e38a40e0` موفق شد ([run 45144697456](https://github.com/Raminhashemi1/sahamban/actions/runs/45144697456)). اجرای CI کامل روی HEAD جدید در حال تکمیل است.
 
