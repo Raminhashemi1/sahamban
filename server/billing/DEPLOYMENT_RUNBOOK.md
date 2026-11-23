@@ -2,6 +2,12 @@
 
 This runbook prepares two store-specific Worker deployments that share one D1 entitlement database. It is a template only; no live resources have been changed.
 
+## 0. Read-only Cloudflare discovery (run before any deployment)
+
+Use the GitHub Actions workflow **Sahamban Cloudflare read-only connection diagnostic** from branch `integration/sahmino-app-billing-complete` (Actions → select workflow → Run workflow). It uses the `cloudflare-pilot` GitHub environment variables/secrets already configured for the repository. It verifies the Cloudflare token, reads the configured D1 resource, queries only `sqlite_schema` for table names, and checks access to the existing pilot Worker script. It never reads customer/payment rows, writes SQL, applies migrations, deploys, or changes Worker settings.
+
+If it reports missing credentials or variables, stop and configure them in the GitHub environment; do not paste API tokens into chat or commit them. If the diagnostic identifies a different D1 resource than the intended dual-store billing database, do not reuse it automatically. Compare its table inventory with the Billing V2 schema and decide whether the existing database is compatible before any migration.
+
 ## 1. Prepare the D1 database
 
 Provision one private production D1 database. Use the same database ID in both Worker configuration files.
