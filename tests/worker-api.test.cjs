@@ -93,10 +93,13 @@ test('missing DB, closed account, expired/malformed access and legacy auto-renew
  }
 });
 
-test('health endpoint advertises disabled payments and unknown checkout routes stay unavailable',async()=>{
+test('health endpoint accurately reports checkout-off and billing-enabled store readiness',async()=>{
  const app=await worker();
  assert.deepEqual(await (await app.fetch(request(null,'/api/v1/health'),env())).json(),
-  {status:'prototype',paymentsEnabled:false,checkoutEnabled:false});
+  {status:'prototype',paymentsEnabled:false,checkoutEnabled:false,authEnabled:false,store:'BAZAAR'});
+ assert.deepEqual(await (await app.fetch(request(null,'/api/v1/health'),
+  env(db(),{BILLING_V2_ENABLED:'true',SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_STORE:'MYKET'}))).json(),
+  {status:'ready',paymentsEnabled:true,checkoutEnabled:true,authEnabled:true,store:'MYKET'});
  assert.equal((await app.fetch(request(null,'/api/v1/checkout'),env())).status,404);
 });
 
