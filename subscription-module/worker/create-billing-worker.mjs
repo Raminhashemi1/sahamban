@@ -12,11 +12,30 @@ const DEFAULT_SKU_MAP = Object.freeze({
 
 function parseJsonMap(value, name) {
   if (typeof value !== 'string' || !value) throw new TypeError(name + '_NOT_CONFIGURED');
-  const parsed = JSON.parse(value);
+  let parsed;
+  try { parsed = JSON.parse(value); } catch {
+    throw new TypeError(name + '_INVALID');
+  }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new TypeError(name + '_INVALID');
   }
+  const expected = Object.keys(DEFAULT_SKU_MAP).sort();
+  const actual = Object.keys(parsed).sort();
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
+    throw new TypeError(name + '_MUST_DEFINE_EXACTLY_FIVE_PLANS');
+  }
+  const values = Object.values(parsed);
+  if (values.some((sku) => typeof sku !== 'string' || !sku.trim() || sku.length > 200) ||
+      new Set(values).size !== values.length) {
+    throw new TypeError(name + '_INVALID_PRODUCT_IDS');
+  }
   return parsed;
+}
+
+function requireNonEmptyEnv(env, key) {
+  if (typeof env[key] !== 'string' || !env[key].trim()) {
+    throw new TypeError(key + '_NOT_CONFIGURED');
+  }
 }
 
 /**
@@ -45,6 +64,21 @@ export function createBillingWorker(env, { authenticateRequest }) {
   const storeProductMap = env.BILLING_STORE === 'BAZAAR'
     ? parseJsonMap(env.BAZAAR_SKU_MAP, 'BAZAAR_SKU_MAP')
     : parseJsonMap(env.MYKET_SKU_MAP, 'MYKET_SKU_MAP');
+
+  if (env.BILLING_STORE === 'BAZAAR') {
+    for (const key of ['BAZAAR_PACKAGE_NAME', 'BAZAAR_CLIENT_ID',
+      'BAZAAR_CLIENT_SECRET', 'BAZAAR_REFRESH_TOKEN']) {
+      requireNonEmptyEnv(env, key);
+    }
+  } else {
+    for (const key of ['MYKET_PACKAGE_NAME', 'MYKET_PUBLIC_KEY_BASE64']) {
+      requireNonEmptyEnv(env, key);
+    }
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(env.MYKET_PUBLIC_KEY_BASE64) ||
+        env.MYKET_PUBLIC_KEY_BASE64.length % 4 !== 0) {
+      throw new TypeError('MYKET_PUBLIC_KEY_BASE64_INVALID');
+    }
+  }
   const productMaps = { [env.BILLING_STORE]: storeProductMap };
   const providerVerifiers = {
     BAZAAR: (args) => verifyBazaarPurchase({
