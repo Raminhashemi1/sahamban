@@ -24,7 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/** Test-only host with native username/password sign-in and a credential-isolated HTTPS PWA WebView. */
+/** Sahmino Android host with native username/password sign-in and a credential-isolated HTTPS PWA WebView. */
 public final class MainActivity extends ComponentActivity {
     private static final String START_URL = "https://raminhashemi1.github.io/sahamban/";
     private static final int PICK_FILE = 3040;
