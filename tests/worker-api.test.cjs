@@ -93,13 +93,18 @@ test('missing DB, closed account, expired/malformed access and legacy auto-renew
  }
 });
 
-test('health endpoint accurately reports checkout-off and billing-enabled store readiness',async()=>{
+test('health endpoint accurately reports auth, checkout, package and store SKU readiness',async()=>{
  const app=await worker();
  assert.deepEqual(await (await app.fetch(request(null,'/api/v1/health'),env())).json(),
-  {status:'prototype',paymentsEnabled:false,checkoutEnabled:false,authEnabled:false,store:'BAZAAR'});
+  {status:'prototype',paymentsEnabled:false,checkoutEnabled:false,authEnabled:false,
+   store:'BAZAAR',packageName:null,skuMapReady:true});
+ const myketMap=JSON.stringify({SAHAMBAN_PRO_30D:'m30',SAHAMBAN_PRO_60D:'m60',
+  SAHAMBAN_PRO_90D:'m90',SAHAMBAN_PRO_180D:'m180',SAHAMBAN_PRO_365D:'m365'});
  assert.deepEqual(await (await app.fetch(request(null,'/api/v1/health'),
-  env(db(),{BILLING_V2_ENABLED:'true',SAHMINO_PASSWORD_AUTH_ENABLED:'true',BILLING_STORE:'MYKET'}))).json(),
-  {status:'ready',paymentsEnabled:true,checkoutEnabled:true,authEnabled:true,store:'MYKET'});
+  env(db(),{BILLING_V2_ENABLED:'true',SAHMINO_PASSWORD_AUTH_ENABLED:'true',
+   BILLING_STORE:'MYKET',MYKET_PACKAGE_NAME:'ir.sahmino.app',MYKET_SKU_MAP:myketMap}))).json(),
+  {status:'ready',paymentsEnabled:true,checkoutEnabled:true,authEnabled:true,
+   store:'MYKET',packageName:'ir.sahmino.app',skuMapReady:true});
  assert.equal((await app.fetch(request(null,'/api/v1/checkout'),env())).status,404);
 });
 
