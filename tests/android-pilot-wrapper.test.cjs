@@ -35,6 +35,7 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(build,/System\.getenv\('SAHAMBAN_BILLING_ENABLED'\) == 'true'/);
  assert.match(build,/allSkusPresent/);
  assert.ok(build.includes("appId != 'ir.sahamban.pilot'"));
+ assert.match(build,/!distinctPilotIds/);
  assert.match(build,/endpoint\.startsWith\('https:\/\/'\)/);
  assert.match(build,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
  assert.match(build,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
