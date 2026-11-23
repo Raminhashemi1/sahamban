@@ -169,6 +169,10 @@ test('native subscription entry is reachable only after password session and fai
  assert.match(build,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
  assert.match(build,/SAHAMBAN_SKU_PRO_30D/);
  assert.match(build,/SAHAMBAN_SKU_PRO_365D/);
+ for(const suffix of ['30D','60D','90D','180D','365D']) {
+  assert.match(build,new RegExp('SAHAMBAN_BAZAAR_SKU_PRO_'+suffix));
+  assert.match(build,new RegExp('SAHAMBAN_MYKET_SKU_PRO_'+suffix));
+ }
  assert.match(build,/SAHAMBAN_RELEASE_BILLING_ENABLED/);
  assert.match(build,/releaseTaskRequested/);
  assert.match(build,/def billingOptIn = releaseTaskRequested/);
