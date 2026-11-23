@@ -23,7 +23,7 @@ Do not apply the fresh schema and the upgrade migration to the same database. Ta
 
 Copy `server/wrangler.bazaar.toml.example` to `server/wrangler.bazaar.toml`, then replace the PWA origin, actual application ID, shared D1 database name/ID, and all five Bazaar SKUs from the developer panel.
 
-Record the deployed HTTPS Worker origin as the repository Actions variable `SAHAMBAN_BAZAAR_WORKER_BASE_URL`. This URL is injected only into the Bazaar Android flavor.
+Record the deployed HTTPS Worker origin as the repository Actions variable `SAHAMBAN_BAZAAR_WORKER_BASE_URL`. This URL is injected only into the Bazaar Android flavor. Set the Bazaar product IDs as the five separate Actions variables `SAHAMBAN_BAZAAR_SKU_PRO_30D`, `SAHAMBAN_BAZAAR_SKU_PRO_60D`, `SAHAMBAN_BAZAAR_SKU_PRO_90D`, `SAHAMBAN_BAZAAR_SKU_PRO_180D`, and `SAHAMBAN_BAZAAR_SKU_PRO_365D`; they must match `BAZAAR_SKU_MAP` exactly.
 
 From the repository root, set secrets:
 ```sh
@@ -38,7 +38,7 @@ wrangler secret put BAZAAR_RSA_PUBLIC_KEY --config server/wrangler.bazaar.toml
 
 Copy `server/wrangler.myket.toml.example` to `server/wrangler.myket.toml`, then replace the exact PWA origin, actual application ID, same D1 database name/ID, and all five Myket SKUs from the developer panel.
 
-Record the deployed HTTPS Worker origin as the repository Actions variable `SAHAMBAN_MYKET_WORKER_BASE_URL`. This URL is injected only into the Myket Android flavor; do not point both flavors at the same store-configured Worker.
+Record the deployed HTTPS Worker origin as the repository Actions variable `SAHAMBAN_MYKET_WORKER_BASE_URL`. This URL is injected only into the Myket Android flavor; do not point both flavors at the same store-configured Worker. Set the Myket product IDs as the five separate Actions variables `SAHAMBAN_MYKET_SKU_PRO_30D`, `SAHAMBAN_MYKET_SKU_PRO_60D`, `SAHAMBAN_MYKET_SKU_PRO_90D`, `SAHAMBAN_MYKET_SKU_PRO_180D`, and `SAHAMBAN_MYKET_SKU_PRO_365D`; they must match `MYKET_SKU_MAP` exactly.
 
 Set the Myket public key as a secret:
 ```sh
@@ -69,6 +69,12 @@ Do not set `BILLING_V2_ENABLED=true` until:
 - Myket refund/revocation reconciliation is implemented or an approved and tested alternative is accepted.
 - Physical-device test purchases and interruption/recovery tests pass for both stores.
 - Owner-approved release APKs are signed with the real release key.
+
+## Android billing-enabled release handoff
+
+The initial signed workflow uses `SAHAMBAN_RELEASE_BILLING_ENABLED` unset and therefore produces checkout-disabled APKs. The later manual workflow `.github/workflows/android-pilot-signed-billing-release.yml` is separately gated by the explicit dispatch phrase `ENABLE_BILLING_RELEASE`. It requires both live Worker health endpoints to report `authEnabled=true`, `paymentsEnabled=true`, `checkoutEnabled=true`, and their matching store; it also verifies the five independent product IDs per store, public keys, package, signatures and flavor-specific BuildConfig.
+
+Only configure `SAHAMBAN_RELEASE_BILLING_ENABLED=true` through that workflow after the initial app is published, actual SKUs and prices are verified, Myket refund/revocation handling is accepted, and physical-device acceptance is complete. The debug opt-in `SAHAMBAN_BILLING_ENABLED` cannot enable checkout in CI pilot builds because they use distinct pilot package IDs.
 
 ## Safety
 
