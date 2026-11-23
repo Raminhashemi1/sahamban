@@ -119,7 +119,8 @@ export function createBillingRouter({
     } catch {
       return json({ ok: false, error: 'AUTHENTICATION_UNAVAILABLE' }, 503, cors);
     }
-    if (!principal || typeof principal.userId !== 'string' || !principal.userId) {
+    if (!principal || typeof principal.userId !== 'string' ||
+        !principal.userId || principal.userId.length > 256) {
       return json({ ok: false, error: 'UNAUTHENTICATED' }, 401, cors);
     }
 
@@ -135,7 +136,7 @@ export function createBillingRouter({
         return json({ ok: false, error: body.error }, status, cors);
       }
       const value = body.value;
-      if (typeof value.orderId !== 'string' || !value.orderId ||
+      if (typeof value.orderId !== 'string' || !value.orderId || value.orderId.length > 128 ||
           Object.keys(value).some((key) => !['orderId', 'originalJson', 'signature', 'purchaseToken'].includes(key))) {
         return json({ ok: false, error: 'INVALID_VERIFY_REQUEST' }, 400, cors);
       }
