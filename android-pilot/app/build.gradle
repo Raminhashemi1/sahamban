@@ -12,6 +12,11 @@ def skuKeys = ['SAHAMBAN_SKU_PRO_30D','SAHAMBAN_SKU_PRO_60D','SAHAMBAN_SKU_PRO_9
 def configuredSkus = skuKeys.collect { System.getenv(it) ?: '' }
 def allSkusPresent = configuredSkus.every { it.matches('[A-Za-z0-9._-]{1,100}') && !it.startsWith('REPLACE_') } &&
     configuredSkus.toSet().size() == 5
+def releaseStoreFile = System.getenv('SAHMINO_RELEASE_KEYSTORE_PATH') ?: ''
+def releaseStorePassword = System.getenv('SAHMINO_RELEASE_STORE_PASSWORD') ?: ''
+def releaseKeyAlias = System.getenv('SAHMINO_RELEASE_KEY_ALIAS') ?: ''
+def releaseKeyPassword = System.getenv('SAHMINO_RELEASE_KEY_PASSWORD') ?: ''
+def releaseSigningReady = !releaseStoreFile.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty() && file(releaseStoreFile).isFile()
 def commonBillingReady = System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
     appId != 'ir.sahamban.pilot' && expectedPackage == appId &&
     appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
@@ -61,6 +66,16 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (releaseSigningReady) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildFeatures { buildConfig true }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -71,6 +86,7 @@ android {
         debug { }
         release {
             minifyEnabled false
+            if (releaseSigningReady) signingConfig signingConfigs.release
             buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
         }
     }
