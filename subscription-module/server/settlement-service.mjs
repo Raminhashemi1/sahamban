@@ -16,8 +16,11 @@ export async function settleVerifiedPurchase(db, {
   now = new Date().toISOString(),
   idFactory = () => crypto.randomUUID()
 }) {
-  if (typeof authenticatedUserId !== 'string' || !authenticatedUserId) {
+  if (typeof authenticatedUserId !== 'string' || !authenticatedUserId || authenticatedUserId.length > 256) {
     return { ok: false, error: 'UNAUTHENTICATED' };
+  }
+  if (typeof orderId !== 'string' || !orderId || orderId.length > 128) {
+    return { ok: false, error: 'INVALID_ORDER_REFERENCE' };
   }
   if (!Number.isFinite(Date.parse(now))) return { ok: false, error: 'INVALID_TIMESTAMP' };
   if (!verifiedPurchase || verifiedPurchase.verified !== true) {
@@ -26,8 +29,8 @@ export async function settleVerifiedPurchase(db, {
 
   const { store, storeOrderId, productId, amountIrr, purchaseTokenHash } = verifiedPurchase;
   if (!['BAZAAR', 'MYKET'].includes(store) ||
-      typeof storeOrderId !== 'string' || !storeOrderId ||
-      typeof productId !== 'string' || !productId ||
+      typeof storeOrderId !== 'string' || !storeOrderId || storeOrderId.length > 256 ||
+      typeof productId !== 'string' || !productId || productId.length > 200 ||
       !Number.isSafeInteger(amountIrr) || amountIrr <= 0 ||
       typeof purchaseTokenHash !== 'string' || !/^[a-f0-9]{64}$/i.test(purchaseTokenHash)) {
     return { ok: false, error: 'INVALID_VERIFIED_PURCHASE' };
@@ -49,7 +52,14 @@ export async function settleVerifiedPurchase(db, {
         order.amount_irr !== amountIrr) {
       return { ok: false, error: 'PURCHASE_ORDER_MISMATCH' };
     }
-    if (!getPlan(order.plan_id)) return { ok: false, error: 'UNKNOWN_PLAN' };
+    const plan = getPlan(order.plan_id);
+    if (!plan) return { ok: false, error: 'UNKNOWN_PLAN' };
+    // The persisted order is server-owned, but validate it against the canonical
+    // catalogue again at settlement so stale/corrupt rows cannot authorize a
+    // receipt for an unintended amount or plan.
+    if (order.amount_irr !== plan.price) {
+      return { ok: false, error: 'ORDER_CATALOG_MISMATCH' };
+    }
 
     const eventId = idFactory();
     if (typeof eventId !== 'string' || !eventId || eventId.length > 128) {
