@@ -60,7 +60,8 @@ Both `wrangler.bazaar.toml.example` and
 placeholder, exact PWA origin, `SAHMINO_PASSWORD_AUTH_ENABLED=false` by default. Both marketplace Workers
 must share the same D1 database, use the same `PWA_ORIGIN`, and receive a
 private `AUTH_RATE_LIMIT_SECRET` before login can be enabled. Apply
-`migrations/0004-username-password-auth.sql` once to the shared D1 database.
+`migrations/0004-username-password-auth.sql` and
+`migrations/0005-password-recovery-codes.sql` once each to the shared D1 database.
 
 The native app stores the Secure/HttpOnly session cookie through Android's
 CookieManager and sends it only in native HTTPS requests. No credential is
@@ -72,8 +73,8 @@ requests.
 
 Fresh database:
 1. Apply the base Sahamban user/account schema.
-2. Apply username/password auth migration.
-3. Apply `server/billing/schema.sql`.
+2. Apply `server/billing/schema.sql` and its required Billing V2 migrations.
+3. Apply `0004-username-password-auth.sql` and `0005-password-recovery-codes.sql` once each.
 
 Existing Billing V2 database:
 1. Verify backup and migration history.
@@ -84,8 +85,7 @@ Do not apply these files to an unverified production database.
 
 ## Known limitations and release blockers
 
-- The temporary default Android package is `ir.sahamban.pilot`. The final
-  package must be supplied by the owner and match both marketplaces.
+- The approved permanent Android package is `ir.sahmino.app`; both Bazaar and Myket release flavors are configured to use this exact package.
 - Actual Bazaar and Myket product IDs do not exist in the repository as
   confirmed store registrations. The proposed/placeholder values are not
   valid production identifiers.
@@ -94,6 +94,9 @@ Do not apply these files to an unverified production database.
 - Myket signed purchase validation does not independently detect a later
   refund/revocation. Add and test authoritative reconciliation from Myket's
   supported provider API/contract before public checkout.
+- The Worker accepts up to 24 KiB on the billing verification route so Myket's
+  documented-in-code 16 KiB original purchase JSON cap plus signature/envelope
+  overhead can reach provider verification without being truncated or rejected.
 - Physical-device acceptance has not yet established live login, cookie
   persistence, purchase, restore, consume/retry, repurchase, account
   switching, refunds, or network-loss behavior.
