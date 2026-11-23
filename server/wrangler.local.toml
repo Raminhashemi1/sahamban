@@ -6,6 +6,10 @@ workers_dev = false
 
 [vars]
 PWA_ORIGIN = "https://raminhashemi1.github.io"
+# Local-only compatibility fixture for pilot-token authorization tests; never copy to production.
+PILOT_AUTH_ENABLED = "true"
+SAHMINO_PASSWORD_AUTH_ENABLED = "false"
+BILLING_V2_ENABLED = "false"
 PILOT_ORDERS_ENABLED = "false"
 PREPAID_ORDERS_ENABLED = "false"
 
