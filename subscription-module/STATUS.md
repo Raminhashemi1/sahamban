@@ -140,3 +140,39 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - The stale-pre-read replay test remains sequential SQLite execution, not concurrent Cloudflare D1 requests. A controlled D1 integration test is still a release gate.
 - The internal reversal primitive remains intentionally unwired: authoritative Bazaar/Myket refund or revocation event contracts are not yet verified.
 - Next engineering step: add and run a controlled Cloudflare D1 integration/concurrency suite against a dedicated non-production database before claiming live D1 settlement validation. No production credentials or infrastructure were changed.
+
+
+## Independent branch verification — 2026-11-23
+
+### Repository and branch
+- Rechecked the public repository and confirmed this module is present on `feature/sahmino-subscriptions-independent`.
+- Branch head at audit start: `6a9e9f01e9b65aa3b35e9b3a5a354dfb3ca59523`.
+- No changes were made to `main`, legacy billing files, or existing Billing V2 draft branches.
+
+### Current automated evidence
+- GitHub Actions run [44993498359](https://github.com/Raminhashemi1/sahamban/actions/runs/44993498359) passed on the current branch head: 52 Node.js tests and 10 SQLite contract tests.
+- Android release-flavor workflow [44528592255](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255) passed for both Bazaar and Myket AAR compilation. Artifact [sahmino-billing-android-aar](https://github.com/Raminhashemi1/sahamban/actions/runs/44528592255) (artifact ID `14531992190`) remains available.
+- The latest domain workflow tests the exact SQL extracted from the settlement/reversal services against SQLite. It does not bind to Cloudflare D1.
+
+### Settlement concurrency assessment
+- Re-reviewed the current settlement SQL, schema uniqueness constraints, result checks, and tests.
+- The `CREATED -> PAID` conditional update remains the one-shot gate. The verification-event insert and entitlement upsert are dependent on that update/event in the same batch. A failed statement must abort the batch; this is consistent with Cloudflare's documented D1 batch transaction semantics.
+- Cloudflare documents that each D1 database processes queries serially and that batch statements execute sequentially, non-concurrently. This supports the conditional-write design against overlapping requests, but it is not a substitute for a controlled test against an actual D1 binding.
+- The existing SQLite stale-pre-read test is sequential simulation, not a concurrent Worker-to-D1 integration test. No claim of live D1 concurrency validation is made.
+
+### Release blockers — require owner-provided production configuration/access
+1. Dedicated non-production Cloudflare D1 database and permission to apply/test the module schema there.
+2. The production commercial-session authentication contract and trusted Worker integration point. The independent Worker intentionally requires an injected authenticator; its route/table names collide with the separate Billing V2 draft and must not be deployed in parallel unchanged.
+3. Exact production Android applicationId, exact PWA HTTPS origin, and confirmation of the host Android build/signing setup.
+4. Actual Bazaar Developer API credentials and the five Bazaar product IDs from the developer console.
+5. Actual Myket app public key and the five Myket product IDs from the developer console.
+6. Physical-device test access/accounts for both stores, including interruption, retry, consume, refund/revocation, and renewal scenarios.
+
+### Provider and reversal boundary
+- Bazaar verifier uses the documented Developer API v2 refresh-token and in-app validation flow. It must still be exercised with the real application and developer credentials.
+- Myket verification currently validates the signed IAB purchase JSON against the app-specific RSA public key and exact package/SKU/developer payload. It is not a live ownership/refund status lookup.
+- The internal reversal primitive and its SQLite tests exist, but no provider-authenticated refund/revocation adapter or public reversal route is enabled. Do not expose it until the official event/API contract is validated for each store.
+- No live migration, production Worker deployment, production secret change, store payment, or release artifact for the host app was performed during this audit.
+
+### Next safe action
+- Continue with controlled D1 integration once the dedicated test database and access are supplied. Then consolidate the module into the canonical host Worker/account identity and shared D1 ledger before enabling checkout. Keep the release feature gate disabled until both store test matrices pass on physical devices.
