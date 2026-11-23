@@ -21,6 +21,8 @@
 - Release build gate هر دو Flavor با checkout خاموش موفق: [run 45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353)، artifact `14814135913`. هر دو APK unsigned و صراحتاً `NOT-STORE-READY` هستند. Artifact دریافت و محتوایش بررسی شد؛ Bazaar SHA-256: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`؛ Myket SHA-256: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`. package/version و checkout-off gate موفق‌اند؛ امضای مالک وجود ندارد.
 - هر چهار اجرای بالا روی یک HEAD مشترک انجام شده‌اند و همه موفق‌اند. این CI محلی/ساختی است؛ استقرار Worker/D1 واقعی، احراز هویت production، نصب/پذیرش فیزیکی و ارسال فروشگاه را اثبات نمی‌کند.
 
+**سخت‌سازی تکمیلی Workflow امضاشده (commit `4635812f04d6a4ded08438c9bd7ea2ee552a3ac3`):** پس از امضای هر APK، workflow علاوه بر صحت cryptographic signature و package، `versionCode=1`، `versionName=1.0.0` و non-debuggable بودن را بررسی می‌کند و فایل manifest هش SHA-256 را همراه APKها در artifact بارگذاری می‌کند. این تغییر خودکار روی مسیر امضای مالک است و تا زمان تأمین Secretها اجرای واقعی آن ممکن نیست.
+
 **وضعیت امضای اولیه:** Workflow دستی `.github/workflows/android-pilot-signed-release.yml` آماده است. اجرای آن فقط پس از آماده‌بودن هر دو Worker واقعی (auth روشن، پرداخت خاموش، package درست، D1 مشترک) و تنظیم دو Actions Variable مربوط به Worker URL و چهار Secret امضای متعلق به مالک ممکن است. در نبود هر ورودی fail-closed می‌شود.
 
 **وضعیت ادغام:** PR #191 باز و Draft است؛ head آن همین شاخه است و base فعلی `codex/reengineering-audit` است. CI سبز، اما هیچ production deploy، migration واقعی یا امضای مالک انجام نشده است.
