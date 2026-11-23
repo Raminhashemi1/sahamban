@@ -105,12 +105,12 @@ test('password recovery consumes one code atomically, replaces password and revo
   newPassword:'A new secure password 2026!',ipKey:IP,rateLimitSecret:RATE_SECRET});
  assert.deepEqual({ok:result.ok,status:result.status},{ok:true,status:200});
  assert.equal(calls.length,2);
- assert.match(calls[1][0].sql,/UPDATE sahamban_users SET password_salt=\\?/);
- assert.match(calls[1][0].sql,/rc\\.code_hash=\\? AND rc\\.used_at IS NULL/);
+ assert.match(calls[1][0].sql,/UPDATE sahamban_users SET password_salt=\?/);
+ assert.match(calls[1][0].sql,/rc\.code_hash=\? AND rc\.used_at IS NULL/);
  assert.match(calls[1][1].sql,/UPDATE sahmino_recovery_codes SET used_at=\\?,reset_id=\\?/);
- assert.match(calls[1][1].sql,/used_at IS NULL AND changes\\(\\)=1/);
- assert.match(calls[1][2].sql,/UPDATE sahmino_shared_sessions SET revoked_at=\\?/);
- assert.match(calls[1][2].sql,/changes\\(\\)=1/);
+ assert.match(calls[1][1].sql,/used_at IS NULL AND changes\(\)=1/);
+ assert.match(calls[1][2].sql,/UPDATE sahmino_shared_sessions SET revoked_at=\?/);
+ assert.match(calls[1][2].sql,/changes\(\)=1/);
  const expectedDigest=require('node:crypto').createHash('sha256').update('AABBCCDDEEFF001122334455').digest('hex');
  assert.ok(calls[1][0].values.includes(expectedDigest));
  assert.ok(!calls[1][0].values.includes('AABBCCDDEEFF001122334455'));
@@ -131,5 +131,5 @@ test('password recovery does not consume a code when the active account update c
  assert.equal(batches.length,2);
  const reset=batches[1];
  assert.match(reset[0].sql,/UPDATE sahamban_users SET password_salt/);
- assert.match(reset[1].sql,/changes\\(\\)=1/);
+ assert.match(reset[1].sql,/changes\(\)=1/);
 });
