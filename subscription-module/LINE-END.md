@@ -98,6 +98,9 @@
 **خروجی بسته‌شدن:** URLهای staging، شناسه D1 (بدون secret)، نسخه Worker، migration history و شواهد health/auth/database.
 
 ### 6. پیکربندی دو Flavor اندروید برای staging — اجرای فنی پس از مراحل 1 و 2 و 5
+
+**سخت‌سازی gate در 2026-11-23:** Gradle اکنون فقط در حالت Debug و با فعال‌سازی صریح، شناسه دقیق `ir.sahmino.app`، Origin دقیق PWA، Worker URL با قالب origin معتبر، پنج SKU یکتا و کلید عمومی همان فروشگاه اجازه نمایش خرید می‌دهد. Build نوع Release در هر شرایطی `SAHAMBAN_BILLING_ENABLED=false` را override می‌کند. تست رگرسیون این محدودیت‌ها در [CI شماره 45134218900](https://github.com/Raminhashemi1/sahamban/actions/runs/45134218900) موفق شده است. ساخت Debug دو Flavor با Gradle جدید در زمان ثبت این یادداشت هنوز در حال اجراست؛ تا تکمیل آن، artifact تازه تأیید نشده است.
+
 **ورودی‌ها:** package ID، Worker URL، PWA Origin و نگاشت پنج گزینه خرید به SKUهای واقعی هر Flavor فروشگاهی (در صورت الزام قرارداد، پنج SKU برای بازار و پنج SKU برای مایکت؛ نه ده محصول در اپ)، کلیدهای عمومی فروشگاه و تنظیمات غیرمحرمانه build.
 
 **خروجی بسته‌شدن:** دو APK آزمایشی Bazaar و Myket با شناسه/محصول/کلید درست، بدون secret خصوصی در APK؛ checkout فقط در staging و پس از تأیید مراحل قبلی فعال شود.
