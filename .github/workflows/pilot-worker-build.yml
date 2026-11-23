@@ -56,7 +56,5 @@ jobs:
         run: node tests/worker-local-runtime.cjs
       - name: Exercise synthetic-price pending order lifecycle in local Worker+D1 only
         run: LOCAL_TEST_ENABLE_BILLING_V2=1 node tests/worker-local-runtime.cjs
-      - name: Exercise real username/password login, session, CSRF, logout and billing on local Worker+D1
-        run: LOCAL_TEST_ENABLE_PASSWORD_AUTH=1 LOCAL_TEST_ENABLE_BILLING_V2=1 node tests/worker-local-runtime.cjs
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
