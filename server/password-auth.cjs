@@ -117,16 +117,21 @@ function createPasswordAuth(db,{clock=()=>Date.now(),sessionTtlSeconds=SESSION_T
   const digest=await sha256Hex(code);
   const credentials=await hashPassword(newPassword);
   const resetId='rst_'+randomHex(16),stamp=iso(now);
+  // Update the account only when the supplied one-time code exists and is unused.
+  // Consume that exact code only if the password update changed one active account row.
   const results=await db.batch([
+   db.prepare(`UPDATE sahamban_users SET password_salt=?,password_hash=?,password_iterations=?
+    WHERE id=(SELECT rc.user_id FROM sahmino_recovery_codes rc
+     JOIN sahamban_users u ON u.id=rc.user_id
+     WHERE u.username_normalized=? AND u.status='ACTIVE'
+      AND rc.code_hash=? AND rc.used_at IS NULL LIMIT 1) AND status='ACTIVE'`)
+    .bind(credentials.salt,credentials.hash,credentials.iterations,normalized,digest),
    db.prepare(`UPDATE sahmino_recovery_codes SET used_at=?,reset_id=?
     WHERE user_id=(SELECT id FROM sahamban_users WHERE username_normalized=? AND status='ACTIVE')
-     AND code_hash=? AND used_at IS NULL`).bind(stamp,resetId,normalized,digest),
-   db.prepare(`UPDATE sahamban_users SET password_salt=?,password_hash=?,password_iterations=?
-    WHERE id=(SELECT user_id FROM sahmino_recovery_codes WHERE reset_id=?) AND status='ACTIVE'`)
-    .bind(credentials.salt,credentials.hash,credentials.iterations,resetId),
+     AND code_hash=? AND used_at IS NULL AND changes()=1`).bind(stamp,resetId,normalized,digest),
    db.prepare(`UPDATE sahmino_shared_sessions SET revoked_at=?
-    WHERE user_id=(SELECT user_id FROM sahmino_recovery_codes WHERE reset_id=?) AND revoked_at IS NULL`)
-    .bind(stamp,resetId)
+    WHERE user_id=(SELECT user_id FROM sahmino_recovery_codes WHERE reset_id=?)
+     AND revoked_at IS NULL AND changes()=1`).bind(stamp,resetId)
   ]);
   if(results?.length!==3||results[0]?.meta?.changes!==1||results[1]?.meta?.changes!==1)
    return {ok:false,status:400,error:'INVALID_RECOVERY'};
