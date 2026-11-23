@@ -14,13 +14,15 @@
 
 ## وضعیت فعلی
 
-## وضعیت فعلی
+**آخرین شواهد خودکار قطعی (2026-11-23):**
+- Billing V2 روی commit `484d6dff396b56d805a86e4426cb20491340e7a2` موفق: [run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422). این اجرا syntax check، bundle بدون deploy، اجرای schema و migration روی D1 محلی، تست‌های auth، Bazaar، Myket و مسیرهای D1 را گذراند.
+- Smoke و مرورگر روی همان commit موفق: [run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384).
+- Android Debug هر دو Flavor روی همان commit موفق: [run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447)، artifact آزمایشی `14806991899`.
+- Release build gate روی commit `0a74df3e6390dfcd3fbc53f5f22871eb8c05ba5d` موفق: [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084)، artifact unsigned `14806550004`. هر دو APK نسخه 1.0.0 و package `ir.sahmino.app` دارند و checkout در BuildConfig خاموش است. این artifact امضاشده یا آماده ارسال نیست.
 
-**آخرین وضعیت خودکار روی HEAD `debaca90083e34150455262e6bfa9a96e2893353` (2026-11-23):** Billing V2 و Android Debug در حال اجرای مجدد پس از تغییر workflow و README هستند؛ Release build gate نیز مجدداً در حال اجراست. آخرین نتایج قطعی قبل از این مستندات، روی commit `c221f0e9c0f7c4951cd73378c9eeb610d49d4f71` هر دو سبز بودند: [Billing CI run 45149894408](https://github.com/Raminhashemi1/sahamban/actions/runs/45149894408)، [Android Debug run 45149894464](https://github.com/Raminhashemi1/sahamban/actions/runs/45149894464). Release build gate روی commit `0a74df3e6390dfcd3fbc53f5f22871eb8c05ba5d` نیز موفق بود: [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084)، artifact unsigned شماره `14806550004`. Debug artifact روی HEAD قبلی `c221f0e9` با شناسه `14804944127` ساخته شد. همه این APKها آزمایشی/unsigned هستند و برای ارسال فروشگاه نیستند.
+**سخت‌سازی انتشار امضاشده:** Workflow `.github/workflows/android-pilot-signed-release.yml` برای فاز اولیه، هر دو Worker را پیش‌پرواز می‌کند و نیازمند دو متغیر عمومی Actions به نام‌های `SAHAMBAN_BAZAAR_WORKER_BASE_URL` و `SAHAMBAN_MYKET_WORKER_BASE_URL` است. هر URL باید origin واقعی HTTPS Worker همان فروشگاه باشد؛ health باید package `ir.sahmino.app`، احراز هویت فعال و پرداخت/checkout خاموش را تأیید کند. چهار secret امضای مالک نیز الزامی‌اند. Workflow در نبود هرکدام fail-closed می‌شود؛ هیچ secret یا endpoint ساختگی وارد مخزن نشده است.
 
-**سخت‌سازی انتشار امضاشده:** کشف شد که اپ در شروع به Worker URL نیاز دارد و بدون آن حتی ورود به PWA ممکن نیست. Workflow امضای دستی اکنون fail-closed است و متغیر مخزن Actions به نام `SAHAMBAN_WORKER_BASE_URL` را به‌عنوان HTTPS origin معتبر الزامی می‌کند و در هر دو Flavor تزریق می‌کند. این متغیر باید فقط پس از آماده‌شدن Worker production تنظیم شود؛ endpoint عمومی است و نباید به‌عنوان secret ثبت شود. بنابراین workflow امضا تا آماده‌شدن endpoint و چهار secret امضا عمداً متوقف می‌ماند.
-
-**وضعیت ادغام:** PR #191 باز و Draft است؛ HEAD با base قابل ادغام گزارش شده، اما به‌دلیل نیاز به Worker/D1، کلید امضا، تست فیزیکی و مدارک فروشگاه هنوز آماده ادغام/انتشار نهایی نیست.
+**وضعیت ادغام:** PR #191 باز و Draft است. CI سبز است، اما انتشار اولیه هنوز به Workerهای production، D1 مشترک و migrationهای اعمال‌شده، حساب‌های provisionشده، benchmark احراز هویت، چهار secret امضا، دو URL Worker و پذیرش فیزیکی دستگاه نیاز دارد. هیچ deploy یا migration عملیاتی انجام نشده است.
 
 
 ## ترتیب قطعی اجرا
