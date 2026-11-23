@@ -24,7 +24,8 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.ok(build.includes("def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahmino.app'"));
  assert.match(build,/applicationId appId/);
  assert.match(build,/expectedPackage == appId/);
- assert.match(build,/def releaseSigningReady = .*SAHMINO_RELEASE_KEYSTORE_PATH/);
+ assert.match(build,/def releaseStoreFile = System\.getenv\('SAHMINO_RELEASE_KEYSTORE_PATH'\)/);
+ assert.match(build,/def releaseSigningReady = .*releaseStoreFile\.isFile\(\)/);
  assert.match(build,/System\.getenv\('SAHMINO_RELEASE_STORE_PASSWORD'\)/);
  assert.match(build,/if \(releaseSigningReady\) signingConfig signingConfigs\.release/);
  assert.doesNotMatch(build,/storePassword\s+['\"]/);
