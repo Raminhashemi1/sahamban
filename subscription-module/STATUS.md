@@ -48,7 +48,7 @@ Independent, embeddable five-plan subscription purchase module. No legacy subscr
 - Bazaar: verifies purchase state, developer payload/order binding and consumption state through Developer API v2. A newly settled item is consumed only after the backend returns PAID.
 - Myket: verifies the signed original purchase JSON, app package, product SKU, purchase state and signed developer payload. A live Myket Developer API refund/revocation lookup is not implemented because an authoritative endpoint contract was not established from the reviewed official SDK sample.
 - Raw purchase tokens are not persisted; only SHA-256 hashes are stored.
-- Default SKU mapping uses the canonical plan IDs. Override server-side maps if the store developer panels already use different product IDs. The defaults do not claim those SKUs are already created in the store panels.
+- Each enabled store deployment now requires an explicit five-entry server-side SKU map with unique non-empty product IDs. The Worker also requires the exact package name and all provider verifier configuration at startup. Canonical internal plan IDs are never assumed to be registered marketplace product IDs.
 
 ### Recent hardening
 - Added automated protocol tests for PWA/native bridge concurrency, error replies, malformed replies and send failures.
@@ -195,3 +195,12 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 ### Release posture
 - Checkout remains disabled until the independent module is reconciled into the canonical host Worker and stable account identity, then validated against a dedicated D1 database and physical store test installations.
 - Do not deploy this standalone Worker alongside the existing host Billing V2 routes/schema.
+
+
+## Worker configuration hardening — 2026-11-23
+
+- Enabled Worker startup now fails closed unless the selected store has all five canonical plan IDs mapped to unique, non-empty marketplace product IDs.
+- Bazaar deployments require package name, OAuth client ID, client secret and refresh token before the Worker is created.
+- Myket deployments require package name and a syntactically valid Base64 public key before the Worker is created.
+- Added regression coverage for missing plans, duplicate SKUs, missing Bazaar credentials and malformed Myket public-key configuration.
+- The first intermediate CI run after the Worker change failed because the existing test fixture still configured only one SKU. The fixture was updated to the complete five-plan contract; the subsequent run [45133433457](https://github.com/Raminhashemi1/sahamban/actions/runs/45133433457) passed. This is retained as a record of the corrected test contract, not a remaining failure.
