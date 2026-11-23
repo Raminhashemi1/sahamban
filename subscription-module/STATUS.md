@@ -204,3 +204,11 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - Myket deployments require package name and a syntactically valid Base64 public key before the Worker is created.
 - Added regression coverage for missing plans, duplicate SKUs, missing Bazaar credentials and malformed Myket public-key configuration.
 - The first intermediate CI run after the Worker change failed because the existing test fixture still configured only one SKU. The fixture was updated to the complete five-plan contract; the subsequent run [45133433457](https://github.com/Raminhashemi1/sahamban/actions/runs/45133433457) passed. This is retained as a record of the corrected test contract, not a remaining failure.
+
+
+## Reversal input hardening — 2026-11-23
+
+- Applied the same bounded-identifier policy to the internal reversal primitive as settlement: authenticated user IDs are limited to 256 characters, order references to 128 characters, and provider transaction IDs to 256 characters.
+- Added regression coverage proving oversized values are rejected before any database access.
+- This is input validation only; no provider refund webhook or public reversal route was enabled.
+- Validation is pending the branch's GitHub Actions run.
