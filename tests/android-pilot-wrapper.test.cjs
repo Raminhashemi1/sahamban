@@ -38,8 +38,8 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(build,/endpoint\.startsWith\('https:\/\/'\)/);
  assert.match(build,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
  assert.match(build,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
- assert.match(build,/SAHAMBAN_WORKER_BASE_URL', '"\s*\+ bazaarWorkerUrl/);
- assert.match(build,/SAHAMBAN_WORKER_BASE_URL', '"\s*\+ myketWorkerUrl/);
+ assert.match(build,/SAHAMBAN_WORKER_BASE_URL', '" '\s*\+ bazaarWorkerUrl/);
+ assert.match(build,/SAHAMBAN_WORKER_BASE_URL', '" '\s*\+ myketWorkerUrl/);
  const flow=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2PurchaseFlow.kt');
  assert.match(flow,/if \(!BuildConfig\.SAHAMBAN_BILLING_ENABLED\)/);
  const wf=read('.github/workflows/android-pilot-debug.yml');
