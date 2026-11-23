@@ -39,7 +39,7 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(wf,/assembleMyketDebug/);
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.match(wf,/upload-artifact/);
- assert.match(read('android-pilot/README.md'),/not.*signed production release/i);
+ assert.match(read('android-pilot/README.md'),/unsigned and for engineering validation/i);
 });
 
 test('Billing API client obtains fresh native password-session cookie headers and never uses bearer tokens',()=>{
