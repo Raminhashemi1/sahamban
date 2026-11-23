@@ -19,8 +19,13 @@ def releaseStorePassword = System.getenv('SAHMINO_RELEASE_STORE_PASSWORD') ?: ''
 def releaseKeyAlias = System.getenv('SAHMINO_RELEASE_KEY_ALIAS') ?: ''
 def releaseKeyPassword = System.getenv('SAHMINO_RELEASE_KEY_PASSWORD') ?: ''
 def releaseSigningReady = !releaseStoreFile.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty() && file(releaseStoreFile).isFile()
+// Separate opt-ins prevent a debug flag from ever enabling a signed release.
+def releaseTaskRequested = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+def billingOptIn = releaseTaskRequested
+    ? System.getenv('SAHAMBAN_RELEASE_BILLING_ENABLED') == 'true'
+    : System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true'
 def commonBillingReady = { endpoint ->
-    System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
+    billingOptIn &&
     appId != 'ir.sahamban.pilot' && !distinctPilotIds && expectedPackage == appId &&
     appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
     endpoint.startsWith('https://') && allSkusPresent
@@ -92,7 +97,6 @@ android {
         release {
             minifyEnabled false
             if (releaseSigningReady) signingConfig signingConfigs.release
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
         }
     }
 }
