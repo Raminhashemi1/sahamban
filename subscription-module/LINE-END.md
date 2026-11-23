@@ -14,11 +14,11 @@
 
 ## وضعیت فعلی
 
-**آخرین شواهد خودکار قطعی (2026-11-23):**
-- Billing V2 روی HEAD فعلی `8a628d3cca4f7e9b0bef68ec6dfb131254bd3d13` موفق: [run 45161121007](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121007). این اجرا syntax check، bundle بدون deploy، schema و migration روی D1 محلی، تست‌های auth از جمله عدم مصرف کد بازیابی هنگام شکست به‌روزرسانی حساب، Bazaar، Myket و مسیرهای D1 را گذراند.
-- Smoke و مرورگر روی همان HEAD موفق: [run 45161121150](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121150).
-- Android Debug هر دو Flavor روی همان HEAD موفق: [run 45161120994](https://github.com/Raminhashemi1/sahamban/actions/runs/45161120994)، artifact آزمایشی `14811815299` با نام صریح `COMPILE-ONLY-NOT-STORE-READY`. این artifact فقط برای تست/کامپایل است و Release امضاشده نیست.
-- آخرین Release build gate مستقلِ ثبت‌شده در این سند روی commit `0a74df3e6390dfcd3fbc53f5f22871eb8c05ba5d` موفق است: [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084)، artifact unsigned `14806550004`. برای HEAD فعلی هنوز Release build gate مجدداً اجرا نشده است. هر دو APK آن اجرا نسخه 1.0.0 و package `ir.sahmino.app` داشتند و checkout در BuildConfig خاموش بود؛ artifact امضاشده یا آماده ارسال نیست.
+**آخرین شواهد خودکار قطعی (2026-11-23، HEAD `ba68adf3d376002d5f38f30455afbdde41293837`):**
+- Billing V2، شامل تست‌های auth، Bazaar، Myket و D1 محلی، موفق: [run 45161687193](https://github.com/Raminhashemi1/sahamban/actions/runs/45161687193).
+- Smoke و تمام تست‌های مرورگر/Chromium موفق: [run 45161687465](https://github.com/Raminhashemi1/sahamban/actions/runs/45161687465).
+- Android Debug هر دو Flavor بازار و مایکت با package identity مجزای pilot موفق: [run 45161687217](https://github.com/Raminhashemi1/sahamban/actions/runs/45161687217)، artifact `14810134361` با نام `COMPILE-ONLY-NOT-STORE-READY`. این APKها فقط برای تست‌اند و برای ارسال فروشگاه یا نصب به‌عنوان نسخه تولیدی نیستند.
+- Release build gate با checkout خاموش هنوز روی HEAD فعلی اجرا نشده است؛ آخرین اجرای مستقل ثبت‌شده همچنان [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084) روی commit قدیمی‌تر است. بنابراین APK Release فعلی نه ساخته‌شده و نه امضاشده/آماده ارسال است.
 
 **سخت‌سازی انتشار امضاشده:** Workflow `.github/workflows/android-pilot-signed-release.yml` برای فاز اولیه، هر دو Worker را پیش‌پرواز می‌کند و نیازمند دو متغیر عمومی Actions به نام‌های `SAHAMBAN_BAZAAR_WORKER_BASE_URL` و `SAHAMBAN_MYKET_WORKER_BASE_URL` است. هر URL باید origin واقعی HTTPS Worker همان فروشگاه باشد؛ health باید package `ir.sahmino.app`، احراز هویت فعال و پرداخت/checkout خاموش را تأیید کند. چهار secret امضای مالک نیز الزامی‌اند. Workflow در نبود هرکدام fail-closed می‌شود؛ هیچ secret یا endpoint ساختگی وارد مخزن نشده است.
 
