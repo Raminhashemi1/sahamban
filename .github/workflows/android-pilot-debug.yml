@@ -45,7 +45,8 @@ jobs:
       - name: Validate optional Worker endpoint configuration
         shell: bash
         env:
-          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
           SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
           SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
           SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
@@ -59,18 +60,36 @@ jobs:
           MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "${SAHAMBAN_WORKER_BASE_URL:-}" ]]; then
-            echo "::notice::Worker URL is not configured. Build is compile-only; the APK will show the safe configuration screen and cannot sign in or purchase."
+          BAZAAR_URL="${SAHAMBAN_BAZAAR_WORKER_BASE_URL:-}"
+          MYKET_URL="${SAHAMBAN_MYKET_WORKER_BASE_URL:-}"
+          if [[ -z "$BAZAAR_URL" && -z "$MYKET_URL" ]]; then
+            echo "::notice::Store Worker URLs are not configured. Build is compile-only; both APKs show the safe configuration screen and cannot sign in or purchase."
             exit 0
           fi
-          python3 -c 'import os,sys,urllib.parse; u=urllib.parse.urlparse(os.environ["SAHAMBAN_WORKER_BASE_URL"]); sys.exit(0 if u.scheme=="https" and u.netloc and not u.path.rstrip("/") and not u.query and not u.fragment else 1)' || {
-            echo "::error::SAHAMBAN_WORKER_BASE_URL must be an HTTPS origin without path, query, or fragment."
+          if [[ -z "$BAZAAR_URL" || -z "$MYKET_URL" ]]; then
+            echo "::error::Configure both SAHAMBAN_BAZAAR_WORKER_BASE_URL and SAHAMBAN_MYKET_WORKER_BASE_URL, or leave both empty for compile-only CI."
             exit 1
-          }
+          fi
+          python3 - <<'PY'
+          import os, sys, urllib.parse
+          for name in ("SAHAMBAN_BAZAAR_WORKER_BASE_URL", "SAHAMBAN_MYKET_WORKER_BASE_URL"):
+              value = os.environ[name]
+              u = urllib.parse.urlparse(value)
+              try:
+                  port = u.port
+              except ValueError:
+                  raise SystemExit(f"{name} has an invalid port")
+              if not (u.scheme == "https" and u.hostname and u.username is None and
+                      u.password is None and (port is None or 1 <= port <= 65535) and
+                      u.path in ("", "/") and not u.query and not u.fragment):
+                  raise SystemExit(f"{name} must be an HTTPS origin without credentials, path, query, or fragment")
+              print(f"PASS {name} origin")
+          PY
       - name: Build TEST-ONLY Bazaar and Myket debug APKs without owner signing credentials
         shell: bash
         env:
-          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
           SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
           SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
           SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
