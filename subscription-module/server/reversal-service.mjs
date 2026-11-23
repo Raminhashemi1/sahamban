@@ -13,8 +13,11 @@ export async function reverseVerifiedPurchase(db, {
   now = new Date().toISOString(),
   idFactory = () => crypto.randomUUID()
 }) {
-  if (typeof authenticatedUserId !== 'string' || !authenticatedUserId) {
+  if (typeof authenticatedUserId !== 'string' || !authenticatedUserId || authenticatedUserId.length > 256) {
     return { ok: false, error: 'UNAUTHENTICATED' };
+  }
+  if (typeof orderId !== 'string' || !orderId || orderId.length > 128) {
+    return { ok: false, error: 'INVALID_ORDER_REFERENCE' };
   }
   if (!Number.isFinite(Date.parse(now))) return { ok: false, error: 'INVALID_TIMESTAMP' };
   if (!verifiedReversal || verifiedReversal.verified !== true) {
@@ -23,7 +26,7 @@ export async function reverseVerifiedPurchase(db, {
 
   const { store, storeOrderId, purchaseTokenHash, providerEventId, payloadHash } = verifiedReversal;
   if (!['BAZAAR', 'MYKET'].includes(store) ||
-      typeof storeOrderId !== 'string' || !storeOrderId ||
+      typeof storeOrderId !== 'string' || !storeOrderId || storeOrderId.length > 256 ||
       typeof purchaseTokenHash !== 'string' || !/^[a-f0-9]{64}$/i.test(purchaseTokenHash) ||
       typeof providerEventId !== 'string' || !providerEventId || providerEventId.length > 180 ||
       typeof payloadHash !== 'string' || !/^[a-f0-9]{64}$/i.test(payloadHash)) {
