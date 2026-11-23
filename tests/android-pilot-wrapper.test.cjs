@@ -59,6 +59,8 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(signedWf,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
  assert.match(signedWf,/PASS BAZAAR Worker health/);
  assert.match(signedWf,/PASS MYKET Worker health/);
+ assert.match(signedWf,/EXPECTED_WORKER/);
+ assert.match(signedWf,/BILLING_STORE =/);
  assert.match(read('android-pilot/README.md'),/generated APKs are not marketplace-ready/i);
 });
 
@@ -178,4 +180,7 @@ test('native password login exposes one-time recovery without passing credential
  assert.match(view,/بازیابی رمز عبور با کد یک‌بارمصرف/);
  assert.match(view,/هر کد فقط یک‌بار قابل استفاده است/);
  assert.match(view,/INVALID_RECOVERY/);
+ assert.match(view,/setOnDismissListener/);
+ assert.match(view,/codeInput\.text\?\.clear\(\)/);
+ assert.match(view,/newPasswordInput\.text\?\.clear\(\)/);
 });
