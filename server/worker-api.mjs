@@ -3,7 +3,7 @@ import {verifyAndSettle} from './billing/bazaar.mjs';
 import {verifyAndSettleMyket} from './billing/myket.mjs';
 import passwordAuthModule from './password-auth.cjs';
 const {createPasswordAuth}=passwordAuthModule;
-const {createOrder,createMyketOrder}=billingOrders;
+const {createOrder,createMyketOrder,parseStoreSkuMap}=billingOrders;
 function authJson(request,body,status,origin,extraHeaders={}){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin',...extraHeaders};
  if(origin){headers['Access-Control-Allow-Origin']=origin;headers['Access-Control-Allow-Credentials']='true';}
@@ -214,8 +214,12 @@ export default {
   if(url.pathname==='/api/v1/health'&&request.method==='GET'){
    const billingEnabled=env?.BILLING_V2_ENABLED==='true';
    const authEnabled=env?.SAHMINO_PASSWORD_AUTH_ENABLED==='true';
+   const store=env?.BILLING_STORE||'BAZAAR';
+   const skuMap=store==='MYKET'?env?.MYKET_SKU_MAP:env?.BAZAAR_SKU_MAP;
+   const packageName=store==='MYKET'?env?.MYKET_PACKAGE_NAME:env?.BAZAAR_PACKAGE_NAME;
    return send({status:billingEnabled?'ready':'prototype',paymentsEnabled:billingEnabled,
-    checkoutEnabled:billingEnabled,authEnabled,store:env?.BILLING_STORE||'BAZAAR'},200,cors);
+    checkoutEnabled:billingEnabled,authEnabled,store,packageName:packageName||null,
+    skuMapReady:!!parseStoreSkuMap(skuMap)},200,cors);
   }
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isBillingOrders=url.pathname==='/api/v2/billing/orders';
