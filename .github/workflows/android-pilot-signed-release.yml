@@ -111,8 +111,11 @@ jobs:
         run: |
           set -euo pipefail
           gradle -p android-pilot --no-daemon :app:assembleBazaarRelease :app:assembleMyketRelease
-      - name: Verify signatures, package identity, and checkout-off release configuration
+      - name: Verify signatures, package identity, store Worker routing, and checkout-off configuration
         shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
         run: |
           set -euo pipefail
           AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
@@ -125,7 +128,16 @@ jobs:
             test "$PACKAGE" = "ir.sahmino.app"
             DIR="android-pilot/app/build/generated/source/buildConfig/$flavor/release"
             grep -R -E 'SAHAMBAN_BILLING_ENABLED = (false|Boolean.parseBoolean\("false"\));' "$DIR" >/dev/null
-            echo "PASS signed=$flavor package=$PACKAGE checkout=disabled"
+            if [[ "$flavor" == "bazaar" ]]; then
+              EXPECTED_WORKER="$SAHAMBAN_BAZAAR_WORKER_BASE_URL"
+              EXPECTED_STORE="BAZAAR"
+            else
+              EXPECTED_WORKER="$SAHAMBAN_MYKET_WORKER_BASE_URL"
+              EXPECTED_STORE="MYKET"
+            fi
+            grep -R -F "SAHAMBAN_WORKER_BASE_URL = \"$EXPECTED_WORKER\";" "$DIR" >/dev/null
+            grep -R -F "BILLING_STORE = \"$EXPECTED_STORE\";" "$DIR" >/dev/null
+            echo "PASS signed=$flavor package=$PACKAGE store=$EXPECTED_STORE worker=$EXPECTED_WORKER checkout=disabled"
           done
           sha256sum android-pilot/app/build/outputs/apk/*/release/*.apk
       - uses: actions/upload-artifact@v4
