@@ -118,3 +118,20 @@ test('same provider event ID with a different payload hash is rejected', async (
   assert.equal(result.error, 'ORDER_ALREADY_REVERSED');
   assert.equal(db.calls.length, 0);
 });
+
+test('reversal bounds order, user, and provider transaction references before database access', async () => {
+  const db = makeDb();
+  assert.equal((await reverseVerifiedPurchase(db, {
+    orderId: 'x'.repeat(129), authenticatedUserId: 'user-1',
+    verifiedReversal: reversal
+  })).error, 'INVALID_ORDER_REFERENCE');
+  assert.equal((await reverseVerifiedPurchase(db, {
+    orderId: 'order-1', authenticatedUserId: 'x'.repeat(257),
+    verifiedReversal: reversal
+  })).error, 'UNAUTHENTICATED');
+  assert.equal((await reverseVerifiedPurchase(db, {
+    orderId: 'order-1', authenticatedUserId: 'user-1',
+    verifiedReversal: { ...reversal, storeOrderId: 'x'.repeat(257) }
+  })).error, 'INVALID_VERIFIED_REVERSAL');
+  assert.equal(db.calls.length, 0);
+});
