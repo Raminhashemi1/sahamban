@@ -10,9 +10,14 @@ Choose exactly one billing schema path:
 - Fresh database: apply the base user schema, then `server/billing/schema.sql`.
 - Existing database already using the earlier Bazaar Billing V2 schema: apply `server/billing/migrations/0002-myket-store-columns.sql` once, then `0003-authoritative-irr-prices.sql` exactly once.
 
-After the base/Billing V2 schema path is verified, apply `server/migrations/0004-username-password-auth.sql` once. This migration backfills usernames from existing verified phone identities, leaves password hashes unset, and adds hashed-session and login-rate-limit storage. It does not send SMS or enable authentication.
+After the base/Billing V2 schema path is verified, apply these additive migrations exactly once and in order:
 
-Do not apply the fresh schema and the upgrade migration to the same database. Take a backup before any production migration and verify the schema after applying it.
+1. `server/migrations/0004-username-password-auth.sql` — backfills usernames from existing verified phone identities, leaves password hashes unset, and adds hashed-session and login-rate-limit storage.
+2. `server/migrations/0005-password-recovery-codes.sql` — creates the one-time recovery-code table required by the password-reset endpoint.
+
+Do not enable `SAHMINO_PASSWORD_AUTH_ENABLED` until both migrations have succeeded and their resulting tables/indexes have been verified. Migration 0004 revokes legacy sessions as part of the authentication cutover. Neither migration sends SMS or enables authentication.
+
+Do not apply the fresh schema and the upgrade migration to the same database. Take a backup before any production migration, record the migration history, and verify the schema after applying each migration.
 
 ## 2. Prepare the Bazaar Worker
 
@@ -39,7 +44,7 @@ wrangler secret put MYKET_PUBLIC_KEY --config server/wrangler.myket.toml
 
 Before enabling login, benchmark the 310,000-iteration PBKDF2 verification on the actual Cloudflare plan and inspect Worker CPU usage. Cloudflare Workers Free has a 10 ms CPU limit; Paid defaults to 30 seconds and supports a configurable higher limit. Do not assume the Free plan can serve this authentication workload. If measured CPU exceeds the selected plan limit, keep login disabled and choose a supported plan or redesign the password-verification execution path before rollout.
 
-The Worker uses native username/password authentication and a D1-backed HttpOnly session. Provision real accounts with `scripts/provision-sahmino-user.mjs` (use the existing opaque D1 `userId` for migrated accounts; do not rewrite legacy primary keys), set a private `AUTH_RATE_LIMIT_SECRET` of at least 32 bytes, and keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until the migration, account provisioning, and password-recovery procedure are reviewed.
+The Worker uses native username/password authentication and a D1-backed HttpOnly session. Provision real accounts with `scripts/provision-sahmino-user.mjs` (use the existing opaque D1 `userId` for migrated accounts; do not rewrite legacy primary keys). The script creates ten one-time recovery codes; deliver them once through a separately approved secure offline channel and rehearse account-ownership verification and controlled code rotation. Set a private `AUTH_RATE_LIMIT_SECRET` of at least 32 bytes, identical in both Worker deployments. Keep `SAHMINO_PASSWORD_AUTH_ENABLED=false` until migrations 0004 and 0005, account provisioning, recovery-code delivery, and the PBKDF2 CPU benchmark have all been reviewed and accepted.
 
 ## 4. Deploy with checkout disabled
 
