@@ -45,7 +45,7 @@ jobs:
           if len(apks) != 2:
               raise SystemExit(f'Expected exactly two release APKs, found {len(apks)}')
           for apk in sorted(apks):
-              out = subprocess.check_output(['apkanalyzer','manifest','application-id',apk], text=True).strip()
+              out = subprocess.check_output([__import__('os').path.join(__import__('os').environ['ANDROID_HOME'],'build-tools','36.0.0','aapt'),'dump','badging',apk], text=True).splitlines()[0].split("'")[1]
               if out != 'ir.sahmino.app':
                   raise SystemExit(f'Unexpected package {out} in {apk}')
               print(f'PASS package={out} artifact={apk}')
