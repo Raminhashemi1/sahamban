@@ -176,3 +176,22 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 
 ### Next safe action
 - Continue with controlled D1 integration once the dedicated test database and access are supplied. Then consolidate the module into the canonical host Worker/account identity and shared D1 ledger before enabling checkout. Keep the release feature gate disabled until both store test matrices pass on physical devices.
+
+
+## Settlement hardening — 2026-11-23
+
+### Changes
+- Settlement now revalidates the persisted order amount against the canonical plan catalogue at the point of settlement. A row with a stale or inconsistent amount cannot be settled even if the provider evidence matches that row.
+- Provider transaction/order references are length-bounded before they are written to the ledger.
+- Settlement order references and authenticated user identifiers are bounded before database access.
+- Added regression tests for catalogue drift, oversized provider transaction identifiers, and malformed order references.
+
+### Validation
+- GitHub Actions run [45133240332](https://github.com/Raminhashemi1/sahamban/actions/runs/45133240332) passed on commit `7cc9122c8ab3623dae690f275248f13c0fd1ec5f`.
+- Node.js: 55 tests passed, 0 failed.
+- SQLite settlement/reversal contract: 10 tests passed, 0 failed.
+- These remain automated unit/SQLite contract tests; they do not represent a live Cloudflare D1 database test or store payment.
+
+### Release posture
+- Checkout remains disabled until the independent module is reconciled into the canonical host Worker and stable account identity, then validated against a dedicated D1 database and physical store test installations.
+- Do not deploy this standalone Worker alongside the existing host Billing V2 routes/schema.
