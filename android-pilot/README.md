@@ -82,7 +82,11 @@ The workflow `.github/workflows/android-pilot-signed-release.yml` builds Bazaar 
 - `SAHMINO_RELEASE_KEY_ALIAS`: signing key alias.
 - `SAHMINO_RELEASE_KEY_PASSWORD`: signing key password.
 
-Configure these in the repository's Actions secrets using the publisher-owned signing key. Never commit the keystore or passwords. Run the workflow manually only after verifying the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
+Configure these in the repository's Actions secrets using the publisher-owned signing key. Never commit the keystore or passwords.
+
+Also configure the repository Actions **variable** `SAHAMBAN_WORKER_BASE_URL` to the production Worker HTTPS origin (scheme and host only; no path, query, or fragment). Native login is the app's startup gate, so a signed app built without this endpoint cannot sign users in or open the PWA. The signed workflow now fails closed when this variable is missing or malformed and injects it into both flavors.
+
+Run the workflow manually only after verifying that the Worker is deployed with the exact PWA Origin, shared production D1, completed migrations, provisioned accounts, and `SAHMINO_PASSWORD_AUTH_ENABLED=true` for the intended release environment. Verify the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
 
 ## Owner actions still required
 
