@@ -99,7 +99,7 @@
 
 ### 6. پیکربندی دو Flavor اندروید برای staging — اجرای فنی پس از مراحل 1 و 2 و 5
 
-**سخت‌سازی gate در 2026-11-23:** Gradle اکنون فقط در حالت Debug و با فعال‌سازی صریح، شناسه دقیق `ir.sahmino.app`، Origin دقیق PWA، Worker URL با قالب origin معتبر، پنج SKU یکتا و کلید عمومی همان فروشگاه اجازه نمایش خرید می‌دهد. Build نوع Release در هر شرایطی `SAHAMBAN_BILLING_ENABLED=false` را override می‌کند. تست رگرسیون این محدودیت‌ها در [CI شماره 45134218900](https://github.com/Raminhashemi1/sahamban/actions/runs/45134218900) موفق شده است. ساخت Debug دو Flavor با Gradle جدید در زمان ثبت این یادداشت هنوز در حال اجراست؛ تا تکمیل آن، artifact تازه تأیید نشده است.
+**سخت‌سازی gate در 2026-11-23:** Gradle اکنون فقط در حالت Debug و با فعال‌سازی صریح، شناسه دقیق `ir.sahmino.app`، Origin دقیق PWA، Worker URL با قالب origin معتبر، پنج SKU یکتا و کلید عمومی همان فروشگاه اجازه نمایش خرید می‌دهد. Build نوع Release در هر شرایطی `SAHAMBAN_BILLING_ENABLED=false` را override می‌کند. تست رگرسیون این محدودیت‌ها در [CI شماره 45134218900](https://github.com/Raminhashemi1/sahamban/actions/runs/45134218900) موفق شده است. ساخت هر دو Debug Flavor با Gradle جدید نیز در [اجرای Android CI شماره 45134099191](https://github.com/Raminhashemi1/sahamban/actions/runs/45134099191) موفق شد و artifact آزمایشی با شناسه `14798328786` تولید شد. این artifact فقط Debug و compile-only است، امضای Release ندارد و برای ارسال به فروشگاه نیست.
 
 **ورودی‌ها:** package ID، Worker URL، PWA Origin و نگاشت پنج گزینه خرید به SKUهای واقعی هر Flavor فروشگاهی (در صورت الزام قرارداد، پنج SKU برای بازار و پنج SKU برای مایکت؛ نه ده محصول در اپ)، کلیدهای عمومی فروشگاه و تنظیمات غیرمحرمانه build.
 
