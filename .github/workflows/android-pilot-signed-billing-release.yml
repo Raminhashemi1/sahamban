@@ -124,7 +124,8 @@ jobs:
               base = os.environ[f"SAHAMBAN_{store}_WORKER_BASE_URL"]
               health = get_json(base, "/api/v1/health", 200)
               expected = {"paymentsEnabled": True, "checkoutEnabled": True,
-                          "authEnabled": True, "store": store}
+                          "authEnabled": True, "store": store,
+                          "packageName": "ir.sahmino.app", "skuMapReady": True}
               for key, value in expected.items():
                   if health.get(key) != value:
                       raise SystemExit(f"{store} Worker health has unexpected {key}: {health.get(key)!r}.")
