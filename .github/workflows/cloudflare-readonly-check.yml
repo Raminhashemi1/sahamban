@@ -41,7 +41,7 @@ jobs:
             if(verify?.result?.status!=='active')throw Error('API token is not active');
             await check('/accounts/'+account+'/d1/database/'+db,'D1 database access');
             // Read only the table inventory through D1 SQL. Never select customer or payment rows.
-            const sql='SELECT name FROM sqlite_schema WHERE type=\\'table\\' AND name NOT LIKE \\'sqlite_%\\' AND name NOT LIKE \\'_cf_%\\' ORDER BY name';
+            const sql = `SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name`;
             const query=await fetch(base+'/accounts/'+account+'/d1/database/'+db+'/query',{
               method:'POST',headers:{...headers,'Content-Type':'application/json'},
               body:JSON.stringify({sql,params:[]}),signal:AbortSignal.timeout(15000)
