@@ -13,50 +13,57 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Validate production Worker endpoint required by native login
+      - name: Validate both production Worker endpoints required by native login
         shell: bash
         env:
-          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
         run: |
           set -euo pipefail
-          if [[ -z "${SAHAMBAN_WORKER_BASE_URL:-}" ]]; then
-            echo "::error::Configure the repository Actions variable SAHAMBAN_WORKER_BASE_URL with the production HTTPS Worker origin before creating a signed app. Without it, native login cannot start."
-            exit 1
-          fi
+          for name in SAHAMBAN_BAZAAR_WORKER_BASE_URL SAHAMBAN_MYKET_WORKER_BASE_URL; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Configure both repository Actions variables SAHAMBAN_BAZAAR_WORKER_BASE_URL and SAHAMBAN_MYKET_WORKER_BASE_URL to their respective production HTTPS Worker origins before signing. Each store APK must use its own Worker."
+              exit 1
+            fi
+          done
           python3 - <<'PY'
           import json, os, urllib.error, urllib.parse, urllib.request
-          value = os.environ["SAHAMBAN_WORKER_BASE_URL"]
-          parsed = urllib.parse.urlparse(value)
-          try:
-              port = parsed.port
-          except ValueError:
-              raise SystemExit("SAHAMBAN_WORKER_BASE_URL has an invalid port.")
-          valid = (parsed.scheme == "https" and bool(parsed.hostname) and
-                   parsed.username is None and parsed.password is None and
-                   (port is None or 1 <= port <= 65535) and
-                   parsed.path in ("", "/") and not parsed.query and not parsed.fragment)
-          if not valid:
-              raise SystemExit("SAHAMBAN_WORKER_BASE_URL must be an HTTPS origin without credentials, path, query, or fragment.")
-          def get_json(path, expected_status, headers=None):
-              request = urllib.request.Request(value.rstrip("/") + path, headers=headers or {})
+          endpoints = {
+              "BAZAAR": os.environ["SAHAMBAN_BAZAAR_WORKER_BASE_URL"],
+              "MYKET": os.environ["SAHAMBAN_MYKET_WORKER_BASE_URL"],
+          }
+          def get_json(base, path, expected_status, headers=None):
+              request = urllib.request.Request(base.rstrip("/") + path, headers=headers or {})
               try:
                   response = urllib.request.urlopen(request, timeout=15)
               except urllib.error.HTTPError as error:
                   response = error
               if response.status != expected_status:
-                  raise SystemExit(f"Worker preflight {path} returned HTTP {response.status}; expected {expected_status}.")
+                  raise SystemExit(f"{path} on {base} returned HTTP {response.status}; expected {expected_status}.")
               try:
                   return json.loads(response.read().decode("utf-8"))
               finally:
                   response.close()
-          health = get_json("/api/v1/health", 200)
-          if health.get("paymentsEnabled") is not False or health.get("checkoutEnabled") is not False:
-              raise SystemExit("Worker health must confirm paymentsEnabled=false and checkoutEnabled=false for initial release.")
-          session = get_json("/api/v1/auth/session", 401,
-              {"Origin": "https://raminhashemi1.github.io", "Accept": "application/json"})
-          if session.get("authenticated") is not False:
-              raise SystemExit("Worker auth session preflight did not return authenticated=false for a signed-out request.")
-          print("PASS production Worker health, checkout-off, and password-auth session preflight")
+          for store, value in endpoints.items():
+              parsed = urllib.parse.urlparse(value)
+              try:
+                  port = parsed.port
+              except ValueError:
+                  raise SystemExit(f"{store} Worker URL has an invalid port.")
+              valid = (parsed.scheme == "https" and bool(parsed.hostname) and
+                       parsed.username is None and parsed.password is None and
+                       (port is None or 1 <= port <= 65535) and
+                       parsed.path in ("", "/") and not parsed.query and not parsed.fragment)
+              if not valid:
+                  raise SystemExit(f"{store} Worker URL must be an HTTPS origin without credentials, path, query, or fragment.")
+              health = get_json(value, "/api/v1/health", 200)
+              if health.get("paymentsEnabled") is not False or health.get("checkoutEnabled") is not False:
+                  raise SystemExit(f"{store} Worker must confirm paymentsEnabled=false and checkoutEnabled=false for initial release.")
+              session = get_json(value, "/api/v1/auth/session", 401,
+                  {"Origin": "https://raminhashemi1.github.io", "Accept": "application/json"})
+              if session.get("authenticated") is not False:
+                  raise SystemExit(f"{store} Worker auth preflight did not return authenticated=false for a signed-out request.")
+              print(f"PASS {store} Worker health, checkout-off, and password-auth session preflight")
           PY
       - name: Validate owner-managed signing secrets
         shell: bash
@@ -94,7 +101,8 @@ jobs:
           SAHAMBAN_APPLICATION_ID: ir.sahmino.app
           SAHAMBAN_EXPECTED_PACKAGE_NAME: ir.sahmino.app
           SAHAMBAN_PWA_ORIGIN: https://raminhashemi1.github.io
-          SAHAMBAN_WORKER_BASE_URL: ${{ vars.SAHAMBAN_WORKER_BASE_URL }}
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
           SAHAMBAN_BILLING_ENABLED: 'false'
           SAHMINO_RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/sahmino-release.jks
           SAHMINO_RELEASE_STORE_PASSWORD: ${{ secrets.SAHMINO_RELEASE_STORE_PASSWORD }}
