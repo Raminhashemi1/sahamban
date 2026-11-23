@@ -120,10 +120,10 @@ signing is performed by this source integration.
 
 ## Latest automated verification (2026-11-23)
 
-- Billing V2, both store adapters, local D1 schema/migrations, password-auth integration, and Worker bundle: [GitHub Actions run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422) — passed.
-- Full application smoke/browser checks: [GitHub Actions run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384) — passed.
-- Bazaar and Myket Android Debug flavors: [GitHub Actions run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447) — passed; compile/test artifact only.
-- Latest checkout-disabled Release gate passed on commit `4162b33d3e7c0045c7016e57b4410ea1ae5cc223`: [run 45162515130](https://github.com/Raminhashemi1/sahamban/actions/runs/45162515130). Both Release variants passed package/version/non-debuggable and hard-disabled checkout checks. Artifact `14812446502` contains unsigned, NOT STORE READY APKs plus SHA-256 manifest. Bazaar SHA-256: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`; Myket SHA-256: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`.
+All four workflows below passed on the same integration HEAD `a8f29f238eeffeca3c5be53d396beff4cf825045`:
+- Billing V2, auth, Bazaar/Myket adapters, local D1 migrations and Worker bundle: [run 45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951).
+- Full smoke and browser/Chromium checks: [run 45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860).
+- Bazaar and Myket Android Debug flavors: [run 45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930); debug artifact is compile/test-only.
+- Checkout-disabled Release build gate: [run 45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353), artifact `14814135913`. The downloaded ZIP contains both unsigned APKs and the checksum manifest. Bazaar SHA-256: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`; Myket SHA-256: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`.
 
-These automated checks do not replace owner-controlled production deployment,
-release signing, or physical-device and marketplace acceptance.
+The Release APKs are unsigned and explicitly NOT STORE READY. These CI checks do not prove production Worker/D1 deployment, real authentication, physical-device acceptance, owner signing, or marketplace approval.
