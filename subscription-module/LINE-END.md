@@ -15,10 +15,10 @@
 ## وضعیت فعلی
 
 **آخرین شواهد خودکار قطعی (2026-11-23):**
-- Billing V2 روی commit `484d6dff396b56d805a86e4426cb20491340e7a2` موفق: [run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422). این اجرا syntax check، bundle بدون deploy، اجرای schema و migration روی D1 محلی، تست‌های auth، Bazaar، Myket و مسیرهای D1 را گذراند.
-- Smoke و مرورگر روی همان commit موفق: [run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384).
-- Android Debug هر دو Flavor روی همان commit موفق: [run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447)، artifact آزمایشی `14806991899`.
-- Release build gate روی commit `0a74df3e6390dfcd3fbc53f5f22871eb8c05ba5d` موفق: [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084)، artifact unsigned `14806550004`. هر دو APK نسخه 1.0.0 و package `ir.sahmino.app` دارند و checkout در BuildConfig خاموش است. این artifact امضاشده یا آماده ارسال نیست.
+- Billing V2 روی HEAD فعلی `8a628d3cca4f7e9b0bef68ec6dfb131254bd3d13` موفق: [run 45161121007](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121007). این اجرا syntax check، bundle بدون deploy، schema و migration روی D1 محلی، تست‌های auth از جمله عدم مصرف کد بازیابی هنگام شکست به‌روزرسانی حساب، Bazaar، Myket و مسیرهای D1 را گذراند.
+- Smoke و مرورگر روی همان HEAD موفق: [run 45161121150](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121150).
+- Android Debug هر دو Flavor روی همان HEAD موفق: [run 45161120994](https://github.com/Raminhashemi1/sahamban/actions/runs/45161120994)، artifact آزمایشی `14811815299` با نام صریح `COMPILE-ONLY-NOT-STORE-READY`. این artifact فقط برای تست/کامپایل است و Release امضاشده نیست.
+- آخرین Release build gate مستقلِ ثبت‌شده در این سند روی commit `0a74df3e6390dfcd3fbc53f5f22871eb8c05ba5d` موفق است: [run 45149677084](https://github.com/Raminhashemi1/sahamban/actions/runs/45149677084)، artifact unsigned `14806550004`. برای HEAD فعلی هنوز Release build gate مجدداً اجرا نشده است. هر دو APK آن اجرا نسخه 1.0.0 و package `ir.sahmino.app` داشتند و checkout در BuildConfig خاموش بود؛ artifact امضاشده یا آماده ارسال نیست.
 
 **سخت‌سازی انتشار امضاشده:** Workflow `.github/workflows/android-pilot-signed-release.yml` برای فاز اولیه، هر دو Worker را پیش‌پرواز می‌کند و نیازمند دو متغیر عمومی Actions به نام‌های `SAHAMBAN_BAZAAR_WORKER_BASE_URL` و `SAHAMBAN_MYKET_WORKER_BASE_URL` است. هر URL باید origin واقعی HTTPS Worker همان فروشگاه باشد؛ health باید package `ir.sahmino.app`، احراز هویت فعال و پرداخت/checkout خاموش را تأیید کند. چهار secret امضای مالک نیز الزامی‌اند. Workflow در نبود هرکدام fail-closed می‌شود؛ هیچ secret یا endpoint ساختگی وارد مخزن نشده است.
 
@@ -88,7 +88,7 @@
 
 **وضعیت کد:** احراز هویت نام کاربری/رمز عبور، نشست HttpOnly، محدودسازی تلاش‌ها، بازیابی با ده کد یک‌بارمصرف، provision حساب و اتصال native در شاخه یکپارچه پیاده‌سازی شده‌اند. Migrationهای 0004 و 0005 هر دو در CI روی D1 محلی اجرا و بررسی می‌شوند. PR #209 تغییرات auth را به شاخه یکپارچه منتقل کرده و PR #191 Draft باقی مانده است.
 
-**آخرین شواهد:** هر سه بررسی روی commit `484d6dff396b56d805a86e4426cb20491340e7a2` کامل و موفق‌اند: Billing V2 و مهاجرت‌های D1 محلی ([run 45151885422](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885422))، Smoke و مرورگر ([run 45151885384](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885384)) و Android Debug هر دو Flavor ([run 45151885447](https://github.com/Raminhashemi1/sahamban/actions/runs/45151885447)). این نتایج تست محلی/CI هستند و پذیرش روی D1 واقعی یا دستگاه فیزیکی را اثبات نمی‌کنند.
+**آخرین شواهد:** Billing V2، Smoke/مرورگر و Android Debug هر دو Flavor روی HEAD `8a628d3cca4f7e9b0bef68ec6dfb131254bd3d13` همگی موفق‌اند: [Billing run 45161121007](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121007)، [Smoke run 45161121150](https://github.com/Raminhashemi1/sahamban/actions/runs/45161121150)، [Android Debug run 45161120994](https://github.com/Raminhashemi1/sahamban/actions/runs/45161120994). تست auth شامل regression عدم مصرف کد بازیابی در شکست update حساب است. این نتایج تست محلی/CI هستند و پذیرش روی D1 واقعی یا دستگاه فیزیکی را اثبات نمی‌کنند.
 
 **نیاز از مالک**
 - فراهم‌کردن `AUTH_RATE_LIMIT_SECRET` خصوصی، حداقل ۳۲ بایت و دقیقاً یکسان برای هر دو Worker؛ فقط از Cloudflare Secrets استفاده شود.
