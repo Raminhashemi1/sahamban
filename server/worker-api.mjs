@@ -211,7 +211,12 @@ export default {
   const authResponse=await handlePasswordAuthRoutes(request,env,url,nowMs);
   if(authResponse)return authResponse;
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
-  if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
+  if(url.pathname==='/api/v1/health'&&request.method==='GET'){
+   const billingEnabled=env?.BILLING_V2_ENABLED==='true';
+   const authEnabled=env?.SAHMINO_PASSWORD_AUTH_ENABLED==='true';
+   return send({status:billingEnabled?'ready':'prototype',paymentsEnabled:billingEnabled,
+    checkoutEnabled:billingEnabled,authEnabled,store:env?.BILLING_STORE||'BAZAAR'},200,cors);
+  }
   const isEntitlement=url.pathname==='/api/v1/me/entitlement';
   const isBillingOrders=url.pathname==='/api/v2/billing/orders';
   const isBillingVerify=url.pathname==='/api/v2/billing/verify';
