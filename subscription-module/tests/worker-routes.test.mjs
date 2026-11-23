@@ -4,15 +4,17 @@ import { createBillingRouter } from '../worker/routes.mjs';
 
 function makeDb() {
   const rows = [];
+  const prepareCalls = [];
   return {
     rows,
+    prepareCalls,
     batch: async (statements) => {
       // Capture bound parameters for order insert in this route-level test.
       const orderValues = statements[0].values;
       rows.push({ orderValues });
       return statements.map(() => ({ success: true, meta: { changes: 1 } }));
     },
-    prepare: () => ({ values: [], bind(...values) { this.values = values; return this; }, first: async () => null })
+    prepare: (sql) => { prepareCalls.push(sql); return { values: [], bind(...values) { this.values = values; return this; }, first: async () => null }; }
   };
 }
 function request(path, { method = 'GET', body, origin = 'https://app.example', headers = {} } = {}) {
@@ -194,4 +196,25 @@ test('Worker enforces the JSON byte limit while streaming the request body', asy
   }));
   assert.equal(response.status, 413);
   assert.equal((await response.json()).error, 'BODY_TOO_LARGE');
+});
+
+test('route rejects overlong authenticated user IDs before any database access', async () => {
+  const { db, handler } = setup({
+    authenticateRequest: async () => ({ userId: 'u'.repeat(257) })
+  });
+  const response = await handler(request('/api/v1/me/entitlement'));
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error, 'UNAUTHENTICATED');
+  assert.equal(db.prepareCalls.length, 0);
+});
+
+test('verify route rejects overlong order references before database lookup', async () => {
+  const { db, handler } = setup();
+  const response = await handler(request('/api/v2/billing/verify', {
+    method: 'POST',
+    body: { orderId: 'o'.repeat(129), purchaseToken: 'token' }
+  }));
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, 'INVALID_VERIFY_REQUEST');
+  assert.equal(db.prepareCalls.length, 0);
 });
