@@ -1,7 +1,7 @@
 # Sahmino Android host — username/password and in-app billing
 
 This module wraps the Sahmino PWA and exposes a native subscription screen.
-It is an unsigned pilot build, not a signed production release or marketplace-ready package.
+The current CI output is unsigned and for engineering validation. A separate owner-signed bootstrap release can be uploaded as an unpublished/draft listing before store product IDs exist.
 
 ## Implemented
 - Native username/password login gates PWA startup.
@@ -12,7 +12,7 @@ It is an unsigned pilot build, not a signed production release or marketplace-re
 - Native login includes one-time recovery-code password reset. Ten random recovery codes are provisioned offline, shown once, stored only as SHA-256 digests, and each successful reset revokes all active sessions.
 - The authenticated native subscription host composes the cookie provider, Billing V2 API, Bazaar/Myket coordinator, purchase flow, and five-plan UI.
 - The WebView instance is preserved when returning from the native subscription screen.
-- Both marketplace flavors use the shared server entitlement ledger. Release checkout remains hard-disabled.
+- Both marketplace flavors use the shared server entitlement ledger. Checkout is fail-closed per flavor: it stays disabled until the final package, HTTPS Worker, all five real store product IDs, and that store's public verification key are configured. The release build inherits this readiness gate instead of forcibly disabling checkout forever.
 
 ## Product catalog
 
@@ -34,7 +34,7 @@ The owner-approved permanent application ID is `ir.sahmino.app`. Both Bazaar and
 Gradle environment variables:
 - `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
 - `SAHAMBAN_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
-- `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in)
+- `SAHAMBAN_BILLING_ENABLED=true` only for the final store build after real SKU mapping and verification are ready
 - `SAHAMBAN_SKU_PRO_30D`, `SAHAMBAN_SKU_PRO_60D`,
   `SAHAMBAN_SKU_PRO_90D`, `SAHAMBAN_SKU_PRO_180D`,
   `SAHAMBAN_SKU_PRO_365D`
@@ -42,6 +42,18 @@ Gradle environment variables:
 
 Placeholder identifiers are rejected. Never guess product IDs, package names,
 keys, or Worker URLs.
+
+## Two-stage marketplace upload (SKU IDs are created after the first upload)
+
+The store-generated product IDs are deliberately **not** a prerequisite for completing the app. Use this sequence for each store, keeping the exact same permanent application ID `ir.sahmino.app`:
+
+1. **Bootstrap upload:** build and owner-sign a release variant with the five SKU variables empty and `SAHAMBAN_BILLING_ENABLED` unset/false. This produces the complete app shell, authentication, PWA, subscription UI and marketplace SDK integration, but checkout remains disabled by the Gradle readiness gate. Upload it to the store's unpublished/draft listing or the store's required initial review track; do not announce public availability or accept payment.
+2. **Create products:** after the store has accepted the app package/listing sufficiently to expose in-app product setup, create the five consumable products in that store and copy the exact IDs it generates. Do not invent IDs or use the internal plan IDs as store SKUs.
+3. **Configure server:** map those five store IDs to the five internal `SAHAMBAN_PRO_*` plan IDs in that store's Worker configuration. Keep `BILLING_V2_ENABLED=false` while validating configuration.
+4. **Final signed update:** build and owner-sign the next version with the real five SKU variables, correct package ID, Worker URL and public verification key. The release flavor enables checkout only if every required value passes the fail-closed gate. Upload this update to the same listing.
+5. **Acceptance and activation:** test actual sandbox/test-account purchases, receipt verification, settlement, consume, restore, refund/reversal and interruption recovery on a physical device. Only then set `BILLING_V2_ENABLED=true` for the relevant store Worker.
+
+The initial bootstrap package is a store-onboarding artifact, not the public paid release. The final paid release is the signed update after SKU mapping. No second app listing or package-ID change is needed.
 
 ## Worker and D1 setup
 

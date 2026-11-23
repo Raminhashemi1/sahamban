@@ -147,7 +147,11 @@ test('native subscription entry is reachable only after password session and fai
  assert.match(build,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
  assert.match(build,/SAHAMBAN_SKU_PRO_30D/);
  assert.match(build,/SAHAMBAN_SKU_PRO_365D/);
- assert.match(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
+ const releaseBlock=build.slice(build.indexOf('        release {'),build.indexOf('\n    }\n}',build.indexOf('        release {')));
+ assert.match(releaseBlock,/minifyEnabled false/);
+ assert.doesNotMatch(releaseBlock,/SAHAMBAN_BILLING_ENABLED/);
+ assert.match(build,/commonBillingReady && \(System\.getenv\('BAZAAR_RSA_PUBLIC_KEY'\)/);
+ assert.match(build,/commonBillingReady && \(System\.getenv\('MYKET_PUBLIC_KEY'\)/);
 });
 
 test('native password login exposes one-time recovery without passing credentials to WebView',()=>{
