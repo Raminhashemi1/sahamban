@@ -130,8 +130,15 @@ jobs:
             APK="android-pilot/app/build/outputs/apk/$flavor/release/app-$flavor-release.apk"
             test -s "$APK"
             "$APKSIGNER" verify --verbose "$APK"
-            PACKAGE="$("$AAPT" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+            BADGING="$("$AAPT" dump badging "$APK")"
+            PACKAGE="$(printf '%s\\n' "$BADGING" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
             test "$PACKAGE" = "ir.sahmino.app"
+            printf '%s\\n' "$BADGING" | grep -F "versionCode='1'" >/dev/null
+            printf '%s\\n' "$BADGING" | grep -F "versionName='1.0.0'" >/dev/null
+            if printf '%s\\n' "$BADGING" | grep -q '^application-debuggable'; then
+              echo "::error::Debuggable APK cannot be accepted as a signed release."
+              exit 1
+            fi
             DIR="android-pilot/app/build/generated/source/buildConfig/$flavor/release"
             grep -R -E 'SAHAMBAN_BILLING_ENABLED = (false|Boolean.parseBoolean\("false"\));' "$DIR" >/dev/null
             if [[ "$flavor" == "bazaar" ]]; then
@@ -143,13 +150,15 @@ jobs:
             fi
             grep -R -F "SAHAMBAN_WORKER_BASE_URL = \"$EXPECTED_WORKER\";" "$DIR" >/dev/null
             grep -R -F "BILLING_STORE = \"$EXPECTED_STORE\";" "$DIR" >/dev/null
-            echo "PASS signed=$flavor package=$PACKAGE store=$EXPECTED_STORE worker=$EXPECTED_WORKER checkout=disabled"
+            echo "PASS signed=$flavor package=$PACKAGE versionCode=1 versionName=1.0.0 debuggable=false store=$EXPECTED_STORE worker=$EXPECTED_WORKER checkout=disabled"
           done
-          sha256sum android-pilot/app/build/outputs/apk/*/release/*.apk
+          sha256sum android-pilot/app/build/outputs/apk/*/release/*.apk | tee android-pilot-signed-release-sha256.txt
       - uses: actions/upload-artifact@v4
         with:
           name: sahmino-signed-initial-release-checkout-disabled
-          path: android-pilot/app/build/outputs/apk/*/release/*.apk
+          path: |
+            android-pilot/app/build/outputs/apk/*/release/*.apk
+            android-pilot-signed-release-sha256.txt
           if-no-files-found: error
           retention-days: 30
       - name: Remove temporary signing material
