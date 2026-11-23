@@ -2,7 +2,7 @@ import { addPlanDuration } from '../core/domain.mjs';
 
 /** Reads entitlement only from the server-side billing_access table. */
 export async function getBillingEntitlement(db, authenticatedUserId, now = new Date().toISOString()) {
-  if (typeof authenticatedUserId !== 'string' || !authenticatedUserId) {
+  if (typeof authenticatedUserId !== 'string' || !authenticatedUserId || authenticatedUserId.length > 256) {
     return { ok: false, error: 'UNAUTHENTICATED' };
   }
   if (!Number.isFinite(Date.parse(now))) return { ok: false, error: 'INVALID_TIMESTAMP' };
