@@ -169,7 +169,11 @@ test('native subscription entry is reachable only after password session and fai
  assert.match(build,/SAHAMBAN_EXPECTED_PACKAGE_NAME/);
  assert.match(build,/SAHAMBAN_SKU_PRO_30D/);
  assert.match(build,/SAHAMBAN_SKU_PRO_365D/);
- assert.match(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
+ assert.match(build,/SAHAMBAN_RELEASE_BILLING_ENABLED/);
+ assert.match(build,/releaseTaskRequested/);
+ assert.match(build,/def billingOptIn = releaseTaskRequested/);
+ assert.match(build,/!distinctPilotIds/);
+ assert.doesNotMatch(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
 });
 
 test('native password login exposes one-time recovery without passing credentials to WebView',()=>{
