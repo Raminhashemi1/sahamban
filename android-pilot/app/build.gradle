@@ -22,7 +22,10 @@ def releaseSigningReady = !releaseStoreFile.isEmpty() && !releaseStorePassword.i
 def commonBillingReady = { endpoint ->
     System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true' &&
     appId != 'ir.sahamban.pilot' && expectedPackage == appId &&
-    appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+
+    appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
+    endpoint.startsWith('https://') && allSkusPresent
+}
+
 android {
     namespace 'ir.sahamban.pilot'
     compileSdk 36
@@ -65,85 +68,6 @@ android {
             buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + myketWorkerUrl + '"'
             buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + (System.getenv('MYKET_PUBLIC_KEY') ?: '') + '"'
             buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady(myketWorkerUrl) && (System.getenv('MYKET_PUBLIC_KEY') ?: '').length() > 100).toString()
-        }
-    }
-
-    signingConfigs {
-        release {
-            if (releaseSigningReady) {
-                storeFile file(releaseStoreFile)
-                storePassword releaseStorePassword
-                keyAlias releaseKeyAlias
-                keyPassword releaseKeyPassword
-            }
-        }
-    }
-    buildFeatures { buildConfig true }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-    kotlinOptions { jvmTarget = '17' }
-    buildTypes {
-        debug { }
-        release {
-            minifyEnabled false
-            if (releaseSigningReady) signingConfig signingConfigs.release
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
-        }
-    }
-}
-
-dependencies {
-    implementation 'androidx.activity:activity-ktx:1.10.1'
-    bazaarImplementation 'com.github.cafebazaar.Poolakey:poolakey:2.3.0'
-    myketImplementation 'ir.myket:billing:2.2'
-}
-) &&
-    endpoint.startsWith('https://') && allSkusPresent
-}
-
-android {
-    namespace 'ir.sahamban.pilot'
-    compileSdk 36
-
-    defaultConfig {
-        applicationId appId
-        minSdk 26
-        targetSdk 35
-        versionCode 1
-        versionName '1.0.0'
-        buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + workerUrl + '"'
-        buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + pwaOrigin + '"'
-        buildConfigField 'String', 'SAHAMBAN_EXPECTED_PACKAGE_NAME', '"' + expectedPackage + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_30D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_30D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_60D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_60D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_90D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_90D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_180D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_180D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_365D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_365D') ?: '') + '"'
-    }
-
-    flavorDimensions += 'store'
-    productFlavors {
-        bazaar {
-            dimension 'store'
-            if (distinctPilotIds) applicationIdSuffix = '.bazaar.pilot'
-            manifestPlaceholders['marketApplicationId'] = 'com.farsitel.bazaar'
-            manifestPlaceholders['marketBindAddress'] = 'ir.cafebazaar.pardakht.InAppBillingService.BIND'
-            manifestPlaceholders['marketPermission'] = 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
-            buildConfigField 'String', 'BILLING_STORE', '"BAZAAR"'
-            buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady && (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '').length() > 100).toString()
-        }
-        myket {
-            dimension 'store'
-            if (distinctPilotIds) applicationIdSuffix = '.myket.pilot'
-            manifestPlaceholders['marketApplicationId'] = 'ir.mservices.market'
-            manifestPlaceholders['marketBindAddress'] = 'ir.mservices.market.InAppBillingService.BIND'
-            manifestPlaceholders['marketPermission'] = 'ir.mservices.market.BILLING'
-            buildConfigField 'String', 'BILLING_STORE', '"MYKET"'
-            buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + (System.getenv('MYKET_PUBLIC_KEY') ?: '') + '"'
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady && (System.getenv('MYKET_PUBLIC_KEY') ?: '').length() > 100).toString()
         }
     }
 
