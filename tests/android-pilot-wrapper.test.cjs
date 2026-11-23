@@ -58,8 +58,7 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.match(signedWf,/SAHAMBAN_BILLING_ENABLED: 'false'/);
  assert.match(signedWf,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
  assert.match(signedWf,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
- assert.match(signedWf,/PASS BAZAAR Worker health/);
- assert.match(signedWf,/PASS MYKET Worker health/);
+ assert.match(signedWf,/PASS \{store\} Worker health/);
  assert.match(signedWf,/EXPECTED_WORKER/);
  assert.match(signedWf,/BILLING_STORE =/);
  assert.match(read('android-pilot/README.md'),/generated APKs are not marketplace-ready/i);
