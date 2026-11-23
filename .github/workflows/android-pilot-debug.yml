@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'android-pilot/**'
+      - 'local-backup-v148.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'tests/local-backup-v148.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
       - '.github/workflows/android-pilot-debug.yml'
   push:
@@ -24,6 +28,8 @@ jobs:
           node-version: '22'
       - name: Run Android package identity and host-security regression tests
         run: node --test tests/android-pilot-wrapper.test.cjs
+      - name: Run local backup validation and Android export bridge tests
+        run: node --test tests/local-backup-v148.test.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

@@ -128,13 +128,43 @@
  function mount(win){
   const doc=win.document,byId=id=>doc.getElementById(id),status=s=>{byId('sb148Status').textContent=s;};
   let pending=null,generation=0;
+  const nativeBackup=win.sahambanNativeBackup;
+  if(nativeBackup&&typeof nativeBackup.addEventListener==='function'){
+   nativeBackup.addEventListener('message',event=>{
+    try{
+     const result=JSON.parse(String(event.data||''));
+     if(result.type!=='save-result')return;
+     const messages={
+      picker_opened:'محل ذخیره فایل را در پنجره Android انتخاب کنید.',
+      saved:'فایل پشتیبان با موفقیت در محل انتخاب‌شده ذخیره شد.',
+      cancelled:'ذخیره فایل لغو شد؛ اطلاعات مرورگر تغییر نکرد.',
+      busy:'یک عملیات ذخیره‌سازی دیگر در حال انجام است.',
+      unavailable:'انتخاب‌گر ذخیره فایل در این دستگاه در دسترس نیست.',
+      denied:'درخواست ذخیره از مبدأ یا قاب غیرمجاز رد شد.',
+      invalid:'درخواست یا محتوای فایل پشتیبان معتبر نبود.',
+      failed:'ذخیره فایل انجام نشد؛ فضای مقصد و مجوز ارائه‌دهنده فایل را بررسی کنید.'
+     };
+     if(messages[result.status])status(messages[result.status]);
+    }catch(_){}
+   });
+  }
   byId('sb148Export').addEventListener('click',()=>{
    try{
     const snapshot=createSnapshot(win.localStorage),encoded=JSON.stringify(snapshot,null,2);
+    if(nativeBackup&&typeof nativeBackup.postMessage==='function'){
+     nativeBackup.postMessage(JSON.stringify({
+      type:'save-local-backup',
+      filename:'sahamban-local-backup-v1.json',
+      mimeType:'application/json',
+      content:encoded
+     }));
+     status('درخواست ذخیره به Android ارسال شد؛ محل ذخیره فایل را انتخاب کنید.');
+     return;
+    }
     const url=win.URL.createObjectURL(new Blob([encoded],{type:'application/json;charset=utf-8'}));
     const a=doc.createElement('a');a.href=url;a.download='sahamban-local-backup-v1.json';doc.body.append(a);a.click();a.remove();
     win.setTimeout(()=>win.URL.revokeObjectURL(url),1000);
-    status('پشتیبان محلی آماده دانلود شد؛ فایل JSON رمزگذاری نشده است. شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده.');
+    status('پشتیبان محلی آماده دانلود شد؛ فایل JSON رمزگذاری نشده است. شامل '+Object.keys(snapshot.items).length+' بخش ذخیره‌شده، بدون صدای ضبط‌شده. اگر در محیط نصب‌شده پنجره ذخیره باز نشد، از نسخه مرورگر استفاده کنید.');
    }catch(e){status('پشتیبان‌گیری ناموفق: '+e.message);}
   });
   byId('sb148File').addEventListener('change',async()=>{

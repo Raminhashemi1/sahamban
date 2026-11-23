@@ -91,18 +91,19 @@ test('web HTML and service worker use the same locally cached backup module',()=
  const sw=fs.readFileSync('sw.js','utf8');
  assert.match(html,/id="sb148LocalBackup"/);
  for(const id of ['sb148Export','sb148File','sb148Restore','sb148Status'])assert.ok(html.includes('id="'+id+'"'));
- assert.match(html,/local-backup-v148\.js\?v=148\.1/);
- assert.match(sw,/local-backup-v148\.js\?v=148\.1/);
+ assert.match(html,/local-backup-v148\.js\?v=148\.3/);
+ assert.match(sw,/local-backup-v148\.js\?v=148\.3/);
  assert.match(html,/رمزگذاری نشده/);
 });
 
-function uiHarness(initial={}){
+function uiHarness(initial={},nativeBridge=null){
  const state=storage(initial),nodes=new Map(),confirms=[];
  const element=id=>{if(!nodes.has(id))nodes.set(id,{id,textContent:'',disabled:id==='sb148Restore',files:[],
   actions:{},addEventListener(name,cb){this.actions[name]=cb;}});return nodes.get(id);};
  const fakeWin={
   document:{getElementById:element},
   localStorage:state,
+  ...(nativeBridge?{sahambanNativeBackup:nativeBridge}:{}),
   confirm(message){confirms.push(message);return true;}
  };
  api.mount(fakeWin);
@@ -169,4 +170,24 @@ test('rejects oversized direct backup objects before mutating storage',()=>{
  const destination=storage({'sahamban-v1':'UNCHANGED'});
  assert.throws(()=>api.restoreSnapshot(destination,snapshot),/از حد مجاز بزرگ‌تر است/);
  assert.equal(destination.getItem('sahamban-v1'),'UNCHANGED');
+});
+
+test('Android WebView export uses the native save picker bridge and reports completion',()=>{
+ const sent=[],listeners={};
+ const bridge={
+  postMessage(raw){sent.push(JSON.parse(raw));},
+  addEventListener(name,callback){listeners[name]=callback;}
+ };
+ const h=uiHarness({'sahamban-v1':JSON.stringify(alert)},bridge);
+ h.fire('sb148Export');
+ assert.equal(sent.length,1);
+ assert.equal(sent[0].type,'save-local-backup');
+ assert.equal(sent[0].filename,'sahamban-local-backup-v1.json');
+ assert.equal(sent[0].mimeType,'application/json');
+ const exported=JSON.parse(sent[0].content);
+ assert.equal(exported.format,api.FORMAT);
+ assert.equal(exported.items['sahamban-v1'],JSON.stringify(alert));
+ assert.match(h.element('sb148Status').textContent,/درخواست ذخیره به Android ارسال شد/);
+ listeners.message({data:JSON.stringify({type:'save-result',status:'saved'})});
+ assert.match(h.element('sb148Status').textContent,/با موفقیت/);
 });
