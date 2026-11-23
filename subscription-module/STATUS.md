@@ -212,3 +212,12 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - Added regression coverage proving oversized values are rejected before any database access.
 - This is input validation only; no provider refund webhook or public reversal route was enabled.
 - Local Node.js syntax validation and a focused regression test passed (1/1). The branch workflow result is not yet available.
+
+
+## API identity-boundary hardening — 2026-11-23
+
+- The Worker now rejects authenticated principal IDs longer than 256 characters before any route reaches D1.
+- The verify endpoint rejects order references longer than 128 characters before performing an order lookup.
+- The entitlement service independently enforces the same 256-character user-ID bound.
+- Added route-level regression tests proving oversized identity/order inputs cause no database access, plus direct entitlement-service tests.
+- GitHub Actions validation is pending for these latest commits; no passing result is claimed yet.
