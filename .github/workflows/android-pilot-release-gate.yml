@@ -44,11 +44,18 @@ jobs:
           apks = glob.glob('android-pilot/app/build/outputs/apk/*/release/*.apk')
           if len(apks) != 2:
               raise SystemExit(f'Expected exactly two release APKs, found {len(apks)}')
+          import os
+          aapt = os.path.join(os.environ['ANDROID_HOME'], 'build-tools', '36.0.0', 'aapt')
           for apk in sorted(apks):
-              out = subprocess.check_output([__import__('os').path.join(__import__('os').environ['ANDROID_HOME'],'build-tools','36.0.0','aapt'),'dump','badging',apk], text=True).splitlines()[0].split("'")[1]
-              if out != 'ir.sahmino.app':
-                  raise SystemExit(f'Unexpected package {out} in {apk}')
-              print(f'PASS package={out} artifact={apk}')
+              lines = subprocess.check_output([aapt, 'dump', 'badging', apk], text=True).splitlines()
+              package_line = next((line for line in lines if line.startswith('package:')), '')
+              if "name='ir.sahmino.app'" not in package_line:
+                  raise SystemExit(f'Unexpected package identity in {apk}: {package_line}')
+              if "versionCode='1'" not in package_line or "versionName='1.0.0'" not in package_line:
+                  raise SystemExit(f'Unexpected initial release version in {apk}: {package_line}')
+              if any(line.startswith('application-debuggable') for line in lines):
+                  raise SystemExit(f'Debuggable APK is not accepted as a release candidate: {apk}')
+              print(f'PASS package=ir.sahmino.app versionCode=1 versionName=1.0.0 debuggable=false artifact={apk}')
           PY
       - name: Verify release checkout hard-off in generated BuildConfig
         shell: bash
@@ -66,10 +73,13 @@ jobs:
           done
       - name: Label artifacts explicitly as unsigned non-store candidates
         run: |
-          find android-pilot/app/build/outputs/apk -path '*/release/*.apk' -type f -print0 | xargs -0 sha256sum
+          set -euo pipefail
+          find android-pilot/app/build/outputs/apk -path '*/release/*.apk' -type f -print0 | sort -z | xargs -0 sha256sum | tee android-pilot-release-sha256.txt
       - uses: actions/upload-artifact@v4
         with:
           name: sahmino-release-build-unsigned-checkout-disabled-NOT-STORE-READY
-          path: android-pilot/app/build/outputs/apk/*/release/*.apk
+          path: |
+            android-pilot/app/build/outputs/apk/*/release/*.apk
+            android-pilot-release-sha256.txt
           if-no-files-found: error
           retention-days: 7
