@@ -5,30 +5,47 @@ plugins {
 
 def appId = System.getenv('SAHAMBAN_APPLICATION_ID') ?: 'ir.sahmino.app'
 def expectedPackage = System.getenv('SAHAMBAN_EXPECTED_PACKAGE_NAME') ?: appId
-// Each marketplace flavor must talk to its own store-configured Worker.
+// Each marketplace flavor uses its own store Worker, product IDs and public key.
 def bazaarWorkerUrl = System.getenv('SAHAMBAN_BAZAAR_WORKER_BASE_URL') ?: ''
 def myketWorkerUrl = System.getenv('SAHAMBAN_MYKET_WORKER_BASE_URL') ?: ''
+def bazaarPublicKey = System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: ''
+def myketPublicKey = System.getenv('MYKET_PUBLIC_KEY') ?: ''
 def distinctPilotIds = System.getenv('SAHAMBAN_DISTINCT_PILOT_IDS') == 'true'
 def pwaOrigin = System.getenv('SAHAMBAN_PWA_ORIGIN') ?: 'https://raminhashemi1.github.io'
-def skuKeys = ['SAHAMBAN_SKU_PRO_30D','SAHAMBAN_SKU_PRO_60D','SAHAMBAN_SKU_PRO_90D','SAHAMBAN_SKU_PRO_180D','SAHAMBAN_SKU_PRO_365D']
-def configuredSkus = skuKeys.collect { System.getenv(it) ?: '' }
-def allSkusPresent = configuredSkus.every { it.matches('[A-Za-z0-9._-]{1,100}') && !it.startsWith('REPLACE_') } &&
-    configuredSkus.toSet().size() == 5
+def bazaarSkus = [
+    System.getenv('SAHAMBAN_BAZAAR_SKU_PRO_30D') ?: '',
+    System.getenv('SAHAMBAN_BAZAAR_SKU_PRO_60D') ?: '',
+    System.getenv('SAHAMBAN_BAZAAR_SKU_PRO_90D') ?: '',
+    System.getenv('SAHAMBAN_BAZAAR_SKU_PRO_180D') ?: '',
+    System.getenv('SAHAMBAN_BAZAAR_SKU_PRO_365D') ?: ''
+]
+def myketSkus = [
+    System.getenv('SAHAMBAN_MYKET_SKU_PRO_30D') ?: '',
+    System.getenv('SAHAMBAN_MYKET_SKU_PRO_60D') ?: '',
+    System.getenv('SAHAMBAN_MYKET_SKU_PRO_90D') ?: '',
+    System.getenv('SAHAMBAN_MYKET_SKU_PRO_180D') ?: '',
+    System.getenv('SAHAMBAN_MYKET_SKU_PRO_365D') ?: ''
+]
+def validSkuSet = { skus ->
+    skus.size() == 5 &&
+    skus.every { it.matches('[A-Za-z0-9._-]{1,100}') && !it.startsWith('REPLACE_') } &&
+    skus.toSet().size() == 5
+}
 def releaseStoreFile = System.getenv('SAHMINO_RELEASE_KEYSTORE_PATH') ?: ''
 def releaseStorePassword = System.getenv('SAHMINO_RELEASE_STORE_PASSWORD') ?: ''
 def releaseKeyAlias = System.getenv('SAHMINO_RELEASE_KEY_ALIAS') ?: ''
 def releaseKeyPassword = System.getenv('SAHMINO_RELEASE_KEY_PASSWORD') ?: ''
 def releaseSigningReady = !releaseStoreFile.isEmpty() && !releaseStorePassword.isEmpty() && !releaseKeyAlias.isEmpty() && !releaseKeyPassword.isEmpty() && file(releaseStoreFile).isFile()
-// Separate opt-ins prevent a debug flag from ever enabling a signed release.
+// A release task can only opt in through its separate release-only variable.
 def releaseTaskRequested = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
 def billingOptIn = releaseTaskRequested
     ? System.getenv('SAHAMBAN_RELEASE_BILLING_ENABLED') == 'true'
     : System.getenv('SAHAMBAN_BILLING_ENABLED') == 'true'
-def commonBillingReady = { endpoint ->
+def commonBillingReady = { endpoint, storeSkus, publicKey ->
     billingOptIn &&
     appId != 'ir.sahamban.pilot' && !distinctPilotIds && expectedPackage == appId &&
     appId.matches('^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$') &&
-    endpoint.startsWith('https://') && allSkusPresent
+    endpoint.startsWith('https://') && validSkuSet(storeSkus) && publicKey.length() > 100
 }
 
 android {
@@ -43,11 +60,6 @@ android {
         versionName '1.0.0'
         buildConfigField 'String', 'SAHAMBAN_PWA_ORIGIN', '"' + pwaOrigin + '"'
         buildConfigField 'String', 'SAHAMBAN_EXPECTED_PACKAGE_NAME', '"' + expectedPackage + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_30D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_30D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_60D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_60D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_90D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_90D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_180D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_180D') ?: '') + '"'
-        buildConfigField 'String', 'SAHAMBAN_SKU_PRO_365D', '"' + (System.getenv('SAHAMBAN_SKU_PRO_365D') ?: '') + '"'
     }
 
     flavorDimensions += 'store'
@@ -60,8 +72,13 @@ android {
             manifestPlaceholders['marketPermission'] = 'com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR'
             buildConfigField 'String', 'BILLING_STORE', '"BAZAAR"'
             buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + bazaarWorkerUrl + '"'
-            buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '') + '"'
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady(bazaarWorkerUrl) && (System.getenv('BAZAAR_RSA_PUBLIC_KEY') ?: '').length() > 100).toString()
+            buildConfigField 'String', 'BAZAAR_RSA_PUBLIC_KEY', '"' + bazaarPublicKey + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_30D', '"' + bazaarSkus[0] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_60D', '"' + bazaarSkus[1] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_90D', '"' + bazaarSkus[2] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_180D', '"' + bazaarSkus[3] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_365D', '"' + bazaarSkus[4] + '"'
+            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', commonBillingReady(bazaarWorkerUrl, bazaarSkus, bazaarPublicKey).toString()
         }
         myket {
             dimension 'store'
@@ -71,8 +88,13 @@ android {
             manifestPlaceholders['marketPermission'] = 'ir.mservices.market.BILLING'
             buildConfigField 'String', 'BILLING_STORE', '"MYKET"'
             buildConfigField 'String', 'SAHAMBAN_WORKER_BASE_URL', '"' + myketWorkerUrl + '"'
-            buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + (System.getenv('MYKET_PUBLIC_KEY') ?: '') + '"'
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', (commonBillingReady(myketWorkerUrl) && (System.getenv('MYKET_PUBLIC_KEY') ?: '').length() > 100).toString()
+            buildConfigField 'String', 'MYKET_PUBLIC_KEY', '"' + myketPublicKey + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_30D', '"' + myketSkus[0] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_60D', '"' + myketSkus[1] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_90D', '"' + myketSkus[2] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_180D', '"' + myketSkus[3] + '"'
+            buildConfigField 'String', 'SAHAMBAN_SKU_PRO_365D', '"' + myketSkus[4] + '"'
+            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', commonBillingReady(myketWorkerUrl, myketSkus, myketPublicKey).toString()
         }
     }
 
