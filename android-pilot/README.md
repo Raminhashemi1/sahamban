@@ -34,7 +34,7 @@ The owner-approved permanent application ID is `ir.sahmino.app`. Both Bazaar and
 Gradle environment variables:
 - `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
 - `SAHAMBAN_BAZAAR_WORKER_BASE_URL`, `SAHAMBAN_MYKET_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
-- `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in)
+- `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in; checkout is always disabled when `SAHAMBAN_DISTINCT_PILOT_IDS=true`)
 - `SAHAMBAN_SKU_PRO_30D`, `SAHAMBAN_SKU_PRO_60D`,
   `SAHAMBAN_SKU_PRO_90D`, `SAHAMBAN_SKU_PRO_180D`,
   `SAHAMBAN_SKU_PRO_365D`
