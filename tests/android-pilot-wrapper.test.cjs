@@ -180,6 +180,24 @@ test('native subscription entry is reachable only after password session and fai
  assert.doesNotMatch(build,/buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'/);
 });
 
+test('signed billing-enabled release is manual, owner-confirmed and validates both stores',()=>{
+ const workflow=read('.github/workflows/android-pilot-signed-billing-release.yml');
+ assert.match(workflow,/workflow_dispatch/);
+ assert.match(workflow,/confirm_billing_release/);
+ assert.match(workflow,/ENABLE_BILLING_RELEASE/);
+ assert.match(workflow,/SAHAMBAN_RELEASE_BILLING_ENABLED: 'true'/);
+ assert.match(workflow,/paymentsEnabled": True/);
+ assert.match(workflow,/checkoutEnabled": True/);
+ assert.match(workflow,/authEnabled": True/);
+ assert.match(workflow,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
+ assert.match(workflow,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
+ for(const store of ['BAZAAR','MYKET']) for(const suffix of ['30D','60D','90D','180D','365D'])
+  assert.match(workflow,new RegExp('SAHAMBAN_'+store+'_SKU_PRO_'+suffix));
+ assert.match(workflow,/SAHAMBAN_BILLING_ENABLED = true/);
+ assert.match(workflow,/APKSIGNER/);
+ assert.match(workflow,/upload-artifact/);
+});
+
 test('native password login exposes one-time recovery without passing credentials to WebView',()=>{
  const client=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2NativeAuthClient.kt');
  const view=read('android-pilot/app/src/main/java/ir/sahamban/pilot/BillingV2LoginView.kt');
