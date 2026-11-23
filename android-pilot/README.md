@@ -12,7 +12,7 @@ The source can produce unsigned verification builds and, after owner-managed sig
 - Native login includes one-time recovery-code password reset. Ten random recovery codes are provisioned offline, shown once, stored only as SHA-256 digests, and each successful reset revokes all active sessions.
 - The authenticated native subscription host composes the cookie provider, Billing V2 API, Bazaar/Myket coordinator, purchase flow, and five-plan UI.
 - The WebView instance is preserved when returning from the native subscription screen.
-- Both marketplace flavors use the shared server entitlement ledger. Release checkout remains hard-disabled.
+- Both marketplace flavors use the shared server entitlement ledger. The initial signed release keeps checkout disabled; billing-enabled release requires a separate owner-confirmed workflow.
 
 ## Product catalog
 
@@ -35,6 +35,7 @@ Gradle environment variables:
 - `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
 - `SAHAMBAN_BAZAAR_WORKER_BASE_URL`, `SAHAMBAN_MYKET_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
 - `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in; checkout is always disabled when `SAHAMBAN_DISTINCT_PILOT_IDS=true`)
+- `SAHAMBAN_RELEASE_BILLING_ENABLED=true` (release-only opt-in; used only by the manual owner-confirmed billing update workflow after all commercial and device-acceptance gates pass).
 - Five Bazaar product variables: `SAHAMBAN_BAZAAR_SKU_PRO_30D`, `SAHAMBAN_BAZAAR_SKU_PRO_60D`, `SAHAMBAN_BAZAAR_SKU_PRO_90D`, `SAHAMBAN_BAZAAR_SKU_PRO_180D`, `SAHAMBAN_BAZAAR_SKU_PRO_365D`.
 - Five Myket product variables: `SAHAMBAN_MYKET_SKU_PRO_30D`, `SAHAMBAN_MYKET_SKU_PRO_60D`, `SAHAMBAN_MYKET_SKU_PRO_90D`, `SAHAMBAN_MYKET_SKU_PRO_180D`, `SAHAMBAN_MYKET_SKU_PRO_365D`.
 - `BAZAAR_RSA_PUBLIC_KEY` and `MYKET_PUBLIC_KEY` for their matching flavors.
@@ -87,7 +88,13 @@ Configure these in the repository's Actions secrets using the publisher-owned si
 
 Also configure two repository Actions **variables**: `SAHAMBAN_BAZAAR_WORKER_BASE_URL` and `SAHAMBAN_MYKET_WORKER_BASE_URL`, each set to its own production Worker HTTPS origin (scheme and host only; no path, query, or fragment). Bazaar and Myket are separate Worker deployments with different server-side store selection; each Android flavor is compiled with only its matching Worker URL. Native login is the app's startup gate, so a signed app built without either endpoint cannot sign users in or open the PWA. The signed workflow fails closed when either variable is missing or malformed and probes both live Workers before building: each health endpoint must confirm checkout/payments are off and each password-auth session endpoint must return the expected signed-out response (HTTP 401). This prevents signing an app that cannot reach the correct authentication and billing service.
 
-Run the workflow manually only after verifying that the Worker is deployed with the exact PWA Origin, shared production D1, completed migrations, provisioned accounts, and `SAHMINO_PASSWORD_AUTH_ENABLED=true` for the intended release environment. Verify the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
+Run the workflow manually only after verifying that both Workers are deployed with the exact PWA Origin, shared production D1, completed migrations, provisioned accounts, and `SAHMINO_PASSWORD_AUTH_ENABLED=true` for the intended release environment. Verify the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
+
+## Owner-managed signed billing-enabled update
+
+The separate manual workflow `.github/workflows/android-pilot-signed-billing-release.yml` is reserved for the later update, not the initial publication. It requires the exact dispatch confirmation `ENABLE_BILLING_RELEASE`, both live Worker health endpoints to report auth and checkout enabled with their correct store identity, all five distinct product IDs per store, both marketplace public keys, and the owner release-signing secrets. It verifies the signed APKs, package, per-flavor Worker, per-flavor SKUs, store identity, and `SAHAMBAN_BILLING_ENABLED=true` before uploading artifacts.
+
+Do not run this workflow until the initial app is published, actual store products are created and prices verified, Myket refund/revocation is accepted and implemented, and the physical-device acceptance matrix passes for both stores. The workflow does not replace those commercial or device tests; the confirmation is an explicit owner release authorization.
 
 ## Owner actions still required
 
