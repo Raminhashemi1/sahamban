@@ -46,9 +46,12 @@ keys, or Worker URLs.
 ## Worker and D1 setup
 
 Both store Workers must share one private D1 database and exact PWA origin.
-Apply the base schema, existing Billing V2 migrations as appropriate, and
-both `server/migrations/0004-username-password-auth.sql` and
-`server/migrations/0005-password-recovery-codes.sql` exactly once. Provision new accounts or set credentials on an existing account with
+Apply the base schema and existing Billing V2 migrations as appropriate, then run these additive migrations exactly once and in order:
+
+1. `server/migrations/0004-username-password-auth.sql` — username/password fields, shared sessions and rate-limit storage.
+2. `server/migrations/0005-password-recovery-codes.sql` — one-time recovery-code storage required by the password-reset endpoint.
+
+Do not enable `SAHMINO_PASSWORD_AUTH_ENABLED` until both migrations succeed, account provisioning is verified, and the shared D1 binding is confirmed on both store Workers. Provision new accounts or set credentials on an existing account with
 `scripts/provision-sahmino-user.mjs`; pass the existing internal `userId` to
 update a backfilled account. It reads JSON from stdin and prints SQL containing
 only the derived PBKDF2 password hash.
