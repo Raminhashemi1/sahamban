@@ -118,10 +118,11 @@ test('password recovery consumes one code atomically, replaces password and revo
 
 
 test('password recovery does not consume a code when the active account update changes no row',async()=>{
- const batches=[];
+ const batches=[];let batchCount=0;
  const db={
   prepare(sql){return {sql,bind(...values){return {sql,values};}}},
-  async batch(items){batches.push(items);return [0,0,0].map(n=>({meta:{changes:n}}));}
+  async batch(items){batches.push(items);batchCount++;
+   return (batchCount===1?[1,1,0]:[0,0,0]).map(n=>({meta:{changes:n}}));}
  };
  const auth=createPasswordAuth(db,{clock:()=>Date.parse('2026-11-22T12:00:00.000Z')});
  const result=await auth.recoverPassword({username:'09123456789',recoveryCode:'AABBCC-DDEEFF-001122-334455',
