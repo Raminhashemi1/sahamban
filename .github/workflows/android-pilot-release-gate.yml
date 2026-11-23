@@ -55,7 +55,14 @@ jobs:
         run: |
           set -euo pipefail
           for flavor in bazaar myket; do
-            grep -R 'SAHAMBAN_BILLING_ENABLED = false' "android-pilot/app/build/generated/source/buildConfig/release/$flavor" >/dev/null
+            dir="android-pilot/app/build/generated/source/buildConfig/$flavor/release"
+            test -d "$dir"
+            grep -R -E 'SAHAMBAN_BILLING_ENABLED = (false|Boolean.parseBoolean\("false"\));' "$dir" >/dev/null || {
+              echo "::error::Release BuildConfig for $flavor does not prove billing is hard-disabled"
+              find "$dir" -name BuildConfig.java -type f -maxdepth 8 -print
+              exit 1
+            }
+            echo "PASS $flavor release checkout hard-disabled"
           done
       - name: Label artifacts explicitly as unsigned non-store candidates
         run: |
