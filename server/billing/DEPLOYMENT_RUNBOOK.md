@@ -16,7 +16,7 @@ Do not apply the fresh schema and the upgrade migration to the same database. Ta
 
 ## 2. Prepare the Bazaar Worker
 
-Copy `server/wrangler.bazaar.toml.example` to `server/wrangler.bazaar.toml`, then replace the PWA origin, actual application ID, shared D1 database name/ID, and all five Bazaar SKUs from the developer panel.
+Copy `server/wrangler.bazaar.toml.example` to `server/wrangler.bazaar.toml`, then replace the PWA origin, actual application ID and shared D1 database name/ID. Before the first store upload, keep the five SKU values as explicit `REPLACE_...` placeholders and keep `BILLING_V2_ENABLED=false`; this lets the complete bootstrap app be uploaded without pretending store product IDs already exist.
 
 From the repository root, set secrets:
 ```sh
@@ -29,7 +29,7 @@ wrangler secret put BAZAAR_RSA_PUBLIC_KEY --config server/wrangler.bazaar.toml
 
 ## 3. Prepare the Myket Worker
 
-Copy `server/wrangler.myket.toml.example` to `server/wrangler.myket.toml`, then replace the exact PWA origin, actual application ID, same D1 database name/ID, and all five Myket SKUs from the developer panel.
+Copy `server/wrangler.myket.toml.example` to `server/wrangler.myket.toml`, then replace the exact PWA origin, actual application ID and same D1 database name/ID. Before the first store upload, keep the five SKU values as explicit `REPLACE_...` placeholders and keep `BILLING_V2_ENABLED=false`.
 
 Set the Myket public key as a secret:
 ```sh
@@ -51,12 +51,21 @@ wrangler deploy --config server/wrangler.myket.toml
 
 Keep `BILLING_V2_ENABLED=false` in both configs. Verify health, CORS origin, account authentication, D1 connectivity, and store-specific SKU mapping without enabling purchase routes.
 
-## 5. Public checkout release gate
+## 5. Create store products after bootstrap upload
+
+1. Build and owner-sign the store-specific bootstrap release with checkout disabled and no store SKU values.
+2. Upload it to the corresponding unpublished/draft listing so the permanent package is registered.
+3. Create the five consumable in-app products in that store's publisher panel and record the exact generated product IDs.
+4. Replace only that store's `BAZAAR_SKU_MAP` or `MYKET_SKU_MAP` with the exact five-value mapping. Do not put these IDs into Git; keep deployment-specific mapping in Worker configuration.
+5. Rebuild and owner-sign the next app version with the generated SKUs and matching public verification key. Upload the update to the same listing.
+6. Keep checkout disabled while performing test-account purchases and server-side receipt verification.
+
+## 6. Public checkout release gate
 
 Do not set `BILLING_V2_ENABLED=true` until:
 - Username/password login, secure session persistence, rate limits, and account provisioning are configured and tested.
 - The exact app package ID and PWA HTTPS origin are confirmed.
-- Both store developer panels contain all five products and the maps match exactly.
+- The relevant store's five products exist and its Worker SKU map matches the generated IDs embedded in that store-specific final app build.
 - Myket refund/revocation reconciliation is implemented or an approved and tested alternative is accepted.
 - Physical-device test purchases and interruption/recovery tests pass for both stores.
 - Owner-approved release APKs are signed with the real release key.

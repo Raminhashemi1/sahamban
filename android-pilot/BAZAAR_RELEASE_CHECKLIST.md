@@ -1,6 +1,14 @@
 # Cafe Bazaar manual time-plan release checklist
 
-Do not enable checkout or submit the app until every item is completed.
+Use the two-stage upload below. The first signed bootstrap upload intentionally has checkout disabled and does not require store product IDs. Public paid release remains blocked until all acceptance gates pass.
+
+## Stage 1 — bootstrap package before product IDs exist
+- [ ] Build the complete Bazaar flavor with the permanent package `ir.sahmino.app` and checkout disabled (`SAHAMBAN_BILLING_ENABLED` unset/false; no SKU variables).
+- [ ] Sign the bootstrap APK/AAB with the owner's production key in a secure local/CI signing environment. Never use the debug certificate.
+- [ ] Upload to the unpublished/draft Bazaar listing or the initial track required by Bazaar to register the app package. Do not enable public checkout or announce release.
+- [ ] After the package is registered and Bazaar exposes in-app product setup, create the five consumable products below and record the generated Product IDs.
+
+## Stage 2 — configure store products after the first upload
 
 ## Product setup
 - [ ] Confirm the final Android applicationId/package name registered in Bazaar.
@@ -34,6 +42,11 @@ Do not enable checkout or submit the app until every item is completed.
 - [ ] Connect the existing production authenticated identity/session to the HTTPS Billing V2 API. Never hardcode credentials or tokens in WebView.
 - [ ] Wire the five plan buttons to server order creation, native `purchaseProduct`, server verification, then token consumption.
 - [ ] Test early repurchase stacking days after the current paid-until time.
+
+## Stage 3 — final paid update and release gates
+- [ ] Map the five generated Bazaar Product IDs to the five internal plan IDs in `BAZAAR_SKU_MAP`.
+- [ ] Build the next version with the exact generated SKUs, Bazaar public key and Worker URL. The release variant must enable checkout only after its complete readiness gate passes.
+- [ ] Sign with the same owner-controlled production key and upload the update to the same Bazaar listing.
 
 ## Release gates
 - [ ] Run D1 migration, Worker tests and Android debug build on the exact PR head.

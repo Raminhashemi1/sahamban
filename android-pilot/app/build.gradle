@@ -71,7 +71,9 @@ android {
         debug { }
         release {
             minifyEnabled false
-            buildConfigField 'boolean', 'SAHAMBAN_BILLING_ENABLED', 'false'
+            // Release checkout follows the same fail-closed, per-flavor readiness gate.
+            // Without all five real SKUs and the store public key, the bootstrap upload
+            // remains checkout-disabled; after store product creation, rebuild the update.
         }
     }
 }
