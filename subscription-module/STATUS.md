@@ -211,4 +211,4 @@ Reviewed the independent module on `feature/sahmino-subscriptions-independent` a
 - Applied the same bounded-identifier policy to the internal reversal primitive as settlement: authenticated user IDs are limited to 256 characters, order references to 128 characters, and provider transaction IDs to 256 characters.
 - Added regression coverage proving oversized values are rejected before any database access.
 - This is input validation only; no provider refund webhook or public reversal route was enabled.
-- Validation is pending the branch's GitHub Actions run.
+- Local Node.js syntax validation and a focused regression test passed (1/1). The branch workflow result is not yet available.
