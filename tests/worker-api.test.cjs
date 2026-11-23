@@ -181,6 +181,18 @@ test('Myket deployment chooses its provider from Worker configuration and stores
  assert.match(storage.calls[0].sql,/store_product_id/);
 });
 
+test('Myket verification accepts bounded original purchase evidence larger than 8 KiB',async()=>{
+ const app=await worker(),token=await signedToken();
+ const body={orderId:'ord_'+'a'.repeat(32),originalJson:'x'.repeat(9000),signature:'A'.repeat(32)};
+ const response=await app.fetch(request(token,'/api/v2/billing/verify',{
+  method:'POST',body
+ }),env(db(null),{BILLING_V2_ENABLED:'true',BILLING_STORE:'MYKET'}));
+ // The mock has no matching order; reaching ORDER_NOT_FOUND proves the bounded
+ // body parser accepted the evidence and the request reached the provider handler.
+ assert.equal(response.status,404);
+ assert.deepEqual(await response.json(),{error:'ORDER_NOT_FOUND'});
+});
+
 test('client cannot select the store and Myket verify route is selected only by server configuration',async()=>{
  const app=await worker(),token=await signedToken();
  const malformed=await app.fetch(request(token,'/api/v2/billing/orders',{
