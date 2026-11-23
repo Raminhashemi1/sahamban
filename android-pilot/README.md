@@ -35,13 +35,14 @@ Gradle environment variables:
 - `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
 - `SAHAMBAN_BAZAAR_WORKER_BASE_URL`, `SAHAMBAN_MYKET_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
 - `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in; checkout is always disabled when `SAHAMBAN_DISTINCT_PILOT_IDS=true`)
-- `SAHAMBAN_SKU_PRO_30D`, `SAHAMBAN_SKU_PRO_60D`,
-  `SAHAMBAN_SKU_PRO_90D`, `SAHAMBAN_SKU_PRO_180D`,
-  `SAHAMBAN_SKU_PRO_365D`
-- `BAZAAR_RSA_PUBLIC_KEY` or `MYKET_PUBLIC_KEY` for the selected flavor
+- Five Bazaar product variables: `SAHAMBAN_BAZAAR_SKU_PRO_30D`, `SAHAMBAN_BAZAAR_SKU_PRO_60D`, `SAHAMBAN_BAZAAR_SKU_PRO_90D`, `SAHAMBAN_BAZAAR_SKU_PRO_180D`, `SAHAMBAN_BAZAAR_SKU_PRO_365D`.
+- Five Myket product variables: `SAHAMBAN_MYKET_SKU_PRO_30D`, `SAHAMBAN_MYKET_SKU_PRO_60D`, `SAHAMBAN_MYKET_SKU_PRO_90D`, `SAHAMBAN_MYKET_SKU_PRO_180D`, `SAHAMBAN_MYKET_SKU_PRO_365D`.
+- `BAZAAR_RSA_PUBLIC_KEY` and `MYKET_PUBLIC_KEY` for their matching flavors.
 
 Placeholder identifiers are rejected. Never guess product IDs, package names,
 keys, or Worker URLs.
+
+The two stores have independent product IDs and public keys. Do not reuse Bazaar SKUs in the Myket flavor or vice versa. The release billing gate requires all five unique IDs for each store.
 
 ## Worker and D1 setup
 
