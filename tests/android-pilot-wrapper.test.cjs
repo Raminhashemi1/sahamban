@@ -49,6 +49,8 @@ test('debug APK uses the owner-approved permanent identity, no production signin
  assert.doesNotMatch(wf,/assembleRelease|bundleRelease|publishRelease|marketplace/);
  assert.match(wf,/upload-artifact/);
  const signedWf=read('.github/workflows/android-pilot-signed-release.yml');
+ assert.match(signedWf,/health\.get\("authEnabled"\) is not True/);
+ assert.match(signedWf,/expected_package = "ir\.sahmino\.app"/);
  assert.match(signedWf,/workflow_dispatch/);
  for(const secret of ['SAHMINO_RELEASE_KEYSTORE_BASE64','SAHMINO_RELEASE_STORE_PASSWORD','SAHMINO_RELEASE_KEY_ALIAS','SAHMINO_RELEASE_KEY_PASSWORD']) assert.ok(signedWf.includes(secret),secret);
  assert.match(signedWf,/assembleBazaarRelease/);
@@ -189,6 +191,8 @@ test('signed billing-enabled release is manual, owner-confirmed and validates bo
  assert.match(workflow,/paymentsEnabled": True/);
  assert.match(workflow,/checkoutEnabled": True/);
  assert.match(workflow,/authEnabled": True/);
+ assert.match(workflow,/packageName": "ir\.sahmino\.app"/);
+ assert.match(workflow,/skuMapReady": True/);
  assert.match(workflow,/SAHAMBAN_BAZAAR_WORKER_BASE_URL/);
  assert.match(workflow,/SAHAMBAN_MYKET_WORKER_BASE_URL/);
  for(const store of ['BAZAAR','MYKET']) for(const suffix of ['30D','60D','90D','180D','365D'])
