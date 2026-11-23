@@ -27,6 +27,11 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
  ])assert.ok(java.includes(guard),guard);
  assert.match(java,/BACKUP_KEYS\.contains\(key\)/);
  assert.match(java,/sourceOrigin\.getHost\(\)/);
+ assert.ok(java.indexOf('reportBackupResult("saved")')>java.indexOf('catch (Exception error)'));
+ const readme=read('android-pilot/README.md');
+ assert.doesNotMatch(readme,/Backup export\s+and downloads are NOT yet verified/);
+ assert.match(readme,/WebMessageListener/);
+ assert.match(readme,/256 KiB/);
 });
 
 test('Android pilot uses the owner-approved permanent package ID, no production signing and no checkout',()=>{
