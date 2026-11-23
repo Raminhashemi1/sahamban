@@ -33,7 +33,7 @@ The owner-approved permanent application ID is `ir.sahmino.app`. Both Bazaar and
 
 Gradle environment variables:
 - `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
-- `SAHAMBAN_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
+- `SAHAMBAN_BAZAAR_WORKER_BASE_URL`, `SAHAMBAN_MYKET_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
 - `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in)
 - `SAHAMBAN_SKU_PRO_30D`, `SAHAMBAN_SKU_PRO_60D`,
   `SAHAMBAN_SKU_PRO_90D`, `SAHAMBAN_SKU_PRO_180D`,
@@ -84,7 +84,7 @@ The workflow `.github/workflows/android-pilot-signed-release.yml` builds Bazaar 
 
 Configure these in the repository's Actions secrets using the publisher-owned signing key. Never commit the keystore or passwords.
 
-Also configure the repository Actions **variable** `SAHAMBAN_WORKER_BASE_URL` to the production Worker HTTPS origin (scheme and host only; no path, query, or fragment). Native login is the app's startup gate, so a signed app built without this endpoint cannot sign users in or open the PWA. The signed workflow now fails closed when this variable is missing or malformed, injects it into both flavors, and probes the live Worker before building: health must confirm checkout/payments are off and the password-auth session endpoint must return the expected signed-out response (HTTP 401). This prevents signing an app that cannot reach an active authentication service.
+Also configure two repository Actions **variables**: `SAHAMBAN_BAZAAR_WORKER_BASE_URL` and `SAHAMBAN_MYKET_WORKER_BASE_URL`, each set to its own production Worker HTTPS origin (scheme and host only; no path, query, or fragment). Bazaar and Myket are separate Worker deployments with different server-side store selection; each Android flavor is compiled with only its matching Worker URL. Native login is the app's startup gate, so a signed app built without either endpoint cannot sign users in or open the PWA. The signed workflow fails closed when either variable is missing or malformed and probes both live Workers before building: each health endpoint must confirm checkout/payments are off and each password-auth session endpoint must return the expected signed-out response (HTTP 401). This prevents signing an app that cannot reach the correct authentication and billing service.
 
 Run the workflow manually only after verifying that the Worker is deployed with the exact PWA Origin, shared production D1, completed migrations, provisioned accounts, and `SAHMINO_PASSWORD_AUTH_ENABLED=true` for the intended release environment. Verify the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
 
