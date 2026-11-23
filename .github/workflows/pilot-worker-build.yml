@@ -1,22 +1,25 @@
 name: Sahamban free pilot Worker build verification
 on:
   push:
-    branches: [main]
+    branches: [main, feature/sahmino-username-password-auth]
     paths:
       - 'server/**'
       - 'tests/pilot-orders-api.test.cjs'
       - 'tests/worker-api.test.cjs'
+      - 'tests/password-auth*'
       - 'tests/worker-local-runtime.cjs'
       - 'tests/mint-pilot-token.test.cjs'
       - 'tests/billing-v2*.test.*'
       - '.github/workflows/pilot-worker-build.yml'
   pull_request:
-    branches: [main]
+    branches: [main, integration/sahmino-app-billing-complete]
     paths:
       - 'server/**'
       - 'tests/worker-api.test.cjs'
       - 'tests/pilot-orders-api.test.cjs'
       - 'tests/mint-pilot-token.test.cjs'
+      - 'tests/password-auth*'
+      - 'tests/worker-local-runtime.cjs'
       - 'tests/billing-v2*.test.*'
       - '.github/workflows/pilot-worker-build.yml'
   workflow_dispatch:
@@ -32,7 +35,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test private pilot security rules
-        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/billing-v2-feature-gate.test.cjs tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs tests/d1-sms-otp-session.test.cjs tests/sahmino-sms-otp-core.test.cjs tests/sahmino-sms-otp-service.test.cjs tests/shahmiz-sms-provider-worker.test.cjs
+        run: node --test tests/worker-api.test.cjs tests/pilot-orders-api.test.cjs tests/mint-pilot-token.test.cjs tests/billing-v2.test.cjs tests/billing-v2-catalog.test.cjs tests/billing-v2-bazaar.test.mjs tests/billing-v2-settlement.test.cjs tests/billing-v2-d1.integration.test.cjs tests/billing-v2-feature-gate.test.cjs tests/billing-v2-myket-verifier.test.mjs tests/billing-v2-myket-orders.test.cjs tests/billing-v2-myket-settlement.test.cjs tests/billing-v2-myket-flow.test.mjs tests/password-auth.test.cjs
       - name: Install pinned Wrangler CLI for offline build
         run: npm install --no-save wrangler@4.102.0
       - name: Bundle Cloudflare Worker without deploying or contacting merchant
@@ -41,6 +44,10 @@ jobs:
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/d1-schema.sql --yes
       - name: Apply isolated Billing V2 manual-purchase schema
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/billing/schema.sql --yes
+      - name: Apply username/password and recovery-code migrations to isolated local D1
+        run: |
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/migrations/0004-username-password-auth.sql --yes
+          npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --file server/migrations/0005-password-recovery-codes.sql --yes
       - name: Verify isolated Billing V2 tables exist
         run: npx wrangler d1 execute SAHAMBAN_DB --local --config server/wrangler.local.toml --command "SELECT count(*) AS billing_tables FROM sqlite_master WHERE type='table' AND name IN ('billing_orders','billing_access','billing_events');"
       - name: Verify local D1 required table is accessible
@@ -49,5 +56,7 @@ jobs:
         run: node tests/worker-local-runtime.cjs
       - name: Exercise synthetic-price pending order lifecycle in local Worker+D1 only
         run: LOCAL_TEST_ENABLE_BILLING_V2=1 node tests/worker-local-runtime.cjs
+      - name: Exercise real username/password login, session, CSRF, logout and billing on local Worker+D1
+        run: LOCAL_TEST_ENABLE_PASSWORD_AUTH=1 LOCAL_TEST_ENABLE_BILLING_V2=1 node tests/worker-local-runtime.cjs
       - name: Check generated bundle exists
         run: test -n "$(find /tmp/sahamban-worker-bundle -type f -name '*.js' -print -quit)"
