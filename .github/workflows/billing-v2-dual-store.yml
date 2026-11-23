@@ -5,6 +5,7 @@ on:
     branches:
       - feature/sahmino-username-password-auth
       - integration/sahmino-billing-v2-dual-store
+      - integration/sahmino-app-billing-complete
     paths:
       - 'server/billing/**'
       - 'server/worker-api.mjs'
