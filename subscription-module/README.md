@@ -74,3 +74,8 @@ The Android source is compiled by the dedicated GitHub Actions workflow for both
 
 ## Important: host Billing V2 reconciliation
 The repository already has draft Billing V2 work in PR #187 and related subscription UI drafts. This module defines its own Worker routes and D1 tables with names that overlap PR #187 but use a different schema and auth contract. Do not merge/deploy both backends unchanged. Read [INTEGRATION_RECONCILIATION.md](./INTEGRATION_RECONCILIATION.md) before any consolidation. The recommended production direction is one canonical host Worker, one D1 ledger, and provider-specific Bazaar/Myket adapters.
+
+
+## Fail-closed marketplace configuration
+
+An enabled Worker requires all five canonical plan IDs to be mapped explicitly to five non-empty, unique store product IDs. The selected store's exact Android package identity and all verifier configuration must also be present before the Worker is created. The canonical internal plan IDs are not assumed to exist as product IDs in either marketplace. Checkout remains disabled until these values come from the actual developer consoles.
