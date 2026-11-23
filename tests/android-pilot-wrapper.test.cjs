@@ -17,6 +17,16 @@ test('Android pilot allows internet only; forbids local-file, HTTP and automatic
   'setSafeBrowsingEnabled(true)','handler.cancel()','Intent.ACTION_OPEN_DOCUMENT'])
   assert.ok(java.includes(guard),guard);
  assert.ok(!java.includes('addJavascriptInterface'));
+ for(const guard of [
+  'WebViewCompat.addWebMessageListener','WebViewFeature.WEB_MESSAGE_LISTENER',
+  'new HashSet<>(Arrays.asList("https://raminhashemi1.github.io"))',
+  '!isMainFrame','isTrustedMainFrame(view, sourceOrigin)',
+  'path.startsWith("/sahamban/")','Intent.ACTION_CREATE_DOCUMENT',
+  'getContentResolver().openOutputStream','MAX_BACKUP_BYTES',
+  'sahamban-local-backup-v1.json','validateBackupSnapshot(content)'
+ ])assert.ok(java.includes(guard),guard);
+ assert.match(java,/BACKUP_KEYS\.contains\(key\)/);
+ assert.match(java,/sourceOrigin\.getHost\(\)/);
 });
 
 test('Android pilot uses the owner-approved permanent package ID, no production signing and no checkout',()=>{
