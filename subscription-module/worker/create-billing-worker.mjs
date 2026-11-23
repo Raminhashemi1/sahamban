@@ -2,13 +2,13 @@ import { createBillingRouter } from './routes.mjs';
 import { verifyBazaarPurchase } from '../server/providers/bazaar-verifier.mjs';
 import { verifyMyketPurchase } from '../server/providers/myket-verifier.mjs';
 
-const DEFAULT_SKU_MAP = Object.freeze({
-  SAHAMBAN_PRO_30D: 'SAHAMBAN_PRO_30D',
-  SAHAMBAN_PRO_60D: 'SAHAMBAN_PRO_60D',
-  SAHAMBAN_PRO_90D: 'SAHAMBAN_PRO_90D',
-  SAHAMBAN_PRO_180D: 'SAHAMBAN_PRO_180D',
-  SAHAMBAN_PRO_365D: 'SAHAMBAN_PRO_365D'
-});
+const CANONICAL_PLAN_IDS = Object.freeze([
+  'SAHAMBAN_PRO_30D',
+  'SAHAMBAN_PRO_60D',
+  'SAHAMBAN_PRO_90D',
+  'SAHAMBAN_PRO_180D',
+  'SAHAMBAN_PRO_365D'
+]);
 
 function parseJsonMap(value, name) {
   if (typeof value !== 'string' || !value) throw new TypeError(name + '_NOT_CONFIGURED');
@@ -19,7 +19,7 @@ function parseJsonMap(value, name) {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new TypeError(name + '_INVALID');
   }
-  const expected = Object.keys(DEFAULT_SKU_MAP).sort();
+  const expected = [...CANONICAL_PLAN_IDS].sort();
   const actual = Object.keys(parsed).sort();
   if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
     throw new TypeError(name + '_MUST_DEFINE_EXACTLY_FIVE_PLANS');
