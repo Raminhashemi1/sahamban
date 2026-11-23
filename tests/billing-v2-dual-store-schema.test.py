@@ -70,7 +70,6 @@ def test_worker_templates_select_distinct_stores_and_share_one_database():
     assert bazaar["vars"]["BILLING_V2_ENABLED"] == myket["vars"]["BILLING_V2_ENABLED"] == "false"
     assert bazaar["vars"]["SAHMINO_PASSWORD_AUTH_ENABLED"] == myket["vars"]["SAHMINO_PASSWORD_AUTH_ENABLED"] == "false"
     assert bazaar["vars"]["PILOT_AUTH_ENABLED"] == myket["vars"]["PILOT_AUTH_ENABLED"] == "false"
-    assert "SAHMINO_OTP_ENABLED" not in bazaar["vars"] and "SAHMINO_OTP_ENABLED" not in myket["vars"]
     assert "services" not in bazaar and "services" not in myket
 
 if __name__ == "__main__":

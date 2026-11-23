@@ -1,4 +1,5 @@
 'use strict';
+const {isValidUserId}=require('./user-id.cjs');
 const {getPlan}=require('./catalog.cjs');
 function validIso(value){
  if(typeof value!=='string')return false;
@@ -11,7 +12,7 @@ function validIso(value){
  */
 async function settle(db,{orderId,subject,userId,planId,bazaarProductId,bazaarOrderId,tokenHash,purchaseTime,now}={}){
  const plan=getPlan(planId),nowMs=Date.parse(now),purchaseMs=Date.parse(purchaseTime);
- if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))||
+ if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(isValidUserId(userId)))||
    typeof orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(orderId)||
    typeof bazaarOrderId!=='string'||bazaarOrderId.length<1||bazaarOrderId.length>256||
    typeof tokenHash!=='string'||! /^[a-f0-9]{64}$/.test(tokenHash)||
@@ -55,7 +56,7 @@ async function settle(db,{orderId,subject,userId,planId,bazaarProductId,bazaarOr
 /** Myket equivalent of settle(): same entitlement ledger and replay-safe order transition. */
 async function settleMyket(db,{orderId,subject,userId,planId,storeOrderId,tokenHash,purchaseTime,now}={}) {
  const plan=getPlan(planId),nowMs=Date.parse(now),purchaseMs=Date.parse(purchaseTime);
- if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))||
+ if(!plan||!((typeof subject==='string'&&subject.length>=1&&subject.length<=256)||(isValidUserId(userId)))||
    typeof orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(orderId)||
    typeof storeOrderId!=='string'||storeOrderId.length<1||storeOrderId.length>256||
    typeof tokenHash!=='string'||! /^[a-f0-9]{64}$/.test(tokenHash)||

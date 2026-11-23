@@ -1,9 +1,10 @@
 'use strict';
+const {isValidUserId}=require('./user-id.cjs');
 const {getPlan}=require('./catalog.cjs');
 const ORDER=/^ord_[a-f0-9]{32}$/;
 async function createOrder(db,{subject,userId,planId,now,makeId,skuMap:rawSkuMap}={}){
  const p=getPlan(planId);
- if(!(typeof subject==='string'&&subject.length>0&&subject.length<=256)&&!(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))return {status:401,error:'UNAUTHENTICATED'};
+ if(!(typeof subject==='string'&&subject.length>0&&subject.length<=256)&&!(isValidUserId(userId)))return {status:401,error:'UNAUTHENTICATED'};
  if(!p)return {status:400,error:'UNKNOWN_PLAN'};
  const mapping=parseStoreSkuMap(rawSkuMap);
  if(!mapping)return {status:503,error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'};
@@ -31,7 +32,7 @@ function parseStoreSkuMap(raw){
 }
 async function createMyketOrder(db,{subject,userId,planId,now,makeId,skuMap:rawSkuMap}={}){
  const plan=getPlan(planId);
- if(!(typeof subject==='string'&&subject.length>0&&subject.length<=256)&&!(typeof userId==='string'&&/^usr_[a-f0-9]{32}$/.test(userId)))return {status:401,error:'UNAUTHENTICATED'};
+ if(!(typeof subject==='string'&&subject.length>0&&subject.length<=256)&&!(isValidUserId(userId)))return {status:401,error:'UNAUTHENTICATED'};
  if(!plan)return {status:400,error:'UNKNOWN_PLAN'};
  const mapping=parseStoreSkuMap(rawSkuMap);
  if(!mapping)return {status:503,error:'MYKET_SKU_MAP_NOT_CONFIGURED'};

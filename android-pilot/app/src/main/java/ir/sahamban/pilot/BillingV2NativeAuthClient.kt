@@ -5,22 +5,15 @@ import android.os.Looper
 import android.webkit.CookieManager
 import org.json.JSONObject
 import java.net.URL
+import java.text.Normalizer
 import javax.net.ssl.HttpsURLConnection
 import java.util.concurrent.Executors
 
-/**
- * Native OTP transport for the Android host.
- *
- * OTP requests go directly to the HTTPS Worker. The session Set-Cookie is installed
- * into WebView's native cookie jar without exposing the token to JavaScript or logs.
- * This avoids depending on third-party Set-Cookie acceptance by a GitHub Pages PWA.
- */
-class BillingV2NativeOtpClient @JvmOverloads constructor(
+/** Native username/password login; credentials are sent only to the HTTPS Worker. */
+class BillingV2NativeAuthClient @JvmOverloads constructor(
     private val workerBaseUrl: String,
     private val pwaOrigin: String = BuildConfig.SAHAMBAN_PWA_ORIGIN
 ) {
-    data class Challenge(val challengeId: String, val expiresInSeconds: Int, val resendAfterSeconds: Int)
-
     fun interface SessionCallback { fun onResult(result: Result<Boolean>) }
     fun interface LogoutCallback { fun onResult(result: Result<Boolean>) }
 
@@ -42,38 +35,22 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
             origin.query == null && origin.ref == null && origin.path.isNullOrEmpty())
     }
 
-    fun requestCode(phone: String, callback: (Result<Challenge>) -> Unit) {
-        if (!phone.matches(Regex("^(?:\\+98|0098|0)?9[0-9]{9}$"))) {
-            callback(Result.Failure(400, "INVALID_IRANIAN_MOBILE"))
+    fun login(username: String, password: String, callback: (Result<Boolean>) -> Unit) {
+        val normalizedUsername = normalizeUsername(username)
+        if (normalizedUsername == null || password.length !in 12..128) {
+            callback(Result.Failure(400, "INVALID_CREDENTIALS"))
             return
         }
-        postJson("/api/v1/auth/otp/request", JSONObject().put("phone", phone)) { status, body, _ ->
-            if (status == 202) {
-                val id = body.optString("challengeId")
-                val expiry = body.optInt("expiresInSeconds", 0)
-                val resend = body.optInt("resendAfterSeconds", 0)
-                if (id.matches(Regex("^[a-f0-9]{48}$")) && expiry > 0 && resend > 0)
-                    callback(Result.Success(Challenge(id, expiry, resend)))
-                else callback(Result.Failure(502, "INVALID_OTP_RESPONSE"))
-            } else callback(Result.Failure(status, body.optString("error", "OTP_REQUEST_FAILED")))
-        }
-    }
-
-    fun verifyCode(challengeId: String, code: String, callback: (Result<Boolean>) -> Unit) {
-        if (!challengeId.matches(Regex("^[a-f0-9]{48}$")) || !code.matches(Regex("^[0-9]{6}$"))) {
-            callback(Result.Failure(400, "INVALID_OTP_REQUEST"))
-            return
-        }
-        postJson("/api/v1/auth/otp/verify",
-            JSONObject().put("challengeId", challengeId).put("code", code)) { status, body, setCookie ->
+        postJson("/api/v1/auth/login",
+            JSONObject().put("username", normalizedUsername).put("password", password)) { status, body, setCookie ->
             if (status != 200 || !body.optBoolean("authenticated")) {
-                callback(Result.Failure(status, body.optString("error", "OTP_VERIFY_FAILED")))
+                callback(Result.Failure(status, body.optString("error", "LOGIN_FAILED")))
                 return@postJson
             }
             val cookie = setCookie?.takeIf {
-                it.startsWith("sahmino_session=") &&
-                    it.contains("; Path=/") && it.contains("; HttpOnly") &&
-                    it.contains("; Secure") && it.contains("; SameSite=None")
+                it.startsWith("sahmino_session=") && it.contains("; Path=/") &&
+                    it.contains("; HttpOnly") && it.contains("; Secure") &&
+                    it.contains("; SameSite=None")
             }
             if (cookie == null) {
                 callback(Result.Failure(502, "SESSION_COOKIE_MISSING"))
@@ -95,7 +72,24 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
         }
     }
 
-    /** Validate the persisted native session against the Worker on every cold start. */
+    fun recoverPassword(username: String, recoveryCode: String, newPassword: String,
+        callback: (Result<Boolean>) -> Unit) {
+        val normalizedUsername = normalizeUsername(username)
+        val normalizedCode = recoveryCode.trim().uppercase().replace(Regex("[ -]"), "")
+        if (normalizedUsername == null || !normalizedCode.matches(Regex("^[A-F0-9]{24}$")) ||
+            newPassword.length !in 12..128) {
+            callback(Result.Failure(400, "INVALID_RECOVERY"))
+            return
+        }
+        postJson("/api/v1/auth/recover",
+            JSONObject().put("username", normalizedUsername)
+                .put("recoveryCode", normalizedCode)
+                .put("newPassword", newPassword)) { status, body, _ ->
+            if (status == 200 && body.optBoolean("passwordReset")) callback(Result.Success(true))
+            else callback(Result.Failure(status, body.optString("error", "RECOVERY_FAILED")))
+        }
+    }
+
     fun checkSession(callback: SessionCallback) {
         main.post {
             val raw = try { CookieManager.getInstance().getCookie(workerBaseUrl) } catch (_: Exception) { null }
@@ -110,6 +104,7 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
                 val result: Result<Boolean> = try {
                     val endpoint = URL(URL(workerBaseUrl), "/api/v1/auth/session")
                     val connection = endpoint.openConnection() as HttpsURLConnection
+                    connection.instanceFollowRedirects = false
                     try {
                         connection.requestMethod = "GET"
                         connection.connectTimeout = 10000
@@ -144,6 +139,7 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
             val result = try {
                 val endpoint = URL(URL(workerBaseUrl), "/api/v1/auth/logout")
                 val connection = endpoint.openConnection() as HttpsURLConnection
+                connection.instanceFollowRedirects = false
                 try {
                     connection.requestMethod = "POST"
                     connection.connectTimeout = 10000
@@ -169,11 +165,8 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
         }
     }
 
-    private fun postJson(
-        path: String,
-        body: JSONObject,
-        callback: (Int, JSONObject, String?) -> Unit
-    ) {
+    private fun postJson(path: String, body: JSONObject,
+        callback: (Int, JSONObject, String?) -> Unit) {
         executor.execute {
             var status = 0
             var response = JSONObject()
@@ -182,6 +175,7 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
                 val endpoint = URL(URL(workerBaseUrl), path)
                 require(endpoint.protocol == "https")
                 val connection = endpoint.openConnection() as HttpsURLConnection
+                connection.instanceFollowRedirects = false
                 try {
                     connection.requestMethod = "POST"
                     connection.connectTimeout = 10000
@@ -208,6 +202,21 @@ class BillingV2NativeOtpClient @JvmOverloads constructor(
             main.post { callback(finalStatus, finalBody, finalCookie) }
         }
     }
+
+    private fun normalizeUsername(value: String): String? {
+        val digits = asciiDigits(Normalizer.normalize(value, Normalizer.Form.NFKC))
+            .trim().replace(Regex("[\\s()-]"), "")
+        return when {
+            digits.matches(Regex("^09[0-9]{9}$")) -> "+98" + digits.drop(1)
+            digits.matches(Regex("^989[0-9]{9}$")) -> "+$digits"
+            digits.matches(Regex("^00989[0-9]{9}$")) -> "+" + digits.drop(2)
+            digits.matches(Regex("^\\+989[0-9]{9}$")) -> digits
+            else -> null
+        }
+    }
+    private fun asciiDigits(value: String): String = value
+        .replace(Regex("[\\u06f0-\\u06f9]")) { (it.value[0].code - 0x06f0).toString() }
+        .replace(Regex("[\\u0660-\\u0669]")) { (it.value[0].code - 0x0660).toString() }
 
     fun close() { executor.shutdown() }
 }

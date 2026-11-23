@@ -8,9 +8,10 @@ const orderId='ord_'+'a'.repeat(32);
 const input={orderId,subject:'pilot-user',planId:'SAHAMBAN_PRO_30D',
  bazaarOrderId:'bazaar-order',tokenHash:'a'.repeat(64),purchaseTime,now};
 function fakeDb(order,{batchChanges=1}={}){
- const calls=[];
- return {calls,
+ const calls=[],reads=[];
+ return {calls,reads,
   prepare(sql){return {sql,bind(...values){return {sql,values,first:async()=>{
+   reads.push({sql,values});
    if(sql.includes("SELECT expires_at FROM billing_access"))return {expires_at:order.settledExpiresAt||order.expires_at};
    return order;
   }}}}},
@@ -57,6 +58,15 @@ test('a different purchase token cannot settle an already paid order',async()=>{
  assert.equal((await settle(db,input)).error,'ORDER_ALREADY_SETTLED');
  assert.equal(db.calls.length,0);
 });
+test('settlement accepts an opaque migrated account ID and binds it to the order query',async()=>{
+ const db=fakeDb({id:'order-legacy',user_id:'legacy-user-42',status:'CREATED',plan_id:input.planId,
+  amount_irr:1500000,created_at:now,expires_at:null});
+ const result=await settle(db,{...input,subject:undefined,userId:'legacy-user-42'});
+ assert.equal(result.ok,true);
+ assert.ok(db.reads[0].sql.includes('u.id=?'));
+ assert.deepEqual(db.reads[0].values,[input.orderId,'legacy-user-42']);
+});
+
 test('purchase predating the server order, invalid plan and partial database batch fail closed',async()=>{
  const order={id:'order',user_id:'u1',status:'CREATED',plan_id:input.planId,amount_irr:1500000,created_at:now,expires_at:null};
  assert.equal((await settle(fakeDb(order),{...input,purchaseTime:'2025-12-01T00:00:00.000Z'})).error,'PURCHASE_PRECEDES_ORDER');

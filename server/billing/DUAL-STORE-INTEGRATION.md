@@ -5,7 +5,7 @@ current server contract, not the earlier standalone-adapter checkpoint.
 
 ## Architecture
 
-`MainActivity` → native OTP login/session → `BillingV2SubscriptionHost` →
+`MainActivity` → native username/password login/session → `BillingV2SubscriptionHost` →
 `BillingV2CookieSessionProvider` → `BillingV2ApiClient` →
 flavor-specific `BillingV2Coordinator` → `BillingV2PurchaseFlow` →
 `BillingV2SubscriptionView`.
@@ -31,8 +31,9 @@ term stacks after the current expiry; an expired term starts at settlement.
 
 ## Order and settlement contract
 
-- The authenticated account is resolved server-side from the native OTP
-  session cookie or, for isolated private-pilot tests, the legacy pilot token.
+- The authenticated account is resolved server-side from the native username/password
+  session cookie. Legacy pilot-token authentication is disabled by default and may
+  only be enabled for isolated tests.
 - The server selects the store from `BILLING_STORE`.
 - Both Bazaar and Myket order creation require exactly five unique,
   non-placeholder server SKU IDs. The selected plan is bound to the
@@ -52,14 +53,14 @@ term stacks after the current expiry; an expired term starts at settlement.
 - The Android client verifies that the returned price matches the approved
   plan price before launching the marketplace flow.
 
-## OTP and Worker deployment
+## Username/password authentication and Worker deployment
 
 Both `wrangler.bazaar.toml.example` and
 `wrangler.myket.toml.example` use the same D1 binding name and database
-placeholder, exact PWA origin, OTP feature flag defaulting to false, and
-`SAHMINO_SMS_PROVIDER` service binding. The Shahmiz SMS Worker is deployed
-separately. Both marketplace Workers need the same OTP migrations and
-secrets before enabling login.
+placeholder, exact PWA origin, `SAHMINO_PASSWORD_AUTH_ENABLED=false` by default. Both marketplace Workers
+must share the same D1 database, use the same `PWA_ORIGIN`, and receive a
+private `AUTH_RATE_LIMIT_SECRET` before login can be enabled. Apply
+`migrations/0004-username-password-auth.sql` once to the shared D1 database.
 
 The native app stores the Secure/HttpOnly session cookie through Android's
 CookieManager and sends it only in native HTTPS requests. No credential is
@@ -71,7 +72,7 @@ requests.
 
 Fresh database:
 1. Apply the base Sahamban user/account schema.
-2. Apply OTP identity/session migrations.
+2. Apply username/password auth migration.
 3. Apply `server/billing/schema.sql`.
 
 Existing Billing V2 database:
@@ -81,11 +82,25 @@ Existing Billing V2 database:
 
 Do not apply these files to an unverified production database.
 
-## Release closeout
+## Known limitations and release blockers
 
-All unresolved owner inputs, environment setup, acceptance and release actions are listed only in [خط پایان](../../subscription-module/LINE-END.md). This document is architecture and deployment reference, not a second pending-work tracker.
-
-
+- The temporary default Android package is `ir.sahamban.pilot`. The final
+  package must be supplied by the owner and match both marketplaces.
+- Actual Bazaar and Myket product IDs do not exist in the repository as
+  confirmed store registrations. The proposed/placeholder values are not
+  valid production identifiers.
+- Worker URLs, shared production D1, password-auth rate-limit secret, Bazaar merchant
+  credentials, and store public keys require owner-controlled deployment.
+- Myket signed purchase validation does not independently detect a later
+  refund/revocation. Add and test authoritative reconciliation from Myket's
+  supported provider API/contract before public checkout.
+- Physical-device acceptance has not yet established live login, cookie
+  persistence, purchase, restore, consume/retry, repurchase, account
+  switching, refunds, or network-loss behavior.
+- Debug checkout can be opted in only with complete real configuration.
+  Release checkout remains hard-disabled.
+- No production migration, deployment, live payment, or signed release was
+  performed during source integration.
 
 ## Operational rule
 

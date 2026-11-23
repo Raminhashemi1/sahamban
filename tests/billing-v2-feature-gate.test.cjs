@@ -21,7 +21,7 @@ test('both Billing V2 order creation and receipt verification remain disabled un
  ]){
   const response=await worker.fetch(new Request('https://worker.example'+path,{method,
    headers:{Origin:origin,Authorization:'Bearer '+t,'Content-Type':'application/json'},
-   body:JSON.stringify(body)}),{PWA_ORIGIN:origin,AUTH_HMAC_SECRET:secret});
+   body:JSON.stringify(body)}),{PWA_ORIGIN:origin,AUTH_HMAC_SECRET:secret,PILOT_AUTH_ENABLED:'true'});
   assert.equal(response.status,404);
   assert.deepEqual(await response.json(),{error:'FEATURE_DISABLED'});
  }

@@ -60,6 +60,16 @@ test('Myket replay of the same settled order is idempotent',async()=>{
  assert.equal(db.calls.length,1);
 });
 
+test('Myket settlement accepts opaque migrated account IDs',async()=>{
+ const order={id:orderId,user_id:'legacy-user-42',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',
+  amount_irr:1500000,store:'MYKET',store_product_id:'myket_30d',store_order_id:null,
+  purchase_token_hash:null,created_at:now,expires_at:null};
+ const db=fakeDb(order);
+ const result=await settleMyket(db,{orderId,subject:undefined,userId:'legacy-user-42',
+  planId:'SAHAMBAN_PRO_30D',storeOrderId:'myket-order-789',tokenHash,purchaseTime,now});
+ assert.equal(result.ok,true);
+});
+
 test('Myket settlement rejects wrong provider, account, order and token replay',async()=>{
  const order={id:orderId,user_id:'u1',status:'CREATED',plan_id:'SAHAMBAN_PRO_30D',amount_irr:1500000,
   store:'BAZAAR',store_product_id:null,store_order_id:null,purchase_token_hash:null,
