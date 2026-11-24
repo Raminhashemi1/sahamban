@@ -42,7 +42,7 @@ assert.match(html,/حداکثر ۱۰۰ نماد/);
 assert.match(html,/symbols-input/);
 assert.match(html,/closingPriceDaily/);
 assert.ok(html.includes('for(const candidate of candidates)'));
-assert.match(html,/مهلت پاسخ سرور تمام شد/);
+assert.match(html,/مهلت پاسخ درگاه واسط تمام شد/);
 assert.match(html,/const valid=\[\],rejectionReasons=\[\]/);
 assert.match(html,/const freshness=quoteFreshness\(info\?\.finalLastDate\|\|date,info\?\.lastHEven\)/);
 assert.match(html,/قیمت پاسخ رسمی:/);
