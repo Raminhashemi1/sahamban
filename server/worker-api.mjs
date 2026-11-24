@@ -179,6 +179,14 @@ export default {
       keys.every(k=>k==='resource'||k==='instrumentId')&&url.searchParams.getAll('instrumentId').length===1){
     params={instrumentId:url.searchParams.get('instrumentId')};
    }else return send({error:'INVALID_QUERY'},400,cors);
+   const limiter=env.TSETMC_RATE_LIMITER;
+   if(!limiter||typeof limiter.limit!=='function')return send({error:'RATE_LIMITER_UNAVAILABLE'},503,cors);
+   let allowance;
+   try{
+    const clientKey=request.headers.get('CF-Connecting-IP')||'unknown';
+    allowance=await limiter.limit({key:'tsetmc:'+clientKey});
+   }catch(_){return send({error:'RATE_LIMITER_UNAVAILABLE'},503,cors);}
+   if(!allowance||allowance.success!==true)return send({error:'RATE_LIMITED'},429,cors);
    const result=await proxyTsetmcRequest(resource,params);
    return send(result.body,result.status,cors);
   }
