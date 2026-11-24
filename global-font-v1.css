@@ -1,0 +1,9 @@
+/* Global typography: B Nazanin across the entire Sahmino app, modules, nested modules and controls. */
+html, body, body *,
+body *::before,
+body *::after,
+input, button, select, textarea, option,
+table, th, td, summary, label,
+[contenteditable="true"] {
+  font-family: "B Nazanin", "BNazanin", "B Nazanin Regular", Tahoma, Arial, sans-serif !important;
+}
