@@ -42,16 +42,14 @@ async function proxyCodalSearch(symbol,fetchImpl=fetch){
  }catch(error){return {status:502,body:{error:error?.name==='AbortError'?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_ERROR'}};}
  finally{clearTimeout(timer);}
 }
-const TSETMC_SYMBOL=/^[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFFA-Za-z0-9‌‍]{1,40}$/u;
-const TSETMC_INSTRUMENT_ID=/^\\d{8,25}$/;
+const TSETMC_INSTRUMENT_ID=id=>typeof id==='string'&&id.length>=8&&id.length<=25&&/^[0-9]+$/.test(id);
 async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
  let endpoint;
- if(resource==='instrument-search'&&params&&typeof params.symbol==='string'&&
-    TSETMC_SYMBOL.test(params.symbol)&&!/[\\s\\u0000-\\u001F\\u007F]/u.test(params.symbol)){
+ if(resource==='instrument-search'&&params&&typeof params.symbol==='string'&&CODAL_SYMBOL.test(params.symbol)){
   endpoint=new URL('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/'+encodeURIComponent(params.symbol));
- }else if(resource==='closing-price'&&params&&typeof params.instrumentId==='string'&&TSETMC_INSTRUMENT_ID.test(params.instrumentId)){
+ }else if(resource==='closing-price'&&params&&TSETMC_INSTRUMENT_ID(params.instrumentId)){
   endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/'+params.instrumentId);
- }else if(resource==='daily-history'&&params&&typeof params.instrumentId==='string'&&TSETMC_INSTRUMENT_ID.test(params.instrumentId)){
+ }else if(resource==='daily-history'&&params&&TSETMC_INSTRUMENT_ID(params.instrumentId)){
   endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/'+params.instrumentId+'/0');
  }else return {status:400,body:{error:'INVALID_TSETMC_REQUEST'}};
  for(let attempt=0;attempt<2;attempt++){
