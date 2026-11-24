@@ -27,7 +27,7 @@ async function proxyCodalSearch(symbol,fetchImpl=fetch){
  if(typeof symbol!=='string'||!CODAL_SYMBOL.test(symbol)||/[\s\u0000-\u001F\u007F]/u.test(symbol))return {status:400,body:{error:'INVALID_SYMBOL'}};
  const endpoint=new URL('https://search.codal.ir/api/search/v2/q');
  endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
  try{
   const upstream=await fetchImpl(endpoint.toString(),{method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,headers:{Accept:'application/json, application/xml, text/xml'}});
   if(upstream.status===429)return {status:429,body:{error:'UPSTREAM_RATE_LIMIT'}};
@@ -72,7 +72,7 @@ async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
   endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/'+params.instrumentId+'/0');
  }else return {status:400,body:{error:'INVALID_TSETMC_REQUEST'}};
  for(let attempt=0;attempt<2;attempt++){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);
   try{
    const upstream=await fetchImpl(endpoint.toString(),{
     method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,
