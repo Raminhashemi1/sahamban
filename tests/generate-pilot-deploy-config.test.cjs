@@ -8,7 +8,11 @@ test('pilot deploy config is exact, non-secret and paid orders remain disabled',
   'database_name = "sahamban-pilot"','database_id = "'+id+'"',
   'workers_dev = true','preview_urls = false','PILOT_ORDERS_ENABLED = "false"',
   'PREPAID_ORDERS_ENABLED = "false"',
-  'PWA_ORIGIN = "https://raminhashemi1.github.io"'])assert.ok(str.includes(s),s);
+  'PWA_ORIGIN = "https://raminhashemi1.github.io"',
+  'name = "TSETMC_RATE_LIMITER"',
+  'namespace_id = "1436179437"',
+  'limit = 120',
+  'period = 60'])assert.ok(str.includes(s),s);
  assert.doesNotMatch(str,/AUTH_HMAC_SECRET|API_TOKEN|PILOT_ANNUAL_PRICE_RIAL/);
 });
 test('rejects placeholder, injection, missing and invalid database identifiers',()=>{
