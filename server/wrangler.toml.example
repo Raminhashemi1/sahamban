@@ -9,6 +9,14 @@ workers_dev = true
 [vars]
 PWA_ORIGIN = "https://raminhashemi1.github.io"
 
+[[ratelimits]]
+name = "TSETMC_RATE_LIMITER"
+namespace_id = "1436179437"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60
+
 [[d1_databases]]
 binding = "SAHAMBAN_DB"
 database_name = "sahamban-pilot"
