@@ -198,7 +198,7 @@ test('TSETMC proxy maps each allowed resource to its fixed upstream URL and retu
    assert.equal(options.cache,'no-store');
    assert.equal(options.redirect,'error');
    assert.equal(options.headers.Accept,'application/json');
-   assert.match(options.headers['User-Agent'],/^Mozilla\\/5\\.0 /);
+   assert.ok(options.headers['User-Agent'].startsWith('Mozilla/5.0 '));
    assert.equal(options.headers.Referer,'https://www.tsetmc.com/');
    return new Response(JSON.stringify(body),{status:200,headers:{'Content-Type':'application/json; charset=utf-8'}});
   });
