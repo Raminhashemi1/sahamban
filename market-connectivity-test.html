@@ -279,7 +279,7 @@ async function inspectCandidate(symbol,candidate){
   return {status:'HISTORY_FETCH_FAILED',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ دریافت تاریخچه ناموفق: '+String(e?.message||e)};
  }
  if(!Array.isArray(hist)){
-  return {status:'HISTORY_INVALID',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date)؛ ساختار پاسخ تاریخچه معتبر نیست.'};
+  return {status:'HISTORY_INVALID',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ ساختار پاسخ تاریخچه معتبر نیست.'};
  }
  const validRows=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
  const latestRows=[...validRows].sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
