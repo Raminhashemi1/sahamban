@@ -78,4 +78,7 @@ assert.ok(html.includes("searchParams.set('resource','instrument-search')"));
 assert.ok(html.includes("searchParams.set('resource','closing-price')"));
 assert.ok(html.includes("searchParams.set('resource','daily-history')"));
 assert.ok(html.includes('واسط خواندنی سرور ارسال می‌شوند'));
+assert.ok(html.includes('RATE_LIMITED'));
+assert.ok(html.includes('RATE_LIMITER_UNAVAILABLE'));
+
 assert.ok(!html.includes("const api='https://cdn.tsetmc.com/api'"));
