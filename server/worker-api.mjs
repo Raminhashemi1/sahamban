@@ -63,23 +63,36 @@ async function readBoundedUpstreamText(response,maxBytes){
  }finally{try{reader.releaseLock();}catch(_){}}
 }
 async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
- let endpoint;
+ let path;
  if(resource==='instrument-search'&&params&&typeof params.symbol==='string'&&CODAL_SYMBOL.test(params.symbol)){
-  endpoint=new URL('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/'+encodeURIComponent(params.symbol));
+  path='/api/Instrument/GetInstrumentSearch/'+encodeURIComponent(params.symbol);
  }else if(resource==='closing-price'&&params&&TSETMC_INSTRUMENT_ID(params.instrumentId)){
-  endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/'+params.instrumentId);
+  path='/api/ClosingPrice/GetClosingPriceInfo/'+params.instrumentId;
  }else if(resource==='daily-history'&&params&&TSETMC_INSTRUMENT_ID(params.instrumentId)){
-  endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/'+params.instrumentId+'/0');
+  path='/api/ClosingPrice/GetClosingPriceDailyList/'+params.instrumentId+'/0';
  }else return {status:400,body:{error:'INVALID_TSETMC_REQUEST'}};
- for(let attempt=0;attempt<2;attempt++){
+ // Fixed, reviewed public mirrors only; never accept a caller-supplied host or URL.
+ const upstreams=['https://cdn.tsetmc.com','https://cdn10.tsetmc.com'];
+ for(let attempt=0;attempt<upstreams.length;attempt++){
+  const endpoint=new URL(path,upstreams[attempt]);
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);
   try{
    const upstream=await fetchImpl(endpoint.toString(),{
     method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,
-    headers:{Accept:'application/json','User-Agent':'Sahamban-ReadOnly-Proxy/1.0'}
+    headers:{
+     Accept:'application/json',
+     'Accept-Language':'fa-IR,fa;q=0.9,en;q=0.8',
+     'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+     Referer:'https://www.tsetmc.com/'
+    }
    });
    if(upstream.status===429)return {status:429,body:{error:'UPSTREAM_RATE_LIMIT'}};
-   if(!upstream.ok)return {status:502,body:{error:'UPSTREAM_HTTP_ERROR',upstreamStatus:upstream.status}};
+   if(!upstream.ok){
+    // Do not route around an explicit upstream rate limit or access denial.
+    // Retry the fixed mirror only for transient server-side failures.
+    if(attempt===0&&[502,503,504].includes(upstream.status))continue;
+    return {status:502,body:{error:'UPSTREAM_HTTP_ERROR',upstreamStatus:upstream.status,attempts:attempt+1}};
+   }
    const contentType=upstream.headers.get('content-type')||'';
    if(!/json/i.test(contentType))return {status:502,body:{error:'UPSTREAM_CONTENT_TYPE_UNVERIFIED'}};
    const length=Number(upstream.headers.get('content-length')||0);
@@ -91,15 +104,12 @@ async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
    try{body=JSON.parse(raw);}catch(_){return {status:502,body:{error:'UPSTREAM_INVALID_JSON'}};}
    return {status:200,body};
   }catch(error){
-   if(attempt===0&&(error?.name==='AbortError'||error instanceof TypeError)){
-    await new Promise(resolve=>setTimeout(resolve,900));
-    continue;
-   }
+   if(attempt===0&&(error?.name==='AbortError'||error instanceof TypeError))continue;
    return {status:error?.name==='AbortError'?504:502,
-    body:{error:error?.name==='AbortError'?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_ERROR',attempts:2}};
+    body:{error:error?.name==='AbortError'?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_ERROR',attempts:attempt+1}};
   }finally{clearTimeout(timer);}
  }
- return {status:502,body:{error:'UPSTREAM_NETWORK_ERROR',attempts:2}};
+ return {status:502,body:{error:'UPSTREAM_NETWORK_ERROR',attempts:upstreams.length}};
 }
 
 function send(body,status=200,origin=null){
