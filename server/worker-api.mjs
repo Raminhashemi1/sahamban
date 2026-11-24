@@ -27,7 +27,7 @@ async function proxyCodalSearch(symbol,fetchImpl=fetch){
  if(typeof symbol!=='string'||!CODAL_SYMBOL.test(symbol)||/[\s\u0000-\u001F\u007F]/u.test(symbol))return {status:400,body:{error:'INVALID_SYMBOL'}};
  const endpoint=new URL('https://search.codal.ir/api/search/v2/q');
  endpoint.search=new URLSearchParams({Symbol:symbol,PageNumber:'1',LetterType:'-1',Category:'-1',TracingNo:'-1',search:'true'}).toString();
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);
  try{
   const upstream=await fetchImpl(endpoint.toString(),{method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,headers:{Accept:'application/json, application/xml, text/xml'}});
   if(upstream.status===429)return {status:429,body:{error:'UPSTREAM_RATE_LIMIT'}};
@@ -160,7 +160,8 @@ export default {
   const cors=origin&&allowed&&origin===allowed?origin:null;
   if(request.method==='OPTIONS'){
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
-   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
+   const methods=url.pathname==='/api/v1/public/tsetmc'||url.pathname==='/api/v1/public/codal-search'?'GET, OPTIONS':'GET, POST, OPTIONS';
+   return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':cors,'Access-Control-Allow-Methods':methods,'Access-Control-Allow-Headers':'Authorization','Access-Control-Max-Age':'300','Cache-Control':'no-store','Vary':'Origin'}});
   }
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
