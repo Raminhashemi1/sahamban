@@ -20,7 +20,7 @@ async function api(){return import('../server/worker-api.mjs');}
 function req(token,path='/api/v1/me/entitlement',requestOrigin=origin,method='GET'){
  return new Request('https://worker.example'+path,{method,headers:{...(requestOrigin===null?{}:{Origin:requestOrigin}),...(token?{Authorization:'Bearer '+token}:{})}});
 }
-function env(DB=db()){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHAMBAN_DB:DB};}
+function env(DB=db(),TSETMC_RATE_LIMITER={async limit(){return {success:true};}}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHAMBAN_DB:DB,TSETMC_RATE_LIMITER};}
 test('verified pilot JWT reads only account-bound entitlement via prepared D1 query',async()=>{
  const worker=(await api()).default,storage=db();
  const reply=await worker.fetch(req(await signedToken()),env(storage));
@@ -163,4 +163,131 @@ test('CODAL proxy helper validates symbol and classifies upstream responses',asy
  assert.equal(good.status,200);assert.match(good.body.raw,/Letters/);
  const limited=await proxyCodalSearch('ونوین',async()=>new Response('',{status:429}));assert.equal(limited.status,429);
  const failed=await proxyCodalSearch('ونوین',async()=>{throw Error('offline');});assert.equal(failed.status,502);assert.equal(failed.body.error,'UPSTREAM_NETWORK_ERROR');
+});
+
+
+test('TSETMC proxy allows only fixed public resources and validates symbols/IDs before network access',async()=>{
+ const {proxyTsetmcRequest}=await api();let calls=0;
+ for(const [resource,params] of [
+  ['instrument-search',{symbol:'bad symbol'}],
+  ['instrument-search',{symbol:'فولاد/../../secret'}],
+  ['closing-price',{instrumentId:'123'}],
+  ['daily-history',{instrumentId:'12345678?x=1'}],
+  ['arbitrary-path',{symbol:'فولاد'}]
+ ]){
+  const result=await proxyTsetmcRequest(resource,params,async()=>{calls++;throw Error('must not fetch');});
+  assert.equal(result.status,400);
+  assert.equal(result.body.error,'INVALID_TSETMC_REQUEST');
+ }
+ assert.equal(calls,0);
+});
+
+test('TSETMC proxy maps each allowed resource to its fixed upstream URL and returns parsed JSON',async()=>{
+ const {proxyTsetmcRequest}=await api();
+ const cases=[
+  ['instrument-search',{symbol:'فولاد'},'/Instrument/GetInstrumentSearch/فولاد',{instrumentSearch:[]}],
+  ['closing-price',{instrumentId:'12345678901234567'},'/ClosingPrice/GetClosingPriceInfo/12345678901234567',{closingPriceInfo:{pClosing:123}}],
+  ['daily-history',{instrumentId:'12345678901234567'},'/ClosingPrice/GetClosingPriceDailyList/12345678901234567/0',{closingPriceDaily:[]}]
+ ];
+ for(const [resource,params,path,body] of cases){
+  const result=await proxyTsetmcRequest(resource,params,async(url,options)=>{
+   const parsed=new URL(url);
+   assert.equal(parsed.origin,'https://cdn.tsetmc.com');
+   assert.equal(decodeURIComponent(parsed.pathname),'/api'+path);
+   assert.equal(options.method,'GET');
+   assert.equal(options.cache,'no-store');
+   assert.equal(options.redirect,'error');
+   assert.equal(options.headers.Accept,'application/json');
+   return new Response(JSON.stringify(body),{status:200,headers:{'Content-Type':'application/json; charset=utf-8'}});
+  });
+  assert.equal(result.status,200);
+  assert.deepEqual(result.body,body);
+ }
+});
+
+test('TSETMC proxy retries one network failure once, then returns an explicit upstream error',async()=>{
+ const {proxyTsetmcRequest}=await api();let calls=0;
+ const recovered=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>{
+  calls++;
+  if(calls===1)throw new TypeError('Failed to fetch');
+  return new Response(JSON.stringify({instrumentSearch:[]}),{status:200,headers:{'Content-Type':'application/json'}});
+ });
+ assert.equal(calls,2);
+ assert.equal(recovered.status,200);
+ calls=0;
+ const failed=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>{
+  calls++;throw new TypeError('network unavailable');
+ });
+ assert.equal(calls,2);
+ assert.equal(failed.status,502);
+ assert.equal(failed.body.error,'UPSTREAM_NETWORK_ERROR');
+ assert.equal(failed.body.attempts,2);
+});
+
+test('TSETMC proxy rejects rate limits, invalid content type, invalid JSON and oversized responses',async()=>{
+ const {proxyTsetmcRequest}=await api();
+ const limited=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>new Response('',{status:429}));
+ assert.equal(limited.status,429);
+ assert.equal(limited.body.error,'UPSTREAM_RATE_LIMIT');
+ const contentType=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>new Response('{}',{status:200,headers:{'Content-Type':'text/html'}}));
+ assert.equal(contentType.status,502);
+ assert.equal(contentType.body.error,'UPSTREAM_CONTENT_TYPE_UNVERIFIED');
+ const invalid=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>new Response('{bad',{status:200,headers:{'Content-Type':'application/json'}}));
+ assert.equal(invalid.status,502);
+ assert.equal(invalid.body.error,'UPSTREAM_INVALID_JSON');
+ const large=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>new Response('x'.repeat(2097153),{status:200,headers:{'Content-Type':'application/json'}}));
+ assert.equal(large.status,502);
+ assert.equal(large.body.error,'UPSTREAM_RESPONSE_TOO_LARGE');
+});
+
+test('TSETMC public route is GET-only, exact-origin, strict-query and read-only',async()=>{
+ const worker=(await api()).default;
+ const blocked=await worker.fetch(new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد',{
+  headers:{Origin:'https://evil.example'}
+ }),env());
+ assert.equal(blocked.status,403);
+ const missingOrigin=await worker.fetch(new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد'),env());
+ assert.equal(missingOrigin.status,403);
+ const duplicate=await worker.fetch(new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد&symbol=ذوب',{
+  headers:{Origin:origin}
+ }),env());
+ assert.equal(duplicate.status,400);
+ const extra=await worker.fetch(new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد&url=https://evil.example',{
+  headers:{Origin:origin}
+ }),env());
+ assert.equal(extra.status,400);
+ const method=await worker.fetch(new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد',{
+  method:'POST',headers:{Origin:origin}
+ }),env());
+ assert.equal(method.status,405);
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>new Response(JSON.stringify({instrumentSearch:[{insCode:'12345678'}]}),{
+   status:200,headers:{'Content-Type':'application/json'}
+  });
+  const good=await worker.fetch(new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد',{
+   headers:{Origin:origin}
+  }),env());
+  assert.equal(good.status,200);
+  assert.equal(good.headers.get('Access-Control-Allow-Origin'),origin);
+  assert.match(good.headers.get('Cache-Control'),/no-store/);
+  assert.deepEqual(await good.json(),{instrumentSearch:[{insCode:'12345678'}]});
+ }finally{globalThis.fetch=original;}
+});
+
+test('TSETMC public route fails closed without limiter and rejects denied allowance before upstream fetch',async()=>{
+ const worker=(await api()).default;
+ const request=()=>new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد',{
+  headers:{Origin:origin,'CF-Connecting-IP':'198.51.100.17'}
+ });
+ const missing=await worker.fetch(request(),{...env(),TSETMC_RATE_LIMITER:undefined});
+ assert.equal(missing.status,503);
+ assert.equal((await missing.json()).error,'RATE_LIMITER_UNAVAILABLE');
+ let calls=0;
+ const denied=await worker.fetch(request(),{...env(),TSETMC_RATE_LIMITER:{async limit(input){
+  calls++;assert.equal(input.key,'tsetmc:198.51.100.17');return {success:false};
+ }}});
+ assert.equal(calls,1);
+ assert.equal(denied.status,429);
+ assert.equal((await denied.json()).error,'RATE_LIMITED');
 });

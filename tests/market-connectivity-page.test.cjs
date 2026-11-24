@@ -35,14 +35,14 @@ assert.match(appHtml,/این آزمایش به سبد ذخیره‌شده یا �
 
 assert.ok(html.includes('function readSymbols()'));
 assert.ok(html.includes('const queryList=[...new Set([symbol,symbol.slice(0,3),symbol.slice(0,2)]'));
-assert.ok(html.includes('جستجوی مستقیم و جستجوی گسترده‌تر انجام شد'));
+assert.ok(html.includes('for(const query of queryList)'), 'symbol search must run direct and broader queries');
 assert.ok(html.includes('هیچ نماد مشابهی خودکار جایگزین نشد'));
 assert.match(html,/symbols.length/);
 assert.match(html,/حداکثر ۱۰۰ نماد/);
 assert.match(html,/symbols-input/);
 assert.match(html,/closingPriceDaily/);
 assert.ok(html.includes('for(const candidate of candidates)'));
-assert.match(html,/مهلت پاسخ سرور تمام شد/);
+assert.match(html,/مهلت پاسخ درگاه واسط تمام شد/);
 assert.match(html,/const valid=\[\],rejectionReasons=\[\]/);
 assert.match(html,/const freshness=quoteFreshness\(info\?\.finalLastDate\|\|date,info\?\.lastHEven\)/);
 assert.match(html,/قیمت پاسخ رسمی:/);
@@ -71,3 +71,14 @@ const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
 assert.equal(scripts.length,1,'exactly one self-contained script');
 new vm.Script(scripts[0]);
 console.log('PASS: standalone market diagnostic syntax, editable dynamic-size basket validation, Persian/Rial UI and no portfolio-storage access');
+
+assert.ok(html.includes("const TSETMC_PROXY_BASE='https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/public/tsetmc'"));
+assert.ok(html.includes('function tsetmcProxyUrl(path)'));
+assert.ok(html.includes("searchParams.set('resource','instrument-search')"));
+assert.ok(html.includes("searchParams.set('resource','closing-price')"));
+assert.ok(html.includes("searchParams.set('resource','daily-history')"));
+assert.ok(html.includes('واسط خواندنی سرور ارسال می‌شوند'));
+assert.ok(html.includes('RATE_LIMITED'));
+assert.ok(html.includes('RATE_LIMITER_UNAVAILABLE'));
+
+assert.ok(!html.includes("const api='https://cdn.tsetmc.com/api'"));

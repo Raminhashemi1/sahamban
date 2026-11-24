@@ -42,9 +42,9 @@ test('v87 shows contextual guidance, step list, and a link to selected module',(
 test('v87 supports deep links directly and all module ids are backed by HTML',()=>{
  const a=boot('#professionalRiskV49');assert.equal(a.ids.professionalRiskV49.hidden,false);
  assert.match(html,/id="sahambanHubV87"/);assert.match(html,/id="sahambanModulesV87"/);
- assert.match(html,/module-hub-v87\.js\?v=130\.2/);
+ assert.match(html,/module-hub-v87\.js\?v=130\.3/);
  for(const id of ['livePortfolioSection','brokerImportSection','portfolioSection','technicalAnalysisV50','marketSection','watchlistSection','professionalRiskV49'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(sw,/module-hub-v87\.js\?v=130\.2/);assert.match(sw,/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/);
+ assert.match(sw,/module-hub-v87\.js\?v=130\.3/);assert.match(sw,/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/);
 });
 
 test('CODAL lookup and original intake are independently accessible from home',()=>{

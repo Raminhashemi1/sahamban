@@ -51,3 +51,11 @@ screenshots or chat. A green GitHub job proves only what its steps actually
 tested. A full business launch still requires real sign-in, provider-verified
 and atomic settlement, refund handling, policy and support details,
 device acceptance and all Pro release gates.
+
+
+## TSETMC read-only market proxy — pending review/deployment
+
+A separate implementation branch now adds a strict, read-only TSETMC proxy route to the existing Worker:
+`GET /api/v1/public/tsetmc`. It permits only symbol search, closing-price info and daily history; the upstream host and endpoint paths are fixed in code. Requests are limited to the exact GitHub Pages origin, with bounded timeout/one network retry, JSON validation and a 2 MiB response cap. The independent market diagnostic page is changed to use this route; the production portfolio/pricing path is not changed.
+
+The code is in draft PR review and **is not deployed yet**. The existing manual deployment workflow remains gated by the exact owner approval phrase `DEPLOY_PILOT_NO_PAYMENTS`; no payment or checkout setting is enabled by this change. After merge, the owner must deliberately run the workflow, verify the public Worker health and proxy route, and then repeat the seven-symbol mobile/laptop diagnostic. Do not treat a successful build as proof of live TSETMC availability or freshness.
