@@ -35,7 +35,7 @@ assert.match(appHtml,/این آزمایش به سبد ذخیره‌شده یا �
 
 assert.ok(html.includes('function readSymbols()'));
 assert.ok(html.includes('const queryList=[...new Set([symbol,symbol.slice(0,3),symbol.slice(0,2)]'));
-assert.ok(html.includes('جستجوی مستقیم و جستجوی گسترده‌تر انجام شد'));
+assert.ok(html.includes('for(const query of queryList)'), 'symbol search must run direct and broader queries');
 assert.ok(html.includes('هیچ نماد مشابهی خودکار جایگزین نشد'));
 assert.match(html,/symbols.length/);
 assert.match(html,/حداکثر ۱۰۰ نماد/);
