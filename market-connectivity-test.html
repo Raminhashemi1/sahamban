@@ -23,7 +23,7 @@ small{opacity:.75}
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
 <p><small>نسخه صفحه آزمایش: ۳ نوامبر ۲۰۲۶ — نمایش جداگانه وضعیت اتصال، تطبیق تاریخچه و تازگی قیمت.</small></p>
-<p><a href="./market-connectivity-test.html?refresh=20261124-status-v2" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
+<p><a href="./market-connectivity-test.html?refresh=20261124-candidate-details-v3" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
 <hr style="margin:28px 0">
 <h2>آزمایش نمادهای سبد</h2>
 <p>فهرست نمادها را از سبد خود وارد کنید؛ هر نماد را در یک خط بنویسید. فهرست اولیه برای شروع، شامل ۱۹ نماد آزمایش قبلی است و می‌توانید آن را کامل تغییر دهید. تعداد نمادها محدود به ۱۹ نیست.</p>
@@ -257,29 +257,31 @@ function readSymbols(){
 }
 async function inspectCandidate(symbol,candidate){
  const code=String(candidate.insCode);
+ const candidateName=String(candidate.lVal18AFC||candidate.lVal30||symbol).trim();
+ const candidateRef={candidateCode:code,candidateName};
  let info;
  try{
   info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
  }catch(e){
-  return {status:'QUOTE_FETCH_FAILED',quoteReceived:false,detail:'دریافت قیمت ناموفق: '+String(e?.message||e)};
+  return {...candidateRef,status:'QUOTE_FETCH_FAILED',quoteReceived:false,detail:'دریافت قیمت ناموفق: '+String(e?.message||e)};
  }
- if(!info)return {status:'QUOTE_INVALID',quoteReceived:false,detail:'پاسخ اطلاعات قیمت خالی یا نامعتبر است.'};
+ if(!info)return {...candidateRef,status:'QUOTE_INVALID',quoteReceived:false,detail:'پاسخ اطلاعات قیمت خالی یا نامعتبر است.'};
  let price,date;
  try{
   price=Number(info.pClosing);date=dateOk(info.dEven);
   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر است.');
  }catch(e){
-  return {status:'QUOTE_INVALID',quoteReceived:false,detail:'اطلاعات قیمت دریافت شد اما اعتبارسنجی نشد: '+String(e?.message||e)};
+  return {...candidateRef,status:'QUOTE_INVALID',quoteReceived:false,detail:'اطلاعات قیمت دریافت شد اما اعتبارسنجی نشد: '+String(e?.message||e)};
  }
  const freshness=quoteFreshness(info.finalLastDate||date,info.lastHEven);
  let hist;
  try{
   hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
  }catch(e){
-  return {status:'HISTORY_FETCH_FAILED',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ دریافت تاریخچه ناموفق: '+String(e?.message||e)};
+  return {...candidateRef,status:'HISTORY_FETCH_FAILED',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ دریافت تاریخچه ناموفق: '+String(e?.message||e)};
  }
  if(!Array.isArray(hist)){
-  return {status:'HISTORY_INVALID',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ ساختار پاسخ تاریخچه معتبر نیست.'};
+  return {...candidateRef,status:'HISTORY_INVALID',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ ساختار پاسخ تاریخچه معتبر نیست.'};
  }
  const validRows=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
  const latestRows=[...validRows].sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
@@ -288,24 +290,24 @@ async function inspectCandidate(symbol,candidate){
  const dayRows=validRows.filter(x=>String(x.dEven)===date);
  if(!dayRows.length){
   if(latestDate&&latestDate<date){
-   return {status:'HISTORY_PENDING',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد: '+fa(price)+' ریال در '+date+'؛ تاریخچه هنوز به روز قیمت نرسیده است. آخرین تاریخچه: '+latestDate+'؛ آخرین سوابق: '+(latest||'ندارد')};
+   return {...candidateRef,status:'HISTORY_PENDING',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد: '+fa(price)+' ریال در '+date+'؛ تاریخچه هنوز به روز قیمت نرسیده است. آخرین تاریخچه: '+latestDate+'؛ آخرین سوابق: '+(latest||'ندارد')};
   }
-  return {status:'HISTORY_MISMATCH',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما رکورد همان تاریخ در تاریخچه پیدا نشد. آخرین تاریخچه: '+(latestDate||'نامشخص')};
+  return {...candidateRef,status:'HISTORY_MISMATCH',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما رکورد همان تاریخ در تاریخچه پیدا نشد. آخرین تاریخچه: '+(latestDate||'نامشخص')};
  }
  if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1){
-  return {status:'HISTORY_CONFLICT',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما تاریخچه برای همان روز چند قیمت متناقض دارد.'};
+  return {...candidateRef,status:'HISTORY_CONFLICT',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما تاریخچه برای همان روز چند قیمت متناقض دارد.'};
  }
  if(!dayRows.some(x=>Number(x.pClosing)===price)){
-  return {status:'HISTORY_MISMATCH',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما با قیمت ثبت‌شده در تاریخچه همان روز تطبیق ندارد.'};
+  return {...candidateRef,status:'HISTORY_MISMATCH',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما با قیمت ثبت‌شده در تاریخچه همان روز تطبیق ندارد.'};
  }
  const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
  if(uniqueDays.size<2){
-  return {status:'HISTORY_INSUFFICIENT',quoteReceived:true,price,date,freshness,detail:'قیمت و رکورد همان روز دریافت شد، اما برای تأیید تاریخچه دست‌کم دو روز معتبر لازم است.'};
+  return {...candidateRef,status:'HISTORY_INSUFFICIENT',quoteReceived:true,price,date,freshness,detail:'قیمت و رکورد همان روز دریافت شد، اما برای تأیید تاریخچه دست‌کم دو روز معتبر لازم است.'};
  }
  if(freshness.status==='FRESH'){
-  return {status:'LIVE_CONFIRMED',quoteReceived:true,price,date,freshness,count:uniqueDays.size,code,detail:'قیمت و تاریخچه منطبق؛ آخرین معامله '+freshness.lastTradeTime};
+  return {...candidateRef,status:'LIVE_CONFIRMED',quoteReceived:true,price,date,freshness,count:uniqueDays.size,code,detail:'قیمت و تاریخچه منطبق؛ آخرین معامله '+freshness.lastTradeTime};
  }
- return {status:'HISTORY_MATCHED_NOT_LIVE',quoteReceived:true,price,date,freshness,count:uniqueDays.size,code,detail:'قیمت و تاریخچه منطبق است؛ تازگی زنده تأیید نشد ('+freshness.status+'): '+freshness.message};
+ return {...candidateRef,status:'HISTORY_MATCHED_NOT_LIVE',quoteReceived:true,price,date,freshness,count:uniqueDays.size,code,detail:'قیمت و تاریخچه منطبق است؛ تازگی زنده تأیید نشد ('+freshness.status+'): '+freshness.message};
 }
 async function checkSymbol(symbol){
  const queryList=[...new Set([symbol,symbol.slice(0,3),symbol.slice(0,2)].filter(x=>x.length>=2))];
@@ -330,11 +332,12 @@ async function checkSymbol(symbol){
  for(const candidate of candidates)checked.push(await inspectCandidate(symbol,candidate));
  const qualified=checked.filter(x=>x.status==='LIVE_CONFIRMED'||x.status==='HISTORY_MATCHED_NOT_LIVE');
  if(qualified.length===1)return qualified[0];
- if(qualified.length>1)return {status:'AMBIGUOUS_INSTRUMENT',detail:'بیش از یک شناسه برای این نماد دارای قیمت و تاریخچه منطبق است؛ انتخاب خودکار انجام نشد.'};
+ const candidateDetails=checked.map(x=>(x.candidateName||symbol)+' [شناسه '+(x.candidateCode||'نامشخص')+']: '+x.status+' — '+x.detail).join(' || ');
+ if(qualified.length>1)return {status:'AMBIGUOUS_INSTRUMENT',detail:'بیش از یک شناسه برای این نماد دارای قیمت و تاریخچه منطبق است؛ انتخاب خودکار انجام نشد. جزئیات نامزدها: '+candidateDetails};
  if(checked.length===1)return checked[0];
  const statuses=[...new Set(checked.map(x=>x.status))];
- if(statuses.length===1)return {...checked[0],detail:checked.length+' شناسه نامزد بررسی شدند؛ '+checked[0].detail};
- return {status:'AMBIGUOUS_INSTRUMENT',detail:'چند شناسه نامزد نتیجه‌های متفاوت داشتند؛ برای جلوگیری از انتخاب اشتباه، نتیجه قطعی صادر نشد. وضعیت‌ها: '+statuses.join('، ')};
+ if(statuses.length===1)return {status:'AMBIGUOUS_INSTRUMENT',detail:checked.length+' شناسه نامزد نتیجه یکسان داشتند؛ انتخاب خودکار انجام نشد. جزئیات نامزدها: '+candidateDetails};
+ return {status:'AMBIGUOUS_INSTRUMENT',detail:'چند شناسه نامزد نتیجه‌های متفاوت داشتند؛ برای جلوگیری از انتخاب اشتباه، نتیجه قطعی صادر نشد. جزئیات نامزدها: '+candidateDetails};
 }
 $('run-basket').addEventListener('click',async()=>{
  const b=$('run-basket'),s=$('basket-status'),out=$('basket-results');
