@@ -72,10 +72,10 @@ assert.equal(scripts.length,1,'exactly one self-contained script');
 new vm.Script(scripts[0]);
 console.log('PASS: standalone market diagnostic syntax, editable dynamic-size basket validation, Persian/Rial UI and no portfolio-storage access');
 
-assert.match(html,/TSETMC_PROXY_BASE='https:\\/\\/sahamban-pro-pilot\\.rhashemi284\\.workers\\.dev\\/api\\/v1\\/public\\/tsetmc'/);
-assert.match(html,/function tsetmcProxyUrl\\(path\\)/);
-assert.match(html,/searchParams\\.set\\('resource','instrument-search'\\)/);
-assert.match(html,/searchParams\\.set\\('resource','closing-price'\\)/);
-assert.match(html,/searchParams\\.set\\('resource','daily-history'\\)/);
-assert.match(html,/واسط خواندنی سرور ارسال می‌شوند/);
-assert.doesNotMatch(html,/const api='https:\\/\\/cdn\\.tsetmc\\.com\\/api'/);
+assert.ok(html.includes("const TSETMC_PROXY_BASE='https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/public/tsetmc'"));
+assert.ok(html.includes('function tsetmcProxyUrl(path)'));
+assert.ok(html.includes("searchParams.set('resource','instrument-search')"));
+assert.ok(html.includes("searchParams.set('resource','closing-price')"));
+assert.ok(html.includes("searchParams.set('resource','daily-history')"));
+assert.ok(html.includes('واسط خواندنی سرور ارسال می‌شوند'));
+assert.ok(!html.includes("const api='https://cdn.tsetmc.com/api'"));
