@@ -197,7 +197,7 @@ test('TSETMC proxy maps each allowed resource to its fixed upstream URL and retu
    assert.equal(options.method,'GET');
    assert.equal(options.cache,'no-store');
    assert.equal(options.redirect,'error');
-   assert.match(options.headers.Accept,/application\\/json/);
+   assert.equal(options.headers.Accept,'application/json');
    return new Response(JSON.stringify(body),{status:200,headers:{'Content-Type':'application/json; charset=utf-8'}});
   });
   assert.equal(result.status,200);
