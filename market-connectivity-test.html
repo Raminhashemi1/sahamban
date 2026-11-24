@@ -23,7 +23,7 @@ small{opacity:.75}
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
 <p><small>نسخه صفحه آزمایش: ۳ نوامبر ۲۰۲۶ — نمایش جداگانه وضعیت اتصال، تطبیق تاریخچه و تازگی قیمت.</small></p>
-<p><a href="./market-connectivity-test.html?refresh=20261103" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
+<p><a href="./market-connectivity-test.html?refresh=20261124-status-v2" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
 <hr style="margin:28px 0">
 <h2>آزمایش نمادهای سبد</h2>
 <p>فهرست نمادها را از سبد خود وارد کنید؛ هر نماد را در یک خط بنویسید. فهرست اولیه برای شروع، شامل ۱۹ نماد آزمایش قبلی است و می‌توانید آن را کامل تغییر دهید. تعداد نمادها محدود به ۱۹ نیست.</p>
@@ -255,79 +255,144 @@ function readSymbols(){
  if(symbols.length>100)throw Error('برای هر نوبت حداکثر ۱۰۰ نماد وارد کنید.');
  return symbols;
 }
+async function inspectCandidate(symbol,candidate){
+ const code=String(candidate.insCode);
+ let info;
+ try{
+  info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
+ }catch(e){
+  return {status:'QUOTE_FETCH_FAILED',quoteReceived:false,detail:'دریافت قیمت ناموفق: '+String(e?.message||e)};
+ }
+ if(!info)return {status:'QUOTE_INVALID',quoteReceived:false,detail:'پاسخ اطلاعات قیمت خالی یا نامعتبر است.'};
+ let price,date;
+ try{
+  price=Number(info.pClosing);date=dateOk(info.dEven);
+  if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر است.');
+ }catch(e){
+  return {status:'QUOTE_INVALID',quoteReceived:false,detail:'اطلاعات قیمت دریافت شد اما اعتبارسنجی نشد: '+String(e?.message||e)};
+ }
+ const freshness=quoteFreshness(info.finalLastDate||date,info.lastHEven);
+ let hist;
+ try{
+  hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
+ }catch(e){
+  return {status:'HISTORY_FETCH_FAILED',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date+')؛ دریافت تاریخچه ناموفق: '+String(e?.message||e)};
+ }
+ if(!Array.isArray(hist)){
+  return {status:'HISTORY_INVALID',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد ('+fa(price)+' ریال، '+date)؛ ساختار پاسخ تاریخچه معتبر نیست.'};
+ }
+ const validRows=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
+ const latestRows=[...validRows].sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
+ const latest=latestRows.slice(0,3).map(x=>String(x.dEven)+':'+fa(Number(x.pClosing))).join('، ');
+ const latestDate=String(latestRows[0]?.dEven??'');
+ const dayRows=validRows.filter(x=>String(x.dEven)===date);
+ if(!dayRows.length){
+  if(latestDate&&latestDate<date){
+   return {status:'HISTORY_PENDING',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد: '+fa(price)+' ریال در '+date+'؛ تاریخچه هنوز به روز قیمت نرسیده است. آخرین تاریخچه: '+latestDate+'؛ آخرین سوابق: '+(latest||'ندارد')};
+  }
+  return {status:'HISTORY_MISMATCH',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما رکورد همان تاریخ در تاریخچه پیدا نشد. آخرین تاریخچه: '+(latestDate||'نامشخص')};
+ }
+ if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1){
+  return {status:'HISTORY_CONFLICT',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما تاریخچه برای همان روز چند قیمت متناقض دارد.'};
+ }
+ if(!dayRows.some(x=>Number(x.pClosing)===price)){
+  return {status:'HISTORY_MISMATCH',quoteReceived:true,price,date,freshness,detail:'قیمت دریافت شد، اما با قیمت ثبت‌شده در تاریخچه همان روز تطبیق ندارد.'};
+ }
+ const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
+ if(uniqueDays.size<2){
+  return {status:'HISTORY_INSUFFICIENT',quoteReceived:true,price,date,freshness,detail:'قیمت و رکورد همان روز دریافت شد، اما برای تأیید تاریخچه دست‌کم دو روز معتبر لازم است.'};
+ }
+ if(freshness.status==='FRESH'){
+  return {status:'LIVE_CONFIRMED',quoteReceived:true,price,date,freshness,count:uniqueDays.size,code,detail:'قیمت و تاریخچه منطبق؛ آخرین معامله '+freshness.lastTradeTime};
+ }
+ return {status:'HISTORY_MATCHED_NOT_LIVE',quoteReceived:true,price,date,freshness,count:uniqueDays.size,code,detail:'قیمت و تاریخچه منطبق است؛ تازگی زنده تأیید نشد ('+freshness.status+'): '+freshness.message};
+}
 async function checkSymbol(symbol){
  const queryList=[...new Set([symbol,symbol.slice(0,3),symbol.slice(0,2)].filter(x=>x.length>=2))];
  const allRows=[];
- for(const query of queryList){
-  const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(query));
-  if(!Array.isArray(search?.instrumentSearch))throw Error('ساختار جستجو نامعتبر');
-  allRows.push(...search.instrumentSearch);
+ try{
+  for(const query of queryList){
+   const search=await get('/Instrument/GetInstrumentSearch/'+encodeURIComponent(query));
+   if(!Array.isArray(search?.instrumentSearch))throw Error('ساختار پاسخ جست‌وجوی نماد معتبر نیست.');
+   allRows.push(...search.instrumentSearch);
+  }
+ }catch(e){
+  return {status:'SEARCH_FAILED',detail:'جست‌وجوی نماد ناموفق: '+String(e?.message||e)};
  }
  const rows=[...new Map(allRows.filter(x=>x&&x.insCode!=null).map(x=>[String(x.insCode),x])).values()];
  const exact=rows.filter(x=>norm(x.lVal18AFC)===norm(symbol)&&/^[0-9]{8,25}$/.test(String(x.insCode??'')));
  const candidates=[...new Map(exact.map(x=>[String(x.insCode),x])).values()];
  if(!candidates.length){
   const suggestions=[...new Set(rows.filter(x=>/^[0-9]{8,25}$/.test(String(x.insCode??''))).map(x=>String(x.lVal18AFC||x.lVal30||'').trim()).filter(Boolean))].slice(0,12);
-  throw Error('شناسه دقیق پیدا نشد؛ جستجوی مستقیم و جستجوی گسترده‌تر انجام شد. نام‌های نزدیک منبع: '+(suggestions.join('، ')||'هیچ نتیجه‌ای')+'؛ هیچ نماد مشابهی خودکار جایگزین نشد.');
+  return {status:'SYMBOL_NOT_FOUND',detail:'شناسه دقیق نماد پیدا نشد. نام‌های نزدیک منبع: '+(suggestions.join('، ')||'هیچ نتیجه‌ای')+'؛ هیچ نماد مشابهی خودکار جایگزین نشد.'};
  }
- const valid=[],reasons=[];
- for(const candidate of candidates){
-  const code=String(candidate.insCode);
-  try{
-   const info=(await get('/ClosingPrice/GetClosingPriceInfo/'+code))?.closingPriceInfo;
-   const price=Number(info?.pClosing),date=dateOk(info?.dEven);
-   if(!Number.isFinite(price)||price<=0)throw Error('قیمت پایانی نامعتبر');
-   const hist=(await get('/ClosingPrice/GetClosingPriceDailyList/'+code+'/0'))?.closingPriceDaily;
-   if(!Array.isArray(hist))throw Error('تاریخچه دریافت نشد');
-   const validRows=hist.filter(x=>/^\d{8}$/.test(String(x?.dEven??''))&&Number.isFinite(Number(x?.pClosing))&&Number(x.pClosing)>0);
-   const dayRows=validRows.filter(x=>String(x.dEven)===date);
-   if(!dayRows.length||!dayRows.some(x=>Number(x.pClosing)===price)){
-    const latestRows=[...validRows].sort((a,b)=>String(b.dEven).localeCompare(String(a.dEven)));
-    const latest=latestRows.slice(0,3).map(x=>String(x.dEven)+':'+fa(Number(x.pClosing))).join('، ');
-    const latestDate=String(latestRows[0]?.dEven??'');
-   const lag=latestDate&&latestDate<date;
-   throw Error((lag?'UNVERIFIED_HISTORY_NOT_PUBLISHED؛ تاریخچه هنوز به روز قیمت جاری نرسیده است. ':'UNVERIFIED_HISTORY_MISMATCH؛ ')+
-    'قیمت اطلاعاتی '+fa(price)+' در '+date+'؛ آخرین تاریخچه '+(latestDate||'نامشخص')+'؛ آخرین سوابق: '+(latest||'ندارد'));
-   }
-   if(new Set(dayRows.map(x=>Number(x.pClosing))).size>1)throw Error('سوابق همان روز متناقض‌اند');
-   const uniqueDays=new Set(validRows.map(x=>String(x.dEven)));
-   if(uniqueDays.size<2)throw Error('تعداد روزهای تاریخچه کافی نیست');
-   valid.push({symbol,price,date,count:uniqueDays.size,code,freshness:quoteFreshness(info?.finalLastDate||date,info?.lastHEven)});
-  }catch(e){reasons.push(String(e?.message||e));}
- }
- if(valid.length===1)return valid[0];
- if(valid.length>1)throw Error('چند شناسه هم‌زمان قیمت و تاریخچه معتبر دارند؛ انتخاب خودکار انجام نشد');
- throw Error(candidates.length>1?'هیچ‌یک از '+candidates.length+' شناسه نامزد تأیید نشد: '+[...new Set(reasons)].join('؛ '):(reasons[0]||'اطلاعات قیمت و تاریخچه معتبر نیست'));
+ const checked=[];
+ for(const candidate of candidates)checked.push(await inspectCandidate(symbol,candidate));
+ const qualified=checked.filter(x=>x.status==='LIVE_CONFIRMED'||x.status==='HISTORY_MATCHED_NOT_LIVE');
+ if(qualified.length===1)return qualified[0];
+ if(qualified.length>1)return {status:'AMBIGUOUS_INSTRUMENT',detail:'بیش از یک شناسه برای این نماد دارای قیمت و تاریخچه منطبق است؛ انتخاب خودکار انجام نشد.'};
+ if(checked.length===1)return checked[0];
+ const statuses=[...new Set(checked.map(x=>x.status))];
+ if(statuses.length===1)return {...checked[0],detail:checked.length+' شناسه نامزد بررسی شدند؛ '+checked[0].detail};
+ return {status:'AMBIGUOUS_INSTRUMENT',detail:'چند شناسه نامزد نتیجه‌های متفاوت داشتند؛ برای جلوگیری از انتخاب اشتباه، نتیجه قطعی صادر نشد. وضعیت‌ها: '+statuses.join('، ')};
 }
 $('run-basket').addEventListener('click',async()=>{
  const b=$('run-basket'),s=$('basket-status'),out=$('basket-results');
  let symbols;
  try{symbols=readSymbols();}catch(e){s.textContent=e.message;return;}
- b.disabled=true;out.textContent='';let ok=0,unverified=0,fail=0;const results=[];
+ b.disabled=true;out.textContent='';
+ const counts={live:0,matched:0,pending:0,searchFailed:0,quoteFailed:0,historyFailed:0,other:0};
+ const results=[];
  s.textContent='آزمایش '+fa(symbols.length)+' نماد آغاز شد؛ درخواست‌ها به‌ترتیب و فقط خواندنی ارسال می‌شوند.';
  for(let i=0;i<symbols.length;i++){
   const symbol=symbols[i];
-  s.textContent='در حال بررسی '+fa(i+1)+' از '+fa(symbols.length)+': '+symbol+' | زنده: '+fa(ok)+' | تأییدنشده: '+fa(unverified)+' | خطا: '+fa(fail);
-  try{
-   const r=await checkSymbol(symbol);
-   if(r.freshness.status==='FRESH'){
-    ok++;
-    results.push({symbol,ok:true,unverified:false,detail:'قیمت '+fa(r.price)+' ریال | تاریخ '+r.date+' | آخرین معامله '+r.freshness.lastTradeTime});
-   }else{
-    unverified++;
-    results.push({symbol,ok:false,unverified:true,detail:'تاریخچه منطبق؛ تأیید زنده نشد ('+r.freshness.status+'): '+r.freshness.message});
-   }
-  }catch(e){
-   fail++;
-   results.push({symbol,ok:false,unverified:false,detail:String(e?.message||e)});
-  }
-  const item=results.at(-1);
+  s.textContent='در حال بررسی '+fa(i+1)+' از '+fa(symbols.length)+': '+symbol+
+   ' | زنده: '+fa(counts.live)+' | تاریخچه منطبق: '+fa(counts.matched)+
+   ' | انتظار تاریخچه: '+fa(counts.pending)+' | خطاهای جست‌وجو/قیمت/تاریخچه: '+
+   fa(counts.searchFailed+counts.quoteFailed+counts.historyFailed);
+  if(i>0)await new Promise(resolve=>setTimeout(resolve,250));
+  let r;
+  try{r=await checkSymbol(symbol);}
+  catch(e){r={status:'UNEXPECTED_ERROR',detail:String(e?.message||e)};}
+  if(r.status==='LIVE_CONFIRMED')counts.live++;
+  else if(r.status==='HISTORY_MATCHED_NOT_LIVE')counts.matched++;
+  else if(r.status==='HISTORY_PENDING')counts.pending++;
+  else if(r.status==='SEARCH_FAILED')counts.searchFailed++;
+  else if(r.status==='QUOTE_FETCH_FAILED'||r.status==='QUOTE_INVALID')counts.quoteFailed++;
+  else if(r.status==='HISTORY_FETCH_FAILED'||r.status==='HISTORY_INVALID')counts.historyFailed++;
+  else counts.other++;
+  results.push({symbol,...r});
+  const item=results[results.length-1];
+  const labels={
+   LIVE_CONFIRMED:'قیمت و تاریخچه منطبق؛ تازگی زنده تأیید شد',
+   HISTORY_MATCHED_NOT_LIVE:'قیمت و تاریخچه منطبق؛ تازگی زنده تأیید نشد',
+   HISTORY_PENDING:'قیمت دریافت شد؛ تاریخچه روز جاری هنوز منتشر نشده',
+   SEARCH_FAILED:'خطای جست‌وجوی نماد',
+   SYMBOL_NOT_FOUND:'نماد/شناسه دقیق پیدا نشد',
+   QUOTE_FETCH_FAILED:'خطای دریافت قیمت',
+   QUOTE_INVALID:'قیمت دریافت شد اما معتبر نبود',
+   HISTORY_FETCH_FAILED:'خطای دریافت تاریخچه',
+   HISTORY_INVALID:'ساختار تاریخچه نامعتبر',
+   HISTORY_MISMATCH:'عدم تطبیق قیمت و تاریخچه',
+   HISTORY_CONFLICT:'تعارض در سوابق تاریخچه',
+   HISTORY_INSUFFICIENT:'تاریخچه ناکافی',
+   AMBIGUOUS_INSTRUMENT:'شناسه نماد مبهم',
+   UNEXPECTED_ERROR:'خطای پیش‌بینی‌نشده'
+  };
+  const success=item.status==='LIVE_CONFIRMED';
+  const pending=item.status==='HISTORY_PENDING';
+  const historical=item.status==='HISTORY_MATCHED_NOT_LIVE';
   const line=document.createElement('p');
-  line.textContent=(item.ok?'✓ ':item.unverified?'? ':'✕ ')+symbol+' — '+item.detail;
-  line.style.color=item.ok?'#16834a':item.unverified?'#a16207':'#b45309';
+  line.textContent=(success?'✓ ':pending?'… ':historical?'≈ ':'✕ ')+symbol+' — '+(labels[item.status]||item.status)+'؛ '+item.detail;
+  line.style.color=success?'#16834a':pending?'#a16207':historical?'#2563a6':'#b45309';
   out.appendChild(line);
  }
- s.textContent='پایان آزمایش: '+fa(ok)+' نماد با تازگی زنده تأیید شد؛ '+fa(unverified)+' نماد فقط تطبیق تاریخی داشتند/تأیید زنده نشد؛ '+fa(fail)+' خطای بررسی. این آزمون فقط خواندنی بود و سبد شما را تغییر نداد.';
+ s.textContent='پایان آزمایش: '+fa(counts.live)+' تأیید زنده؛ '+
+  fa(counts.matched)+' قیمت/تاریخچه منطبق ولی بدون تأیید تازگی زنده؛ '+
+  fa(counts.pending)+' قیمت دریافت‌شده با تاریخچه روز جاری در انتظار انتشار؛ '+
+  fa(counts.searchFailed)+' خطای جست‌وجو؛ '+fa(counts.quoteFailed)+' خطای دریافت/اعتبار قیمت؛ '+
+  fa(counts.historyFailed)+' خطای دریافت/ساختار تاریخچه؛ '+fa(counts.other)+' سایر وضعیت‌ها. '+
+  'این آزمون فقط خواندنی بود و سبد ذخیره‌شده را تغییر نداد.';
  b.disabled=false;
 });
 
