@@ -9,7 +9,7 @@ test('SMA aligns outputs and uses a rolling window',()=>{assert.deepEqual(api.sm
 test('EMA seeds with the initial simple average',()=>{assert.deepEqual(api.ema([1,2,3,4],3),[null,null,2,3]);});
 test('RSI handles rising, falling and flat series',()=>{assert.equal(api.rsi([1,2,3,4,5],3)[3],100);assert.equal(api.rsi([5,4,3,2,1],3)[3],0);assert.equal(api.rsi([5,5,5,5,5],3)[3],50);});
 test('MACD validates periods and aligns signal/histogram',()=>{const r=api.macd(Array.from({length:50},(_,i)=>100+i));assert.equal(r.macd.length,50);assert.equal(r.signal.length,50);assert.equal(r.histogram.length,50);assert.equal(r.macd[24],null);assert.notEqual(r.signal[33],null);assert.ok(Number.isFinite(r.histogram[33]));assert.throws(()=>api.macd([1,2,3],12,12,9),/سریع/);});
-test('invalid, empty and non-positive historical prices fail closed',()=>{assert.throws(()=>api.sma([],2),/حداقل/);assert.throws(()=>api.rsi([10,0,12],2),/مثبت/);assert.throws(()=>api.ema([1,2,3],0),/دوره/);assert.throws(()=>api.sma([1,Infinity,2],2),/معتبر/);});
+test('invalid, empty and non-positive historical prices fail closed',()=>{assert.throws(()=>api.sma([],2),/حداقل/);assert.throws(()=>api.rsi([10,0,12],2),/مثبت/);assert.throws(()=>api.ema([1,2,3],0),/دوره/);assert.throws(()=>api.sma([1,Infinity,2],2),/معتبر/);assert.throws(()=>api.sma([1,null,2],2),/رکورد 2/);assert.throws(()=>api.sma([1,'',2],2),/رکورد 2/);assert.throws(()=>api.sma([1,true,2],2),/رکورد 2/);assert.deepEqual(api.sma(['1','2','3'],2),[null,1.5,2.5]);});
 test('short history remains unavailable instead of fabricating indicator values',()=>{assert.deepEqual(api.sma([10,11],3),[null,null]);assert.deepEqual(api.rsi([10,11],14),[null,null]);const m=api.macd([10,11,12]);assert.ok(m.macd.every(v=>v===null));assert.ok(m.signal.every(v=>v===null));});
 test('indicator engine has no network or local storage side effects',()=>{const src=fs.readFileSync('technical-indicators-v50.js','utf8');assert.doesNotMatch(src,/\bfetch\s*\(/);assert.doesNotMatch(src,/localStorage\s*\./);});
 
@@ -39,7 +39,7 @@ test('technical selector activates from visible portfolio symbols without treati
  assert.match(selector.children[0].textContent,/تاریخچه تأییدشده دریافت نشده/);
  assert.match(result.textContent,/تاریخچه معتبر/);
  assert.match(status.textContent,/هنوز تاریخچه/);
- handlers['sahamban:verified-historical-quotes-v50']({detail:{quotes:[{symbol:'فولاد',marketDate:'20260101',history:Array.from({length:40},(_,i)=>({date:String(20250101+i),close:100+i}))}]}});
+ handlers['sahamban:verified-historical-quotes-v50']({detail:{quotes:[{symbol:'فولاد',marketDate:'20260101',history:Array.from({length:40},(_,i)=>({date:new Date(Date.UTC(2025,0,1+i)).toISOString().slice(0,10).replace(/-/g,''),close:100+i}))}]}});
  assert.equal(selector.disabled,false);
  assert.equal(selector.children[0].textContent,'فولاد');
  assert.match(result.textContent,/تعداد نقاط تاریخی معتبر/);
