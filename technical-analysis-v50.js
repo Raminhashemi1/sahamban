@@ -1,5 +1,5 @@
 'use strict';
-/* v50.20 UI exposes per-symbol history validation failures and includes a DOM-table fallback. */
+/* v50.21 UI exposes per-symbol history validation failures and includes a DOM-table fallback. */
 (()=>{
  const $=id=>document.getElementById(id);
  const selector=$('technicalSymbolV50'),result=$('technicalResultV50'),status=$('technicalStatusV50'),copyDiagnostics=$('technicalCopyDiagnosticsV50');
@@ -8,7 +8,7 @@
  let quotes=[];
  const fmt=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:4}).format(n);
  const latest=values=>{for(let i=values.length-1;i>=0;i--)if(values[i]!==null&&Number.isFinite(values[i]))return values[i];return null;};
- const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','نسخه گزارش: تحلیل ۵۰.۲۰ | تطبیق‌گر ۴۹.۴','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\n');};
+ const diagnostics=()=>{const failed=quotes.filter(q=>!Array.isArray(q.history)||!q.history.length);return ['سهام‌بان — گزارش تشخیصی تاریخچه نمادها','نسخه گزارش: تحلیل ۵۰.۲۱ | تطبیق‌گر ۴۹.۴','تعداد نمادها: '+fmt(quotes.length),'تعداد موفق: '+fmt(quotes.length-failed.length),'تعداد ناموفق: '+fmt(failed.length),'',...failed.flatMap(q=>['نماد: '+q.symbol,'علت و مشخصات شناسه‌های کاندیدا: '+(q.error||'سرویس علت مشخصی گزارش نکرده است.'),''])].join('\n');};
  if(copyDiagnostics)copyDiagnostics.addEventListener('click',async()=>{const report=diagnostics();try{await navigator.clipboard.writeText(report);status.textContent='گزارش کامل خطاها و شناسه‌های کاندیدا کپی شد؛ آن را همین‌جا جای‌گذاری کن.';}catch(e){const area=document.createElement('textarea');area.value=report;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();status.textContent=ok?'گزارش کامل کپی شد؛ آن را همین‌جا جای‌گذاری کن.':'کپی خودکار ممکن نشد؛ متن گزارش خطاها را از بخش نتیجه انتخاب و کپی کن.';}});
  function show(){
   const q=quotes.find(x=>x.symbol===selector.value);
@@ -16,7 +16,26 @@
   if(!Array.isArray(q.history)||!q.history.length){result.textContent='تاریخچه معتبر برای این نماد دریافت نشد؛ هیچ عددی حدس زده نمی‌شود.'+(q.error?'\n\nگزارش کامل سرویس و مشخصات شناسه‌ها:\n'+q.error:'\nعلت دقیق از پاسخ سرویس در دسترس نیست.');return;}
   if(!window.SahambanTechnicalV50){result.textContent='نماد دریافت شد، اما کتابخانه اندیکاتورها بارگذاری نشده است. صفحه را دوباره باز کنید؛ فهرست نمادها فعال می‌ماند.';return;}
   try{
-   const closes=q.history.map(x=>x.close);
+   const seenDates=new Set(),closes=[];
+   let previousDate='';
+   q.history.forEach((point,index)=>{
+    const date=String(point?.date??'').trim();
+    if(!/^\d{8}$/.test(date))throw Error('تاریخ رکورد '+(index+1)+' معتبر نیست: '+(date||'خالی'));
+    const year=Number(date.slice(0,4)),month=Number(date.slice(4,6)),day=Number(date.slice(6,8));
+    const stamp=new Date(Date.UTC(year,month-1,day));
+    if(stamp.getUTCFullYear()!==year||stamp.getUTCMonth()+1!==month||stamp.getUTCDate()!==day)
+     throw Error('تاریخ رکورد '+(index+1)+' یک تاریخ تقویمی معتبر نیست: '+date);
+    if(seenDates.has(date))throw Error('تاریخ تکراری در رکورد '+(index+1)+': '+date);
+    if(previousDate&&date<=previousDate)throw Error('ترتیب تاریخچه در رکورد '+(index+1)+' صعودی نیست؛ تاریخ‌ها باید از قدیم به جدید باشند.');
+    seenDates.add(date);previousDate=date;
+    const raw=point?.close;
+    if((typeof raw!=='number'&&typeof raw!=='string')||(typeof raw==='string'&&!raw.trim()))
+     throw Error('قیمت پایانی رکورد '+(index+1)+' ('+date+') عددی نیست.');
+    const close=Number(raw);
+    if(!Number.isFinite(close)||close<=0)
+     throw Error('قیمت پایانی رکورد '+(index+1)+' ('+date+') نامعتبر یا صفر است.');
+    closes.push(close);
+   });
    const indicators=window.SahambanTechnicalV50.calculate(closes,{smaPeriod:20,rsiPeriod:14,macd:{fast:12,slow:26,signal:9}});
    const sma=latest(indicators.sma),rsi=latest(indicators.rsi),macd=latest(indicators.macd.macd),signal=latest(indicators.macd.signal),hist=latest(indicators.macd.histogram);
    const line=(label,value,suffix='')=>label+': '+(value===null?'تاریخچه کافی نیست':fmt(value)+suffix);

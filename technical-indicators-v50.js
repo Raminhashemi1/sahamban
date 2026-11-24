@@ -8,8 +8,15 @@
 })(typeof globalThis!=='undefined'?globalThis:null,function(){
   function series(values){
     if(!Array.isArray(values)||values.length===0) throw new TypeError('حداقل یک قیمت پایانی تاریخی لازم است.');
-    const out=values.map(Number);
-    if(out.some(v=>!Number.isFinite(v)||v<=0)) throw new RangeError('قیمت‌های پایانی باید اعداد مثبت و معتبر باشند.');
+    const out=values.map((value,index)=>{
+      if((typeof value!=='number'&&typeof value!=='string')||
+         (typeof value==='string'&&!value.trim()))
+        throw new RangeError('قیمت پایانی رکورد '+(index+1)+' از نوع عددی معتبر نیست.');
+      const number=Number(value);
+      if(!Number.isFinite(number)||number<=0)
+        throw new RangeError('قیمت پایانی رکورد '+(index+1)+' باید عددی مثبت و معتبر باشد.');
+      return number;
+    });
     return out;
   }
   function periodOf(period){
