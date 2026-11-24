@@ -166,27 +166,25 @@ const TSETMC_PROXY_BASE='https://sahamban-pro-pilot.rhashemi284.workers.dev/api/
 const fa=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
 const norm=s=>String(s??'').replace(/[\u200c\u200e\u200f\uFEFF\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
 function tsetmcProxyUrl(path){
- const endpoint=new URL(TSETMC_PROXY_BASE);
- let match=path.match(/^\\/Instrument\\/GetInstrumentSearch\\/([^/?#]+)$/);
- if(match){
+ const endpoint=new URL(TSETMC_PROXY_BASE),parts=String(path).split('/');
+ if(parts.length===4&&parts[1]==='Instrument'&&parts[2]==='GetInstrumentSearch'&&parts[3]){
   endpoint.searchParams.set('resource','instrument-search');
-  endpoint.searchParams.set('symbol',decodeURIComponent(match[1]));
+  endpoint.searchParams.set('symbol',decodeURIComponent(parts[3]));
   return endpoint;
  }
- match=path.match(/^\\/ClosingPrice\\/GetClosingPriceInfo\\/(\\d{8,25})$/);
- if(match){
+ if(parts.length===4&&parts[1]==='ClosingPrice'&&parts[2]==='GetClosingPriceInfo'&&/^[0-9]+$/.test(parts[3])&&parts[3].length>=8&&parts[3].length<=25){
   endpoint.searchParams.set('resource','closing-price');
-  endpoint.searchParams.set('instrumentId',match[1]);
+  endpoint.searchParams.set('instrumentId',parts[3]);
   return endpoint;
  }
- match=path.match(/^\\/ClosingPrice\\/GetClosingPriceDailyList\\/(\\d{8,25})\\/0$/);
- if(match){
+ if(parts.length===5&&parts[1]==='ClosingPrice'&&parts[2]==='GetClosingPriceDailyList'&&/^[0-9]+$/.test(parts[3])&&parts[3].length>=8&&parts[3].length<=25&&parts[4]==='0'){
   endpoint.searchParams.set('resource','daily-history');
-  endpoint.searchParams.set('instrumentId',match[1]);
+  endpoint.searchParams.set('instrumentId',parts[3]);
   return endpoint;
  }
  throw Error('درخواست منبع قیمت خارج از فهرست مجاز است.');
 }
+
 async function get(path){
  let lastError;
  for(let attempt=0;attempt<2;attempt++){
