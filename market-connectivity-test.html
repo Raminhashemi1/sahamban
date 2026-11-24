@@ -199,7 +199,9 @@ async function get(path){
      UPSTREAM_TIMEOUT:'مهلت پاسخ منبع بورس پس از تلاش مجدد تمام شد.',
      UPSTREAM_NETWORK_ERROR:'ارتباط سرور واسط با منبع بورس پس از تلاش مجدد ناموفق بود.',
      UPSTREAM_HTTP_ERROR:'منبع بورس پاسخ HTTP ناموفق داد.',
-     UPSTREAM_INVALID_JSON:'پاسخ منبع بورس JSON معتبر نبود.'
+     UPSTREAM_INVALID_JSON:'پاسخ منبع بورس JSON معتبر نبود.',
+     RATE_LIMITED:'تعداد درخواست‌های این اتصال در یک دقیقه به سقف آزمایشی رسید؛ کمی بعد دوباره تلاش کنید.',
+     RATE_LIMITER_UNAVAILABLE:'محدودکننده درخواست در سرور آماده نیست؛ برای جلوگیری از فشار به منبع بورس، درخواست متوقف شد.'
     };
     throw Error(errors[payload?.error]||('درگاه واسط قیمت HTTP '+r.status+'؛ '+String(payload?.error||'خطای نامشخص')));
    }
