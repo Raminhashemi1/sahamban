@@ -198,6 +198,8 @@ test('TSETMC proxy maps each allowed resource to its fixed upstream URL and retu
    assert.equal(options.cache,'no-store');
    assert.equal(options.redirect,'error');
    assert.equal(options.headers.Accept,'application/json');
+   assert.ok(options.headers['User-Agent'].startsWith('Mozilla/5.0 '));
+   assert.equal(options.headers.Referer,'https://www.tsetmc.com/');
    return new Response(JSON.stringify(body),{status:200,headers:{'Content-Type':'application/json; charset=utf-8'}});
   });
   assert.equal(result.status,200);
@@ -205,15 +207,29 @@ test('TSETMC proxy maps each allowed resource to its fixed upstream URL and retu
  }
 });
 
-test('TSETMC proxy retries one network failure once, then returns an explicit upstream error',async()=>{
+test('TSETMC proxy falls back to the fixed CDN mirror after transient network or server failures',async()=>{
  const {proxyTsetmcRequest}=await api();let calls=0;
- const recovered=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>{
+ const recovered=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async(url)=>{
   calls++;
-  if(calls===1)throw new TypeError('Failed to fetch');
-  return new Response(JSON.stringify({instrumentSearch:[]}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(calls===1){
+   assert.equal(new URL(url).hostname,'cdn.tsetmc.com');
+   throw new TypeError('Failed to fetch');
+  }
+  assert.equal(new URL(url).hostname,'cdn10.tsetmc.com');
+  return new Response(JSON.stringify({instrumentSearch:[{insCode:'12345678901234567'}]}),{status:200,headers:{'Content-Type':'application/json'}});
  });
  assert.equal(calls,2);
  assert.equal(recovered.status,200);
+ assert.equal(recovered.body.instrumentSearch.length,1);
+ calls=0;
+ const serverRecovered=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async(url)=>{
+  calls++;
+  if(calls===1){assert.equal(new URL(url).hostname,'cdn.tsetmc.com');return new Response('',{status:503});}
+  assert.equal(new URL(url).hostname,'cdn10.tsetmc.com');
+  return new Response(JSON.stringify({instrumentSearch:[]}),{status:200,headers:{'Content-Type':'application/json'}});
+ });
+ assert.equal(calls,2);
+ assert.equal(serverRecovered.status,200);
  calls=0;
  const failed=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>{
   calls++;throw new TypeError('network unavailable');

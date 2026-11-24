@@ -30,8 +30,8 @@ test('manual release never triggers from push, requires approval and locked vari
   'd1-prepaid-migration.sql','/user/tokens/verify',
   "steps.schema.outputs.mode == 'first_install'",'Remote D1 has incomplete schema',
   'Confirm live Worker rejects unauthenticated access and checkout',
-  'Verify TSETMC proxy route and required rate limiter (one public read)',
+  'Verify live TSETMC data through the proxy (one public read)',
   '/api/v1/public/tsetmc?resource=instrument-search&symbol=',
-  'RATE_LIMITER_UNAVAILABLE',
+  'response.status!==200','instrumentSearch.length===0',
   'wrangler deploy --config server/wrangler.deploy.toml'])assert.ok(s.includes(required),required);
 });
