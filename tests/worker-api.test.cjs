@@ -237,7 +237,7 @@ test('TSETMC proxy rejects rate limits, invalid content type, invalid JSON and o
  assert.equal(invalid.body.error,'UPSTREAM_INVALID_JSON');
  const large=await proxyTsetmcRequest('instrument-search',{symbol:'فولاد'},async()=>new Response('x'.repeat(2097153),{status:200,headers:{'Content-Type':'application/json'}}));
  assert.equal(large.status,502);
- assert.equal(large.body.error,'UPSTREAM_RESPONSE_INVALID_SIZE');
+ assert.equal(large.body.error,'UPSTREAM_RESPONSE_TOO_LARGE');
 });
 
 test('TSETMC public route is GET-only, exact-origin, strict-query and read-only',async()=>{
