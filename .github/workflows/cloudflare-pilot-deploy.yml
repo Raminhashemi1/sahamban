@@ -124,7 +124,7 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --retry 3 --max-time 15 https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/health | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const v=JSON.parse(s);if(v.status!=="prototype"||v.paymentsEnabled!==false||v.checkoutEnabled!==false)process.exit(1);console.log("Verified: no payments or checkout")})'
 
-      - name: Verify TSETMC proxy route and required rate limiter (one public read)
+      - name: Verify live TSETMC data through the proxy (one public read)
         shell: bash
         run: |
           set -euo pipefail
@@ -136,11 +136,11 @@ jobs:
               signal:AbortSignal.timeout(18000)
             });
             const body=await response.json().catch(()=>null);
-            if(response.status===503&&body?.error==='RATE_LIMITER_UNAVAILABLE')
-              throw Error('TSETMC rate-limit binding is missing or unavailable');
-            if(![200,429,502,504].includes(response.status))
-              throw Error('Unexpected TSETMC proxy status '+response.status+' '+String(body?.error||''));
-            console.log('PASS: TSETMC route and rate limiter are active; upstream result '+response.status+' '+String(body?.error||'OK'));
+            if(response.status!==200)
+              throw Error('TSETMC live read failed: HTTP '+response.status+' '+String(body?.error||'invalid response'));
+            if(!Array.isArray(body?.instrumentSearch)||body.instrumentSearch.length===0)
+              throw Error('TSETMC returned no usable فولاد instrument records');
+            console.log('PASS: live TSETMC search returned '+body.instrumentSearch.length+' instrument record(s)');
           })().catch(err=>{console.error('FAIL '+String(err.message));process.exitCode=1;});
           NODE
       - name: Confirm live Worker rejects unauthenticated access and checkout
