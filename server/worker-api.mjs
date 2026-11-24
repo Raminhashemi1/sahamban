@@ -3,8 +3,9 @@ import {createPrepaidOrder,findPrepaidPendingOrder} from './prepaid-orders-api.m
 import {prepaidAccountOverview} from './prepaid-account-overview.mjs';
 /*
  * Sahamban Pro — Cloudflare Workers API prototype, NO production deployment.
- * Read-only entitlement lookup and optional private-pilot pending-order
- * records. NO checkout, payment verification, enrollment, login or banking.
+ * Read-only public TSETMC/CODAL data proxy, entitlement lookup and optional
+ * private-pilot pending-order records. NO checkout, payment verification,
+ * enrollment, login or banking.
  * Environment: SAHAMBAN_DB (private D1 binding), AUTH_HMAC_SECRET (secret),
  * PWA_ORIGIN (exact origin, e.g. https://raminhashemi1.github.io).
  * The short-lived HMAC token is for a controlled private pilot, not a
@@ -41,6 +42,48 @@ async function proxyCodalSearch(symbol,fetchImpl=fetch){
  }catch(error){return {status:502,body:{error:error?.name==='AbortError'?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_ERROR'}};}
  finally{clearTimeout(timer);}
 }
+const TSETMC_SYMBOL=/^[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFFA-Za-z0-9‌‍]{1,40}$/u;
+const TSETMC_INSTRUMENT_ID=/^\\d{8,25}$/;
+async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
+ let endpoint;
+ if(resource==='instrument-search'&&params&&typeof params.symbol==='string'&&
+    TSETMC_SYMBOL.test(params.symbol)&&!/[\\s\\u0000-\\u001F\\u007F]/u.test(params.symbol)){
+  endpoint=new URL('https://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/'+encodeURIComponent(params.symbol));
+ }else if(resource==='closing-price'&&params&&typeof params.instrumentId==='string'&&TSETMC_INSTRUMENT_ID.test(params.instrumentId)){
+  endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceInfo/'+params.instrumentId);
+ }else if(resource==='daily-history'&&params&&typeof params.instrumentId==='string'&&TSETMC_INSTRUMENT_ID.test(params.instrumentId)){
+  endpoint=new URL('https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/'+params.instrumentId+'/0');
+ }else return {status:400,body:{error:'INVALID_TSETMC_REQUEST'}};
+ for(let attempt=0;attempt<2;attempt++){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  try{
+   const upstream=await fetchImpl(endpoint.toString(),{
+    method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,
+    headers:{Accept:'application/json','User-Agent':'Sahamban-ReadOnly-Proxy/1.0'}
+   });
+   if(upstream.status===429)return {status:429,body:{error:'UPSTREAM_RATE_LIMIT'}};
+   if(!upstream.ok)return {status:502,body:{error:'UPSTREAM_HTTP_ERROR',upstreamStatus:upstream.status}};
+   const contentType=upstream.headers.get('content-type')||'';
+   if(!/json/i.test(contentType))return {status:502,body:{error:'UPSTREAM_CONTENT_TYPE_UNVERIFIED'}};
+   const length=Number(upstream.headers.get('content-length')||0);
+   if(length>2097152)return {status:502,body:{error:'UPSTREAM_RESPONSE_TOO_LARGE'}};
+   const raw=await upstream.text();
+   if(!raw||raw.length>2097152)return {status:502,body:{error:'UPSTREAM_RESPONSE_INVALID_SIZE'}};
+   let body;
+   try{body=JSON.parse(raw);}catch(_){return {status:502,body:{error:'UPSTREAM_INVALID_JSON'}};}
+   return {status:200,body};
+  }catch(error){
+   if(attempt===0&&(error?.name==='AbortError'||error instanceof TypeError)){
+    await new Promise(resolve=>setTimeout(resolve,900));
+    continue;
+   }
+   return {status:error?.name==='AbortError'?504:502,
+    body:{error:error?.name==='AbortError'?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_ERROR',attempts:2}};
+  }finally{clearTimeout(timer);}
+ }
+ return {status:502,body:{error:'UPSTREAM_NETWORK_ERROR',attempts:2}};
+}
+
 function send(body,status=200,origin=null){
  const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store, max-age=0','X-Content-Type-Options':'nosniff','Vary':'Origin'};
  if(origin)headers['Access-Control-Allow-Origin']=origin;
@@ -103,6 +146,23 @@ export default {
   }
   if(request.method!=='GET'&&request.method!=='POST')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
   if(url.pathname==='/api/v1/health'&&request.method==='GET')return send({status:'prototype',paymentsEnabled:false,checkoutEnabled:false},200,cors);
+
+  if(url.pathname==='/api/v1/public/tsetmc'){
+   if(request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
+   if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
+   const keys=[...url.searchParams.keys()],resource=url.searchParams.get('resource');
+   if(!resource||url.searchParams.getAll('resource').length!==1)return send({error:'INVALID_QUERY'},400,cors);
+   let params;
+   if(resource==='instrument-search'&&keys.every(k=>k==='resource'||k==='symbol')&&
+      url.searchParams.getAll('symbol').length===1){
+    params={symbol:url.searchParams.get('symbol')};
+   }else if((resource==='closing-price'||resource==='daily-history')&&
+      keys.every(k=>k==='resource'||k==='instrumentId')&&url.searchParams.getAll('instrumentId').length===1){
+    params={instrumentId:url.searchParams.get('instrumentId')};
+   }else return send({error:'INVALID_QUERY'},400,cors);
+   const result=await proxyTsetmcRequest(resource,params);
+   return send(result.body,result.status,cors);
+  }
   if(url.pathname==='/api/v1/public/codal-search'){
    if(request.method!=='GET')return send({error:'METHOD_NOT_ALLOWED'},405,cors);
    if(!cors)return send({error:'ORIGIN_NOT_ALLOWED'},403);
@@ -187,4 +247,4 @@ export default {
   return send({proEnabled:true,reason:'ACTIVE',paidUntil:result.paidUntil,autoRenewCancelled:result.autoRenewCancelled},200,cors);
  }
 };
-export {verifyPilotToken,lookupEntitlement,proxyCodalSearch};
+export {verifyPilotToken,lookupEntitlement,proxyCodalSearch,proxyTsetmcRequest};
