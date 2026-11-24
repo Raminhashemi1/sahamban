@@ -23,17 +23,17 @@ small{opacity:.75}
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
 <p><small>نسخه صفحه آزمایش: ۳ نوامبر ۲۰۲۶ — نمایش جداگانه وضعیت اتصال، تطبیق تاریخچه و تازگی قیمت.</small></p>
-<p><a href="./market-connectivity-test.html?refresh=20261124-fetch-retry-v4" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
+<p><a href="./market-connectivity-test.html?refresh=20261125-tsetmc-proxy-v1" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
 <hr style="margin:28px 0">
 <h2>آزمایش نمادهای سبد</h2>
 <p>فهرست نمادها را از سبد خود وارد کنید؛ هر نماد را در یک خط بنویسید. فهرست اولیه برای شروع، شامل ۱۹ نماد آزمایش قبلی است و می‌توانید آن را کامل تغییر دهید. تعداد نمادها محدود به ۱۹ نیست.</p>
 <label for="symbols-input">نمادها (هر خط یک نماد)</label>
 <textarea id="symbols-input" rows="8" style="width:100%;font:inherit;padding:12px;border:1px solid #8888;border-radius:10px;direction:rtl" spellcheck="false"></textarea>
-<p><small>این صفحه فقط همین فهرست واردشده را بررسی می‌کند؛ به اطلاعات ذخیره‌شده سبد، فایل کارگزاری یا رمز دسترسی ندارد و فهرست را به سرور ارسال نمی‌کند.</small></p>
+<p><small>این صفحه فقط همین فهرست واردشده را بررسی می‌کند؛ نمادها به‌ترتیب برای دریافت اطلاعات عمومی به واسط خواندنی سرور ارسال می‌شوند. اطلاعات ذخیره‌شده سبد، فایل کارگزاری یا رمز شما ارسال نمی‌شود.</small></p>
 <button id="run-basket">آزمایش نمادها</button>
 <p id="basket-status" role="status" aria-live="polite">هنوز آزمایش سبد اجرا نشده است.</p>
 <div id="basket-results"></div>
-<small>منبع آزمایش: API عمومی TSETMC؛ این آزمون به‌تنهایی مجوز استفاده یا پایداری منبع را تضمین نمی‌کند.</small>
+<small>منبع آزمایش: واسط خواندنی سرور برای API عمومی TSETMC؛ این آزمون به‌تنهایی مجوز استفاده یا پایداری منبع را تضمین نمی‌کند.</small>
 
 <section id="codal-diagnostic" style="margin-top:28px;padding-top:18px;border-top:1px solid #8886">
 <h2>آزمون اتصال کدال</h2>
@@ -162,30 +162,63 @@ small{opacity:.75}
 
 'use strict';
 const $=id=>document.getElementById(id);
-const api='https://cdn.tsetmc.com/api';
+const TSETMC_PROXY_BASE='https://sahamban-pro-pilot.rhashemi284.workers.dev/api/v1/public/tsetmc';
 const fa=n=>new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
 const norm=s=>String(s??'').replace(/[\u200c\u200e\u200f\uFEFF\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک').toUpperCase();
+function tsetmcProxyUrl(path){
+ const endpoint=new URL(TSETMC_PROXY_BASE);
+ let match=path.match(/^\\/Instrument\\/GetInstrumentSearch\\/([^/?#]+)$/);
+ if(match){
+  endpoint.searchParams.set('resource','instrument-search');
+  endpoint.searchParams.set('symbol',decodeURIComponent(match[1]));
+  return endpoint;
+ }
+ match=path.match(/^\\/ClosingPrice\\/GetClosingPriceInfo\\/(\\d{8,25})$/);
+ if(match){
+  endpoint.searchParams.set('resource','closing-price');
+  endpoint.searchParams.set('instrumentId',match[1]);
+  return endpoint;
+ }
+ match=path.match(/^\\/ClosingPrice\\/GetClosingPriceDailyList\\/(\\d{8,25})\\/0$/);
+ if(match){
+  endpoint.searchParams.set('resource','daily-history');
+  endpoint.searchParams.set('instrumentId',match[1]);
+  return endpoint;
+ }
+ throw Error('درخواست منبع قیمت خارج از فهرست مجاز است.');
+}
 async function get(path){
  let lastError;
  for(let attempt=0;attempt<2;attempt++){
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),18000);
   try{
-   const r=await fetch(api+path,{cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
-   if(!r.ok)throw Error('HTTP '+r.status);
-   if(!(r.headers.get('content-type')||'').toLowerCase().includes('json'))throw Error('پاسخ JSON نیست؛ احتمال محدودیت شبکه یا جغرافیایی');
-   return await r.json();
+   const endpoint=tsetmcProxyUrl(path);
+   const r=await fetch(endpoint.toString(),{cache:'no-store',signal:ctrl.signal,headers:{Accept:'application/json'}});
+   const payload=await r.json().catch(()=>null);
+   if(!r.ok){
+    const errors={
+     UPSTREAM_RATE_LIMIT:'منبع بورس محدودیت درخواست اعمال کرد.',
+     UPSTREAM_TIMEOUT:'مهلت پاسخ منبع بورس پس از تلاش مجدد تمام شد.',
+     UPSTREAM_NETWORK_ERROR:'ارتباط سرور واسط با منبع بورس پس از تلاش مجدد ناموفق بود.',
+     UPSTREAM_HTTP_ERROR:'منبع بورس پاسخ HTTP ناموفق داد.',
+     UPSTREAM_INVALID_JSON:'پاسخ منبع بورس JSON معتبر نبود.'
+    };
+    throw Error(errors[payload?.error]||('درگاه واسط قیمت HTTP '+r.status+'؛ '+String(payload?.error||'خطای نامشخص')));
+   }
+   if(!payload||typeof payload!=='object')throw Error('ساختار پاسخ درگاه واسط معتبر نیست.');
+   return payload;
   }catch(e){
    lastError=e;
    if(attempt===0&&(e.name==='AbortError'||e instanceof TypeError)){
     await new Promise(resolve=>setTimeout(resolve,900));
     continue;
    }
-   if(e.name==='AbortError')throw Error('مهلت پاسخ سرور پس از یک تلاش مجدد کنترل‌شده تمام شد.');
-   if(e instanceof TypeError)throw Error('دریافت شبکه پس از یک تلاش مجدد کنترل‌شده ناموفق بود: '+String(e.message||e));
+   if(e.name==='AbortError')throw Error('مهلت پاسخ درگاه واسط تمام شد.');
+   if(e instanceof TypeError)throw Error('دریافت شبکه از درگاه واسط ناموفق بود: '+String(e.message||e));
    throw e;
   }finally{clearTimeout(timer);}
  }
- throw lastError||Error('خطای ارتباط با منبع قیمت');
+ throw lastError||Error('خطای ارتباط با درگاه واسط قیمت');
 }
 function dateOk(raw){
  const s=String(raw??'');
