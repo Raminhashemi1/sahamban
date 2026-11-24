@@ -20,7 +20,7 @@ async function api(){return import('../server/worker-api.mjs');}
 function req(token,path='/api/v1/me/entitlement',requestOrigin=origin,method='GET'){
  return new Request('https://worker.example'+path,{method,headers:{...(requestOrigin===null?{}:{Origin:requestOrigin}),...(token?{Authorization:'Bearer '+token}:{})}});
 }
-function env(DB=db()){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHAMBAN_DB:DB};}
+function env(DB=db(),TSETMC_RATE_LIMITER={async limit(){return {success:true};}}){return {PWA_ORIGIN:origin,AUTH_HMAC_SECRET:SECRET,SAHAMBAN_DB:DB,TSETMC_RATE_LIMITER};}
 test('verified pilot JWT reads only account-bound entitlement via prepared D1 query',async()=>{
  const worker=(await api()).default,storage=db();
  const reply=await worker.fetch(req(await signedToken()),env(storage));
@@ -273,4 +273,21 @@ test('TSETMC public route is GET-only, exact-origin, strict-query and read-only'
   assert.match(good.headers.get('Cache-Control'),/no-store/);
   assert.deepEqual(await good.json(),{instrumentSearch:[{insCode:'12345678'}]});
  }finally{globalThis.fetch=original;}
+});
+
+test('TSETMC public route fails closed without limiter and rejects denied allowance before upstream fetch',async()=>{
+ const worker=(await api()).default;
+ const request=()=>new Request('https://worker.example/api/v1/public/tsetmc?resource=instrument-search&symbol=فولاد',{
+  headers:{Origin:origin,'CF-Connecting-IP':'198.51.100.17'}
+ });
+ const missing=await worker.fetch(request(),{...env(),TSETMC_RATE_LIMITER:undefined});
+ assert.equal(missing.status,503);
+ assert.equal((await missing.json()).error,'RATE_LIMITER_UNAVAILABLE');
+ let calls=0;
+ const denied=await worker.fetch(request(),{...env(),TSETMC_RATE_LIMITER:{async limit(input){
+  calls++;assert.equal(input.key,'tsetmc:198.51.100.17');return {success:false};
+ }}});
+ assert.equal(calls,1);
+ assert.equal(denied.status,429);
+ assert.equal((await denied.json()).error,'RATE_LIMITED');
 });
