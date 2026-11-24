@@ -43,6 +43,25 @@ async function proxyCodalSearch(symbol,fetchImpl=fetch){
  finally{clearTimeout(timer);}
 }
 const TSETMC_INSTRUMENT_ID=id=>typeof id==='string'&&id.length>=8&&id.length<=25&&/^[0-9]+$/.test(id);
+async function readBoundedUpstreamText(response,maxBytes){
+ const reader=response.body?.getReader();
+ if(!reader)return '';
+ const decoder=new TextDecoder();
+ let bytes=0,text='';
+ try{
+  while(true){
+   const chunk=await reader.read();
+   if(chunk.done)break;
+   bytes+=chunk.value?.byteLength||0;
+   if(bytes>maxBytes){
+    await reader.cancel().catch(()=>{});
+    return null;
+   }
+   text+=decoder.decode(chunk.value,{stream:true});
+  }
+  return text+decoder.decode();
+ }finally{try{reader.releaseLock();}catch(_){}}
+}
 async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
  let endpoint;
  if(resource==='instrument-search'&&params&&typeof params.symbol==='string'&&CODAL_SYMBOL.test(params.symbol)){
@@ -65,8 +84,9 @@ async function proxyTsetmcRequest(resource,params,fetchImpl=fetch){
    if(!/json/i.test(contentType))return {status:502,body:{error:'UPSTREAM_CONTENT_TYPE_UNVERIFIED'}};
    const length=Number(upstream.headers.get('content-length')||0);
    if(length>2097152)return {status:502,body:{error:'UPSTREAM_RESPONSE_TOO_LARGE'}};
-   const raw=await upstream.text();
-   if(!raw||raw.length>2097152)return {status:502,body:{error:'UPSTREAM_RESPONSE_INVALID_SIZE'}};
+   const raw=await readBoundedUpstreamText(upstream,2097152);
+   if(raw===null)return {status:502,body:{error:'UPSTREAM_RESPONSE_TOO_LARGE'}};
+   if(!raw)return {status:502,body:{error:'UPSTREAM_RESPONSE_INVALID_SIZE'}};
    let body;
    try{body=JSON.parse(raw);}catch(_){return {status:502,body:{error:'UPSTREAM_INVALID_JSON'}};}
    return {status:200,body};
