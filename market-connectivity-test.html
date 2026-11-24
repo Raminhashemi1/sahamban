@@ -23,7 +23,7 @@ small{opacity:.75}
 <button id="run">آزمون اتصال</button>
 <p id="status" role="status" aria-live="polite">هنوز آزمایشی اجرا نشده است.</p>
 <p><small>نسخه صفحه آزمایش: ۳ نوامبر ۲۰۲۶ — نمایش جداگانه وضعیت اتصال، تطبیق تاریخچه و تازگی قیمت.</small></p>
-<p><a href="./market-connectivity-test.html?refresh=20261124-candidate-details-v3" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
+<p><a href="./market-connectivity-test.html?refresh=20261124-fetch-retry-v4" rel="nofollow">دریافت نسخه تازه صفحه</a></p>
 <hr style="margin:28px 0">
 <h2>آزمایش نمادهای سبد</h2>
 <p>فهرست نمادها را از سبد خود وارد کنید؛ هر نماد را در یک خط بنویسید. فهرست اولیه برای شروع، شامل ۱۹ نماد آزمایش قبلی است و می‌توانید آن را کامل تغییر دهید. تعداد نمادها محدود به ۱۹ نیست.</p>
@@ -176,8 +176,12 @@ async function get(path){
    return await r.json();
   }catch(e){
    lastError=e;
-   if(attempt===0&&(e.name==='AbortError'||e instanceof TypeError))continue;
-   if(e.name==='AbortError')throw Error('مهلت پاسخ سرور تمام شد؛ دوباره آزمایش کنید.');
+   if(attempt===0&&(e.name==='AbortError'||e instanceof TypeError)){
+    await new Promise(resolve=>setTimeout(resolve,900));
+    continue;
+   }
+   if(e.name==='AbortError')throw Error('مهلت پاسخ سرور پس از یک تلاش مجدد کنترل‌شده تمام شد.');
+   if(e instanceof TypeError)throw Error('دریافت شبکه پس از یک تلاش مجدد کنترل‌شده ناموفق بود: '+String(e.message||e));
    throw e;
   }finally{clearTimeout(timer);}
  }
@@ -331,8 +335,14 @@ async function checkSymbol(symbol){
  const checked=[];
  for(const candidate of candidates)checked.push(await inspectCandidate(symbol,candidate));
  const qualified=checked.filter(x=>x.status==='LIVE_CONFIRMED'||x.status==='HISTORY_MATCHED_NOT_LIVE');
- if(qualified.length===1)return qualified[0];
  const candidateDetails=checked.map(x=>(x.candidateName||symbol)+' [شناسه '+(x.candidateCode||'نامشخص')+']: '+x.status+' — '+x.detail).join(' || ');
+ const fetchIncomplete=checked.some(x=>x.status==='QUOTE_FETCH_FAILED'||x.status==='HISTORY_FETCH_FAILED');
+ if(fetchIncomplete){
+  const received=checked.filter(x=>x.quoteReceived===true).length;
+  const failed=checked.filter(x=>x.status==='QUOTE_FETCH_FAILED'||x.status==='HISTORY_FETCH_FAILED').length;
+  return {status:'CANDIDATE_CHECK_INCOMPLETE',quoteReceived:received>0,detail:received+' نامزد دارای دریافت قیمت/اطلاعات قیمت؛ '+failed+' نامزد به علت خطای دریافت شبکه پس از تلاش مجدد قابل ارزیابی نشدند. هیچ شناسه‌ای خودکار انتخاب نشد. جزئیات نامزدها: '+candidateDetails};
+ }
+ if(qualified.length===1)return qualified[0];
  if(qualified.length>1)return {status:'AMBIGUOUS_INSTRUMENT',detail:'بیش از یک شناسه برای این نماد دارای قیمت و تاریخچه منطبق است؛ انتخاب خودکار انجام نشد. جزئیات نامزدها: '+candidateDetails};
  if(checked.length===1)return checked[0];
  const statuses=[...new Set(checked.map(x=>x.status))];
@@ -344,7 +354,7 @@ $('run-basket').addEventListener('click',async()=>{
  let symbols;
  try{symbols=readSymbols();}catch(e){s.textContent=e.message;return;}
  b.disabled=true;out.textContent='';
- const counts={live:0,matched:0,pending:0,searchFailed:0,quoteFailed:0,historyFailed:0,other:0};
+ const counts={live:0,matched:0,pending:0,searchFailed:0,quoteFailed:0,historyFailed:0,candidateIncomplete:0,other:0};
  const results=[];
  s.textContent='آزمایش '+fa(symbols.length)+' نماد آغاز شد؛ درخواست‌ها به‌ترتیب و فقط خواندنی ارسال می‌شوند.';
  for(let i=0;i<symbols.length;i++){
@@ -363,6 +373,7 @@ $('run-basket').addEventListener('click',async()=>{
   else if(r.status==='SEARCH_FAILED')counts.searchFailed++;
   else if(r.status==='QUOTE_FETCH_FAILED'||r.status==='QUOTE_INVALID')counts.quoteFailed++;
   else if(r.status==='HISTORY_FETCH_FAILED'||r.status==='HISTORY_INVALID')counts.historyFailed++;
+  else if(r.status==='CANDIDATE_CHECK_INCOMPLETE')counts.candidateIncomplete++;
   else counts.other++;
   results.push({symbol,...r});
   const item=results[results.length-1];
@@ -380,21 +391,23 @@ $('run-basket').addEventListener('click',async()=>{
    HISTORY_CONFLICT:'تعارض در سوابق تاریخچه',
    HISTORY_INSUFFICIENT:'تاریخچه ناکافی',
    AMBIGUOUS_INSTRUMENT:'شناسه نماد مبهم',
+   CANDIDATE_CHECK_INCOMPLETE:'بررسی شناسه‌ها ناقص؛ خطای دریافت شبکه',
    UNEXPECTED_ERROR:'خطای پیش‌بینی‌نشده'
   };
   const success=item.status==='LIVE_CONFIRMED';
   const pending=item.status==='HISTORY_PENDING';
   const historical=item.status==='HISTORY_MATCHED_NOT_LIVE';
   const line=document.createElement('p');
-  line.textContent=(success?'✓ ':pending?'… ':historical?'≈ ':'✕ ')+symbol+' — '+(labels[item.status]||item.status)+'؛ '+item.detail;
-  line.style.color=success?'#16834a':pending?'#a16207':historical?'#2563a6':'#b45309';
+  const incomplete=item.status==='CANDIDATE_CHECK_INCOMPLETE';
+  line.textContent=(success?'✓ ':pending?'… ':historical?'≈ ':incomplete?'? ':'✕ ')+symbol+' — '+(labels[item.status]||item.status)+'؛ '+item.detail;
+  line.style.color=success?'#16834a':pending||incomplete?'#a16207':historical?'#2563a6':'#b45309';
   out.appendChild(line);
  }
  s.textContent='پایان آزمایش: '+fa(counts.live)+' تأیید زنده؛ '+
   fa(counts.matched)+' قیمت/تاریخچه منطبق ولی بدون تأیید تازگی زنده؛ '+
   fa(counts.pending)+' قیمت دریافت‌شده با تاریخچه روز جاری در انتظار انتشار؛ '+
   fa(counts.searchFailed)+' خطای جست‌وجو؛ '+fa(counts.quoteFailed)+' خطای دریافت/اعتبار قیمت؛ '+
-  fa(counts.historyFailed)+' خطای دریافت/ساختار تاریخچه؛ '+fa(counts.other)+' سایر وضعیت‌ها. '+
+  fa(counts.historyFailed)+' خطای دریافت/ساختار تاریخچه؛ '+fa(counts.candidateIncomplete)+' بررسی ناقص شناسه به علت خطای شبکه؛ '+fa(counts.other)+' سایر وضعیت‌ها. '+
   'این آزمون فقط خواندنی بود و سبد ذخیره‌شده را تغییر نداد.';
  b.disabled=false;
 });
