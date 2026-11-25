@@ -367,7 +367,7 @@
     const historyStartDate=history[0].date,historyEndDate=history[history.length-1].date;
     const diagnosticCandidate={...enrichedCandidate,historyStartDate,historyEndDate,historyCount:history.length};
     return {ok:true,quote:{symbol:holding.symbol,marketDate:historyEndDate,history:history.slice(-250),insCode},candidate:diagnosticCandidate};
-   }catch(e){return {ok:false,insCode,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message,candidate:enrichedCandidate};}
+   }catch(e){const detail=e?.name==='AbortError'?'مهلت اتصال تمام شد':(typeof e==='string'?e:(e?.message||(()=>{try{return JSON.stringify(e)}catch(_){return String(e)}})()||'خطای بدون پیام از سرویس تاریخچه'));return {ok:false,insCode,error:detail,candidate:enrichedCandidate};}
   }));
   const valid=checks.filter(x=>x.ok);
   const savedMapping=readInstrumentMappings()[holding.symbol];
@@ -440,7 +440,7 @@
    async function worker(){while(true){
     const i=next++;if(i>=holdings.length)return;
     try{outcomes[i]={ok:true,quote:await getHistoricalOne(holdings[i])};}
-    catch(e){outcomes[i]={ok:false,symbol:holdings[i].symbol,error:e.name==='AbortError'?'مهلت اتصال تمام شد':e.message};}
+    catch(e){const detail=e?.name==='AbortError'?'مهلت اتصال تمام شد':(typeof e==='string'?e:(e?.message||(()=>{try{return JSON.stringify(e)}catch(_){return String(e)}})()||'خطای بدون پیام هنگام دریافت تاریخچه؛ برای بررسی بیشتر گزارش مرورگر لازم است.'));outcomes[i]={ok:false,symbol:holdings[i].symbol,error:detail};}
     completed++;statusMessage('تاریخچه: '+fmt(completed)+' از '+fmt(holdings.length)+' نماد بررسی شد؛ هنوز داده‌ای برای نمادهای ناموفق حدس زده نمی‌شود.');
    }}
    await Promise.all(Array.from({length:Math.min(3,holdings.length)},()=>worker()));
