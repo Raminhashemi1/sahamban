@@ -130,3 +130,9 @@ test('unique recent historical candidate is selected for this session without pe
  assert.match(pilot,/mappingCandidates\[holding\.symbol\]=valid\.map/);
  assert.match(tech,/q\.resolutionNote/);
 });
+
+test('historical investor-flow sampling uses the documented date-specific ClientTypeHistory endpoint',()=>{
+ assert.match(pilot,/ClientType\\/GetClientTypeHistory\\/\'+encodeURIComponent\(q\.insCode\)\+'\\/\'+encodeURIComponent\(date\)/);
+ assert.doesNotMatch(pilot,/ClientType\\/GetClientType\\/\'+encodeURIComponent\(q\.insCode\)\+'\\/\'+encodeURIComponent\(date\)/);
+ assert.match(pilot,/row\[k\]===null\|\|row\[k\]===undefined\|\|row\[k\]===''/);
+});
