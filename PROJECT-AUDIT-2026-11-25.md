@@ -37,7 +37,11 @@
    - انتظارهای قدیمی در `tests/smoke.cjs`، `tests/home-portfolio-v61-entry.test.cjs`، `tests/nav-clock-v72.test.cjs`، `tests/portfolio-refresh-status-v76.test.cjs` و `tests/public-network-diagnostic-v77.test.cjs` به نسخه‌های جاری همگام شدند.
    - commitهای اصلاح آزمون‌ها: `55a7a96b08ba36cb4520849ecc9be9d63d445c41`، `b722ee54c30c4cc016c69e6b2aedff50b1375155`، `3bea359978e074e8bc57c6a6cf9131217bdee617`، `f84559649e02ae80dc6dc05e7a4474b43616dea0` و `46997b472aaf17953dabb6da381d13d48e1f4a57`.
    - اجرای مجدد workflowهای Smoke، Professional Risk و Technical Indicators روی commit `46997b472aaf17953dabb6da381d13d48e1f4a57` در زمان ثبت این سند هنوز در صف GitHub Actions است؛ تا دریافت نتیجه نهایی، اصلاح را انجام‌شده اما اعتبارسنجی CI را در انتظار اعلام می‌کنیم.
-4. workflow تحلیل تکنیکال در run [45676389976](https://github.com/Raminhashemi1/sahamban/actions/runs/45676389976) سبز بوده است؛ این موفقیت نباید به‌معنای سبز بودن همه workflowهای مخزن تعبیر شود.
+4. اجرای نهایی روی commit `46997b472aaf17953dabb6da381d13d48e1f4a57`:
+   - [Smoke tests](https://github.com/Raminhashemi1/sahamban/actions/runs/45680339801): موفق؛ هر دو job یعنی smoke و browser با conclusion=success پایان یافتند.
+   - [Professional Risk v49](https://github.com/Raminhashemi1/sahamban/actions/runs/45680339772): موفق.
+   - [Technical Indicators v50](https://github.com/Raminhashemi1/sahamban/actions/runs/45680339822): موفق.
+   - بنابراین سه workflow متأثر از اصلاح cache-bust در این commit همگی سبز شدند. این موفقیت‌ها به معنی تأیید مستقل داده زنده بازار نیستند.
 
 ## قاعده ادامه کار
 - پیش از هر تغییر، همین سند و آخرین commitها/workflowها بازبینی شوند.
