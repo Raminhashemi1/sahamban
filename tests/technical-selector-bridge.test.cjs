@@ -26,14 +26,14 @@ test('technical selector supports arbitrary dynamic basket sizes, including 1, 1
 
 test('HTML and service worker load cache-busted selector and broker scripts',()=>{
  assert.match(html,/broker-import\.js\?v=48\.6/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.21/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.22/);
  assert.match(sw,/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/);
  assert.match(sw,/broker-import\.js\?v=48\.6/);
- assert.match(sw,/technical-analysis-v50\.js\?v=50\.21/);
+ assert.match(sw,/technical-analysis-v50\.js\?v=50\.22/);
 });
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
- assert.ok(tech.includes('v50.21 UI'));
+ assert.ok(tech.includes('v50.22 UI'));
  assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۲۱ | تطبیق‌گر ۴۹.۴'));
 });
 
@@ -51,7 +51,7 @@ test('v50 selector can request real history for every portfolio symbol without f
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.ok(pilot.includes("if(!/^\\d{8}$/.test(date)"));
  assert.doesNotMatch(tech, /\bfetch\s*\(/);
- assert.match(html,/technical-analysis-v50\.js\?v=50\.21/);
+ assert.match(html,/technical-analysis-v50\.js\?v=50\.22/);
  assert.match(sw,/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/);
 });
 
