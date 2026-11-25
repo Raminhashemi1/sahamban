@@ -1,22 +1,25 @@
 'use strict';
-/* v50 pure technical indicators. Input closes must be verified historical closes, oldest first.
+/* v50.2 pure technical indicators. Input closes must be verified historical closes, oldest first.
+ * Internal MACD signal EMA accepts signed derived values; source closes remain strictly positive.
  * No network, storage, portfolio mutation, or price-source assumptions. */
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports) module.exports=api;
   if(root) root.SahambanTechnicalV50=api;
 })(typeof globalThis!=='undefined'?globalThis:null,function(){
-  function series(values){
+  function numericSeries(values){
     if(!Array.isArray(values)||values.length===0) throw new TypeError('حداقل یک قیمت پایانی تاریخی لازم است.');
-    const out=values.map((value,index)=>{
-      if((typeof value!=='number'&&typeof value!=='string')||
-         (typeof value==='string'&&!value.trim()))
-        throw new RangeError('قیمت پایانی رکورد '+(index+1)+' از نوع عددی معتبر نیست.');
+    return values.map((value,index)=>{
+      if((typeof value!=='number'&&typeof value!=='string')||(typeof value==='string'&&!value.trim()))
+        throw new RangeError('مقدار رکورد '+(index+1)+' از نوع عددی معتبر نیست.');
       const number=Number(value);
-      if(!Number.isFinite(number)||number<=0)
-        throw new RangeError('قیمت پایانی رکورد '+(index+1)+' باید عددی مثبت و معتبر باشد.');
+      if(!Number.isFinite(number))throw new RangeError('مقدار رکورد '+(index+1)+' باید عددی متناهی و معتبر باشد.');
       return number;
     });
+  }
+  function series(values){
+    const out=numericSeries(values);
+    for(let i=0;i<out.length;i++)if(out[i]<=0)throw new RangeError('قیمت پایانی رکورد '+(i+1)+' باید عددی مثبت و معتبر باشد.');
     return out;
   }
   function periodOf(period){
@@ -29,8 +32,8 @@
     for(let i=0;i<x.length;i++){sum+=x[i];if(i>=p)sum-=x[i-p];if(i>=p-1)out[i]=sum/p;}
     return out;
   }
-  function ema(closes,period){
-    const x=series(closes),p=periodOf(period),out=Array(x.length).fill(null);
+  function ema(closes,period,allowSigned=false){
+    const x=allowSigned?numericSeries(closes):series(closes),p=periodOf(period),out=Array(x.length).fill(null);
     if(x.length<p)return out;
     let seed=0;for(let i=0;i<p;i++)seed+=x[i];
     let prev=seed/p;out[p-1]=prev;const alpha=2/(p+1);
@@ -53,7 +56,7 @@
     if(f>=s)throw new RangeError('دوره سریع MACD باید از دوره کند کوتاه‌تر باشد.');
     const ef=ema(x,f),es=ema(x,s),line=Array(x.length).fill(null);
     for(let i=0;i<x.length;i++)if(ef[i]!==null&&es[i]!==null)line[i]=ef[i]-es[i];
-    const validStart=s-1,compact=line.slice(validStart),sigCompact=compact.length?ema(compact,sig):[],signalLine=Array(x.length).fill(null),hist=Array(x.length).fill(null);
+    const validStart=s-1,compact=line.slice(validStart),sigCompact=compact.length?ema(compact,sig,true):[],signalLine=Array(x.length).fill(null),hist=Array(x.length).fill(null);
     for(let j=0;j<sigCompact.length;j++){const i=j+validStart;if(sigCompact[j]!==null){signalLine[i]=sigCompact[j];hist[i]=line[i]-sigCompact[j];}}
     return {macd:line,signal:signalLine,histogram:hist};
   }
