@@ -32,10 +32,12 @@
 ## موارد باز؛ نباید دوباره به‌عنوان کار انجام‌شده معرفی شوند
 1. نمایش و ثبت نتیجه مستقل دریافت جریان حقیقی/حقوقی برای هر نماد و هر تاریخ (موفق/ناموفق و علت خطا).
 2. تطبیق عددی تاریخچه قیمت و جریان حقیقی/حقوقی با پاسخ خام و مرجع رسمی TSETMC برای نمادهای نمونه؛ هنوز آزمون زنده مستقل مستند نشده است.
-3. رفع ناسازگاری تست‌های cache-bust پس از تغییر نسخه فایل‌ها:
-   - run [45676389884](https://github.com/Raminhashemi1/sahamban/actions/runs/45676389884): smoke شکست خورده، چون تست هنوز `portfolio-pilot-v61.js?v=61.12` را انتظار دارد؛ مقدار فعلی فایل باید با HTML و service worker تطبیق داده شود.
-   - run [45676389670](https://github.com/Raminhashemi1/sahamban/actions/runs/45676389670): workflow ریسک حرفه‌ای ۴ آزمون ناموفق دارد که بخشی از آن‌ها به نسخه‌های cache-bust قدیمی و ارجاع فایل‌های قدیمی مربوط‌اند. این workflow هنوز سبز نیست.
-4. workflow تحلیل تکنیکال در run [45676389976](https://github.com/Raminhashemi1/sahamban/actions/runs/45676389976) سبز است؛ این موفقیت نباید به‌معنای سبز بودن همه workflowهای مخزن تعبیر شود.
+3. ناسازگاری تست‌های cache-bust شناسایی و اصلاح شد:
+   - نسخه‌های جاری HTML و service worker برابر `portfolio-pilot-v61.js?v=61.13` و `technical-analysis-v50.js?v=50.22` هستند.
+   - انتظارهای قدیمی در `tests/smoke.cjs`، `tests/home-portfolio-v61-entry.test.cjs`، `tests/nav-clock-v72.test.cjs`، `tests/portfolio-refresh-status-v76.test.cjs` و `tests/public-network-diagnostic-v77.test.cjs` به نسخه‌های جاری همگام شدند.
+   - commitهای اصلاح آزمون‌ها: `55a7a96b08ba36cb4520849ecc9be9d63d445c41`، `b722ee54c30c4cc016c69e6b2aedff50b1375155`، `3bea359978e074e8bc57c6a6cf9131217bdee617`، `f84559649e02ae80dc6dc05e7a4474b43616dea0` و `46997b472aaf17953dabb6da381d13d48e1f4a57`.
+   - اجرای مجدد workflowهای Smoke، Professional Risk و Technical Indicators روی commit `46997b472aaf17953dabb6da381d13d48e1f4a57` در زمان ثبت این سند هنوز در صف GitHub Actions است؛ تا دریافت نتیجه نهایی، اصلاح را انجام‌شده اما اعتبارسنجی CI را در انتظار اعلام می‌کنیم.
+4. workflow تحلیل تکنیکال در run [45676389976](https://github.com/Raminhashemi1/sahamban/actions/runs/45676389976) سبز بوده است؛ این موفقیت نباید به‌معنای سبز بودن همه workflowهای مخزن تعبیر شود.
 
 ## قاعده ادامه کار
 - پیش از هر تغییر، همین سند و آخرین commitها/workflowها بازبینی شوند.
