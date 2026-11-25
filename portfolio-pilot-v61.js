@@ -461,11 +461,11 @@
      try{
       const response=await fetchJson('/ClientType/GetClientTypeHistory/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(date));
       const row=Array.isArray(response?.clientType)?response.clientType[0]:null;
-      const fields=['buy_I_Volume','buy_I_Value','buy_N_Value','buy_CountI','sell_I_Volume','sell_I_Value','sell_N_Value','sell_CountI'];
-      if(!row||fields.some(k=>row[k]===null||row[k]===undefined||row[k]===''||!Number.isFinite(Number(row[k]))||Number(row[k])<0))throw Error('ساختار داده ناقص');
+      const fields=['buy_I_Volume','buy_I_Value','buy_N_Value','buy_I_Count','sell_I_Volume','sell_I_Value','sell_N_Value','sell_I_Count'];
+      if(!row||String(row.insCode??'')!==String(q.insCode)||String(row.recDate??'')!==String(date)||fields.some(k=>row[k]===null||row[k]===undefined||row[k]===''||!Number.isFinite(Number(row[k]))||Number(row[k])<0))throw Error('ساختار داده ناقص، تاریخ یا شناسه ابزار با درخواست تطبیق ندارد');
       const buy=Number(row.buy_I_Value),sell=Number(row.sell_I_Value);
       if(buy+sell<=0)throw Error('ارزش خرید و فروش حقیقی صفر است');
-      observations.push({date,buyIndividualValue:buy,sellIndividualValue:sell,buyCorporateValue:Number(row.buy_N_Value),sellCorporateValue:Number(row.sell_N_Value),buyIndividualVolume:Number(row.buy_I_Volume),sellIndividualVolume:Number(row.sell_I_Volume),individualBuyerCount:Number(row.buy_CountI),individualSellerCount:Number(row.sell_CountI),netIndividual:buy-sell,netRatio:(buy-sell)/(buy+sell)});
+      observations.push({date,buyIndividualValue:buy,sellIndividualValue:sell,buyCorporateValue:Number(row.buy_N_Value),sellCorporateValue:Number(row.sell_N_Value),buyIndividualVolume:Number(row.buy_I_Volume),sellIndividualVolume:Number(row.sell_I_Volume),individualBuyerCount:Number(row.buy_I_Count),individualSellerCount:Number(row.sell_I_Count),netIndividual:buy-sell,netRatio:(buy-sell)/(buy+sell)});
      }catch(error){observations.push({date,error:error.message});}
     }
     historicalFlows[index]={symbol:q.symbol,insCode:q.insCode,observations};
