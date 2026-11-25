@@ -132,7 +132,7 @@ test('unique recent historical candidate is selected for this session without pe
 });
 
 test('historical investor-flow sampling uses the documented date-specific ClientTypeHistory endpoint',()=>{
- assert.match(pilot,/ClientType\\/GetClientTypeHistory\\/\'+encodeURIComponent\(q\.insCode\)\+'\\/\'+encodeURIComponent\(date\)/);
- assert.doesNotMatch(pilot,/ClientType\\/GetClientType\\/\'+encodeURIComponent\(q\.insCode\)\+'\\/\'+encodeURIComponent\(date\)/);
- assert.match(pilot,/row\[k\]===null\|\|row\[k\]===undefined\|\|row\[k\]===''/);
+ assert.ok(pilot.includes("'/ClientType/GetClientTypeHistory/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(date)"));
+ assert.ok(!pilot.includes("'/ClientType/GetClientType/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(date)"));
+ assert.ok(pilot.includes("row[k]===null||row[k]===undefined||row[k]===''"));
 });
