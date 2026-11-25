@@ -55,3 +55,5 @@ test('broker import visible rows publish symbol names to technical selector with
  assert.match(source,/detail:\{symbols\}/);
  assert.doesNotMatch(source,/sahamban:portfolio-symbols-v50[^\n]*price|sahamban:portfolio-symbols-v50[^\n]*current/);
 });
+
+test('MACD signal EMA accepts negative derived values while source prices stay positive',()=>{const falling=Array.from({length:60},(_,i)=>200-i*2);const result=api.calculate(falling);assert.ok(result.macd.macd.some(v=>Number.isFinite(v)&&v<0));assert.ok(result.macd.signal.some(v=>Number.isFinite(v)&&v<0));assert.throws(()=>api.ema([10,0,9],2),/مثبت/);});
