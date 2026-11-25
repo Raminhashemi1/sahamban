@@ -34,7 +34,7 @@ test('HTML and service worker load cache-busted selector and broker scripts',()=
 
 test('diagnostic report version matches the cache-busted technical-analysis asset',()=>{
  assert.ok(tech.includes('v50.22 UI'));
- assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۲۱ | تطبیق‌گر ۴۹.۴'));
+ assert.ok(tech.includes('نسخه گزارش: تحلیل ۵۰.۲۲ | تطبیق‌گر ۴۹.۴'));
 });
 
 test('v50 selector can request real history for every portfolio symbol without fabricated data',()=>{
