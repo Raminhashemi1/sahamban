@@ -131,8 +131,16 @@ test('unique recent historical candidate is selected for this session without pe
  assert.match(tech,/q\.resolutionNote/);
 });
 
-test('historical investor-flow sampling uses the documented date-specific ClientTypeHistory endpoint',()=>{
+test('historical investor-flow sampling uses the documented date-specific ClientTypeHistory endpoint and response schema',()=>{
  assert.ok(pilot.includes("'/ClientType/GetClientTypeHistory/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(date)"));
  assert.ok(!pilot.includes("'/ClientType/GetClientType/'+encodeURIComponent(q.insCode)+'/'+encodeURIComponent(date)"));
+ assert.ok(pilot.includes("'buy_I_Count'"));
+ assert.ok(pilot.includes("'sell_I_Count'"));
+ assert.ok(pilot.includes("Number(row.buy_I_Count)"));
+ assert.ok(pilot.includes("Number(row.sell_I_Count)"));
+ assert.ok(pilot.includes("String(row.insCode??'')!==String(q.insCode)"));
+ assert.ok(pilot.includes("String(row.recDate??'')!==String(date)"));
  assert.ok(pilot.includes("row[k]===null||row[k]===undefined||row[k]===''"));
+ assert.ok(!pilot.includes("'buy_CountI'"));
+ assert.ok(!pilot.includes("'sell_CountI'"));
 });
