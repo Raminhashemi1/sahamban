@@ -58,3 +58,15 @@ test('broker import visible rows publish symbol names to technical selector with
 });
 
 test('MACD signal EMA accepts negative derived values while source prices stay positive',()=>{const falling=Array.from({length:60},(_,i)=>200-i*2);const result=api.calculate(falling);assert.ok(result.macd.macd.some(v=>Number.isFinite(v)&&v<0));assert.ok(result.macd.signal.some(v=>Number.isFinite(v)&&v<0));assert.throws(()=>api.ema([10,0,9],2),/مثبت/);});
+
+test('RSI14 matches Wilder reference values on a published price sequence',()=>{
+ const closes=[44.34,44.09,44.15,43.61,44.33,44.83,45.10,45.42,45.84,46.08,45.89,46.03,45.61,46.28,46.28,46.00,46.03,46.41,46.22,45.64,46.21];
+ const result=api.rsi(closes,14);
+ assert.ok(Math.abs(result[14]-70.4641350211)<1e-9);
+ assert.ok(Math.abs(result[20]-62.88071831)<1e-8);
+});
+test('SMA20 first becomes available on the twentieth verified close',()=>{
+ const closes=Array.from({length:20},(_,i)=>100+i);
+ assert.equal(api.sma(closes.slice(0,19),20)[18],null);
+ assert.equal(api.sma(closes,20)[19],109.5);
+});
