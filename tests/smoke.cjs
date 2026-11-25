@@ -51,14 +51,14 @@ test('App script and service worker version match',()=>{
  assert.ok(v);assert.ok(sw.includes('app.js?v='+v));assert.match(sw,/const CACHE='sahamban-static-v[0-9]+-[0-9]+'/);
  assert.ok(sw.includes('fundamental-evidence.js?v=150.5'));
  assert.ok(sw.includes('decision-support-ui-v129.js?v=129.18'));
- assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
+ assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.13'));
   assert.ok(sw.includes('portfolio-pilot-v51.html'));
   assert.ok(sw.includes('portfolio-pilot-v51.js?v=51.1'));
- assert.ok(sw.includes('technical-analysis-v50.js?v=50.21'));
+ assert.ok(sw.includes('technical-analysis-v50.js?v=50.22'));
 });
 test('Real broker holdings valuation is read-only with independent quote validation',()=>{
  assert.ok(html.includes('id="livePortfolioSection"'));
- assert.ok(html.includes('portfolio-pilot-v61.js?v=61.12'));
+ assert.ok(html.includes('portfolio-pilot-v61.js?v=61.13'));
  assert.ok(html.includes('portfolioInsightsV613'));
  assert.ok(portfolioLive.includes('شاخص تمرکز HHI'));
  assert.ok(portfolioLive.includes('بهترین بازده'));
@@ -68,7 +68,7 @@ test('Real broker holdings valuation is read-only with independent quote validat
  assert.ok(portfolioLive.includes('آخرین معامله'));
  assert.ok(portfolioLive.includes('[5,10,15,20]'));
  assert.ok(!portfolioLive.includes('localStorage.setItem(HOLDINGS_KEY'));
- assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.12'));
+ assert.ok(sw.includes('portfolio-pilot-v61.js?v=61.13'));
  assert.ok(portfolioLive.includes("sahamban-broker-holdings-v1"));
  assert.ok(portfolioLive.includes("GetClosingPriceDailyList"));
  assert.ok(portfolioLive.includes('const checks=await Promise.all(candidates.map(async candidate=>')); 
@@ -80,7 +80,7 @@ test('Real broker holdings valuation is read-only with independent quote validat
  assert.ok(!portfolioLive.includes("sahamban:verified-historical-quotes-v50',{detail:{quotes:quotes.map"));
  assert.ok(portfolioLive.includes("const historyButton=$('technicalHistoryAllV50')"));
  assert.ok(portfolioLive.includes("sahamban:verified-historical-quotes-v50',{detail:{quotes}}"));
- assert.ok(html.includes('technical-analysis-v50.js?v=50.21'));
+ assert.ok(html.includes('technical-analysis-v50.js?v=50.22'));
 
  assert.ok(portfolioLive.includes('تأیید و ذخیره انتخاب'));
  assert.ok(!portfolioLive.includes("localStorage.setItem(HOLDINGS_KEY")&&!portfolioLive.includes("localStorage.removeItem(HOLDINGS_KEY"));
