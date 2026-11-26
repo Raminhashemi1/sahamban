@@ -12,12 +12,27 @@ $('calculate').addEventListener('click',()=>{
 function playBeep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();c.resume().then(()=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.value=.3;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.45);o.onended=()=>c.close()}).catch(()=>{})}catch(e){}}
 function speak(s){
  const out=$('alertAudioStatus');
- const audio=new Audio('./alert-voice.mp3?v=1');
- audio.preload='auto';audio.volume=1;
- audio.onplaying=()=>{if(out)out.textContent='صدای هشدار دیلارا در حال پخش است.'};
- audio.onerror=()=>{playBeep();if(out)out.textContent='فایل صدای دیلارا هنوز در مخزن برنامه قرار نگرفته؛ فعلاً فقط بوق پخش شد.'};
- audio.play().catch(()=>{playBeep();if(out)out.textContent='پخش فایل صدای دیلارا ممکن نشد؛ فعلاً فقط بوق پخش شد.'});
+ const mode=localStorage.getItem('sahamban-alert-voice')||'dilara';
+ if(mode==='beep'){playBeep();if(out)out.textContent='بوق کوتاه آماده پخش شد.';return;}
+ let src='./alert-voice.mp3?v=2',label='صدای دیلارا در حال پخش است.';
+ if(mode==='recorded'){
+  const saved=localStorage.getItem('sahamban-recorded-alert');
+  if(!saved){if(out)out.textContent='هنوز صدای شخصی ضبط نشده است؛ ابتدا صدای خودتان را ضبط کنید.';return;}
+  src=saved;label='صدای ضبط‌شده شما در حال پخش است.';
+ }
+ const audio=new Audio(src);audio.preload='auto';audio.volume=1;
+ audio.onplaying=()=>{if(out)out.textContent=label};
+ audio.onerror=()=>{playBeep();if(out)out.textContent='پخش صدا ممکن نشد؛ بوق کوتاه جایگزین شد.'};
+ audio.play().catch(()=>{playBeep();if(out)out.textContent='پخش صدا ممکن نشد؛ بوق کوتاه جایگزین شد.'});
 }
+const voiceSelect=$('voiceMode');
+if(voiceSelect){
+ const savedMode=localStorage.getItem('sahamban-alert-voice')||'dilara';
+ voiceSelect.value=savedMode;
+ voiceSelect.addEventListener('change',()=>{localStorage.setItem('sahamban-alert-voice',voiceSelect.value);$('alertAudioStatus').textContent='انتخاب صدای هشدار روی همین گوشی ذخیره شد.';});
+}
+$('recordDelete').addEventListener('click',()=>{localStorage.removeItem('sahamban-recorded-alert');if(voiceSelect&&voiceSelect.value==='recorded'){voiceSelect.value='dilara';localStorage.setItem('sahamban-alert-voice','dilara');} $('alertAudioStatus').textContent='صدای ضبط‌شده از این گوشی پاک شد.';});
+
 let sbRecorder=null,sbStream=null,sbChunks=[];
 $('recordStart').addEventListener('click',async()=>{const out=$('alerts');if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){out.textContent='این مرورگر امکان ضبط صدا ندارد.';return;}try{sbStream=await navigator.mediaDevices.getUserMedia({audio:true});sbChunks=[];sbRecorder=new MediaRecorder(sbStream);sbRecorder.ondataavailable=e=>{if(e.data.size)sbChunks.push(e.data)};sbRecorder.onstop=()=>{const blob=new Blob(sbChunks,{type:sbRecorder.mimeType||'audio/webm'});const reader=new FileReader();reader.onload=()=>{try{localStorage.setItem('sahamban-recorded-alert',reader.result);out.textContent='صدای فارسی روی همین گوشی ذخیره شد. با «آزمایش صدا» امتحانش کن.'}catch(e){out.textContent='فضای ذخیره گوشی کافی نیست. یک پیام کوتاه‌تر ضبط کن.'}};reader.readAsDataURL(blob);sbStream?.getTracks().forEach(t=>t.stop());sbStream=null};sbRecorder.start();out.textContent='در حال ضبط... بگو: هشدار سهام‌بان. بعد «پایان ضبط» را بزن.'}catch(e){out.textContent='اجازه میکروفون داده نشد یا میکروفون در دسترس نیست.';}});
 $('recordStop').addEventListener('click',()=>{if(sbRecorder?.state==='recording'){sbRecorder.stop()}else{$('alerts').textContent='ابتدا «ضبط هشدار فارسی» را بزن.'}});
