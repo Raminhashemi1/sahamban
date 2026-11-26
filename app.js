@@ -12,31 +12,16 @@ $('calculate').addEventListener('click',()=>{
 function playBeep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();c.resume().then(()=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.value=.3;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.45);o.onended=()=>c.close()}).catch(()=>{})}catch(e){}}
 function speak(s){
  const out=$('alertAudioStatus');
- if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
-  playBeep();if(out)out.textContent='گفتار فارسی در این مرورگر پشتیبانی نمی‌شود؛ فقط بوق پخش شد.';return;
- }
- try{
-  window.speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(String(s));
-  utterance.lang='fa-IR';utterance.rate=0.88;utterance.pitch=1.08;utterance.volume=1;
-  const chooseVoice=()=>{
-   const voices=window.speechSynthesis.getVoices()||[];
-   const persian=voices.filter(v=>/^fa([_-]|$)/i.test(v.lang||'')||/persian|فارسی/i.test(v.name||''));
-   const feminine=persian.find(v=>/female|woman|zira|sara|susan|neda|shabnam|مینا|سارا|ندا|شبنم/i.test(v.name||''));
-   utterance.voice=feminine||persian[0]||null;
-   utterance.onstart=()=>{if(out)out.textContent='هشدار با گفتار فارسی دستگاه پخش می‌شود؛ نوع و جنس صدا به موتور گفتار گوشی وابسته است.'};
-   utterance.onerror=()=>{playBeep();if(out)out.textContent='پخش گفتار دستگاه ناموفق بود؛ فقط بوق پخش شد.'};
-   window.speechSynthesis.speak(utterance);
-  };
-  if(window.speechSynthesis.getVoices().length)chooseVoice();
-  else{window.speechSynthesis.onvoiceschanged=()=>{window.speechSynthesis.onvoiceschanged=null;chooseVoice();};setTimeout(()=>{if(!utterance.voice&&!window.speechSynthesis.speaking)chooseVoice();},700);}
- }catch(e){playBeep();if(out)out.textContent='امکان پخش گفتار فارسی وجود نداشت؛ فقط بوق پخش شد.';}
+ const audio=new Audio('./alert-voice.mp3?v=1');
+ audio.preload='auto';audio.volume=1;
+ audio.onplaying=()=>{if(out)out.textContent='صدای هشدار دیلارا در حال پخش است.'};
+ audio.onerror=()=>{playBeep();if(out)out.textContent='فایل صدای دیلارا هنوز در مخزن برنامه قرار نگرفته؛ فعلاً فقط بوق پخش شد.'};
+ audio.play().catch(()=>{playBeep();if(out)out.textContent='پخش فایل صدای دیلارا ممکن نشد؛ فعلاً فقط بوق پخش شد.'});
 }
 let sbRecorder=null,sbStream=null,sbChunks=[];
 $('recordStart').addEventListener('click',async()=>{const out=$('alerts');if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){out.textContent='این مرورگر امکان ضبط صدا ندارد.';return;}try{sbStream=await navigator.mediaDevices.getUserMedia({audio:true});sbChunks=[];sbRecorder=new MediaRecorder(sbStream);sbRecorder.ondataavailable=e=>{if(e.data.size)sbChunks.push(e.data)};sbRecorder.onstop=()=>{const blob=new Blob(sbChunks,{type:sbRecorder.mimeType||'audio/webm'});const reader=new FileReader();reader.onload=()=>{try{localStorage.setItem('sahamban-recorded-alert',reader.result);out.textContent='صدای فارسی روی همین گوشی ذخیره شد. با «آزمایش صدا» امتحانش کن.'}catch(e){out.textContent='فضای ذخیره گوشی کافی نیست. یک پیام کوتاه‌تر ضبط کن.'}};reader.readAsDataURL(blob);sbStream?.getTracks().forEach(t=>t.stop());sbStream=null};sbRecorder.start();out.textContent='در حال ضبط... بگو: هشدار سهام‌بان. بعد «پایان ضبط» را بزن.'}catch(e){out.textContent='اجازه میکروفون داده نشد یا میکروفون در دسترس نیست.';}});
 $('recordStop').addEventListener('click',()=>{if(sbRecorder?.state==='recording'){sbRecorder.stop()}else{$('alerts').textContent='ابتدا «ضبط هشدار فارسی» را بزن.'}});
 $('speech').addEventListener('click',()=>speak('آزمایش هشدار صوتی سهام بان'));
-const sahambanVoicePreview=null;
 $('voicePreview').addEventListener('click',()=>speak('توجه بفرمایید؛ نماد موردنظر شما به محدوده قیمتی تعیین‌شده رسیده است. لطفاً وضعیت سهم را بررسی بفرمایید.'));
 $('check').addEventListener('click',()=>{
  const symbol=$('symbol').value.trim().slice(0,35)||'سهم',price=n('price'),stop=n('aStop'),target=n('aTarget'),el=$('alerts');
