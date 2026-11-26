@@ -191,3 +191,32 @@ test('Android WebView export uses the native save picker bridge and reports comp
  listeners.message({data:JSON.stringify({type:'save-result',status:'saved'})});
  assert.match(h.element('sb148Status').textContent,/با موفقیت/);
 });
+
+test('Android native export cancellation, failure, unavailable and denial are never reported as saved',()=>{
+ const statuses=['cancelled','failed','unavailable','denied','invalid','busy'];
+ for(const status of statuses){
+  const listeners={},sent=[];
+  const bridge={postMessage(raw){sent.push(JSON.parse(raw));},addEventListener(name,fn){listeners[name]=fn;}};
+  const h=uiHarness({'sahamban-v1':JSON.stringify(alert)},bridge);
+  h.fire('sb148Export');
+  listeners.message({data:JSON.stringify({type:'save-result',status})});
+  assert.doesNotMatch(h.element('sb148Status').textContent,/با موفقیت/);
+  assert.equal(h.state.getItem('sahamban-v1'),JSON.stringify(alert));
+  assert.equal(sent.length,1);
+ }
+});
+
+test('Android native export request contains only the allowlisted backup snapshot and fixed metadata',()=>{
+ const listeners={},sent=[];
+ const bridge={postMessage(raw){sent.push(JSON.parse(raw));},addEventListener(name,fn){listeners[name]=fn;}};
+ const privateValue='DO_NOT_EXPORT_TOKEN_987';
+ const h=uiHarness({'sahamban-v1':JSON.stringify(alert),'third-party-secret':privateValue},bridge);
+ h.fire('sb148Export');
+ assert.equal(sent.length,1);
+ assert.deepEqual(Object.keys(sent[0]).sort(),['content','filename','mimeType','type'].sort());
+ assert.equal(sent[0].filename,'sahamban-local-backup-v1.json');
+ assert.equal(sent[0].mimeType,'application/json');
+ assert.equal(JSON.stringify(sent[0]).includes(privateValue),false);
+ assert.deepEqual(Object.keys(JSON.parse(sent[0].content).items),['sahamban-v1']);
+ assert.equal(h.state.getItem('third-party-secret'),privateValue);
+});
