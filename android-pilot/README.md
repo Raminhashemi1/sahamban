@@ -80,3 +80,21 @@ The current product name shown to users is **سهمینو (Sahmino)**. Historica
 The wrapper registers `sahambanNativeBackup` only when WebView supports `WEB_MESSAGE_LISTENER`. Native code independently validates the exact `https://raminhashemi1.github.io` origin, main-frame status and `/sahamban/` path. The request is limited to the fixed JSON filename, schema version 1, five approved storage keys and 256 KiB. The user chooses the destination through Android's Storage Access Framework. No backup bytes are uploaded to a server. The browser's Blob fallback remains available when the native listener is unavailable.
 
 A successful CI build and synthetic bridge tests do not prove physical-device operation. Before release, test export, picker cancellation, saved-file presence, app restart, import and exact synthetic-data restoration on a real Android device.
+
+## Acceptance matrix — run only on a physical Android device
+
+Record the device model, Android version, Android System WebView/Chrome version, app version, date, and result for each row. Do not use the 19 real holdings for destructive import/restore tests; use a synthetic backup with a distinct marker and verify the original PWA remains installed and untouched.
+
+| Area | Safe acceptance procedure | Pass evidence |
+|---|---|---|
+| Install / identity | Install the debug APK alongside the existing Chrome PWA; confirm the launcher label and package `ir.sahmino.app`. | App launches; existing PWA and its data remain present. |
+| Trusted navigation | Open the app; follow one same-origin Sahmino link and one external HTTPS link. | Same-origin stays in WebView; external HTTPS opens browser; no unsafe scheme is executed. |
+| RTL / scaling / accessibility | Inspect Persian layout, increase Android display/font size, enable TalkBack and navigate controls. | No clipped critical controls; labels and focus order are usable. |
+| Cold / warm start | Launch, background/resume, force-stop and relaunch. | App returns to the expected page without data loss or crash. |
+| Import (synthetic only) | Use Android file picker to select a small synthetic CSV/JSON accepted by the PWA. | Picker returns the selected file and preview is correct; do not confirm any real portfolio replacement. |
+| Export bridge | Export a synthetic local backup; save it, cancel a second picker request, then inspect the saved file. | Saved JSON exists, parses, uses the fixed filename/schema, and contains only synthetic data; cancellation does not report success. |
+| Re-import (synthetic only) | In a disposable test state, import the saved synthetic JSON and verify exact values. | Exact synthetic values return; no real portfolio is used or replaced. |
+| Offline / weak network | With only synthetic data loaded, open once online, enable airplane mode, cold-start and navigate cached views; restore network. | Cached shell and local synthetic data remain usable; network-dependent data is clearly unavailable rather than shown as fresh. |
+| Update | Install a newer debug build over the pilot without clearing app data. | App updates in place and synthetic local state remains intact. |
+
+Never clear WebView storage, uninstall the existing PWA, or run restore against a real portfolio during acceptance. A debug APK is for testing only and must not be distributed as a store release.
