@@ -9,6 +9,10 @@ on:
       - 'sw.js'
       - 'tests/local-backup-v148.test.cjs'
       - 'tests/android-pilot-wrapper.test.cjs'
+      - 'tests/local-backup-v148.test.cjs'
+      - 'local-backup-v148.js'
+      - 'index.html'
+      - 'sw.js'
       - '.github/workflows/android-pilot-debug.yml'
   push:
     paths:
