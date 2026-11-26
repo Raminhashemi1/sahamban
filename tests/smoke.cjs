@@ -114,7 +114,8 @@ test('Market date rejects invalid, old and future dates',()=>{
 });
 test('Market alarms require independently validated quotes',()=>{
  assert.ok(app.includes('if(freshness.ok&&verification.ok&&(price<=stop||price>=target))'));
- assert.ok(app.includes('if(verification.ok&&(price<=x.stop||price>=x.target))'));
+ assert.ok(app.includes('if(!verification.ok){unverifiedItems.push('));
+ assert.ok(app.includes("else if(price<=x.stop||price>=x.target){triggered++;row.classList.add('alarm');"));
 });
 test('CSV spreadsheet formula injection neutralised',()=>{
  for(const x of ['=1+1','+SUM(A1:A2)','@HYPERLINK(A1)'])assert.ok(context.portfolioCsvCell(x).startsWith('"\''));
