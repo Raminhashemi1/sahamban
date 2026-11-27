@@ -37,14 +37,14 @@ class PrepaidD1MigrationTests(unittest.TestCase):
             ("SAHAMBAN_PRO_365D",14600000)
         ]
         for index,(plan,price) in enumerate(allowed):
-            self.insert_order(f"valid-{index}",plan,price)
+            self.insert_order(f"valid-{index}",plan,price,state="CANCELLED")
         for index,(plan,price) in enumerate([
             ("SAHAMBAN_PRO_30D",1),("SAHAMBAN_PRO_60D",1500000),
             ("SAHAMBAN_PRO_90D",2850000),("SAHAMBAN_PRO_180D",4050000),
             ("SAHAMBAN_PRO_365D",7650000),("UNKNOWN",1500000)
         ]):
             with self.assertRaises(sqlite3.IntegrityError):
-                self.insert_order(f"invalid-{index}",plan,price)
+                self.insert_order(f"invalid-{index}",plan,price,state="CANCELLED")
 
     def test_only_one_pending_order_per_account(self):
         self.insert_order()
