@@ -220,3 +220,16 @@ test('Android native export request contains only the allowlisted backup snapsho
  assert.deepEqual(Object.keys(JSON.parse(sent[0].content).items),['sahamban-v1']);
  assert.equal(h.state.getItem('third-party-secret'),privateValue);
 });
+
+test('oversized selected backup reports measured size and refuses before parsing or changing storage',async()=>{
+ const h=uiHarness({'sahamban-v1':JSON.stringify(alert)});
+ let parsed=false;
+ h.element('sb148File').files=[{size:757*1024,text:async()=>{parsed=true;return '{}';}}];
+ await h.fire('sb148File','change');
+ assert.equal(parsed,false);
+ assert.match(h.element('sb148Status').textContent,/757/);
+ assert.match(h.element('sb148Status').textContent,/۲۵۶/);
+ assert.match(h.element('sb148Status').textContent,/هیچ داده‌ای تغییر نکرد/);
+ assert.equal(h.state.getItem('sahamban-v1'),JSON.stringify(alert));
+ assert.equal(h.element('sb148Restore').disabled,true);
+});
