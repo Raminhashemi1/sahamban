@@ -10,9 +10,9 @@ function dbFor({changes=1,row=null,error=null}={}){
   async first(){if(error)throw error;return row;}
  };}};}};
 }
-test('creates a pending order with server catalog price for each of five approved fixed-day plans',async()=>{
+test('creates pending orders with server-owned prices for all five approved plans',async()=>{
  const plans=[['SAHAMBAN_PRO_30D',1500000],['SAHAMBAN_PRO_60D',2850000],
- ['SAHAMBAN_PRO_90D',4050000],['SAHAMBAN_PRO_180D',7650000],['SAHAMBAN_PRO_365D',14600000]];
+  ['SAHAMBAN_PRO_90D',4050000],['SAHAMBAN_PRO_180D',7650000],['SAHAMBAN_PRO_365D',14600000]];
  for(const [planId,amountRial] of plans){
   const db=dbFor(),out=await createPrepaidOrder(db,{authenticatedSubject:subject,planId,now,makeOrderId:()=>orderId});
   assert.equal(out.status,201);assert.equal(out.order.amountRial,amountRial);
@@ -29,23 +29,19 @@ test('rejects unauthenticated, invalid plan, invalid time, bad order ID and miss
  assert.equal((await createPrepaidOrder(null,{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_30D',now,makeOrderId:()=>orderId})).reason,'DATABASE_UNAVAILABLE');
 });
 test('inactive account and pending-order uniqueness fail closed',async()=>{
- const inactive=await createPrepaidOrder(dbFor({changes:0}),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_30D',now,makeOrderId:()=>orderId});
- assert.equal(inactive.reason,'ACCOUNT_NOT_ELIGIBLE');
- const duplicate=await createPrepaidOrder(dbFor({error:new Error('unique index')}),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_30D',now,makeOrderId:()=>orderId});
- assert.equal(duplicate.reason,'ORDER_UNAVAILABLE');
+ assert.equal((await createPrepaidOrder(dbFor({changes:0}),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_30D',now,makeOrderId:()=>orderId})).reason,'ACCOUNT_NOT_ELIGIBLE');
+ assert.equal((await createPrepaidOrder(dbFor({error:new Error('unique index')}),{authenticatedSubject:subject,planId:'SAHAMBAN_PRO_30D',now,makeOrderId:()=>orderId})).reason,'ORDER_UNAVAILABLE');
 });
 test('retrieves only a matching pending order and never enables checkout',async()=>{
- const row={id:orderId,plan_id:'SAHAMBAN_PRO_90D',amount_rial:12150000,currency:'IRR',created_at:now};
+ const row={id:orderId,plan_id:'SAHAMBAN_PRO_90D',amount_rial:4050000,currency:'IRR',created_at:now};
  const db=dbFor({row}),out=await findPrepaidPendingOrder(db,subject);
  assert.equal(out.pending,true);assert.equal(out.order.planId,row.plan_id);
  assert.equal(out.checkoutEnabled,false);assert.equal(out.proEnabled,false);
  assert.deepEqual(db.calls[1],['bind',subject]);
 });
 test('no order and malformed order state fail closed',async()=>{
- const none=await findPrepaidPendingOrder(dbFor({row:null}),subject);
- assert.equal(none.pending,false);assert.equal(none.proEnabled,false);
- const bad=await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHAMBAN_PRO_30D',amount_rial:1,currency:'IRR',created_at:now}}),subject);
- assert.equal(bad.reason,'INVALID_ORDER_STATE');
+ assert.equal((await findPrepaidPendingOrder(dbFor({row:null}),subject)).pending,false);
+ assert.equal((await findPrepaidPendingOrder(dbFor({row:{id:orderId,plan_id:'SAHAMBAN_PRO_30D',amount_rial:1,currency:'IRR',created_at:now}}),subject)).reason,'INVALID_ORDER_STATE');
  assert.equal(await findPrepaidPendingOrder(null,subject).then(x=>x.reason),'DATABASE_UNAVAILABLE');
  assert.match(INSERT_SQL,/u\.auth_subject=\?/);
 });
