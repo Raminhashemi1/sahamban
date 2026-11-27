@@ -5,7 +5,7 @@ const {settleVerifiedPrepaidPayment,EVENT_SQL,ORDER_SQL,ENTITLEMENT_UPSERT_SQL}=
  require('../server/prepaid-settlement.cjs');
 const now='2026-11-12T10:00:00.000Z',orderId='ord_'+'a'.repeat(32);
 const payment={verified:true,providerName:'directpsp',providerEventId:'evt-1',
- providerPaymentId:'pay-1',orderId,planId:'SAHAMBAN_PRO_3M',amountRial:4500000,currency:'IRR'};
+ providerPaymentId:'pay-1',orderId,planId:'SAHAMBAN_PRO_30D',amountRial:1500000,currency:'IRR'};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',state:'PENDING',paid_until:null},results}={}){
  const calls=[];
  return {
@@ -30,7 +30,7 @@ test('settlement requires a provider-verified server result and exact order matc
 });
 test('valid settlement uses one D1 batch for event, order and entitlement',async()=>{
  const db=dbFor(),out=await settleVerifiedPrepaidPayment(db,payment,{now});
- assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2027-02-12T10:00:00.000Z'});
+ assert.deepEqual(out,{ok:true,reason:'SETTLED',orderId,planId:payment.planId,paidUntil:'2026-12-12T10:00:00.000Z'});
  const batch=db.calls.find(x=>x.batch).batch;
  assert.equal(batch.length,3);
  assert.match(batch[0].sql,/state='PENDING'/);
