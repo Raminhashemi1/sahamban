@@ -117,10 +117,10 @@ portfolioPasteField?.addEventListener('paste',event=>{
  const clipboard=event.clipboardData?.getData('text/plain');
  if(typeof clipboard!=='string'||!clipboard.length)return;
  const current=portfolioPasteField.value;
- const onlyInvisible=!current.replace(/[\\s\\u200B\\u200C\\u200D\\uFEFF\\u200E\\u200F]/g,'');
+ const onlyInvisible=!current.replace(/[\s\u200B\u200C\u200D\uFEFF\u200E\u200F]/g,'');
  if(!onlyInvisible)return;
  event.preventDefault();
- const cleaned=clipboard.replace(/^\\uFEFF/,'').replace(/\\r\\n?/g,'\\n').replace(/[\\u200B\\u200C\\u200D\\u200E\\u200F]/g,'').replace(/^(?:[\\t \\u00A0]*\\n)+/,'');
+ const cleaned=clipboard.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').replace(/[\u200B\u200C\u200D\u200E\u200F]/g,'').replace(/^(?:[\t \u00A0]*\n)+/,'');
  portfolioPasteField.value=cleaned;
  const end=cleaned.length;
  portfolioPasteField.setSelectionRange(end,end);
@@ -175,6 +175,24 @@ function parsePortfolio(raw){
  }
  return positions;
 }
+
+const portfolioImportFile=$('portfolioImportFile');
+portfolioImportFile?.addEventListener('change',async()=>{
+ const file=portfolioImportFile.files?.[0];
+ if(!file)return;
+ const status=$('portfolioImportStatus');
+ if(file.size>100000){status.textContent='حجم فایل باید کمتر از ۱۰۰ کیلوبایت باشد.';portfolioImportFile.value='';return;}
+ try{
+  let cleaned=(await file.text()).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').replace(/[\u200B\u200C\u200D\u200E\u200F]/g,'').trim();
+  if(!cleaned)throw Error('فایل خالی است.');
+  const positions=parsePortfolio(cleaned);
+  $('portfolioData').value=cleaned;
+  $('portfolioData').dispatchEvent(new Event('input',{bubbles:true}));
+  reportPortfolio();
+  status.textContent='ورود موفق: '+positions.length+' نماد از فایل خوانده شد. هر ۶ ستون هر نماد اعتبارسنجی شد؛ برای نگهداری دائمی «ذخیره سبد روی گوشی» را بزنید.';
+ }catch(e){status.textContent='فایل وارد نشد و اطلاعات قبلی تغییر نکرد: '+e.message;}
+});
+
 function portfolioRewardRisk(upside,risk){return risk>0&&Number.isFinite(upside/risk)?upside/risk:null;}
 function reportPortfolio(){
  const summary=$('portfolioSummary'),details=$('portfolioDetails');
@@ -403,14 +421,15 @@ let pendingPortfolioBackup=null;
 function validatePortfolioBackup(record){
  if(!record||(record.version!==1&&record.version!==2)||typeof record.data!=='string'||record.data.length>25000)throw Error('ساختار فایل پشتیبان معتبر نیست.');
  record=convertLegacyPortfolio(record);
- parsePortfolio(record.data);
+ const parsedPositions=parsePortfolio(record.data);
+ if(record.symbolCount!==undefined&&record.symbolCount!==parsedPositions.length)throw Error('تعداد نمادهای فایل پشتیبان با محتوای آن یکسان نیست.');
  for(const key of ['capital','riskCap','stress'])if(typeof record[key]!=='string'||record[key].length>60)throw Error('فیلدهای فایل کامل نیستند.');
  const concentration=record.concentration??'30';
  if(typeof concentration!=='string'||concentration.length>60)throw Error('سقف تمرکز فایل معتبر نیست.');
  if(record.capital&&portfolioNumber(record.capital,'سرمایه')<=0)throw Error('سرمایه مبنا نامعتبر است.');
  const risk=portfolioNumber(record.riskCap,'سقف ریسک'),stress=portfolioNumber(record.stress,'افت فرضی'),cap=portfolioNumber(concentration,'تمرکز');
  if(risk<=0||risk>100||stress<0||stress>100||cap<1||cap>100)throw Error('تنظیمات ریسک یا تمرکز فایل معتبر نیستند.');
- return {version:2,data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration};
+ return {version:2,data:record.data,capital:record.capital,riskCap:record.riskCap,stress:record.stress,concentration,symbolCount:parsedPositions.length};
 }
 $('portfolioBackup').addEventListener('click',()=>{
  try{
@@ -420,7 +439,7 @@ $('portfolioBackup').addEventListener('click',()=>{
   const url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download='sahamban-portfolio-backup.json';
   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  $('portfolioBackupStatus').textContent='فایل پشتیبان از سبد فعلی آماده دانلود شد. آن را در جای امن نگه دارید.';
+  $('portfolioBackupStatus').textContent='فایل پشتیبان شامل '+valid.symbolCount+' نماد آماده دانلود شد. تعداد نمادها در خود فایل نیز ثبت و هنگام بازیابی کنترل می‌شود.';
  }catch(e){$('portfolioBackupStatus').textContent='پشتیبان‌گیری انجام نشد: '+e.message;}
 });
 $('portfolioBackupFile').addEventListener('change',async()=>{
