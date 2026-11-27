@@ -1,14 +1,15 @@
 'use strict';
-// Provider-independent prepaid Pro domain rules. NOT a checkout endpoint.
+// Provider-independent prepaid Pro domain rules for the owner-approved five fixed-day plans.
 // All purchase confirmations MUST be verified directly with a payment provider
 // on a trusted server and persisted atomically with unique provider/payment IDs.
-// Prices are launch defaults (IRR); production prices must come from an
+// Prices are launch defaults in IRR; production prices must come from an
 // authenticated, versioned server-side catalogue.
 const LAUNCH_PLANS=Object.freeze({
- SAHAMBAN_PRO_3M:Object.freeze({months:3,priceRial:4500000,discountPercent:0}),
- SAHAMBAN_PRO_6M:Object.freeze({months:6,priceRial:8550000,discountPercent:5}),
- SAHAMBAN_PRO_9M:Object.freeze({months:9,priceRial:12150000,discountPercent:10}),
- SAHAMBAN_PRO_12M:Object.freeze({months:12,priceRial:15300000,discountPercent:15})
+ SAHAMBAN_PRO_30D:Object.freeze({days:30,priceRial:1500000}),
+ SAHAMBAN_PRO_60D:Object.freeze({days:60,priceRial:2850000}),
+ SAHAMBAN_PRO_90D:Object.freeze({days:90,priceRial:4050000}),
+ SAHAMBAN_PRO_180D:Object.freeze({days:180,priceRial:7650000}),
+ SAHAMBAN_PRO_365D:Object.freeze({days:365,priceRial:14600000})
 });
 const ID=/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
 function id(value,label){
@@ -16,27 +17,21 @@ function id(value,label){
  return value;
 }
 function timestamp(value){
- if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value))throw new TypeError('زمان UTC معتبر لازم است.');
+ if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(value))throw new TypeError('زمان UTC معتبر لازم است.');
  const ms=Date.parse(value);
  if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,19)!==value.slice(0,19))
   throw new TypeError('زمان تقویمی معتبر لازم است.');
  return ms;
 }
+function addPlanDays(utcTime,days){
+ const ms=timestamp(utcTime);
+ if(!Number.isInteger(days)||![30,60,90,180,365].includes(days))throw new RangeError('مدت پلن نامعتبر است.');
+ return new Date(ms+days*86400000).toISOString();
+}
 function plan(idValue){
  if(!Object.prototype.hasOwnProperty.call(LAUNCH_PLANS,idValue))
   throw new RangeError('شناسه پلن حرفه‌ای نامعتبر است.');
  return LAUNCH_PLANS[idValue];
-}
-function addCalendarMonths(utcTime,months){
- const d=new Date(timestamp(utcTime));
- if(!Number.isInteger(months)||months<1||months>120)throw new RangeError('تعداد ماه نامعتبر است.');
- const originalDay=d.getUTCDate();
- // Set day to 1 before shifting months to prevent JavaScript overflow.
- d.setUTCDate(1);
- d.setUTCMonth(d.getUTCMonth()+months);
- const daysInTarget=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();
- d.setUTCDate(Math.min(originalDay,daysInTarget));
- return d.toISOString();
 }
 function emptyPrepaidAccess(userId){
  return {userId:id(userId,'شناسه کاربر'),paidUntil:null,processedReceipts:[]};
@@ -64,13 +59,12 @@ function grantVerifiedPrepaid(state,purchase,{verifyAtProvider,now}={}){
  const paymentAt=timestamp(purchase.paidAt),reference=timestamp(now);
  if(paymentAt>reference+300000)throw new Error('زمان خرید در آینده است.');
  const uniqueKey=provider+':'+paymentId;
- // Verify even on retries: a forged replay cannot be trusted.
  if(verifyAtProvider({purchase,expectedPlan:product})!==true)
   throw new Error('اصالت پرداخت نزد ارائه‌دهنده تأیید نشده است.');
  if(state.processedReceipts.includes(uniqueKey))
   return {state,applied:false,reason:'ALREADY_APPLIED'};
  const start=state.paidUntil&&timestamp(state.paidUntil)>reference?state.paidUntil:now;
- const next=addCalendarMonths(start,product.months);
+ const next=addPlanDays(start,product.days);
  return {
   state:{userId:state.userId,paidUntil:next,processedReceipts:[...state.processedReceipts,uniqueKey]},
   applied:true,reason:'PROVIDER_VERIFIED'
@@ -82,5 +76,5 @@ function prepaidAccessDecision(state,{now}={}){
  return Object.freeze({proEnabled:state.paidUntil!==null&&current<timestamp(state.paidUntil),
   paidUntil:state.paidUntil});
 }
-module.exports=Object.freeze({LAUNCH_PLANS,plan,addCalendarMonths,emptyPrepaidAccess,
+module.exports=Object.freeze({LAUNCH_PLANS,plan,addPlanDays,emptyPrepaidAccess,
  grantVerifiedPrepaid,prepaidAccessDecision});
