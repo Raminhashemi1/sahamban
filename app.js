@@ -117,10 +117,10 @@ portfolioPasteField?.addEventListener('paste',event=>{
  const clipboard=event.clipboardData?.getData('text/plain');
  if(typeof clipboard!=='string'||!clipboard.length)return;
  const current=portfolioPasteField.value;
- const onlyInvisible=!current.replace(/[\\s\\u200B\\u200C\\u200D\\uFEFF\\u200E\\u200F]/g,'');
+ const onlyInvisible=!current.replace(/[\\s\u200B\u200C\u200D\uFEFF\u200E\u200F]/g,'');
  if(!onlyInvisible)return;
  event.preventDefault();
- const cleaned=clipboard.replace(/^\\uFEFF/,'').replace(/\\r\\n?/g,'\\n').replace(/[\\u200B\\u200C\\u200D\\u200E\\u200F]/g,'').replace(/^(?:[\\t \\u00A0]*\\n)+/,'');
+ const cleaned=clipboard.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').replace(/[\u200B\u200C\u200D\u200E\u200F]/g,'').replace(/^(?:[\\t \\u00A0]*\n)+/,'');
  portfolioPasteField.value=cleaned;
  const end=cleaned.length;
  portfolioPasteField.setSelectionRange(end,end);
@@ -183,7 +183,7 @@ portfolioImportFile?.addEventListener('change',async()=>{
  const status=$('portfolioImportStatus');
  if(file.size>100000){status.textContent='حجم فایل باید کمتر از ۱۰۰ کیلوبایت باشد.';portfolioImportFile.value='';return;}
  try{
-  let cleaned=(await file.text()).replace(/^\\uFEFF/,'').replace(/\\r\\n?/g,'\\n').replace(/[\\u200B\\u200C\\u200D\\u200E\\u200F]/g,'').trim();
+  let cleaned=(await file.text()).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').replace(/[\u200B\u200C\u200D\u200E\u200F]/g,'').trim();
   if(!cleaned)throw Error('فایل خالی است.');
   const positions=parsePortfolio(cleaned);
   $('portfolioData').value=cleaned;
