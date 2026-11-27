@@ -28,7 +28,7 @@ class PrepaidD1MigrationTests(unittest.TestCase):
         self.insert_order()
         self.assertEqual(self.db.execute("SELECT plan_id FROM prepaid_subscription_orders").fetchone()[0],"SAHAMBAN_PRO_30D")
         with self.assertRaises(sqlite3.IntegrityError):
-            self.insert_order("bad-old","SAHAMBAN_PRO_3M",4500000)
+            self.insert_order("bad-old","UNKNOWN_PLAN_ID",4500000)
 
     def test_only_the_five_approved_plan_price_pairs_are_allowed(self):
         allowed=[
