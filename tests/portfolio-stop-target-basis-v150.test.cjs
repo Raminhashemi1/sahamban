@@ -26,7 +26,7 @@ function harness(raw){
  };
  els.portfolioData.value=raw;els.portfolioCapital.value='100000';els.portfolioRiskCap.value='5';
  els.portfolioStress.value='10';els.portfolioConcentration.value='30';els.portfolioSort.value='value';
- const context={Number,Set,Math,Error,Intl,String,Object,Array,JSON,
+ const context={Number,Set,Math,Error,Intl,String,Object,Array,JSON,document:{createElement:()=>fakeElement()},
   $:id=>els[id],fmt:value=>String(Number(value.toFixed?value.toFixed(2):value)),
   portfolioSnapshot:()=>({stable:true}),latestPortfolioReport:null,portfolioReportSnapshot:null};
  vm.createContext(context);
