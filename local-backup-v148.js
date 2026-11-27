@@ -170,7 +170,7 @@
   byId('sb148File').addEventListener('change',async()=>{
    const stamp=++generation;pending=null;byId('sb148Restore').disabled=true;
    const file=byId('sb148File').files?.[0];if(!file){status('فایلی انتخاب نشده است.');return;}
-   if(file.size>MAX_FILE){status('فایل پشتیبان بزرگ‌تر از حد مجاز است.');return;}
+   if(file.size>MAX_FILE){status('فایل انتخابی '+Math.ceil(file.size/1024)+' کیلوبایت است و از سقف ۲۵۶ کیلوبایت پشتیبان محلی سهمینو بیشتر است؛ هنوز قالب فایل تأیید نشده و هیچ داده‌ای تغییر نکرد. فایل را فشرده یا بازیابی نکنید.');return;}
    try{
     const raw=await file.text();if(stamp!==generation)return;
     const parsed=JSON.parse(raw),summary=inspectSnapshot(parsed);
