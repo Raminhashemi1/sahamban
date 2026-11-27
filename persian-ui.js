@@ -2,7 +2,7 @@
 // Persian numerals in the UI; numerical values read by calculations remain canonical.
 (()=>{
  const persian=s=>String(s).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[+d]);
- const latin=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/٬/g,'');
+ const latin=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/[٬,،\s]/g,'');
  for(const input of document.querySelectorAll('input[type="number"], textarea#portfolioData, textarea#historyText, input#marketCode, input#watchCode')){
   const initial=input.value;
   if(input.tagName==='INPUT')input.type='text';
@@ -11,7 +11,23 @@
   const desc=Object.getOwnPropertyDescriptor(proto,'value');
   Object.defineProperty(input,'value',{configurable:true,get(){return latin(desc.get.call(this));},set(v){desc.set.call(this,persian(v));}});
   input.value=initial;
+  const grouped=input.dataset.moneyFormat==='grouped';
+  const formatGrouped=()=>{
+   const raw=desc.get.call(input),start=input.selectionStart??raw.length;
+   const digitsBefore=latin(raw.slice(0,start)).replace(/[^0-9]/g,'').length;
+   const normalized=latin(raw).replace(/[^0-9.]/g,'');
+   const dot=normalized.indexOf('.');
+   const integer=dot<0?normalized:normalized.slice(0,dot);
+   const fraction=dot<0?'':normalized.slice(dot+1).replace(/\./g,'');
+   const groupedInteger=integer.replace(/\B(?=(\d{3})+(?!\d))/g,'٬');
+   const shown=persian(groupedInteger+(dot<0?'':'٫'+fraction));
+   if(shown!==raw)desc.set.call(input,shown);
+   let caret=0,seen=0;
+   while(caret<shown.length&&seen<digitsBefore){if(/[۰-۹]/.test(shown[caret]))seen++;caret++;}
+   try{input.setSelectionRange(caret,caret)}catch(e){}
+  };
   input.addEventListener('input',()=>{
+   if(grouped){formatGrouped();return;}
    const raw=desc.get.call(input),shown=persian(raw);
    if(shown!==raw){
     const start=input.selectionStart,end=input.selectionEnd;
@@ -19,6 +35,7 @@
     try{input.setSelectionRange(start,end)}catch(e){}
    }
   });
+  if(grouped&&initial)formatGrouped();
  }
  const skip=new Set(['SCRIPT','STYLE','NOSCRIPT','TEXTAREA']);
  function localize(root){
