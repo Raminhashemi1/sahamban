@@ -4,12 +4,14 @@ on:
     branches: [main]
     paths:
       - 'app.js'
+      - 'persian-ui.js'
       - 'index.html'
       - 'tests/portfolio-editing-lifecycle-v149.cjs'
       - '.github/workflows/portfolio-editing-lifecycle-v149.yml'
   push:
     paths:
       - 'app.js'
+      - 'persian-ui.js'
       - 'index.html'
       - 'tests/portfolio-editing-lifecycle-v149.cjs'
       - '.github/workflows/portfolio-editing-lifecycle-v149.yml'

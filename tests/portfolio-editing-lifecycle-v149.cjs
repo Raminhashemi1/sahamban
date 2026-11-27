@@ -43,6 +43,7 @@ async function main(){
   await page.locator('#pfTarget').fill('280');
   await page.locator('#pfAdd').click();
   let rows=(await page.locator('#portfolioData').inputValue()).trim().split(/\r?\n/);
+  assert.match(await page.locator('#pfStatus').innerText(),/نماد به سبد اضافه شد/u,'add form status should confirm successful insertion; status='+await page.locator('#pfStatus').innerText()+'; fields='+JSON.stringify(await Promise.all(['#pfSymbol','#pfQty','#pfBuy','#pfCurrent','#pfStop','#pfTarget','#portfolioData'].map(sel=>page.locator(sel).inputValue()))));
   assert.equal(rows.length,2,'adding a new symbol should create exactly one new row');
   assert.match(asciiDigits(rows[1]),/^آزمایشی02,5,200,220,180,280$/);
   assert.match(await page.locator('#pfStatus').innerText(),/نماد به سبد اضافه شد/);

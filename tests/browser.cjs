@@ -306,6 +306,8 @@ async function main(){
   await page.evaluate(()=>localStorage.setItem('sahamban-recorded-alert','data:audio/webm;base64,VEVTVA=='));
   const recordedBefore=await page.evaluate(()=>localStorage.getItem('sahamban-recorded-alert'));
   await page.evaluate(()=>{location.hash='portfolioSection'});
+  // Seed the report explicitly; prior storage/import scenarios must not determine this test's input.
+  await page.locator('#portfolioData').fill('فولاد,1000,5000,5400,4700,6500\nخودرو,2000,2800,2600,2350,3200');
   await page.locator('#portfolioAnalyze').click();
   assert.match(await page.locator('#portfolioSummary').innerText(),/ارزش روز سبد/u);
   console.log('PASS: portfolio report renders in Chromium');

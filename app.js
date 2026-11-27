@@ -153,7 +153,7 @@ function parsePortfolio(raw){
     build(0,0,[]);
     const valid=candidates.filter(c=>{
      const nums=c.slice(1).map(Number);
-     return nums.every(Number.isFinite)&&Number.isSafeInteger(nums[0])&&nums[0]>0&&nums.slice(1).every(x=>x>0)&&nums[3]<nums[2]&&nums[4]>nums[2];
+     return nums.every(Number.isFinite)&&Number.isSafeInteger(nums[0])&&nums[0]>0&&nums.slice(1).every(x=>x>0)&&nums[3]<nums[1]&&nums[4]>nums[1];
     });
     if(valid.length===1)cols=valid[0];
     else if(valid.length>1)throw Error(`جداکننده‌های سطر ${i+1} مبهم‌اند. ستون‌ها را با ; یا Tab جدا کنید.`);
@@ -163,10 +163,11 @@ function parsePortfolio(raw){
    if(!symbol||symbol.length>35||names.has(symbol))throw Error(`نام نماد خالی، تکراری یا نامعتبر در سطر ${i+1}`);
    names.add(symbol);
    const [qty,buy,current,stop,target]=cols.slice(1).map(v=>portfolioNumber(v,i+1));
-   if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(v=>v<=0)||stop>=current||target<=current)throw Error(`مقادیر نامعتبر در سطر ${i+1}: تعداد باید عدد صحیح مثبت، حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از آن باشد.`);
-   const computed={value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*(current-stop),upside:qty*(target-current)};
+   if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(v=>v<=0)||stop>=buy||target<=buy)throw Error(`مقادیر نامعتبر در سطر ${i+1}: تعداد باید عدد صحیح مثبت، حد ضرر کمتر از میانگین خرید و حد سود بیشتر از میانگین خرید باشد.`);
+   const stopBreached=current<=stop,targetReached=current>=target;
+   const computed={value:qty*current,cost:qty*buy,pnl:qty*(current-buy),atRisk:qty*Math.max(0,current-stop),upside:qty*Math.max(0,target-current)};
    if(!Object.values(computed).every(Number.isFinite)||Object.values(computed).some(v=>Math.abs(v)>Number.MAX_SAFE_INTEGER))throw Error(`مقادیر بسیار بزرگ یا خارج از دقت امن محاسبات مالی در سطر ${i+1}.`);
-   return {symbol,qty,buy,current,stop,target,...computed};
+   return {symbol,qty,buy,current,stop,target,stopBreached,targetReached,...computed};
  });
  for(const key of ['value','cost','pnl','atRisk','upside']){
   const total=positions.reduce((sum,p)=>sum+p[key],0);
@@ -211,8 +212,10 @@ function reportPortfolio(){
   summary.textContent+=` | بیشترین سهم از ریسک حد ضرر: ${largestRisk.symbol} با ${fmt(largestRisk.atRisk)} ریال${atRisk>0?` (${fmt(largestRisk.atRisk/atRisk*100)}٪ ریسک نظری کل سبد)`:' (ریسک نظری صفر)'}. این شاخص با سهم از ارزش سبد متفاوت است.`;
   summary.textContent+=` | نسبت سود نظری تا هدف به زیان نظری تا حد ضرر: ${rewardRisk===null?'نامشخص':fmt(rewardRisk)+' به ۱'}. ${lowRewardRisk.length?fmt(lowRewardRisk.length)+' نماد نسبت کمتر از ۱ دارند: '+lowRewardRisk.map(x=>x.symbol).join('، ')+'.':'هیچ نمادی نسبت کمتر از ۱ ندارد.'} این نسبت صرفاً فاصله قیمت‌ها را مقایسه می‌کند و احتمال رسیدن به هدف یا حد ضرر را لحاظ نمی‌کند.`;
   summary.textContent+=` | آزمون افت فرضی ${fmt(stress)}٪ همه نمادها: کاهش ارزش ${fmt(stressLoss)} ریال${stressOnCapital}؛ ارزش سبد پس از افت ${fmt(stressValue)} ریال. این صرفاً یک سناریوی ریاضی است، نه پیش‌بینی بازار.`;
-  const table=document.createElement('table');table.style.cssText='width:100%;min-width:610px;border-collapse:collapse;font-size:13px;text-align:right';
-  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (ریال)','سود/زیان (ریال)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها','نسبت سود به ریسک'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
+  const stopBreaches=positions.filter(x=>x.stopBreached),targetReached=positions.filter(x=>x.targetReached);
+  summary.textContent+=` | وضعیت حدود: ${stopBreaches.length?`عبور از حد ضرر در ${fmt(stopBreaches.length)} نماد: ${stopBreaches.map(x=>x.symbol).join('، ')}`:'هیچ نمادی پایین‌تر از حد ضرر نیست'}؛ ${targetReached.length?`رسیدن به حد سود در ${fmt(targetReached.length)} نماد: ${targetReached.map(x=>x.symbol).join('، ')}`:'هیچ نمادی به حد سود نرسیده است'}.`;
+  const table=document.createElement('table');table.style.cssText='width:100%;min-width:700px;border-collapse:collapse;font-size:13px;text-align:right';
+  const tr=document.createElement('tr');['نماد','تعداد','ارزش روز (ریال)','سود/زیان (ریال)','زیان تا حد ضرر','سهم از سبد','سهم از ریسک حد ضرر','سهم از سودها / زیان‌ها','نسبت سود به ریسک','وضعیت حدود'].forEach(name=>{const th=document.createElement('th');th.textContent=name;th.style.cssText='padding:9px;border-bottom:1px solid #49627a';tr.appendChild(th);});table.appendChild(tr);
   const sortMode=$('portfolioSort').value;
   const sortFields={risk:'atRisk',value:'value',loss:'pnl',gain:'pnl'};
   const displayPositions=positions.slice();
@@ -220,7 +223,7 @@ function reportPortfolio(){
    const field=sortFields[sortMode],direction=sortMode==='loss'?1:-1;
    displayPositions.sort((a,b)=>direction*(a[field]-b[field]));
   }
-  displayPositions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'+(100*x.value/value>concentrationCap?' — بیش از سقف':''),atRisk>0?fmt(100*x.atRisk/atRisk)+'٪':'۰٪',x.pnl>0?(grossGains>0?fmt(100*x.pnl/grossGains)+'٪ از سودها':'—'):x.pnl<0?(grossLosses>0?fmt(100*(-x.pnl)/grossLosses)+'٪ از زیان‌ها':'—') :'بدون سود و زیان',portfolioRewardRisk(x.upside,x.atRisk)===null?'نامشخص':fmt(portfolioRewardRisk(x.upside,x.atRisk))+' به ۱'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
+  displayPositions.forEach(x=>{const row=document.createElement('tr');[x.symbol,fmt(x.qty),fmt(x.value),fmt(x.pnl),fmt(x.atRisk),fmt(100*x.value/value)+'٪'+(100*x.value/value>concentrationCap?' — بیش از سقف':''),atRisk>0?fmt(100*x.atRisk/atRisk)+'٪':'۰٪',x.pnl>0?(grossGains>0?fmt(100*x.pnl/grossGains)+'٪ از سودها':'—'):x.pnl<0?(grossLosses>0?fmt(100*(-x.pnl)/grossLosses)+'٪ از زیان‌ها':'—') :'بدون سود و زیان',portfolioRewardRisk(x.upside,x.atRisk)===null?'نامشخص':fmt(portfolioRewardRisk(x.upside,x.atRisk))+' به ۱',x.stopBreached?'عبور از حد ضرر':x.targetReached?'رسیدن به حد سود':'داخل محدوده'].forEach(t=>{const td=document.createElement('td');td.textContent=t;td.style.cssText='padding:9px;border-bottom:1px solid #2c4861';row.appendChild(td);});table.appendChild(row);});
   details.replaceChildren(table);latestPortfolioReport={positions,capital,riskCap,value,cost,pnl,atRisk,upside,concentrationCap};portfolioReportSnapshot=JSON.stringify(portfolioSnapshot());
  }catch(e){summary.textContent=e.message;details.replaceChildren();latestPortfolioReport=null;portfolioReportSnapshot=null;}
 }
@@ -301,7 +304,7 @@ $('pfAdd').addEventListener('click',()=>{
   const ids=['pfQty','pfBuy','pfCurrent','pfStop','pfTarget'];
   const numbers=ids.map(id=>portfolioNumber($(id).value,'فرم افزودن سهم'));
   const [qty,buy,current,stop,target]=numbers;
-  if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=current||target<=current)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از قیمت فعلی باشد.');
+  if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=buy||target<=buy)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از میانگین خرید و حد سود بیشتر از میانگین خرید باشد.');
   const input=$('portfolioData');const raw=input.value.trim();
   const lines=raw?raw.split(/\r?\n/).filter(Boolean):[];
   const symbols=lines.map(line=>line.split(/[,،;\t]/)[0].trim());

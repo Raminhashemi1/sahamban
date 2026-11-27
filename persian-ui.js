@@ -9,7 +9,8 @@
   input.inputMode='decimal';input.autocomplete='off';
   const proto=input.tagName==='INPUT'?HTMLInputElement.prototype:HTMLTextAreaElement.prototype;
   const desc=Object.getOwnPropertyDescriptor(proto,'value');
-  Object.defineProperty(input,'value',{configurable:true,get(){return latin(desc.get.call(this));},set(v){desc.set.call(this,persian(v));}});
+  const canonicalText=s=>String(s).replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/٫/g,'.');
+  Object.defineProperty(input,'value',{configurable:true,get(){return input.tagName==='TEXTAREA'?canonicalText(desc.get.call(this)):latin(desc.get.call(this));},set(v){desc.set.call(this,persian(v));}});
   input.value=initial;
   const grouped=input.dataset.moneyFormat==='grouped';
   const formatGrouped=()=>{

@@ -1,0 +1,21 @@
+name: Portfolio stop-target basis v150
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app.js'
+      - 'tests/portfolio-stop-target-basis-v150.test.cjs'
+      - '.github/workflows/portfolio-stop-target-basis-v150.yml'
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: node --check app.js
+      - run: node --test tests/portfolio-stop-target-basis-v150.test.cjs
