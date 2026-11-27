@@ -17,7 +17,7 @@ class PrepaidD1MigrationTests(unittest.TestCase):
     def tearDown(self):
         self.db.close()
 
-    def insert_order(self, order_id="o1", plan="SAHAMBAN_PRO_3M", price=4500000, state="PENDING"):
+    def insert_order(self, order_id="o1", plan="SAHAMBAN_PRO_30D", price=1500000, state="PENDING"):
         self.db.execute("""INSERT INTO prepaid_subscription_orders
             (id,user_id,plan_id,amount_rial,currency,state,created_at)
             VALUES(?,?,?,?,?,?,?)""",
@@ -29,16 +29,16 @@ class PrepaidD1MigrationTests(unittest.TestCase):
             1
         )
         self.insert_order()
-        self.assertEqual(self.db.execute("SELECT plan_id FROM prepaid_subscription_orders").fetchone()[0],"SAHAMBAN_PRO_3M")
+        self.assertEqual(self.db.execute("SELECT plan_id FROM prepaid_subscription_orders").fetchone()[0],"SAHAMBAN_PRO_30D")
         with self.assertRaises(sqlite3.IntegrityError):
             self.db.execute("""INSERT INTO subscription_orders
                 (id,user_id,plan_id,amount_rial,currency,state,created_at)
-                VALUES('legacy','u1','SAHAMBAN_PRO_3M',4500000,'IRR','PENDING','2026-11-12T10:00:00Z')""")
+                VALUES('legacy','u1','SAHAMBAN_PRO_30D',1500000,'IRR','PENDING','2026-11-12T10:00:00Z')""")
 
     def test_only_approved_plan_price_pairs_are_allowed(self):
-        for plan,price in [("SAHAMBAN_PRO_3M",1),("SAHAMBAN_PRO_6M",4500000),
-                           ("OTHER",4500000),("SAHAMBAN_PRO_12M",15300000)]:
-            if plan=="SAHAMBAN_PRO_12M":
+        for plan,price in [("SAHAMBAN_PRO_30D",1),("SAHAMBAN_PRO_60D",1500000),
+                           ("OTHER",1500000),("SAHAMBAN_PRO_365D",14600000)]:
+            if plan=="SAHAMBAN_PRO_365D":
                 self.insert_order("valid12",plan,price)
                 continue
             with self.assertRaises(sqlite3.IntegrityError):
@@ -47,16 +47,16 @@ class PrepaidD1MigrationTests(unittest.TestCase):
     def test_only_one_pending_order_per_account(self):
         self.insert_order()
         with self.assertRaises(sqlite3.IntegrityError):
-            self.insert_order("o2","SAHAMBAN_PRO_6M",8550000)
+            self.insert_order("o2","SAHAMBAN_PRO_60D",2850000)
         self.db.execute("UPDATE prepaid_subscription_orders SET state='CANCELLED' WHERE id='o1'")
-        self.insert_order("o3","SAHAMBAN_PRO_6M",8550000)
+        self.insert_order("o3","SAHAMBAN_PRO_60D",2850000)
         self.assertEqual(self.db.execute("SELECT count(*) FROM prepaid_subscription_orders WHERE user_id='u1' AND state='PENDING'").fetchone()[0],1)
 
     def test_settled_order_requires_provider_and_payment_identifiers(self):
         with self.assertRaises(sqlite3.IntegrityError):
             self.db.execute("""INSERT INTO prepaid_subscription_orders
                 (id,user_id,plan_id,amount_rial,currency,state,created_at,settled_at)
-                VALUES('bad','u1','SAHAMBAN_PRO_3M',4500000,'IRR','SETTLED','2026-11-12T10:00:00Z','2026-11-12T10:01:00Z')""")
+                VALUES('bad','u1','SAHAMBAN_PRO_30D',1500000,'IRR','SETTLED','2026-11-12T10:00:00Z','2026-11-12T10:01:00Z')""")
         self.insert_order()
         self.db.execute("""UPDATE prepaid_subscription_orders SET state='SETTLED',
             settled_at='2026-11-12T10:01:00Z',provider_name='psp',provider_payment_id='pay1'
