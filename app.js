@@ -110,6 +110,23 @@ function portfolioNumber(v,line){
  if(Number.isInteger(val)&&!Number.isSafeInteger(val))throw Error('عدد خارج از دقت امن محاسبات مالی در سطر '+line);
  return val;
 }
+// Mobile paste guard: when the empty textarea caret is accidentally on line 2,
+// place the clipboard payload at the beginning instead of preserving a blank first row.
+const portfolioPasteField=$('portfolioData');
+portfolioPasteField?.addEventListener('paste',event=>{
+ const clipboard=event.clipboardData?.getData('text/plain');
+ if(typeof clipboard!=='string'||!clipboard.length)return;
+ const current=portfolioPasteField.value;
+ const onlyInvisible=!current.replace(/[\\s\\u200B\\u200C\\u200D\\uFEFF\\u200E\\u200F]/g,'');
+ if(!onlyInvisible)return;
+ event.preventDefault();
+ const cleaned=clipboard.replace(/^\\uFEFF/,'').replace(/\\r\\n?/g,'\\n').replace(/[\\u200B\\u200C\\u200D\\u200E\\u200F]/g,'').replace(/^(?:[\\t \\u00A0]*\\n)+/,'');
+ portfolioPasteField.value=cleaned;
+ const end=cleaned.length;
+ portfolioPasteField.setSelectionRange(end,end);
+ portfolioPasteField.dispatchEvent(new Event('input',{bubbles:true}));
+});
+
 function parsePortfolio(raw){
  const lines=raw.trim().split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
  if(!lines.length)throw Error('دست‌کم یک سهم وارد کنید.');
