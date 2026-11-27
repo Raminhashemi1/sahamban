@@ -14,7 +14,7 @@ test('owner-approved five fixed-day plans have exact IRR prices',()=>{
  ]);
  assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.days),[30,60,90,180,365]);
  assert.deepEqual(Object.values(LAUNCH_PLANS).map(x=>x.priceRial),[1500000,2850000,4050000,7650000,14600000]);
- assert.throws(()=>plan('SAHAMBAN_PRO_3M'),/پلن/);
+ assert.throws(()=>plan('UNKNOWN_PLAN_ID'),/پلن/);
 });
 test('fixed-day arithmetic preserves UTC time and adds exact elapsed days',()=>{
  assert.equal(addPlanDays(now,30),'2026-12-12T10:00:00.000Z');
