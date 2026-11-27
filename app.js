@@ -444,7 +444,7 @@ $('portfolioBackupApply').addEventListener('click',()=>{
  $('portfolioBackupStatus').textContent='اطلاعات فایل روی صفحه بازیابی شد. برای نگه‌داشتن آنها در مرورگر، دکمه «ذخیره سبد روی گوشی» را بزنید.';
 });
 $('portfolioSort').addEventListener('change',reportPortfolio);
-$('portfolioAnalyze').addEventListener('click',reportPortfolio);
+$('portfolioAnalyze').addEventListener('click',()=>{reportPortfolio();$('portfolioSummary').scrollIntoView({behavior:'smooth',block:'center'});});
 $('portfolioClear').addEventListener('click',()=>{resetPortfolioDelete();portfolioEditingSymbol=null;portfolioLastDeletion=null;portfolioUndoAvailability();$('portfolioData').value='';refreshPortfolioSaveState();refreshPortfolioChoices();$('portfolioSummary').textContent='اطلاعات سبد از این صفحه پاک شد.';$('portfolioDetails').replaceChildren();latestPortfolioReport=null;});
 function portfolioCsvCell(value){
  const text=String(value);
