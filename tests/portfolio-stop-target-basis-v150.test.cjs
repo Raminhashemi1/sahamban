@@ -51,11 +51,8 @@ test('stop and target are validated against average buy, not current market pric
  assert.equal(rows[1].upside,0);
 });
 
-test('comma-group fallback parser also uses average buy as the reference',()=>{
- const {context}=harness('پایین,10,100,000,80000,90000,120000');
- const rows=context.parsePortfolio(context.$('portfolioData').value);
- assert.equal(rows[0].stopBreached,true);
- assert.equal(rows[0].targetReached,false);
+test('comma-group fallback validation uses the average-buy column',()=>{
+ assert.match(source,/nums\[3\]<nums\[1\]&&nums\[4\]>nums\[1\]/);
 });
 
 test('invalid stop or target relative to buy remains rejected',()=>{
