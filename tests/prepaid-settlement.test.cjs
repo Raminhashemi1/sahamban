@@ -8,8 +8,20 @@ const payment={verified:true,providerName:'bazaar',providerEventId:'evt-1',
  providerPaymentId:'pay-1',orderId,planId:'SAHAMBAN_PRO_30D',amountRial:1500000,currency:'IRR'};
 function dbFor({row={user_id:'u1',plan_id:payment.planId,amount_rial:payment.amountRial,currency:'IRR',state:'PENDING',paid_until:null},results}={}){
  const calls=[];
- return {calls,prepare(sql){calls.push({sql,values:null});return {bind(...values){calls.at(-1).values=values;return {sql,async first(){return row;}};};},
-  async batch(stmts){calls.push({batch:stmts});return results||[0,1,2].map(()=>({success:true,meta:{changes:1}}));}};
+ return {
+  calls,
+  prepare(sql){
+   calls.push({sql,values:null});
+   return {bind(...values){
+    calls.at(-1).values=values;
+    return {sql,async first(){return row;}};
+   }};
+  },
+  async batch(stmts){
+   calls.push({batch:stmts});
+   return results||[0,1,2].map(()=>({success:true,meta:{changes:1}}));
+  }
+ };
 }
 test('settlement requires provider verification and exact order match',async()=>{
  assert.equal((await settleVerifiedPrepaidPayment(dbFor(),{...payment,verified:false},{now})).reason,'PROVIDER_VERIFICATION_REQUIRED');
