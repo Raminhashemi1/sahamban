@@ -304,7 +304,7 @@ $('pfAdd').addEventListener('click',()=>{
   const ids=['pfQty','pfBuy','pfCurrent','pfStop','pfTarget'];
   const numbers=ids.map(id=>portfolioNumber($(id).value,'فرم افزودن سهم'));
   const [qty,buy,current,stop,target]=numbers;
-  if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=current||target<=current)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از قیمت فعلی و حد سود بیشتر از قیمت فعلی باشد.');
+  if(!Number.isSafeInteger(qty)||qty<=0||[buy,current,stop,target].some(x=>x<=0)||stop>=buy||target<=buy)throw Error('تعداد باید عدد صحیح مثبت باشد؛ حد ضرر کمتر از میانگین خرید و حد سود بیشتر از میانگین خرید باشد.');
   const input=$('portfolioData');const raw=input.value.trim();
   const lines=raw?raw.split(/\r?\n/).filter(Boolean):[];
   const symbols=lines.map(line=>line.split(/[,،;\t]/)[0].trim());
