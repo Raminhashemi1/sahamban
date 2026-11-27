@@ -90,8 +90,16 @@ test('rights issue at or above cum-rights fair value has no IAS 33 bonus element
 });
 
 test('capital action refuses missing or mismatched CODAL evidence',()=>{
- const badSerial=sample();badSerial.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=999';
- assert.ok(calculateCapitalAdjustment(badSerial,'ونوین').errors.includes('REPORT_TRACING_MISMATCH'));
+ const token='qr1ypqX8jr8rIaRvVJxoNA==';
+ const distinct=sample();distinct.letter_serial=token;
+ distinct.report_url='https://www.codal.ir/Reports/Decision.aspx?LetterSerial=qr1ypqX8jr8rIaRvVJxoNA%3D%3D';
+ assert.equal(calculateCapitalAdjustment(distinct,'ونوین').status,'CAPITAL_ADJUSTMENT_READY_FOR_REVIEW');
+ const badSerial={...distinct,letter_serial:'anotherValidToken123'};
+ assert.ok(calculateCapitalAdjustment(badSerial,'ونوین').errors.includes('REPORT_LETTER_SERIAL_MISMATCH'));
+ const noSerial={...distinct,letter_serial:'invalid'};
+ assert.ok(calculateCapitalAdjustment(noSerial,'ونوین').errors.includes('INVALID_LETTER_SERIAL'));
+ const missing={...distinct,report_url:'https://www.codal.ir/Reports/Decision.aspx?OtherId=12345'};
+ assert.ok(calculateCapitalAdjustment(missing,'ونوین').errors.includes('REPORT_LETTER_SERIAL_MISSING'));
  const spoof=sample();spoof.report_url='https://codal.ir.attacker.test/Reports/Decision.aspx?LetterSerial=12345';
  assert.ok(calculateCapitalAdjustment(spoof,'ونوین').errors.includes('INVALID_REPORT_URL'));
  const noOriginal=sample();noOriginal.original_document_read=false;
