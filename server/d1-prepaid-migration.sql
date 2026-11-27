@@ -1,19 +1,21 @@
--- Migration: provider-independent prepaid Pro plans (v1).
--- Apply to a PRIVATE D1 database only after backup. This is additive and leaves
--- the legacy annual pilot tables untouched. No card/bank credentials or PII.
+-- Additive migration: owner-approved five fixed-day prepaid Pro plans.
+-- Apply to a PRIVATE D1 database only after backup. Existing account and annual
+-- legacy tables are left untouched; no production payment is enabled here.
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS prepaid_subscription_orders (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES sahamban_users(id),
   plan_id TEXT NOT NULL CHECK(plan_id IN (
-    'SAHAMBAN_PRO_3M','SAHAMBAN_PRO_6M','SAHAMBAN_PRO_9M','SAHAMBAN_PRO_12M'
+    'SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D',
+    'SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D'
   )),
   amount_rial INTEGER NOT NULL CHECK(
-    (plan_id='SAHAMBAN_PRO_3M' AND amount_rial=4500000) OR
-    (plan_id='SAHAMBAN_PRO_6M' AND amount_rial=8550000) OR
-    (plan_id='SAHAMBAN_PRO_9M' AND amount_rial=12150000) OR
-    (plan_id='SAHAMBAN_PRO_12M' AND amount_rial=15300000)
+    (plan_id='SAHAMBAN_PRO_30D' AND amount_rial=1500000) OR
+    (plan_id='SAHAMBAN_PRO_60D' AND amount_rial=2850000) OR
+    (plan_id='SAHAMBAN_PRO_90D' AND amount_rial=4050000) OR
+    (plan_id='SAHAMBAN_PRO_180D' AND amount_rial=7650000) OR
+    (plan_id='SAHAMBAN_PRO_365D' AND amount_rial=14600000)
   ),
   currency TEXT NOT NULL CHECK(currency='IRR'),
   state TEXT NOT NULL CHECK(state IN ('PENDING','SETTLED','CANCELLED','EXPIRED','REVIEW_REQUIRED')),
