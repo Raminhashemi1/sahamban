@@ -32,6 +32,24 @@ Do not enable `SAHMINO_PASSWORD_AUTH_ENABLED` until both migrations have succeed
 
 Do not apply the fresh schema and the upgrade migration to the same database. Take a backup before any production migration, record the migration history, and verify the schema after applying each migration.
 
+### Observed legacy pilot D1 → dual-store Billing V2 (read-only inventory 2026-11-28)
+
+The configured remote D1 was inspected without reading customer/payment rows. It currently contains the legacy pilot tables (`sahamban_users`, `subscription_orders`, `subscription_entitlements`, `manual_bank_reconciliations`, `payment_event_ledger`, `subscription_admin_audit`, prospective-signal tables, and the old prepaid ledger). It does **not** contain `billing_orders`, `billing_access`, `billing_events`, `sahmino_phone_identities`, `sahmino_shared_sessions`, `sahmino_auth_rate_limits`, `sahmino_recovery_codes`, or the username/password columns on `sahamban_users`.
+
+This is neither a fresh database nor an existing pre-dual-store Billing V2 database. Do not use the fresh-install base schema, and do not apply migrations 0002/0003 (those are only for an existing `billing_orders` table created by the earlier Bazaar Billing V2 schema). The following is the proposed additive upgrade path for this specific legacy-pilot shape; it has **not** been executed and requires a separately approved backup and migration window:
+
+1. Re-run the read-only inventory and confirm `sahamban_users` exists while all three `billing_*` tables and all new auth objects/columns listed above are absent. If the inventory differs, stop and review the actual migration history.
+2. Take and verify a restorable D1 backup. Record the database ID, timestamp, current table inventory, and backup reference. Do not export customer/payment rows into CI logs or Git.
+3. Apply `server/billing/schema.sql` once. It creates the current five-plan `billing_orders`, `billing_access`, and `billing_events` ledger alongside the legacy tables; it does not replace or rewrite the legacy annual/prepaid ledgers. Verify the three new tables and their DDL through read-only `sqlite_schema` queries.
+4. Apply `server/d1-sahmino-sms-otp.sql` once to create the verified-phone identity compatibility table required by migration 0004. This creates OTP challenge storage but does not enable an OTP route or SMS provider; all auth and checkout flags remain off. Do not fabricate phone identities. If verified legacy identities are available from an authoritative source, preserve/import them only through a separately reviewed, account-matched migration.
+5. Apply `server/migrations/0004-username-password-auth.sql` once. It adds username/password columns, rate-limit storage and shared sessions; it only backfills usernames from non-revoked verified phone identities, leaves password hashes NULL, and revokes any pre-existing unrevoked shared sessions. Since the current inventory showed no shared-session table, migration 0004 creates it.
+6. Apply `server/migrations/0005-password-recovery-codes.sql` once.
+7. Re-run the read-only inventory and verify the three Billing V2 tables, phone identity table, auth rate-limit/session/recovery tables, and all four auth columns. Confirm both flags `BILLING_V2_ENABLED` and `SAHMINO_PASSWORD_AUTH_ENABLED` remain false in both Worker configurations. Provision no account until the PBKDF2 benchmark and secure recovery-code delivery gates are accepted.
+
+Do **not** apply `server/d1-sahmino-sms-otp-runtime.sql` as a prerequisite for this observed shape: it is only needed to preserve the prior OTP send-event/session runtime schema. Migration 0004 creates the shared-session table itself. If a later inventory finds OTP runtime history that must be retained, stop and plan that preservation explicitly before 0004.
+
+No workflow currently applies this sequence automatically. The Cloudflare diagnostic only reads schema metadata; a green diagnostic is not migration approval.
+
 ## 2. Prepare the Bazaar Worker
 
 Copy `server/wrangler.bazaar.toml.example` to `server/wrangler.bazaar.toml`, then replace the PWA origin, actual application ID, shared D1 database name/ID, and all five Bazaar SKUs from the developer panel.
