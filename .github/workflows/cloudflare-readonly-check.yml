@@ -1,6 +1,11 @@
 name: Sahamban Cloudflare read-only connection diagnostic
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - integration/sahmino-app-billing-complete
+    paths:
+      - .github/workflows/cloudflare-readonly-check.yml
 permissions:
   contents: read
 jobs:
