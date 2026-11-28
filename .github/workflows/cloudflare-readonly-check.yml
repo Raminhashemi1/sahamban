@@ -56,6 +56,36 @@ jobs:
             if(tables.some(name=>typeof name!=='string'))
               throw Error('D1 inventory returned malformed table names');
             console.log('D1 tables ('+tables.length+'): '+tables.join(', '));
+            const present=new Set(tables);
+            const groups={
+              'Billing V2 ledger':['billing_orders','billing_access','billing_events'],
+              'Username/password auth':['sahmino_auth_rate_limits','sahmino_shared_sessions','sahmino_recovery_codes'],
+              'Verified phone identity compatibility':['sahmino_phone_identities'],
+              'OTP runtime compatibility (optional history)':['sahmino_sms_otp_send_events']
+            };
+            for(const [label,required] of Object.entries(groups)){
+              const missing=required.filter(name=>!present.has(name));
+              console.log((missing.length?'BLOCKED ':'PASS ')+label+
+                (missing.length?' — missing: '+missing.join(', '):' — tables present'));
+            }
+            // Read only SQLite DDL metadata; never select user, session or payment rows.
+            const ddlSql = `SELECT name, sql FROM sqlite_schema WHERE type='table' AND name='sahamban_users'`;
+            const ddlResponse=await fetch(base+'/accounts/'+account+'/d1/database/'+db+'/query',{
+              method:'POST',headers:{...headers,'Content-Type':'application/json'},
+              body:JSON.stringify({sql:ddlSql,params:[]}),signal:AbortSignal.timeout(15000)
+            });
+            let ddl;
+            try{ddl=await ddlResponse.json();}catch{throw Error('D1 schema metadata: invalid response (HTTP '+ddlResponse.status+')');}
+            if(!ddlResponse.ok||ddl?.success!==true||!Array.isArray(ddl?.result)||
+               ddl.result.length!==1||ddl.result[0]?.success!==true||
+               !Array.isArray(ddl.result[0]?.results))
+              throw Error('D1 schema metadata query failed; no schema changes were made');
+            const userSql=ddl.result[0].results[0]?.sql||'';
+            const authColumns=['username_normalized','password_salt','password_hash','password_iterations'];
+            const missingAuthColumns=authColumns.filter(column=>!userSql.includes(column));
+            console.log(missingAuthColumns.length
+              ?'BLOCKED Username/password columns — missing: '+missingAuthColumns.join(', ')
+              :'PASS Username/password columns — all present');
             // Script download endpoint returns JavaScript source, NOT a JSON envelope.
             // Validate the HTTP status without outputting or parsing deployed code.
             const script=await fetch(base+'/accounts/'+account+'/workers/scripts/sahamban-pro-pilot',{
