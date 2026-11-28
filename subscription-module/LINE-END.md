@@ -16,20 +16,18 @@
 
 ## وضعیت فعلی
 
-**آخرین شواهد خودکار قطعی (2026-11-23، شاخه HEAD `a8f29f238eeffeca3c5be53d396beff4cf825045`):**
-- Billing V2، تست‌های auth، Bazaar/Myket، D1 محلی، migrationها و Worker bundle موفق: [run 45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951).
-- Smoke و همه jobهای مرورگر/Chromium موفق: [run 45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860).
-- Android Debug هر دو Flavor موفق: [run 45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930).
-- Release build gate هر دو Flavor با checkout خاموش موفق: [run 45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353)، artifact `14814135913`. هر دو APK unsigned و صراحتاً `NOT-STORE-READY` هستند. Artifact دریافت و محتوایش بررسی شد؛ Bazaar SHA-256: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`؛ Myket SHA-256: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`. package/version و checkout-off gate موفق‌اند؛ امضای مالک وجود ندارد.
-- هر چهار اجرای بالا روی یک HEAD مشترک انجام شده‌اند و همه موفق‌اند. این CI محلی/ساختی است؛ استقرار Worker/D1 واقعی، احراز هویت production، نصب/پذیرش فیزیکی و ارسال فروشگاه را اثبات نمی‌کند.
+**آخرین اعتبارسنجی یکپارچه روی HEAD فعلی `4a721dd7ea4593b7145a17ee80bccaa6283c1d8d` (2026-11-28):**
+- Billing V2، احراز هویت، Bazaar/Myket، schema و migrationهای D1 محلی و bundle Worker: [run 46117163022](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163022) و اجرای PR [run 46117166927](https://github.com/Raminhashemi1/sahamban/actions/runs/46117166927) — هر دو موفق.
+- Smoke و مرورگر/Chromium: [run 46117166958](https://github.com/Raminhashemi1/sahamban/actions/runs/46117166958) — موفق.
+- Android Debug هر دو Flavor: [run 46117163051](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163051) و اجرای PR [run 46117167012](https://github.com/Raminhashemi1/sahamban/actions/runs/46117167012) — موفق؛ فقط آزمون/کامپایل، نه آماده فروشگاه.
+- Release build gate هر دو Flavor با checkout اجباری خاموش: [run 46117163018](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163018) — موفق. Artifact [15251862535](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163018) شامل دو APK غیرامضاشده است؛ package هر دو `ir.sahmino.app`، versionCode برابر 1، versionName برابر 1.0.0 و non-debuggable بودن تأیید شد. checkout در هر دو flavor خاموش است. SHA-256 بازار: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`؛ مایکت: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`. این APKها unsigned و صراحتاً NOT STORE READY هستند.
+- این چهار دسته CI روی یک HEAD یکسان اجرا شده‌اند و موفق‌اند؛ بنابراین گیت‌های خودکار کد، build و بسته‌بندی اولیه در سطح CI بسته‌اند، نه پذیرش نهایی فروشگاه.
 
-**اصلاح ترتیب استقرار احراز هویت (2026-11-23، commit `08b1e95b949de1c2f6ca592f65a0b33ef2959642`):** Runbook اکنون صریحاً مشخص می‌کند که اگر هویت‌های تلفنی تأییدشده قبلی باید حفظ شوند، `server/d1-sahmino-sms-otp.sql` باید پیش از migration 0004 اجرا شده باشد؛ و schema مربوط به runtime قدیمی OTP فقط در صورت نیاز به حفظ جداول runtime/history اجرا می‌شود. این اصلاح از ایجاد ناخواسته جدول خالی phone identities و برداشت اشتباه درباره backfill جلوگیری می‌کند. هیچ Migration یا تغییری روی D1 واقعی اجرا نشده است.
+**دسترسی فقط‌خواندنی Cloudflare (2026-11-23):** [run 45209193551](https://github.com/Raminhashemi1/sahamban/actions/runs/45209193551) موفق شد. API token، دسترسی D1 و خواندن metadata اسکریپت Worker تأیید شد. فقط نام ۱۱ جدول D1 خوانده شد؛ هیچ ردیف کاربر/پرداختی خوانده نشد. فهرست فعلی شامل ledger قدیمی `subscription_orders` و `subscription_entitlements` است و جدول‌های Billing V2 مانند `billing_orders`/`billing_access` و جدول‌های نشست/بازیابی رمز در آن فهرست نبودند. هیچ migration، تغییر داده، deploy یا پرداختی انجام نشد. پس محیط Cloudflare قابل دسترسی است، اما schema مشترک موردنیاز Billing V2/Auth هنوز روی D1 مشاهده نشده و باید پس از backup و تأیید مالک به‌صورت مرحله‌ای آماده شود.
 
-**سخت‌سازی تکمیلی Workflow امضاشده (commit `4635812f04d6a4ded08438c9bd7ea2ee552a3ac3`):** پس از امضای هر APK، workflow علاوه بر صحت cryptographic signature و package، `versionCode=1`، `versionName=1.0.0` و non-debuggable بودن را بررسی می‌کند و فایل manifest هش SHA-256 را همراه APKها در artifact بارگذاری می‌کند. این تغییر خودکار روی مسیر امضای مالک است و تا زمان تأمین Secretها اجرای واقعی آن ممکن نیست.
+**وضعیت ادغام:** PR #191 باز و Draft است؛ base آن `codex/reengineering-audit` و head فعلی `integration/sahmino-app-billing-complete` است. PR #218 برای جایگزینی کاتالوگ قدیمی با پنج پلن مصوب در main ادغام شد: `c8d7ce7a831c1470b488458d159e5597033702da`. PR #217 برای اسناد انتشار پس از رفع اشاره قدیمی به تعارض چهار/پنج پلن به‌روزرسانی شده است.
 
-**وضعیت امضای اولیه:** Workflow دستی `.github/workflows/android-pilot-signed-release.yml` آماده است. اجرای آن فقط پس از آماده‌بودن هر دو Worker واقعی (auth روشن، پرداخت خاموش، package درست، D1 مشترک) و تنظیم دو Actions Variable مربوط به Worker URL و چهار Secret امضای متعلق به مالک ممکن است. در نبود هر ورودی fail-closed می‌شود.
-
-**وضعیت ادغام:** PR #191 باز و Draft است؛ head آن همین شاخه است و base فعلی `codex/reengineering-audit` است. CI سبز، اما هیچ production deploy، migration واقعی یا امضای مالک انجام نشده است.
+**موانع باقی‌مانده خارج از CI:** استقرار دو Worker و D1 مشترک با migrations و secrets، provisioning امن حساب‌ها و benchmark PBKDF2، پذیرش فیزیکی ورود/نشست/خروج/بازیابی روی هر دو Flavor، تأمین URLهای Production Worker و کلید امضای مالک، اجرای workflow امضاشده و ارسال نسخه اولیه با checkout خاموش، سپس بررسی و تأیید فروشگاه. بعد از انتشار اولیه، SKUهای واقعی پنج پلن، قرارداد برگشت وجه مایکت، آزمون خرید واقعی و به‌روزرسانی امضاشده خرید فعال انجام می‌شود.
 
 ## ترتیب قطعی اجرا
 
