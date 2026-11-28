@@ -212,3 +212,9 @@
 - Myket: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`
 
 این دو APK unsigned هستند و فقط خروجی ساخت/کنترل‌اند؛ امضای Release، نصب و پذیرش دستگاه، Worker/D1 production و ارسال فروشگاه هنوز انجام نشده است.
+
+**اعتبارسنجی آخرین commit مستنداتی (2026-11-28):** HEAD اکنون `281b8d6f6796d6979cd0275ed9bce16c01ffc740` است؛ تغییرات پس از commit دارای Release gate فقط مستندات و شواهد بوده‌اند و کد Android/Worker تغییر نکرده است. روی این HEAD:
+- Billing V2/Auth: [run 46117427917](https://github.com/Raminhashemi1/sahamban/actions/runs/46117427917) — success.
+- Android Debug: [run 46117427907](https://github.com/Raminhashemi1/sahamban/actions/runs/46117427907) — success.
+- Smoke + browser/Chromium: [run 46117427932](https://github.com/Raminhashemi1/sahamban/actions/runs/46117427932) — success.
+- Release gate هر دو flavor روی code-equivalent HEAD قبلی `4a721dd7ea4593b7145a17ee80bccaa6283c1d8d`: [run 46117163018](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163018) — success؛ چون commitهای بعدی فقط مستندات را تغییر داده‌اند، خروجی Release همچنان با کد اجرایی فعلی متناظر است.
