@@ -53,3 +53,17 @@
 ## وضعیت
 **آماده‌سازی و ممیزی انجام شده؛ انتقال کد هنوز انجام نشده است.**
 این سند تأییدیه آمادگی انتشار یا موفقیت آزمون نیست. گام بعدی، ساخت patch کوچک و قابل آزمون برای حفظ Worker موجود و افزودن لایه Billing V2 به‌صورت افزایشی است.
+
+
+## شواهد CI روی شاخه کاندید (۲۸ نوامبر ۲۰۲۶)
+
+دو اجرای workflow اندروید روی همین شاخه با موفقیت پایان یافتند:
+- [اجرای نهایی با برچسب صحیح artifact](https://github.com/Raminhashemi1/sahamban/actions/runs/46117024510) — نتیجه `success`
+- آزمون package identity و host-security: موفق
+- آزمون local backup و Android export bridge: موفق
+- آزمون Java مربوط به TrustedNavigation: موفق
+- ساخت Debug APK: موفق
+- SHA-256 فایل APK: `c9816a8e96579546f06188c94f14b2fa39a6151a6fb302e1b33d1faa5bbf9f7d`
+- Artifact: `sahmino-android-pilot-debug-TEST-ONLY-NOT-STORE-READY` (ID: `15251479633`)
+
+این فقط build آزمایشی Debug از کد فعلی main است. آزمون کامل ماژول‌های محصول، build نوع Release، امضای فروشگاهی و خرید واقعی Bazaar/Myket را پوشش نمی‌دهد.
