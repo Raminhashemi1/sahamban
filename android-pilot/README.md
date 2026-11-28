@@ -1,64 +1,129 @@
-# Sahamban Android pilot wrapper — install test only
+# Sahmino Android app — username/password and in-app billing
 
-This module creates a **debug APK** containing a minimal Android WebView shell
-for the existing public GitHub Pages PWA:
-https://raminhashemi1.github.io/sahamban/
+This module wraps the Sahmino PWA and exposes a native subscription screen.
+The source can produce unsigned verification builds and, after owner-managed signing secrets are configured, signed initial-release APKs with subscription checkout forcibly disabled. Until signing, live Worker setup, device acceptance, and store submission are complete, generated APKs are not marketplace-ready.
 
-## Strict scope
+## Implemented
+- Native username/password login gates PWA startup.
+- The username is the user's Iranian mobile number in canonicalized format; no SMS or one-time code is sent.
+- Passwords are sent only over HTTPS to the Worker. The native form clears its password field after successful login.
+- The Worker issues a Secure, HttpOnly session cookie. Android stores it in CookieManager and keeps it out of WebView JavaScript, local storage, logs, and URLs.
+- Cold starts revalidate the stored session; logout revokes the server-side session.
+- Native login includes one-time recovery-code password reset. Ten random recovery codes are provisioned offline, shown once, stored only as SHA-256 digests, and each successful reset revokes all active sessions.
+- The authenticated native subscription host composes the cookie provider, Billing V2 API, Bazaar/Myket coordinator, purchase flow, and five-plan UI.
+- The WebView instance is preserved when returning from the native subscription screen.
+- Both marketplace flavors use the shared server entitlement ledger. The initial signed release keeps checkout disabled; billing-enabled release requires a separate owner-confirmed workflow.
 
-- This is **not** a signed production release for Myket, Cafe Bazaar, or Google Play.
-  The temporary `ir.sahamban.pilot` package ID and build-generated debug
-  certificate must **not** become the final app identity/signing key.
-- A native Cafe Bazaar Poolakey manual-purchase boundary is included: `purchaseProduct`, `getPurchasedProducts`, in-app SKU details, `consumeProduct`, and local RSA signature verification. The five time plans are consumable one-time products (not auto-renewing subscriptions). The trusted Worker verifies each purchase with Bazaar before D1 settlement; only then is the purchase token consumed.
-- This shell does **not** migrate browser Chrome/PWA localStorage or portfolio
-  to WebView. Existing users MUST export their backup in the original PWA first,
-  and carefully test an import with synthetic data. Do not uninstall the old
-  PWA or wipe its data.
-- WebView file imports use Android's system file picker. **Backup export
-  and downloads are NOT yet verified in WebView** (blob: download links may
-  not work). Test both directions before considering any real user's portfolio.
-- It relies on HTTPS to load the current public web app, not an embedded offline
-  bundle. Service-worker/offline handling and slow networks require physical
-  device validation. No injected native JavaScript interface is used.
-- Only HTTPS `raminhashemi1.github.io/sahamban/` navigation remains inside
-  the app. Other HTTPS links go to an external browser; non-HTTPS and
-  special-scheme navigation is blocked.
-- Internet is the only declared Android permission; WebView file/content
-  access and cleartext HTTP are explicitly disabled; automatic Android backup
-  of app data is disabled.
-- A user-approved package ID, actual release signing key handled only in a
-  secure owner-controlled build environment, genuine asset/icon and screenshots,
-  store policy compliance, private data handling, and physical Android
-  acceptance are still prerequisites for release.
+## Product catalog
 
-## How to build a test APK
+| Duration | Internal ID | Price (IRR) |
+|---:|---|---:|
+| 30 days | `SAHAMBAN_PRO_30D` | 1,500,000 |
+| 60 days | `SAHAMBAN_PRO_60D` | 2,850,000 |
+| 90 days | `SAHAMBAN_PRO_90D` | 4,050,000 |
+| 180 days | `SAHAMBAN_PRO_180D` | 7,650,000 |
+| 365 days | `SAHAMBAN_PRO_365D` | 14,600,000 |
 
-GitHub Actions workflow `Sahamban Android pilot debug APK` uses Java 17,
-Android SDK 35, Gradle 8.11.1 and Android Gradle Plugin 8.9.2 to build
-`app-debug.apk` in CI. It uploads a **debug artifact**, not a marketplace
-release. No key files or signing passwords are stored in the repository.
+Products are consumable one-time purchases with manual renewal only. The
+server is authoritative for plan, price, duration, account, and expiry.
 
-For local development with an installed Android SDK:
+## Build configuration
 
-```sh
-gradle -p android-pilot :app:assembleDebug
-```
+The owner-approved permanent application ID is `ir.sahmino.app`. Both Bazaar and Myket listings must use this exact package ID.
 
-Run pure Java navigation checks:
+Gradle environment variables:
+- `SAHAMBAN_APPLICATION_ID`, `SAHAMBAN_EXPECTED_PACKAGE_NAME`
+- `SAHAMBAN_BAZAAR_WORKER_BASE_URL`, `SAHAMBAN_MYKET_WORKER_BASE_URL`, `SAHAMBAN_PWA_ORIGIN`
+- `SAHAMBAN_BILLING_ENABLED=true` (debug-only opt-in; checkout is always disabled when `SAHAMBAN_DISTINCT_PILOT_IDS=true`)
+- `SAHAMBAN_RELEASE_BILLING_ENABLED=true` (release-only opt-in; used only by the manual owner-confirmed billing update workflow after all commercial and device-acceptance gates pass).
+- Five Bazaar product variables: `SAHAMBAN_BAZAAR_SKU_PRO_30D`, `SAHAMBAN_BAZAAR_SKU_PRO_60D`, `SAHAMBAN_BAZAAR_SKU_PRO_90D`, `SAHAMBAN_BAZAAR_SKU_PRO_180D`, `SAHAMBAN_BAZAAR_SKU_PRO_365D`.
+- Five Myket product variables: `SAHAMBAN_MYKET_SKU_PRO_30D`, `SAHAMBAN_MYKET_SKU_PRO_60D`, `SAHAMBAN_MYKET_SKU_PRO_90D`, `SAHAMBAN_MYKET_SKU_PRO_180D`, `SAHAMBAN_MYKET_SKU_PRO_365D`.
+- `BAZAAR_RSA_PUBLIC_KEY` and `MYKET_PUBLIC_KEY` for their matching flavors.
 
-```sh
-mkdir -p /tmp/sahamban-java-tests
-javac -d /tmp/sahamban-java-tests   android-pilot/app/src/main/java/ir/sahamban/pilot/TrustedNavigation.java   android-pilot/tests/TrustedNavigationTest.java
-java -cp /tmp/sahamban-java-tests ir.sahamban.pilot.TrustedNavigationTest
-```
+Placeholder identifiers are rejected. Never guess product IDs, package names,
+keys, or Worker URLs.
 
-## Acceptance still required
+The two stores have independent product IDs and public keys. Do not reuse Bazaar SKUs in the Myket flavor or vice versa. The release billing gate requires all five unique IDs for each store.
 
-Physical Android device: PWA loading, RTL, basic navigation, browser
-handoff, permissions, synthetic 20/100-holding portfolio import and export,
-offline/slow network, cold/warm start, font scaling, TalkBack, and secure
-update behavior. Record device/Android/WebView versions and actual results.
-Only afterwards choose a market-specific release wrapper/signing approach. The native Poolakey boundary uses manual consumable-product APIs (`purchaseProduct`, `getPurchasedProducts`, `getInAppSkuDetails`, `consumeProduct`) and sends signed purchase evidence to the authenticated Worker. The Worker verifies the RSA-signed developer payload and in-app product receipt with Cafe Bazaar before D1 settlement. The token is consumed only after the server has durably granted the time-limited entitlement. The billing coordinator and purchase orchestration are not yet wired into `MainActivity` or the PWA UI; identity/session delivery and user-visible plan/price screens remain release blockers. A consumed purchase is not restored from Bazaar inventory; the user's durable entitlement must be reloaded from the authenticated Worker account. All live purchase flags remain false until package/SKU mapping, public key and server credentials are configured.
-Trusted Web Activity (TWA) additionally requires domain-root
-`/.well-known/assetlinks.json` associated with the final **real** APK
-signing certificate; a Project Pages path alone cannot satisfy it.
+## Worker and D1 setup
+
+Both store Workers must share one private D1 database and exact PWA origin.
+Apply the base schema and existing Billing V2 migrations as appropriate, then run these additive migrations exactly once and in order:
+
+1. `server/migrations/0004-username-password-auth.sql` — username/password fields, shared sessions and rate-limit storage.
+2. `server/migrations/0005-password-recovery-codes.sql` — one-time recovery-code storage required by the password-reset endpoint.
+
+Do not enable `SAHMINO_PASSWORD_AUTH_ENABLED` until both migrations succeed, account provisioning is verified, and the shared D1 binding is confirmed on both store Workers. Provision new accounts or set credentials on an existing account with
+`scripts/provision-sahmino-user.mjs`; pass the existing internal `userId` to
+update a backfilled account. It reads JSON from stdin and prints SQL containing
+only the derived PBKDF2 password hash.
+
+Required Worker settings:
+- `SAHMINO_PASSWORD_AUTH_ENABLED=false` until migration and account provisioning are complete.
+- `BILLING_V2_ENABLED=false` until all release gates pass.
+- `PILOT_AUTH_ENABLED=false` in both deployments.
+- A private `AUTH_RATE_LIMIT_SECRET` of at least 32 bytes, set as a Worker secret.
+
+The old SMS/OTP schema is retained only for migration compatibility and
+historical data preservation. The current Worker and Android app do not
+invoke any SMS provider or OTP route.
+
+## Automated build and validation
+
+GitHub Actions validates the password-auth service, D1 migration, Worker
+session contract, Android host, and both store adapters. The Android workflow
+builds unsigned Bazaar and Myket debug artifacts only. A green CI run is not
+proof of live purchase behavior.
+
+## Owner-managed signed initial release
+
+The workflow `.github/workflows/android-pilot-signed-release.yml` builds Bazaar and Myket Release APKs with checkout forcibly disabled. It is manual (`workflow_dispatch`) and requires these GitHub Actions secrets:
+
+- `SAHMINO_RELEASE_KEYSTORE_BASE64`: base64-encoded Android release keystore.
+- `SAHMINO_RELEASE_STORE_PASSWORD`: keystore password.
+- `SAHMINO_RELEASE_KEY_ALIAS`: signing key alias.
+- `SAHMINO_RELEASE_KEY_PASSWORD`: signing key password.
+
+Configure these in the repository's Actions secrets using the publisher-owned signing key. Never commit the keystore or passwords.
+
+Also configure two repository Actions **variables**: `SAHAMBAN_BAZAAR_WORKER_BASE_URL` and `SAHAMBAN_MYKET_WORKER_BASE_URL`, each set to its own production Worker HTTPS origin (scheme and host only; no path, query, or fragment). Bazaar and Myket are separate Worker deployments with different server-side store selection; each Android flavor is compiled with only its matching Worker URL. Native login is the app's startup gate, so a signed app built without either endpoint cannot sign users in or open the PWA. The signed workflow fails closed when either variable is missing or malformed and probes both live Workers before building: each health endpoint must confirm checkout/payments are off and each password-auth session endpoint must return the expected signed-out response (HTTP 401). This prevents signing an app that cannot reach the correct authentication and billing service.
+
+Run the workflow manually only after verifying that both Workers are deployed with the exact PWA Origin, shared production D1, completed migrations, provisioned accounts, and `SAHMINO_PASSWORD_AUTH_ENABLED=true` for the intended release environment. Verify the keystore belongs to the permanent package `ir.sahmino.app`; the workflow verifies both APK signatures and package IDs and confirms checkout remains disabled. It uploads the signed initial-release artifacts. Keep a secure backup of the keystore and its recovery material outside GitHub.
+
+## Owner-managed signed billing-enabled update
+
+The separate manual workflow `.github/workflows/android-pilot-signed-billing-release.yml` is reserved for the later update, not the initial publication. It requires the exact dispatch confirmation `ENABLE_BILLING_RELEASE`, both live Worker health endpoints to report auth and checkout enabled with their correct store identity, all five distinct product IDs per store, both marketplace public keys, and the owner release-signing secrets. It verifies the signed APKs, package, per-flavor Worker, per-flavor SKUs, store identity, and `SAHAMBAN_BILLING_ENABLED=true` before uploading artifacts.
+
+Do not run this workflow until the initial app is published, actual store products are created and prices verified, Myket refund/revocation is accepted and implemented, and the physical-device acceptance matrix passes for both stores. The workflow does not replace those commercial or device tests; the confirmation is an explicit owner release authorization.
+
+## Owner actions still required
+
+1. Configure the final marketplace publisher accounts; the approved Android application ID is `ir.sahmino.app`.
+2. Only after the initial checkout-disabled app is published, create the real marketplace product entries according to each store's official contract, then provide their actual IDs and verify exact prices.
+3. Provision actual user accounts and communicate initial passwords through
+   a separate secure channel; this repository does not contain user passwords.
+4. Define and rehearse the secure offline delivery and ownership-verification
+   process for the ten one-time recovery codes. If all codes are lost or used,
+   an authorized operator must verify ownership and perform a controlled
+   credential/code rotation; phone-number possession alone is not proof.
+5. Deploy the two Workers with the same D1 database, configure Worker secrets,
+   and apply migrations only after backup and environment verification.
+6. Complete Myket refund/revocation reconciliation.
+7. Test login, session persistence, logout, account switching, purchase,
+   verification, consume/retry, restore, repurchase, expiry, refunds, and
+   network-loss recovery on physical devices with marketplace test accounts.
+8. Configure owner-controlled release signing and store submissions.
+
+No production deployment, live D1 migration, real purchase, or release
+signing is performed by this source integration.
+
+
+## Latest automated verification (2026-11-23)
+
+All four workflows below passed on the same integration HEAD `a8f29f238eeffeca3c5be53d396beff4cf825045`:
+- Billing V2, auth, Bazaar/Myket adapters, local D1 migrations and Worker bundle: [run 45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951).
+- Full smoke and browser/Chromium checks: [run 45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860).
+- Bazaar and Myket Android Debug flavors: [run 45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930); debug artifact is compile/test-only.
+- Checkout-disabled Release build gate: [run 45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353), artifact `14814135913`. The downloaded ZIP contains both unsigned APKs and the checksum manifest. Bazaar SHA-256: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`; Myket SHA-256: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`.
+
+The Release APKs are unsigned and explicitly NOT STORE READY. These CI checks do not prove production Worker/D1 deployment, real authentication, physical-device acceptance, owner signing, or marketplace approval.

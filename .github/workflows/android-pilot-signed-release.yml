@@ -1,0 +1,167 @@
+name: Sahmino signed initial release (checkout disabled)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Validate both production Worker endpoints required by native login
+        shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          for name in SAHAMBAN_BAZAAR_WORKER_BASE_URL SAHAMBAN_MYKET_WORKER_BASE_URL; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Configure both repository Actions variables SAHAMBAN_BAZAAR_WORKER_BASE_URL and SAHAMBAN_MYKET_WORKER_BASE_URL to their respective production HTTPS Worker origins before signing. Each store APK must use its own Worker."
+              exit 1
+            fi
+          done
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.parse, urllib.request
+          endpoints = {
+              "BAZAAR": os.environ["SAHAMBAN_BAZAAR_WORKER_BASE_URL"],
+              "MYKET": os.environ["SAHAMBAN_MYKET_WORKER_BASE_URL"],
+          }
+          def get_json(base, path, expected_status, headers=None):
+              request = urllib.request.Request(base.rstrip("/") + path, headers=headers or {})
+              try:
+                  response = urllib.request.urlopen(request, timeout=15)
+              except urllib.error.HTTPError as error:
+                  response = error
+              if response.status != expected_status:
+                  raise SystemExit(f"{path} on {base} returned HTTP {response.status}; expected {expected_status}.")
+              try:
+                  return json.loads(response.read().decode("utf-8"))
+              finally:
+                  response.close()
+          for store, value in endpoints.items():
+              parsed = urllib.parse.urlparse(value)
+              try:
+                  port = parsed.port
+              except ValueError:
+                  raise SystemExit(f"{store} Worker URL has an invalid port.")
+              valid = (parsed.scheme == "https" and bool(parsed.hostname) and
+                       parsed.username is None and parsed.password is None and
+                       (port is None or 1 <= port <= 65535) and
+                       parsed.path in ("", "/") and not parsed.query and not parsed.fragment)
+              if not valid:
+                  raise SystemExit(f"{store} Worker URL must be an HTTPS origin without credentials, path, query, or fragment.")
+              health = get_json(value, "/api/v1/health", 200)
+              if health.get("paymentsEnabled") is not False or health.get("checkoutEnabled") is not False:
+                  raise SystemExit(f"{store} Worker must confirm paymentsEnabled=false and checkoutEnabled=false for initial release.")
+              if health.get("authEnabled") is not True:
+                  raise SystemExit(f"{store} Worker password authentication must be enabled before signing.")
+              expected_package = "ir.sahmino.app"
+              package_key = "packageName"
+              if health.get(package_key) != expected_package:
+                  raise SystemExit(f"{store} Worker packageName must be {expected_package}.")
+              session = get_json(value, "/api/v1/auth/session", 401,
+                  {"Origin": "https://raminhashemi1.github.io", "Accept": "application/json"})
+              if session.get("authenticated") is not False:
+                  raise SystemExit(f"{store} Worker auth preflight did not return authenticated=false for a signed-out request.")
+              print(f"PASS {store} Worker health, checkout-off, and password-auth session preflight")
+          PY
+      - name: Validate owner-managed signing secrets
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.SAHMINO_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.SAHMINO_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SAHMINO_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SAHMINO_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_B64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required owner-managed signing secret is missing: $name"
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/sahmino-release.jks"
+          test -s "$RUNNER_TEMP/sahmino-release.jks"
+          chmod 600 "$RUNNER_TEMP/sahmino-release.jks"
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?Android SDK is required}"
+          SDKMANAGER="$(command -v sdkmanager || find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build signed Bazaar and Myket release APKs with checkout forced off
+        shell: bash
+        env:
+          SAHAMBAN_APPLICATION_ID: ir.sahmino.app
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ir.sahmino.app
+          SAHAMBAN_PWA_ORIGIN: https://raminhashemi1.github.io
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+          SAHAMBAN_BILLING_ENABLED: 'false'
+          SAHMINO_RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/sahmino-release.jks
+          SAHMINO_RELEASE_STORE_PASSWORD: ${{ secrets.SAHMINO_RELEASE_STORE_PASSWORD }}
+          SAHMINO_RELEASE_KEY_ALIAS: ${{ secrets.SAHMINO_RELEASE_KEY_ALIAS }}
+          SAHMINO_RELEASE_KEY_PASSWORD: ${{ secrets.SAHMINO_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle -p android-pilot --no-daemon :app:assembleBazaarRelease :app:assembleMyketRelease
+      - name: Verify signatures, package identity, store Worker routing, and checkout-off configuration
+        shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          for flavor in bazaar myket; do
+            APK="android-pilot/app/build/outputs/apk/$flavor/release/app-$flavor-release.apk"
+            test -s "$APK"
+            "$APKSIGNER" verify --verbose "$APK"
+            BADGING="$("$AAPT" dump badging "$APK")"
+            PACKAGE="$(printf '%s\\n' "$BADGING" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+            test "$PACKAGE" = "ir.sahmino.app"
+            printf '%s\\n' "$BADGING" | grep -F "versionCode='1'" >/dev/null
+            printf '%s\\n' "$BADGING" | grep -F "versionName='1.0.0'" >/dev/null
+            if printf '%s\\n' "$BADGING" | grep -q '^application-debuggable'; then
+              echo "::error::Debuggable APK cannot be accepted as a signed release."
+              exit 1
+            fi
+            DIR="android-pilot/app/build/generated/source/buildConfig/$flavor/release"
+            grep -R -E 'SAHAMBAN_BILLING_ENABLED = (false|Boolean.parseBoolean\("false"\));' "$DIR" >/dev/null
+            if [[ "$flavor" == "bazaar" ]]; then
+              EXPECTED_WORKER="$SAHAMBAN_BAZAAR_WORKER_BASE_URL"
+              EXPECTED_STORE="BAZAAR"
+            else
+              EXPECTED_WORKER="$SAHAMBAN_MYKET_WORKER_BASE_URL"
+              EXPECTED_STORE="MYKET"
+            fi
+            grep -R -F "SAHAMBAN_WORKER_BASE_URL = \"$EXPECTED_WORKER\";" "$DIR" >/dev/null
+            grep -R -F "BILLING_STORE = \"$EXPECTED_STORE\";" "$DIR" >/dev/null
+            echo "PASS signed=$flavor package=$PACKAGE versionCode=1 versionName=1.0.0 debuggable=false store=$EXPECTED_STORE worker=$EXPECTED_WORKER checkout=disabled"
+          done
+          sha256sum android-pilot/app/build/outputs/apk/*/release/*.apk | tee android-pilot-signed-release-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sahmino-signed-initial-release-checkout-disabled
+          path: |
+            android-pilot/app/build/outputs/apk/*/release/*.apk
+            android-pilot-signed-release-sha256.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove temporary signing material
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/sahmino-release.jks"

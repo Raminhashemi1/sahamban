@@ -1,6 +1,7 @@
 # Example only. DO NOT deploy unchanged.
 # A Cloudflare account and private D1 database must be provisioned by the owner.
 # Store auth secrets with Wrangler secret bindings (never in this file).
+# Public account login stays disabled until migration 0004 and user provisioning pass.
 name = "sahamban-pro-pilot"
 main = "worker-api.mjs"
 compatibility_date = "2026-06-01"
@@ -8,8 +9,18 @@ workers_dev = true
 
 [vars]
 PWA_ORIGIN = "https://raminhashemi1.github.io"
+SAHMINO_PASSWORD_AUTH_ENABLED = "false"
+PILOT_AUTH_ENABLED = "false"
+# Set to BAZAAR for the Bazaar deployment or MYKET for the Myket deployment.
+# Store selection is server-side; the client cannot choose the provider.
+BILLING_STORE = "BAZAAR"
+BILLING_V2_ENABLED = "false"
+# For the Myket deployment also set MYKET_PACKAGE_NAME and MYKET_SKU_MAP.
+# Keep MYKET_PUBLIC_KEY in a Worker secret, never in this file.
 
 [[d1_databases]]
 binding = "SAHAMBAN_DB"
 database_name = "sahamban-pilot"
 database_id = "REPLACE_WITH_REAL_D1_DATABASE_ID"
+
+# wrangler secret put AUTH_RATE_LIMIT_SECRET --config wrangler.toml

@@ -1,11 +1,15 @@
+import userIdValidation from './user-id.cjs';
+const {isValidUserId}=userIdValidation;
 import settlement from './settlement.cjs';
+import catalog from './catalog.cjs';
+const {getPlan}=catalog;
 const {settle}=settlement;
 const PLAN_IDS=['SAHAMBAN_PRO_30D','SAHAMBAN_PRO_60D','SAHAMBAN_PRO_90D','SAHAMBAN_PRO_180D','SAHAMBAN_PRO_365D'];
 function skuMap(raw){
  try{
-  const v=JSON.parse(raw);
+  const v=typeof raw==='string'?JSON.parse(raw):raw;
   if(!v||Array.isArray(v)||typeof v!=='object'||Object.keys(v).length!==5)return null;
-  if(PLAN_IDS.some(k=>typeof v[k]!=='string'||!/^[A-Za-z0-9._-]{1,100}$/.test(v[k])))return null;
+  if(PLAN_IDS.some(k=>typeof v[k]!=='string'||!/^[A-Za-z0-9._-]{1,100}$/.test(v[k])||v[k].startsWith('REPLACE_')))return null;
   if(new Set(Object.values(v)).size!==5)return null;
   return v;
  }catch(_){return null;}
@@ -60,9 +64,9 @@ async function verifyInAppPurchase(env,{sku,token,nowMs=Date.now(),allowConsumed
    throw Error('INAPP_PURCHASE_NOT_VALID');
  return {receipt,purchaseTime:new Date(purchaseTimeMs).toISOString()};
 }
-export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
+export async function verifyAndSettle({db,env,subject,userId,body,now,fetcher=fetch}){
  if(env.BILLING_V2_ENABLED!=='true')return {status:404,body:{error:'BILLING_DISABLED'}};
- if(!subject)return {status:401,body:{error:'UNAUTHENTICATED'}};
+ if(!(typeof subject==='string'&&subject.length>0)&&!(isValidUserId(userId)))return {status:401,body:{error:'UNAUTHENTICATED'}};
  if(!body||Object.keys(body).sort().join(',')!=='dataSignature,orderId,originalJson,sku,token'||
    typeof body.orderId!=='string'||!/^ord_[a-f0-9]{32}$/.test(body.orderId)||
    typeof body.sku!=='string'||typeof body.token!=='string'||body.token.length<8||body.token.length>4096||
@@ -74,9 +78,15 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
  const planId=PLAN_IDS.find(id=>mapping[id]===body.sku);
  if(!planId)return {status:400,body:{error:'UNKNOWN_PRODUCT_SKU'}};
  try{
-  const order=await db.prepare("SELECT id,plan_id,status,created_at,paid_at,bazaar_order_id,purchase_token_hash FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1").bind(body.orderId,subject).first();
+  const query=userId
+   ? "SELECT id,plan_id,status,store,store_product_id,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE id=? AND status='ACTIVE') LIMIT 1"
+   : "SELECT id,plan_id,status,store,store_product_id,created_at,paid_at,bazaar_order_id,purchase_token_hash,amount_irr FROM billing_orders WHERE id=? AND user_id IN (SELECT id FROM sahamban_users WHERE auth_subject=? AND status='ACTIVE') LIMIT 1";
+  const order=await db.prepare(query).bind(body.orderId,userId||subject).first();
   if(!order)return {status:404,body:{error:'ORDER_NOT_FOUND'}};
   if(order.plan_id!==planId)return {status:409,body:{error:'ORDER_MISMATCH'}};
+  if(order.store!=='BAZAAR'||order.store_product_id!==body.sku)return {status:409,body:{error:'ORDER_STORE_PRODUCT_MISMATCH'}};
+  const plan=getPlan(planId);
+  if(!plan||order.amount_irr!==plan.priceRial)return {status:409,body:{error:'ORDER_PRICE_MISMATCH'}};
   await verifySignedPurchase(env,body);
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.token));
   const tokenHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
@@ -92,20 +102,20 @@ export async function verifyAndSettle({db,env,subject,body,now,fetcher=fetch}){
       (current.receipt.orderId&&order.bazaar_order_id&&order.bazaar_order_id!==tokenHash&&
        current.receipt.orderId!==order.bazaar_order_id))
     return {status:409,body:{error:'PURCHASE_STATE_MISMATCH'}};
-   const restored=await settle(db,{orderId:body.orderId,subject,planId,
+   const restored=await settle(db,{orderId:body.orderId,subject,userId,planId,bazaarProductId:body.sku,
     bazaarOrderId:order.bazaar_order_id||tokenHash,tokenHash,
     purchaseTime:order.paid_at,now});
-   return restored.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:restored.expiresAt,
+   return restored.ok?{status:200,body:{status:'ACTIVE',planId,amountRial:plan.priceRial,expiresAt:restored.expiresAt,
     renewalMode:'MANUAL',daysAdded:0,restored:true}}:
     {status:409,body:{error:restored.error}};
   }
   if(order.status!=='CREATED')return {status:409,body:{error:'ORDER_NOT_PENDING'}};
   const verified=await verifyInAppPurchase(env,{sku:body.sku,token:body.token,nowMs:Date.parse(now)},fetcher);
   if(Date.parse(verified.purchaseTime)<Date.parse(order.created_at)-5*60*1000)return {status:409,body:{error:'PURCHASE_PRECEDES_ORDER'}};
-  const result=await settle(db,{orderId:body.orderId,subject,planId,
+  const result=await settle(db,{orderId:body.orderId,subject,userId,planId,bazaarProductId:body.sku,
    bazaarOrderId:verified.receipt.orderId||tokenHash,tokenHash,
    purchaseTime:verified.purchaseTime,now});
-  return result.ok?{status:200,body:{status:'ACTIVE',planId,expiresAt:result.expiresAt,
+  return result.ok?{status:200,body:{status:'ACTIVE',planId,amountRial:plan.priceRial,expiresAt:result.expiresAt,
    renewalMode:'MANUAL',daysAdded:result.daysAdded,restored:!!result.restored}}:
    {status:409,body:{error:result.error}};
  }catch(error){

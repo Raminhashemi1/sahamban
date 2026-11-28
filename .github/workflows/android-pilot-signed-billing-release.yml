@@ -1,0 +1,229 @@
+name: Sahmino signed billing-enabled update (owner-confirmed)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_billing_release:
+        description: Type ENABLE_BILLING_RELEASE only after stages 2, 3 and 7 are accepted
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  signed-billing-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Require explicit owner release confirmation and all store configuration
+        shell: bash
+        env:
+          CONFIRM: \${{ inputs.confirm_billing_release }}
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: \${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: \${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+          SAHAMBAN_BAZAAR_SKU_PRO_30D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_30D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_60D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_60D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_90D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_90D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_180D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_180D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_365D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_365D }}
+          SAHAMBAN_MYKET_SKU_PRO_30D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_30D }}
+          SAHAMBAN_MYKET_SKU_PRO_60D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_60D }}
+          SAHAMBAN_MYKET_SKU_PRO_90D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_90D }}
+          SAHAMBAN_MYKET_SKU_PRO_180D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_180D }}
+          SAHAMBAN_MYKET_SKU_PRO_365D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: \${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: \${{ secrets.MYKET_PUBLIC_KEY }}
+          KEYSTORE_B64: \${{ secrets.SAHMINO_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: \${{ secrets.SAHMINO_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: \${{ secrets.SAHMINO_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: \${{ secrets.SAHMINO_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRM" != "ENABLE_BILLING_RELEASE" ]]; then
+            echo "::error::Explicit confirmation is required after initial publication, store-product mapping, Myket refund acceptance and physical-device acceptance."
+            exit 1
+          fi
+          for name in SAHAMBAN_BAZAAR_WORKER_BASE_URL SAHAMBAN_MYKET_WORKER_BASE_URL \
+            SAHAMBAN_BAZAAR_SKU_PRO_30D SAHAMBAN_BAZAAR_SKU_PRO_60D SAHAMBAN_BAZAAR_SKU_PRO_90D SAHAMBAN_BAZAAR_SKU_PRO_180D SAHAMBAN_BAZAAR_SKU_PRO_365D \
+            SAHAMBAN_MYKET_SKU_PRO_30D SAHAMBAN_MYKET_SKU_PRO_60D SAHAMBAN_MYKET_SKU_PRO_90D SAHAMBAN_MYKET_SKU_PRO_180D SAHAMBAN_MYKET_SKU_PRO_365D \
+            BAZAAR_RSA_PUBLIC_KEY MYKET_PUBLIC_KEY KEYSTORE_B64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            case "$name" in
+              SAHAMBAN_BAZAAR_WORKER_BASE_URL) value="$SAHAMBAN_BAZAAR_WORKER_BASE_URL" ;;
+              SAHAMBAN_MYKET_WORKER_BASE_URL) value="$SAHAMBAN_MYKET_WORKER_BASE_URL" ;;
+              SAHAMBAN_BAZAAR_SKU_PRO_30D) value="$SAHAMBAN_BAZAAR_SKU_PRO_30D" ;;
+              SAHAMBAN_BAZAAR_SKU_PRO_60D) value="$SAHAMBAN_BAZAAR_SKU_PRO_60D" ;;
+              SAHAMBAN_BAZAAR_SKU_PRO_90D) value="$SAHAMBAN_BAZAAR_SKU_PRO_90D" ;;
+              SAHAMBAN_BAZAAR_SKU_PRO_180D) value="$SAHAMBAN_BAZAAR_SKU_PRO_180D" ;;
+              SAHAMBAN_BAZAAR_SKU_PRO_365D) value="$SAHAMBAN_BAZAAR_SKU_PRO_365D" ;;
+              SAHAMBAN_MYKET_SKU_PRO_30D) value="$SAHAMBAN_MYKET_SKU_PRO_30D" ;;
+              SAHAMBAN_MYKET_SKU_PRO_60D) value="$SAHAMBAN_MYKET_SKU_PRO_60D" ;;
+              SAHAMBAN_MYKET_SKU_PRO_90D) value="$SAHAMBAN_MYKET_SKU_PRO_90D" ;;
+              SAHAMBAN_MYKET_SKU_PRO_180D) value="$SAHAMBAN_MYKET_SKU_PRO_180D" ;;
+              SAHAMBAN_MYKET_SKU_PRO_365D) value="$SAHAMBAN_MYKET_SKU_PRO_365D" ;;
+              BAZAAR_RSA_PUBLIC_KEY) value="$BAZAAR_RSA_PUBLIC_KEY" ;;
+              MYKET_PUBLIC_KEY) value="$MYKET_PUBLIC_KEY" ;;
+              KEYSTORE_B64) value="$KEYSTORE_B64" ;;
+              STORE_PASSWORD) value="$STORE_PASSWORD" ;;
+              KEY_ALIAS) value="$KEY_ALIAS" ;;
+              KEY_PASSWORD) value="$KEY_PASSWORD" ;;
+            esac
+            if [[ -z "$value" ]]; then
+              echo "::error::Required owner-managed configuration is missing: $name"
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/sahmino-release.jks"
+          test -s "$RUNNER_TEMP/sahmino-release.jks"
+          chmod 600 "$RUNNER_TEMP/sahmino-release.jks"
+          python3 - <<'PY'
+          import os, re, urllib.parse
+          for store in ("BAZAAR", "MYKET"):
+              url = os.environ[f"SAHAMBAN_{store}_WORKER_BASE_URL"]
+              u = urllib.parse.urlparse(url)
+              try:
+                  port = u.port
+              except ValueError:
+                  raise SystemExit(f"{store} Worker URL has an invalid port.")
+              if not (u.scheme == "https" and u.hostname and u.username is None and
+                      u.password is None and (port is None or 1 <= port <= 65535) and
+                      u.path in ("", "/") and not u.query and not u.fragment):
+                  raise SystemExit(f"{store} Worker URL must be an HTTPS origin without credentials, path, query or fragment.")
+              skus = [os.environ[f"SAHAMBAN_{store}_SKU_PRO_{days}"] for days in ("30D","60D","90D","180D","365D")]
+              if len(set(skus)) != 5 or not all(re.fullmatch(r"[A-Za-z0-9._-]{1,100}", x) and not x.startswith("REPLACE_") for x in skus):
+                  raise SystemExit(f"{store} must have five distinct, real product IDs.")
+          for key in ("BAZAAR_RSA_PUBLIC_KEY", "MYKET_PUBLIC_KEY"):
+              if len(os.environ[key]) <= 100:
+                  raise SystemExit(f"{key} is missing or malformed.")
+          print("PASS owner configuration and separate five-SKU maps")
+          PY
+      - name: Verify both live Workers are billing-enabled, authenticated and store-bound
+        shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: \${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: \${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.parse, urllib.request
+          def get_json(base, path, expected_status, headers=None):
+              request = urllib.request.Request(base.rstrip("/") + path, headers=headers or {})
+              try:
+                  response = urllib.request.urlopen(request, timeout=15)
+              except urllib.error.HTTPError as error:
+                  response = error
+              if response.status != expected_status:
+                  raise SystemExit(f"{path} on {base} returned HTTP {response.status}; expected {expected_status}.")
+              try:
+                  return json.loads(response.read().decode("utf-8"))
+              finally:
+                  response.close()
+          for store in ("BAZAAR", "MYKET"):
+              base = os.environ[f"SAHAMBAN_{store}_WORKER_BASE_URL"]
+              health = get_json(base, "/api/v1/health", 200)
+              expected = {"paymentsEnabled": True, "checkoutEnabled": True,
+                          "authEnabled": True, "store": store,
+                          "packageName": "ir.sahmino.app", "skuMapReady": True}
+              for key, value in expected.items():
+                  if health.get(key) != value:
+                      raise SystemExit(f"{store} Worker health has unexpected {key}: {health.get(key)!r}.")
+              session = get_json(base, "/api/v1/auth/session", 401,
+                  {"Origin": "https://raminhashemi1.github.io", "Accept": "application/json"})
+              if session.get("authenticated") is not False:
+                  raise SystemExit(f"{store} Worker session preflight did not return the signed-out response.")
+              print(f"PASS {store} billing/auth readiness and store binding")
+          PY
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build signed Bazaar and Myket billing-enabled release APKs
+        shell: bash
+        env:
+          SAHAMBAN_APPLICATION_ID: ir.sahmino.app
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ir.sahmino.app
+          SAHAMBAN_PWA_ORIGIN: https://raminhashemi1.github.io
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: \${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: \${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+          SAHAMBAN_RELEASE_BILLING_ENABLED: 'true'
+          SAHAMBAN_BILLING_ENABLED: 'false'
+          SAHAMBAN_BAZAAR_SKU_PRO_30D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_30D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_60D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_60D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_90D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_90D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_180D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_180D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_365D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_365D }}
+          SAHAMBAN_MYKET_SKU_PRO_30D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_30D }}
+          SAHAMBAN_MYKET_SKU_PRO_60D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_60D }}
+          SAHAMBAN_MYKET_SKU_PRO_90D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_90D }}
+          SAHAMBAN_MYKET_SKU_PRO_180D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_180D }}
+          SAHAMBAN_MYKET_SKU_PRO_365D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: \${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: \${{ secrets.MYKET_PUBLIC_KEY }}
+          SAHMINO_RELEASE_KEYSTORE_PATH: \${{ runner.temp }}/sahmino-release.jks
+          SAHMINO_RELEASE_STORE_PASSWORD: \${{ secrets.SAHMINO_RELEASE_STORE_PASSWORD }}
+          SAHMINO_RELEASE_KEY_ALIAS: \${{ secrets.SAHMINO_RELEASE_KEY_ALIAS }}
+          SAHMINO_RELEASE_KEY_PASSWORD: \${{ secrets.SAHMINO_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle -p android-pilot --no-daemon :app:assembleBazaarRelease :app:assembleMyketRelease
+      - name: Verify signatures, package, store Worker, SKU mapping and billing-enabled BuildConfig
+        shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: \${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: \${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+          SAHAMBAN_BAZAAR_SKU_PRO_30D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_30D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_60D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_60D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_90D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_90D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_180D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_180D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_365D: \${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_365D }}
+          SAHAMBAN_MYKET_SKU_PRO_30D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_30D }}
+          SAHAMBAN_MYKET_SKU_PRO_60D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_60D }}
+          SAHAMBAN_MYKET_SKU_PRO_90D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_90D }}
+          SAHAMBAN_MYKET_SKU_PRO_180D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_180D }}
+          SAHAMBAN_MYKET_SKU_PRO_365D: \${{ vars.SAHAMBAN_MYKET_SKU_PRO_365D }}
+        run: |
+          set -euo pipefail
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          for flavor in bazaar myket; do
+            APK="android-pilot/app/build/outputs/apk/$flavor/release/app-$flavor-release.apk"
+            DIR="android-pilot/app/build/generated/source/buildConfig/$flavor/release"
+            test -s "$APK"
+            "$APKSIGNER" verify --verbose "$APK"
+            PACKAGE="$("$AAPT" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+            test "$PACKAGE" = "ir.sahmino.app"
+            grep -R -F 'SAHAMBAN_BILLING_ENABLED = true;' "$DIR" >/dev/null
+            if [[ "$flavor" == "bazaar" ]]; then
+              STORE="BAZAAR"; WORKER="$SAHAMBAN_BAZAAR_WORKER_BASE_URL"; PREFIX="SAHAMBAN_BAZAAR_SKU_PRO_"
+            else
+              STORE="MYKET"; WORKER="$SAHAMBAN_MYKET_WORKER_BASE_URL"; PREFIX="SAHAMBAN_MYKET_SKU_PRO_"
+            fi
+            grep -R -F "BILLING_STORE = \"$STORE\";" "$DIR" >/dev/null
+            grep -R -F "SAHAMBAN_WORKER_BASE_URL = \"$WORKER\";" "$DIR" >/dev/null
+            python3 - "$DIR" "$STORE" "$WORKER" <<'PY'
+          import os, sys
+          from pathlib import Path
+          directory, store, worker = sys.argv[1:]
+          text = "\n".join(p.read_text(encoding="utf-8") for p in Path(directory).rglob("BuildConfig.java"))
+          assert f'SAHAMBAN_WORKER_BASE_URL = "{worker}";' in text
+          for days in ("30D","60D","90D","180D","365D"):
+              expected = os.environ[f"SAHAMBAN_{store}_SKU_PRO_{days}"]
+              assert f'SAHAMBAN_SKU_PRO_{days} = "{expected}";' in text
+          assert f'BILLING_STORE = "{store}";' in text
+          assert "SAHAMBAN_BILLING_ENABLED = true;" in text
+          print(f"PASS {store} BuildConfig routing and SKU mapping")
+          PY
+            echo "PASS signed billing-enabled $flavor package=$PACKAGE store=$STORE"
+          done
+          sha256sum android-pilot/app/build/outputs/apk/*/release/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sahmino-signed-billing-enabled-release
+          path: android-pilot/app/build/outputs/apk/*/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove temporary signing material
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/sahmino-release.jks"

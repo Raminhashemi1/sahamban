@@ -22,7 +22,7 @@ const validBody={orderId,sku:'pro30',token:'token-123',originalJson,dataSignatur
 const receipt={kind:'androidpublisher#productPurchase',purchaseState:0,consumptionState:0,
  purchaseTimeMillis:Date.parse(now),orderId:'bazaar-order'};
 function fakeDb(order){
- return {prepare(sql){return {bind(...values){return {sql,values,first:async()=>{
+ return {prepare(sql){return {bind(...values){return {values,first:async()=>{
    if(sql.includes("SELECT expires_at FROM billing_access"))return {expires_at:order.settledExpiresAt||order.expires_at};
    return order;
   }}}}},
@@ -63,7 +63,7 @@ test('product validation calls Bazaar in-app purchase endpoint and rejects consu
  await assert.rejects(()=>verifyInAppPurchase(env,{sku:'pro30',token:'token-123',nowMs:Date.parse(now)},bad));
 });
 test('manual purchase is verified then settles fixed duration with no auto-renewal',async()=>{
- const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',user_id:'u1',created_at:now,expires_at:null});
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',store:'BAZAAR',store_product_id:'pro30',user_id:'u1',amount_irr:1500000,created_at:now,expires_at:null});
  const fetcher=async u=>{
   if(String(u).includes('/auth/token/'))return new Response(JSON.stringify({access_token:'access'}),{status:200});
   return new Response(JSON.stringify(receipt),{status:200});
@@ -77,7 +77,7 @@ test('manual purchase is verified then settles fixed duration with no auto-renew
 });
 test('verification rejects unauthenticated, malformed and wrong-account orders before provider calls',async()=>{
  let calls=0;const fetcher=async()=>{calls++;throw Error('unexpected');};
- const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',user_id:'u1',expires_at:null});
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'CREATED',store:'BAZAAR',store_product_id:'pro30',user_id:'u1',amount_irr:1500000,expires_at:null});
  const base={db,env,body:validBody,now,fetcher};
  assert.equal((await verifyAndSettle({...base,subject:null})).status,401);
  assert.equal((await verifyAndSettle({...base,body:{...validBody,extra:true},subject:'u'})).status,400);
@@ -87,8 +87,7 @@ test('verification rejects unauthenticated, malformed and wrong-account orders b
 test('replayed settled purchase remains idempotent after Bazaar marks the consumable as consumed',async()=>{
  const tokenHash=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(validBody.token))).toString('hex');
  const expiresAt='2026-01-31T00:00:00.000Z';
- const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',user_id:'u1',
-  created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',store:'BAZAAR',store_product_id:'pro30',user_id:'u1',amount_irr:1500000,created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
  let providerCalls=0;
  const fetcher=async u=>{
   providerCalls++;
@@ -107,8 +106,7 @@ test('replayed settled purchase remains idempotent after Bazaar marks the consum
 test('replayed settled purchase cannot restore access after Bazaar reports a refund',async()=>{
  const tokenHash=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode(validBody.token))).toString('hex');
  const expiresAt='2026-01-31T00:00:00.000Z';
- const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',user_id:'u1',
-  created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
+ const db=fakeDb({id:'order',plan_id:'SAHAMBAN_PRO_30D',status:'PAID',store:'BAZAAR',store_product_id:'pro30',user_id:'u1',amount_irr:1500000,created_at:now,paid_at:now,bazaar_order_id:'bazaar-order',purchase_token_hash:tokenHash,expires_at:expiresAt});
  const fetcher=async u=>{
   if(String(u).includes('/auth/token/'))return new Response(JSON.stringify({access_token:'access'}),{status:200});
   return new Response(JSON.stringify({...receipt,purchaseState:1,consumptionState:1}),{status:200});

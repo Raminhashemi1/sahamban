@@ -1,0 +1,226 @@
+**مسیر تشخیص فقط‌خواندنی Cloudflare (2026-11-23، commits `c2d7fe4`, `3ee9dbd`):** Workflow موجود `cloudflare-readonly-check.yml` اکنون پس از بررسی دسترسی، فقط نام جدول‌های D1 را از `sqlite_schema` می‌خواند؛ هیچ ردیف مشتری/پرداختی خوانده نمی‌شود و هیچ SQL تغییردهنده، Migration یا Deploy انجام نمی‌شود. Runbook اجرای آن را به‌عنوان دروازه صفر مستند کرده است. این مسیر جایگزین تایپ در Console غیرفعال است و اجرای آن به یک بار انتخاب Run workflow توسط مالک در GitHub Actions نیاز دارد.
+
+# خط پایان — فهرست واحد تحویل انتشار خرید اشتراک سهمینو
+
+> این سند تنها مرجع وضعیت کارهای باقی‌مانده برای آماده‌سازی انتشار خرید اشتراک در کافه‌بازار و مایکت است.  
+> شاخه کاری: `integration/sahmino-app-billing-complete` · PR: [#191](https://github.com/Raminhashemi1/sahamban/pull/191)
+
+## قاعده خط پایان
+
+- هیچ توسعه، بازبینی یا آزمایش تکراری خارج از آیتم‌های این سند آغاز نمی‌شود.
+- هر آیتم فقط وقتی بسته می‌شود که مدرک قابل بررسی (تنظیم ثبت‌شده، خروجی استقرار، نتیجه تست یا تأیید فروشگاه) وجود داشته باشد.
+- پس از تکمیل هر آیتم، همان آیتم از فهرست باز حذف و در بخش «موارد بسته‌شده» با تاریخ و مدرک ثبت می‌شود. وضعیت باز در فایل‌های دیگر مخزن نگهداری نمی‌شود؛ آن فایل‌ها فقط راهنمای اجرای همان مرحله‌اند.
+- اطلاعات محرمانه، توکن‌ها، کلید خصوصی و رمزها نباید در چت، Commit، APK یا فایل‌های مخزن قرار گیرند. فقط از Cloudflare Secrets و GitHub Actions Secrets/Variables استفاده شود.
+- هیچ شناسه، API یا قرارداد فروشگاهی حدس زده نمی‌شود. اگر مستند معتبر در دسترس نباشد، همان مرحله تا دریافت مستند رسمی باز می‌ماند.
+- پایان این فهرست به معنی «آماده ارسال برای بررسی فروشگاه» است؛ انتشار عمومی نهایی پس از بررسی و تأیید خود فروشگاه انجام می‌شود.
+
+## وضعیت فعلی
+
+**آخرین اعتبارسنجی یکپارچه روی HEAD فعلی `4a721dd7ea4593b7145a17ee80bccaa6283c1d8d` (2026-11-28):**
+- Billing V2، احراز هویت، Bazaar/Myket، schema و migrationهای D1 محلی و bundle Worker: [run 46117163022](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163022) و اجرای PR [run 46117166927](https://github.com/Raminhashemi1/sahamban/actions/runs/46117166927) — هر دو موفق.
+- Smoke و مرورگر/Chromium: [run 46117166958](https://github.com/Raminhashemi1/sahamban/actions/runs/46117166958) — موفق.
+- Android Debug هر دو Flavor: [run 46117163051](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163051) و اجرای PR [run 46117167012](https://github.com/Raminhashemi1/sahamban/actions/runs/46117167012) — موفق؛ فقط آزمون/کامپایل، نه آماده فروشگاه.
+- Release build gate هر دو Flavor با checkout اجباری خاموش: [run 46117163018](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163018) — موفق. Artifact [15251862535](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163018) شامل دو APK غیرامضاشده است؛ package هر دو `ir.sahmino.app`، versionCode برابر 1، versionName برابر 1.0.0 و non-debuggable بودن تأیید شد. checkout در هر دو flavor خاموش است. SHA-256 بازار: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`؛ مایکت: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`. این APKها unsigned و صراحتاً NOT STORE READY هستند.
+- این چهار دسته CI روی یک HEAD یکسان اجرا شده‌اند و موفق‌اند؛ بنابراین گیت‌های خودکار کد، build و بسته‌بندی اولیه در سطح CI بسته‌اند، نه پذیرش نهایی فروشگاه.
+
+**دسترسی و ممیزی فقط‌خواندنی Cloudflare (2026-11-28):** [run 46118330978](https://github.com/Raminhashemi1/sahamban/actions/runs/46118330978) موفق شد. API token، دسترسی D1 و Worker موجود با HTTP 200 تأیید شدند. فقط metadata جدول‌ها و DDL جدول کاربران خوانده شد؛ هیچ ردیف کاربر/پرداخت/نشست خوانده نشد. D1 دقیقاً ۱۱ جدول دارد و ledger قدیمی annual/prepaid حاضر است، اما این اجزا غایب‌اند:
+- Billing V2: `billing_orders`, `billing_access`, `billing_events`
+- Auth: `sahmino_auth_rate_limits`, `sahmino_shared_sessions`, `sahmino_recovery_codes` و ستون‌های `username_normalized`, `password_salt`, `password_hash`, `password_iterations`
+- هویت تلفن تأییدشده: `sahmino_phone_identities`
+- تاریخچه اختیاری OTP runtime: `sahmino_sms_otp_send_events`
+
+Workflow تشخیصی [read-only](https://github.com/Raminhashemi1/sahamban/actions/runs/46118330978) اکنون این کمبودها را صریحاً گزارش می‌کند. مسیر ارتقای additive مخصوص همین شکل legacy در `server/billing/DEPLOYMENT_RUNBOOK.md` مستند شد: schema جاری Billing V2، جدول سازگاری phone identity، migrationهای 0004 و 0005؛ بدون اجرای 0002/0003 روی دیتابیسی که هنوز جدول `billing_orders` ندارد. تست محلی جدید در `tests/password-auth-migration.test.py` بقای ledger قدیمی و نصب additive جدول‌های جدید را با داده ساختگی بررسی می‌کند. CI Billing [run 46118452063](https://github.com/Raminhashemi1/sahamban/actions/runs/46118452063) موفق شد و smoke/unit شامل migration [run 46118452093](https://github.com/Raminhashemi1/sahamban/actions/runs/46118452093) در حال تکمیل browser است. هیچ migration واقعی، تغییر داده، deploy یا پرداختی انجام نشده؛ اجرای مسیر D1 تولیدی همچنان نیازمند backup قابل‌بازیابی و تأیید مستقل مالک است.
+
+**وضعیت ادغام:** PR #191 باز و Draft است؛ base آن `codex/reengineering-audit` و head فعلی `integration/sahmino-app-billing-complete` است. PR #218 برای جایگزینی کاتالوگ قدیمی با پنج پلن مصوب در main ادغام شد: `c8d7ce7a831c1470b488458d159e5597033702da`. PR #217 برای اسناد انتشار پس از رفع اشاره قدیمی به تعارض چهار/پنج پلن به‌روزرسانی شده است.
+
+**موانع باقی‌مانده خارج از CI:** استقرار دو Worker و D1 مشترک با migrations و secrets، provisioning امن حساب‌ها و benchmark PBKDF2، پذیرش فیزیکی ورود/نشست/خروج/بازیابی روی هر دو Flavor، تأمین URLهای Production Worker و کلید امضای مالک، اجرای workflow امضاشده و ارسال نسخه اولیه با checkout خاموش، سپس بررسی و تأیید فروشگاه. بعد از انتشار اولیه، SKUهای واقعی پنج پلن، قرارداد برگشت وجه مایکت، آزمون خرید واقعی و به‌روزرسانی امضاشده خرید فعال انجام می‌شود.
+
+## ترتیب قطعی اجرا
+
+**قاعده مورد تأکید مالک:** شناسه محصول بازار یا مایکت پیش از انتشار اولیه خود اپلیکیشن درخواست، تولید، ثبت یا به‌عنوان مانع توسعه مطرح نمی‌شود. ابتدا نسخه اولیه سهمینو با پرداخت و خرید اشتراک غیرفعال منتشر می‌شود؛ پس از انتشار اولیه و ایجاد/دسترسی پنل محصول، شناسه‌های واقعی همان زمان دریافت و پیکربندی می‌شوند. این قاعده قطعی است و نباید دوباره از مالک درباره شناسه محصول سؤال شود.
+
+## فهرست باز — به ترتیب اجرا
+
+مرحله ۱ بسته شده است. ابتدا مسیر انتشار اولیه بدون پرداخت انجام می‌شود؛ مراحل مربوط به شناسه محصول و خرید واقعی فقط پس از انتشار اولیه باز می‌شوند.
+
+### ~~1. تعیین هویت نهایی اپلیکیشن — مالک~~ <badge>بسته شد</badge>
+**نیاز از مالک**
+- [x] نام نمایشی هر دو فروشگاه و لانچر: `سهمینو` (تأیید مالک؛ در `strings.xml` اعمال شد).
+- [x] شناسه نهایی هر دو Flavor: `ir.sahmino.app` (تأیید مالک؛ مقدار پیش‌فرض Gradle و مستندات در شاخه‌های اتصال خرید و احراز هویت همسان‌سازی شد).
+- [x] تأیید نشانی HTTPS نهایی PWA و Origin دقیق آن: `https://raminhashemi1.github.io`.
+
+**خروجی بسته‌شدن:** نام نمایشی `سهمینو`، شناسه `ir.sahmino.app` و PWA `https://raminhashemi1.github.io/sahamban/` با تأیید مالک ثبت شدند. هر دو مقدار Android در کد و مستندات اعمال شده‌اند. مرحله ۱ بسته شد.
+
+### 2. تعیین نگاشت خرید اشتراک در پنل هر دو فروشگاه — فقط پس از انتشار اولیه اپلیکیشن؛ مالک + اجرای فنی
+**مدل محصول در اپ:** یک اپلیکیشن سهمینو با یک بخش/محصول خرید اشتراک و پنج گزینه مدت‌دار. این پنج گزینه، پنج اپلیکیشن یا پنج اشتراک خودکار مستقل نیستند؛ تمدید اعتبار به‌صورت دستی و با خرید مجدد انجام می‌شود.
+
+| گزینه خرید | مدت | قیمت مصوب (ریال) |
+|---|---:|---:|
+| `SAHAMBAN_PRO_30D` | ۳۰ روز | ۱٬۵۰۰٬۰۰۰ |
+| `SAHAMBAN_PRO_60D` | ۶۰ روز | ۲٬۸۵۰٬۰۰۰ |
+| `SAHAMBAN_PRO_90D` | ۹۰ روز | ۴٬۰۵۰٬۰۰۰ |
+| `SAHAMBAN_PRO_180D` | ۱۸۰ روز | ۷٬۶۵۰٬۰۰۰ |
+| `SAHAMBAN_PRO_365D` | ۳۶۵ روز | ۱۴٬۶۰۰٬۰۰۰ |
+
+**ترتیب اجرا**
+- این مرحله عمداً پس از انتشار اولیه اپلیکیشن سهمینو با خرید غیرفعال انجام می‌شود. پیش از آن، شناسه محصول درخواست نمی‌شود و نبود آن مانع انتشار اولیه نیست.
+- پیش از هرگونه ساخت محصول، قرارداد رسمی فعلی بازار و مایکت بررسی شود تا مشخص شود هر گزینه خرید به شناسه مستقل نیاز دارد یا چند گزینه زیر یک محصول پشتیبانی می‌شود. پنج گزینه خرید، پنج محصول/اپلیکیشن مستقل در سهمینو نیستند. اگر هر فروشگاه برای هر گزینه یک SKU جداگانه بخواهد، حداکثر پنج SKU برای بازار و پنج SKU برای مایکت در پنل‌های جداگانه نگاشت می‌شود؛ این نگاشت فنی به معنی ده محصول در اپ نیست.
+- پس از تأیید مدل رسمی هر فروشگاه، نگاشت پنج گزینه در اپ/سرور و پنل همان فروشگاه ثبت و با هم تطبیق داده شود.
+- نوع خرید باید با مدل اعتبار مدت‌دار و تمدید دستی سازگار باشد؛ تمدید خودکار فعال نشود.
+
+**نیاز از مالک**
+- دسترسی پنل ناشر هر دو فروشگاه هنگام رسیدن به این مرحله.
+- تأیید قیمت نهایی و مدل نمایش گزینه‌ها.
+- شناسه(های) واقعی فروشگاهی که طبق قرارداد رسمی لازم است.
+
+**خروجی بسته‌شدن:** نگاشت مستند و بدون placeholder برای هر پنج گزینه در هر فروشگاه، با تأیید نوع خرید و قیمت‌ها؛ بدون فرض قبلی درباره تعداد محصولات/شناسه‌ها.
+
+### 3. تعیین قرارداد رسمی برگشت وجه مایکت — مالک
+
+**بررسی مستندات عمومی انجام‌شده در 2026-11-23:** مخزن نمونه رسمی Myket برای Android، امضای RSA و توصیه به اعتبارسنجی سمت سرور با Myket Developer API را مستند می‌کند ([مستند رسمی نمونه](https://github.com/myketstore/billing-sample-android)). اما README عمومی آن، endpoint و قرارداد درخواست/پاسخ API سمت سرور، webhook یا روش قابل اتکای refund/revocation را مشخص نمی‌کند. بنابراین امضای معتبر رسید به‌تنهایی مدرک «خرید هنوز مسترد نشده» نیست و این مرحله بسته نمی‌شود.
+
+**نیاز از مالک**
+- ارائه مستند رسمی/قرارداد تجاری یا پاسخ پشتیبانی رسمی مایکت درباره API یا روش معتبر تشخیص refund/revocation و وضعیت خرید پس از برگشت وجه.
+- اگر مایکت API یا webhook قابل استفاده ارائه نمی‌کند، تأیید کتبی روش جایگزین مورد قبول (مثلاً فرایند reconciliation پشتیبانی‌شده).
+
+**چک‌لیست دقیق درخواست از پشتیبانی/پنل مایکت:** قرارداد رسمی باید برای خرید یک‌باره مصرف‌شدنی این موارد را روشن کند:
+- endpoint رسمی server-to-server برای استعلام purchase token و احراز package، product ID، وضعیت خرید، زمان و شناسه سفارش.
+- روش احراز هویت سرور، scope/مجوز لازم، محدودیت نرخ، محیط sandbox و حساب آزمایشی.
+- نحوه تشخیص refund، لغو، chargeback و revocation بعد از settlement؛ آیا API استعلام دوره‌ای، webhook یا هر دو وجود دارد؟
+- شکل payload و امضای webhook، تضمین تحویل/تکرار، سیاست retry و زمان نهایی‌شدن وضعیت برگشت وجه.
+- روش رسمی تطبیق تراکنش‌های برگشت‌خورده برای خریدهای مصرف‌شدنی که قبلاً consume شده‌اند.
+
+مستند رسمی نمونه اندروید مایکت در بخش Server-Side Validation اعتبارسنجی با Developer API را توصیه می‌کند، اما در README عمومی endpoint، مدل احراز هویت و قرارداد refund/revocation را منتشر نکرده است ([نمونه رسمی مایکت](https://github.com/myketstore/billing-sample-android#security-best-practices)). بنابراین تا دریافت پاسخ رسمی، ساخت endpoint حدسی یا فعال‌سازی خرید امن نیست.
+
+**خروجی بسته‌شدن:** روش مستند و تأییدشده؛ سپس فقط همان قرارداد پیاده‌سازی/پیکربندی و آزمون می‌شود. تا آن زمان خرید عمومی مایکت فعال نمی‌شود.
+
+### 4. نهایی‌سازی احراز هویت نام کاربری/رمز عبور و بازیابی حساب — مالک + اجرای فنی
+
+**وضعیت کد:** احراز هویت نام کاربری/رمز عبور، نشست HttpOnly، محدودسازی تلاش‌ها، بازیابی با ده کد یک‌بارمصرف، provision حساب و اتصال native در شاخه یکپارچه پیاده‌سازی شده‌اند. Migrationهای 0004 و 0005 هر دو در CI روی D1 محلی اجرا و بررسی می‌شوند. PR #209 تغییرات auth را به شاخه یکپارچه منتقل کرده و PR #191 Draft باقی مانده است.
+
+**آخرین شواهد روی HEAD یکپارچه `a8f29f238eeffeca3c5be53d396beff4cf825045`:** Billing V2 [run 45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951)، Smoke/مرورگر [run 45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860) و Android Debug [run 45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930) همگی موفق‌اند. تست auth شامل جلوگیری از مصرف کد بازیابی در شکست update حساب است. این نتایج CI جایگزین تست روی D1 واقعی یا دستگاه فیزیکی نیستند.
+
+**نیاز از مالک**
+- فراهم‌کردن `AUTH_RATE_LIMIT_SECRET` خصوصی، حداقل ۳۲ بایت و دقیقاً یکسان برای هر دو Worker؛ فقط از Cloudflare Secrets استفاده شود.
+- تأیید حساب‌های واقعی و شناسه داخلی حساب‌های قبلی برای provision؛ رمز خام خارج از مخزن و گفتگو منتقل شود.
+- تأیید فرایند امن تحویل ده کد بازیابی به هر کاربر و احراز مالکیت برای چرخش مجدد کدها در صورت مفقودی/اتمام.
+
+**اجرای فنی پس از آماده‌شدن محیط**
+- backup و ثبت migration history؛ اجرای 0004 و سپس 0005 دقیقاً یک‌بار و تأیید جداول/ایندکس‌ها.
+- provision حساب‌ها با `scripts/provision-sahmino-user.mjs`؛ بازبینی SQL و تأیید تعداد ردیف‌های تغییرکرده. ده کد بازیابی فقط یک‌بار نمایش داده می‌شوند و باید امن تحویل شوند.
+- benchmark واقعی PBKDF2 با ۳۱۰٬۰۰۰ iteration روی پلن واقعی Cloudflare؛ تا تأیید CPU و نرخ خطا، احراز هویت عمومی فعال نشود.
+- پذیرش ورود، نشست پایدار، خروج، تعویض حساب و بازیابی رمز روی دستگاه واقعی و staging.
+
+**قفل ایمنی:** `SAHMINO_PASSWORD_AUTH_ENABLED=false` تا موفقیت هر دو migration، provision، تحویل امن recovery codes و benchmark. `BILLING_V2_ENABLED=false` تا تکمیل تمام گیت‌های خرید.
+
+**خروجی بسته‌شدن:** شواهد ممیزی‌پذیر staging و دستگاه واقعی برای ورود، نشست، خروج، تعویض حساب و بازیابی رمز؛ بدون ثبت رمز، recovery code، cookie یا secret در گزارش.
+ 
+### 5. فراهم‌کردن Cloudflare و راه‌اندازی محیط staging — مالک + اجرای فنی
+**نیاز از مالک**
+- دسترسی محدود و مناسب به حساب Cloudflare یا اجرای دستورات توسط خود مالک.
+- ایجاد/تأیید یک D1 خصوصی مشترک برای هر دو Worker و تعیین PWA Origin نهایی.
+- تأیید محیط مقصد و مجوز backup/migration.
+
+**اجرای این مرحله**
+- انتخاب مسیر schema تازه یا migration دیتابیس موجود طبق runbook؛ هر دو مسیر با هم اجرا نشوند.
+- تهیه backup و ثبت migration history.
+- اعمال schema پایه کاربران و Billing V2 و migrationهای لازم دقیقاً یک‌بار؛ سپس `server/migrations/0004-username-password-auth.sql` و بعد `server/migrations/0005-password-recovery-codes.sql` هرکدام دقیقاً یک‌بار اجرا شوند. فعال‌سازی password auth تا موفقیت هر دو migration متوقف بماند. مسیر فعال OTP/SMS دوباره راه‌اندازی نشود؛ فایل‌های تاریخی فقط برای سازگاری داده حفظ شوند.
+- تنظیم دو Worker با همان D1 و Origin، کلیدهای عمومی/اعتبارسنجی و secretهای تجاری؛ `AUTH_RATE_LIMIT_SECRET` باید در هر دو Worker یکسان، خصوصی و حداقل ۳۲ بایت باشد. پرچم‌های `SAHMINO_PASSWORD_AUTH_ENABLED=false`، `PILOT_AUTH_ENABLED=false` و `BILLING_V2_ENABLED=false` تا پایان پذیرش حفظ شوند.
+- استقرار staging با احراز هویت و خرید غیرفعال؛ بررسی health، CORS، نشست، D1 و SKU mapping پیش از فعال‌سازی آزمایشی کنترل‌شده. هیچ SMS binding یا OTP flag برای مسیر جدید اضافه نشود.
+
+**خروجی بسته‌شدن:** URLهای staging، شناسه D1 (بدون secret)، نسخه Worker، migration history و شواهد health/auth/database.
+
+### 6. پیکربندی دو Flavor اندروید برای staging — اجرای فنی پس از مراحل 1 و 5؛ بدون نیاز به شناسه محصول
+
+**سخت‌سازی gate در 2026-11-23:** Gradle اکنون فقط در حالت Debug و با فعال‌سازی صریح، شناسه دقیق `ir.sahmino.app`، Origin دقیق PWA، Worker URL با قالب origin معتبر، پنج SKU یکتا و کلید عمومی همان فروشگاه اجازه نمایش خرید می‌دهد. Build نوع Release در هر شرایطی `SAHAMBAN_BILLING_ENABLED=false` را override می‌کند. تست رگرسیون این محدودیت‌ها در [CI شماره 45134218900](https://github.com/Raminhashemi1/sahamban/actions/runs/45134218900) موفق شده است. ساخت هر دو Debug Flavor با Gradle جدید نیز در [اجرای Android CI شماره 45134099191](https://github.com/Raminhashemi1/sahamban/actions/runs/45134099191) موفق شد و artifact آزمایشی با شناسه `14798328786` تولید شد. این artifact فقط Debug و compile-only است، امضای Release ندارد و برای ارسال به فروشگاه نیست. گیت ساخت Release هر دو Flavor نیز در [اجرای موفق 45137213152](https://github.com/Raminhashemi1/sahamban/actions/runs/45137213152) تکمیل شد: دو APK نوع Release ساخته، شناسه بسته و خاموش‌بودن خرید در BuildConfig بررسی و artifact غیرامضاشده با شناسه `14800616251` بارگذاری شد. این خروجی برای بررسی فنی است و صراحتاً آماده ارسال به فروشگاه نیست.
+
+**ورودی‌های فاز انتشار اولیه:** package ID، Worker URL، PWA Origin و تنظیمات غیرمحرمانه build. در این فاز SKU یا شناسه محصول لازم نیست و خرید باید خاموش بماند. نگاشت محصولات فقط بعد از انتشار اولیه و در مرحله ۲ انجام می‌شود.
+
+**خروجی فنی تکمیل‌شده:** دو APK نوع Release برای Bazaar و Myket بدون SKU و بدون secret خصوصی ساخته شدند؛ package و خاموش‌بودن checkout بررسی شد. artifact شماره `14800616251` غیرامضاشده است. **باقی‌مانده برای بسته‌شدن مرحله:** امضای معتبر با کلید Release، پیکربندی نهایی Worker و پذیرش فیزیکی روی دستگاه. checkout در هر دو Flavor خاموش است.
+
+**به‌روزرسانی 2026-11-23 پس از ادغام احراز هویت:** گیت Release روی commit `9a88d0bd4ce1a8b08aaedd358226ef167064c15e` موفق شد ([run 45142658012](https://github.com/Raminhashemi1/sahamban/actions/runs/45142658012)، artifact `14803350452`). خروجی ZIP شامل دو APK با package `ir.sahmino.app` و checkout خاموش است؛ SHA-256 هر دو در سابقه artifact ثبت شده‌اند. این APKها unsigned هستند و قابل ارسال به فروشگاه نیستند. هیچ SKU در این مرحله استفاده یا درخواست نشده است.
+
+**به‌روزرسانی خط لوله امضا:** Gradle اکنون امضای Release را فقط با keystore و متغیرهای محیطی ارائه‌شده از سمت مالک فعال می‌کند؛ هیچ کلید یا رمز در مخزن نیست. Workflow دستی `.github/workflows/android-pilot-signed-release.yml` اضافه شده است. چهار GitHub Actions Secret لازم: `SAHMINO_RELEASE_KEYSTORE_BASE64`، `SAHMINO_RELEASE_STORE_PASSWORD`، `SAHMINO_RELEASE_KEY_ALIAS` و `SAHMINO_RELEASE_KEY_PASSWORD`. این Workflow دو APK امضاشده فاز اولیه را با checkout اجباری خاموش می‌سازد و امضا/package/BuildConfig را بررسی می‌کند. README اندروید دستورالعمل آن را دارد. تا وقتی مالک Secretها را در GitHub Actions ثبت نکند، Workflow امضا عمداً قابل اجرا نیست.
+
+**پیش‌نیاز جدید خط لوله امضا:** چون ورود native شرط شروع اپ است، دو متغیر GitHub Actions مخزن `SAHAMBAN_BAZAAR_WORKER_BASE_URL` و `SAHAMBAN_MYKET_WORKER_BASE_URL` باید به originهای HTTPS واقعی و جداگانه Workerهای production اشاره کنند. چون هر Worker انتخاب فروشگاه سمت سرور خودش را دارد، هر Flavor فقط به Worker متناظر خودش متصل می‌شود. Workflow امضای دستی در نبود/نامعتبر بودن هرکدام fail-closed می‌شود، هر دو health و auth را preflight می‌کند و هر URL را فقط به Flavor مربوط تزریق می‌کند. این URLها محرمانه نیستند؛ اما نباید placeholder یا Worker آزمایشی/غیرآماده باشند. هر دو Worker باید پیش از ساخت نسخه امضاشده با D1 مشترک، migrationهای لازم، PWA Origin دقیق، حساب‌های provisionشده و احراز هویت فعال آماده باشند.
+
+**نسخه Release بدون خرید — تأیید مجدد:** Workflow `.github/workflows/android-pilot-release-gate.yml` روی commit `203295d46e4c6ea7a73c972638cd695bdf1e2095` موفق شد ([run 45145020963](https://github.com/Raminhashemi1/sahamban/actions/runs/45145020963)، artifact `14802989344`). هر دو APK با package `ir.sahmino.app`، نسخه `1.0.0` و checkout خاموش ساخته شدند؛ فایل‌ها عمداً unsigned هستند. SHA-256 بازار: `e97f5fa188ec3852de1573ecc579d09049b60c7855eb899e745af261d40ab906`؛ مایکت: `8a7933a437ab6f35f1522f9db74ea588c579aa75a07e064fb181bd5b3051cced`. Billing V2 CI روی commit جدیدتر `0f4cfc24919da463861f8d643d6ea12021a5a697` موفق شد ([run 45145389574](https://github.com/Raminhashemi1/sahamban/actions/runs/45145389574)). آزمون Debug همین commit هنوز در حال اجراست ([run 45145400039](https://github.com/Raminhashemi1/sahamban/actions/runs/45145400039)).
+
+**وضعیت نهایی CI و Release روی HEAD فعلی:** commit `a8f29f238eeffeca3c5be53d396beff4cf825045` در هر چهار workflow جاری موفق است: Billing V2 [45163423951](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423951)، Smoke/Browser [45163423860](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423860)، Android Debug [45163423930](https://github.com/Raminhashemi1/sahamban/actions/runs/45163423930) و Release build gate [45163416353](https://github.com/Raminhashemi1/sahamban/actions/runs/45163416353). Artifact Release شماره `14814135913` دریافت و بررسی شد؛ دو APK unsigned هستند و برای فروشگاه آماده نیستند. هش‌ها در بالای این سند ثبت شده‌اند.
+
+**اصلاح رگرسیون تست:** تغییرات امضای اختیاری ابتدا یک تست ساختاری قدیمی را شکست؛ تست با قرارداد جدید امضای owner-managed هماهنگ شد. اجرای Billing CI روی commit `873cda7689f7ce35083f9b8db527b645e38a40e0` موفق شد ([run 45144697456](https://github.com/Raminhashemi1/sahamban/actions/runs/45144697456)). اجرای CI کامل روی HEAD جدید در حال تکمیل است.
+
+### 7. پذیرش واقعی خرید روی دستگاه و حساب آزمایشی هر فروشگاه — فقط پس از انتشار اولیه و تکمیل مرحله ۲؛ مالک/آزمایشگر + اجرای فنی
+برای هر دو Flavor جداگانه، ماتریس `server/billing/PHYSICAL_ACCEPTANCE_MATRIX.md` اجرا و نتیجه ثبت شود:
+- ورود نام کاربری/رمز عبور، ماندگاری نشست، خروج، تعویض حساب و بازیابی رمز طبق فرایند تأییدشده.
+- نمایش پنج گزینه خرید و قیمت صحیح فروشگاه.
+- خرید موفق، لغو خرید، رسید نامعتبر، package/SKU/order اشتباه.
+- تأیید سرور، تسویه یکتا، مصرف توکن، خطای مصرف و retry.
+- بستن اجباری اپ/قطع اینترنت پیش و پس از تأیید و بازیابی خرید.
+- تمدید دستی زودهنگام، انقضا و مشاهده اعتبار مشترک بین دو فروشگاه.
+- برگشت وجه/لغو طبق قرارداد رسمی مرحله 3.
+- نصب مجدد و backup/import/export داده با داده آزمایشی.
+
+**خروجی بسته‌شدن:** ماتریس کامل با نسخه اپ، دستگاه، حساب تست، Worker version، شناسه سفارش و نتیجه هر سناریو؛ توکن خرید/کلید/اطلاعات شخصی در گزارش ثبت نشود.
+
+### 8. انتشار دو فازه — مالک + اجرای فنی
+
+#### 8-A. انتشار اولیه اپلیکیشن بدون خرید اشتراک
+
+**گیت ساخت Release اضافه شد (2026-11-23):** Workflow مستقل `.github/workflows/android-pilot-release-gate.yml` هر دو Flavor بازار و مایکت را در نوع Release، با package دقیق `ir.sahmino.app` و خرید اجباری خاموش Build می‌کند؛ package هر APK و مقدار BuildConfig خرید بررسی می‌شود. artifact خروجی صراحتاً unsigned و غیرقابل ارسال به فروشگاه برچسب می‌خورد. همچنین Workflow دستی `.github/workflows/android-pilot-signed-release.yml` اضافه شد؛ فقط پس از ثبت چهار GitHub Actions Secret متعلق به مالک (`SAHMINO_RELEASE_KEYSTORE_BASE64`، `SAHMINO_RELEASE_STORE_PASSWORD`، `SAHMINO_RELEASE_KEY_ALIAS`، `SAHMINO_RELEASE_KEY_PASSWORD`) APKهای اولیه را امضا می‌کند، امضا و package را بررسی می‌کند و checkout را خاموش نگه می‌دارد. کلید خصوصی وارد مخزن نمی‌شود. Gradle برای Release به‌صورت پیش‌فرض unsigned می‌ماند و فقط با keystore معتبر فعال می‌شود. نسخه نام‌گذاری‌شده اپ برای انتشار اولیه `1.0.0` تنظیم شد؛ versionCode اولیه `1` است. اجرای Billing CI روی commit `cc8eec07a81114192b8a04d36284d2a230b3ae64` موفق است ([run 45136106678](https://github.com/Raminhashemi1/sahamban/actions/runs/45136106678)). اولین دو اجرای Release gate به‌علت مسیر بررسی BuildConfig ناموفق شدند؛ علت بررسی شد و مسیر variant در workflow اصلاح شد. اجرای مجدد روی commit `3dff01c48551e635b07fa6354a8dbf849f038116` در [run 45137213152](https://github.com/Raminhashemi1/sahamban/actions/runs/45137213152) موفق شد؛ هر دو variant ساخته شدند، کنترل package و BuildConfig موفق بود و artifact غیرامضاشده شماره `14800616251` بارگذاری شد. CI یکپارچگی Billing روی commit جدیدتر `cbe39306c4b49510a2e3135c6d9afdd82dc33a54` نیز در [run 45137296060](https://github.com/Raminhashemi1/sahamban/actions/runs/45137296060) موفق شد. این نتایج گیت ساخت و تست را می‌بندند، نه امضای Release یا پذیرش فروشگاه. این گیت عمداً امضای واقعی را جعل نمی‌کند و به کلید امضای مالک دسترسی ندارد.
+
+- ساخت و امضای نسخه Release سهمینو با checkout و همه مسیرهای پرداخت غیرفعال.
+- ارسال و انتشار خود اپلیکیشن در بازار و مایکت بدون درخواست شناسه محصول اشتراک.
+- ثبت نسخه/رسید انتشار اولیه؛ پس از آن مرحله ۲ (ساخت محصولات و دریافت شناسه‌های واقعی) اجرا می‌شود.
+
+#### 8-B. انتشار به‌روزرسانی خرید اشتراک پس از تکمیل مراحل ۲، ۳ و ۷
+
+**نیاز از مالک**
+- فراهم‌کردن محیط امن امضای Release و تأیید کلید امضا؛ کلید خصوصی در مخزن یا گفتگو ارسال نشود.
+- تأیید متن قیمت، تمدید دستی، شرایط بازپرداخت و محتوای صفحه فروشگاه.
+- تأیید نهایی ادغام PR #191 و ارسال هر دو نسخه.
+
+**خروجی بسته‌شدن:** فاز 8-A با رسید انتشار اولیه بدون خرید؛ سپس فاز 8-B با دو artifact امضاشده و تأییدشده حاوی خرید فعال، تطبیق package/signature، PR ادغام‌شده، نسخه‌های به‌روزرسانی‌شده و رسید بررسی فروشگاه.
+
+## تعریف نهایی «آماده انتشار»
+
+این پروژه فقط زمانی آماده ارسال به بازار و مایکت محسوب می‌شود که:
+1. انتشار اولیه بدون خرید (8-A) انجام شده باشد؛ سپس مراحل محصول/خرید واقعی و انتشار به‌روزرسانی (8-B) با مدرک بسته شده باشند.
+2. پیش از فاز 8-A هیچ SKU لازم نیست؛ برای فاز 8-B، شناسه‌های واقعی محصولات پس از انتشار اولیه ثبت شده و هیچ placeholder یا secret نامعتبر باقی نمانده باشد.
+3. هر دو Worker به D1 مشترک و محیط تجاری درست متصل باشند.
+4. احراز هویت نام کاربری/رمز عبور، provision امن حساب‌ها و بازیابی حساب با روش تأییدشده پذیرفته شده باشند.
+5. refund/revocation مایکت روش معتبر و آزموده داشته باشد.
+6. همه سناریوهای فیزیکی هر دو فروشگاه قبول شده باشند.
+7. Releaseهای امضاشده و PR ادغام‌شده آماده ارسال باشند.
+
+## موارد بسته‌شده
+
+| قاعده | تاریخ | مدرک |
+|---|---|---|
+| ترتیب شناسه محصول: فقط پس از انتشار اولیه اپ؛ انتشار اولیه با خرید خاموش و بدون SKU | 2026-11-23 | تأکید صریح مالک در گفتگو؛ در این سند به‌عنوان قاعده قطعی اجرا ثبت شد |
+
+| مرحله | تاریخ | مدرک |
+|---|---|---|
+| ایجاد مرجع واحد «خط پایان» و حذف فهرست‌های تکراری | 2026-11-21 | این Commit |
+| مرحله ۱ — هویت نهایی اپ: نام `سهمینو`، package `ir.sahmino.app`، PWA `https://raminhashemi1.github.io/sahamban/` | 2026-11-21 | تأیید مالک در گفتگو؛ Gradle و مستندات در شاخه‌های اتصال خرید و احراز هویت همسان‌سازی شد؛ CI تست‌های Billing V2 موفق |
+
+## ادامه کار با فرمان «خط پایان»
+
+با گفتن «خط پایان را ادامه بده»، فقط همین سند خوانده می‌شود؛ از اولین مرحله باز ادامه می‌دهیم، مدرک مرحله تکمیل‌شده را بررسی می‌کنیم، همان مرحله را از فهرست باز حذف و در «موارد بسته‌شده» ثبت می‌کنیم. کارهای تکمیل‌شده دوباره اجرا نمی‌شوند.
+
+
+**اصلاح فنی مسیر تأیید مایکت (2026-11-23):** بازبینی end-to-end نشان داد محدودیت بدنه Worker برابر 8 KiB بود، درحالی‌که verifier مایکت `originalJson` را تا 16 KiB می‌پذیرد؛ بنابراین payloadهای معتبر بزرگ‌تر از 8 KiB پیش از رسیدن به verifier رد می‌شدند. حد مسیر تأیید به 24 KiB افزایش یافت (هنوز bounded) و تست رگرسیون با `originalJson` نه‌هزاربایتی اضافه شد. Billing CI روی commit `c2e766b71c59634a4a510d07dbff168f7cab5f16` موفق شد ([run 45149551726](https://github.com/Raminhashemi1/sahamban/actions/runs/45149551726))؛ CI روی تغییرات مستندات بعدی نیز موفق شد ([run 45149573817](https://github.com/Raminhashemi1/sahamban/actions/runs/45149573817)). ساخت Android Debug روی HEAD مستندات هنوز در حال اجراست ([run 45149573709](https://github.com/Raminhashemi1/sahamban/actions/runs/45149573709)).
+
+**اصلاح مستندات عملیاتی:** مرجع یکپارچه Billing اکنون package نهایی `ir.sahmino.app` را نشان می‌دهد (نه مقدار موقت قدیمی) و ترتیب اجرای migrationهای 0004 و 0005 را هر دو مشخص می‌کند. راهنمای Android نیز اجرای هر دو migration را بیان می‌کند. محدودیت رسمی/مستندنشده بازپرداخت مایکت همچنان گیت انتشار است؛ هیچ endpoint حدسی اضافه نشده است.
+
+**Release build gate (2026-11-23):** روی commit `4162b33d3e7c0045c7016e57b4410ea1ae5cc223` موفق شد: [run 45162515130](https://github.com/Raminhashemi1/sahamban/actions/runs/45162515130). هر دو variant بازار و مایکت در حالت Release ساخته شدند؛ کنترل package `ir.sahmino.app`، versionCode `1`، versionName `1.0.0`، non-debuggable و خاموش‌بودن Billing در BuildConfig موفق شد. Artifact شماره `14812446502` با نام صریح `sahmino-release-build-unsigned-checkout-disabled-NOT-STORE-READY` بارگذاری شد. ZIP را دوباره دریافت و بررسی کردم؛ هر دو APK موجود و SHA-256 ثبت‌شده با محاسبه مستقل فایل‌ها یکسان است:
+- Bazaar: `cfd0dc3fea372a38a1c33014b7d7e1b8ba56607044cdbe8df1d32ece559d3f8c`
+- Myket: `76cf203cabd0cfe3fb6be28fefe802addd47ef9d345c519f472dd229cdf0272f`
+
+این دو APK unsigned هستند و فقط خروجی ساخت/کنترل‌اند؛ امضای Release، نصب و پذیرش دستگاه، Worker/D1 production و ارسال فروشگاه هنوز انجام نشده است.
+
+**اعتبارسنجی آخرین commit مستنداتی (2026-11-28):** HEAD اکنون `281b8d6f6796d6979cd0275ed9bce16c01ffc740` است؛ تغییرات پس از commit دارای Release gate فقط مستندات و شواهد بوده‌اند و کد Android/Worker تغییر نکرده است. روی این HEAD:
+- Billing V2/Auth: [run 46117427917](https://github.com/Raminhashemi1/sahamban/actions/runs/46117427917) — success.
+- Android Debug: [run 46117427907](https://github.com/Raminhashemi1/sahamban/actions/runs/46117427907) — success.
+- Smoke + browser/Chromium: [run 46117427932](https://github.com/Raminhashemi1/sahamban/actions/runs/46117427932) — success.
+- Release gate هر دو flavor روی code-equivalent HEAD قبلی `4a721dd7ea4593b7145a17ee80bccaa6283c1d8d`: [run 46117163018](https://github.com/Raminhashemi1/sahamban/actions/runs/46117163018) — success؛ چون commitهای بعدی فقط مستندات را تغییر داده‌اند، خروجی Release همچنان با کد اجرایی فعلی متناظر است.

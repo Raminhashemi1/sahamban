@@ -1,6 +1,10 @@
 name: Sahamban Android pilot debug APK
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'android-pilot/**'
+      - '.github/workflows/android-pilot-debug.yml'
   push:
     paths:
       - 'android-pilot/**'
@@ -34,17 +38,113 @@ jobs:
           fi
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11.1'
-      - name: Build TEST-ONLY debug APK without owner signing credentials
-        run: gradle -p android-pilot --no-daemon :app:assembleDebug
+          gradle-version: '8.13'
+      - name: Validate optional Worker endpoint configuration
+        shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+          SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
+          SAHAMBAN_BILLING_ENABLED: ${{ vars.SAHAMBAN_BILLING_ENABLED }}
+          SAHAMBAN_BAZAAR_SKU_PRO_30D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_30D }}
+          SAHAMBAN_MYKET_SKU_PRO_30D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_30D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_60D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_60D }}
+          SAHAMBAN_MYKET_SKU_PRO_60D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_60D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_90D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_90D }}
+          SAHAMBAN_MYKET_SKU_PRO_90D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_90D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_180D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_180D }}
+          SAHAMBAN_MYKET_SKU_PRO_180D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_180D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_365D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_365D }}
+          SAHAMBAN_MYKET_SKU_PRO_365D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          BAZAAR_URL="${SAHAMBAN_BAZAAR_WORKER_BASE_URL:-}"
+          MYKET_URL="${SAHAMBAN_MYKET_WORKER_BASE_URL:-}"
+          if [[ -z "$BAZAAR_URL" && -z "$MYKET_URL" ]]; then
+            echo "::notice::Store Worker URLs are not configured. Build is compile-only; both APKs show the safe configuration screen and cannot sign in or purchase."
+            exit 0
+          fi
+          if [[ -z "$BAZAAR_URL" || -z "$MYKET_URL" ]]; then
+            echo "::error::Configure both SAHAMBAN_BAZAAR_WORKER_BASE_URL and SAHAMBAN_MYKET_WORKER_BASE_URL, or leave both empty for compile-only CI."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os, sys, urllib.parse
+          for name in ("SAHAMBAN_BAZAAR_WORKER_BASE_URL", "SAHAMBAN_MYKET_WORKER_BASE_URL"):
+              value = os.environ[name]
+              u = urllib.parse.urlparse(value)
+              try:
+                  port = u.port
+              except ValueError:
+                  raise SystemExit(f"{name} has an invalid port")
+              if not (u.scheme == "https" and u.hostname and u.username is None and
+                      u.password is None and (port is None or 1 <= port <= 65535) and
+                      u.path in ("", "/") and not u.query and not u.fragment):
+                  raise SystemExit(f"{name} must be an HTTPS origin without credentials, path, query, or fragment")
+              print(f"PASS {name} origin")
+          PY
+      - name: Build TEST-ONLY Bazaar and Myket debug APKs without owner signing credentials
+        shell: bash
+        env:
+          SAHAMBAN_BAZAAR_WORKER_BASE_URL: ${{ vars.SAHAMBAN_BAZAAR_WORKER_BASE_URL }}
+          SAHAMBAN_MYKET_WORKER_BASE_URL: ${{ vars.SAHAMBAN_MYKET_WORKER_BASE_URL }}
+          SAHAMBAN_PWA_ORIGIN: ${{ vars.SAHAMBAN_PWA_ORIGIN }}
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+          SAHAMBAN_EXPECTED_PACKAGE_NAME: ${{ vars.SAHAMBAN_EXPECTED_PACKAGE_NAME }}
+          SAHAMBAN_BILLING_ENABLED: ${{ vars.SAHAMBAN_BILLING_ENABLED }}
+          SAHAMBAN_BAZAAR_SKU_PRO_30D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_30D }}
+          SAHAMBAN_MYKET_SKU_PRO_30D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_30D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_60D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_60D }}
+          SAHAMBAN_MYKET_SKU_PRO_60D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_60D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_90D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_90D }}
+          SAHAMBAN_MYKET_SKU_PRO_90D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_90D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_180D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_180D }}
+          SAHAMBAN_MYKET_SKU_PRO_180D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_180D }}
+          SAHAMBAN_BAZAAR_SKU_PRO_365D: ${{ vars.SAHAMBAN_BAZAAR_SKU_PRO_365D }}
+          SAHAMBAN_MYKET_SKU_PRO_365D: ${{ vars.SAHAMBAN_MYKET_SKU_PRO_365D }}
+          BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.BAZAAR_RSA_PUBLIC_KEY }}
+          MYKET_PUBLIC_KEY: ${{ secrets.MYKET_PUBLIC_KEY }}
+          SAHAMBAN_DISTINCT_PILOT_IDS: 'true'
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle -p android-pilot --no-daemon :app:assembleBazaarDebug :app:assembleMyketDebug; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              echo "Gradle dependency resolution/build failed on attempt $attempt; retrying after a short delay."
+              sleep 20
+            fi
+          done
+          exit 1
+      - name: Verify Bazaar and Myket pilot APKs have distinct package identities
+        shell: bash
+        env:
+          SAHAMBAN_APPLICATION_ID: ${{ vars.SAHAMBAN_APPLICATION_ID }}
+        run: |
+          set -euo pipefail
+          BASE_ID="${SAHAMBAN_APPLICATION_ID:-ir.sahmino.app}"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          BAZAAR_APK="android-pilot/app/build/outputs/apk/bazaar/debug/app-bazaar-debug.apk"
+          MYKET_APK="android-pilot/app/build/outputs/apk/myket/debug/app-myket-debug.apk"
+          BAZAAR_ID="$("$AAPT" dump badging "$BAZAAR_APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+          MYKET_ID="$("$AAPT" dump badging "$MYKET_APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+          test "$BAZAAR_ID" = "${BASE_ID}.bazaar.pilot"
+          test "$MYKET_ID" = "${BASE_ID}.myket.pilot"
+          test "$BAZAAR_ID" != "$MYKET_ID"
+          printf 'Bazaar pilot package: %s\\nMyket pilot package: %s\\n' "$BAZAAR_ID" "$MYKET_ID"
       - name: Print reproducibility digest (never a private certificate)
-        run: sha256sum android-pilot/app/build/outputs/apk/debug/app-debug.apk
+        run: sha256sum android-pilot/app/build/outputs/apk/*/debug/*.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: sahamban-android-pilot-debug-UNSIGNED-FOR-STORE
-          path: android-pilot/app/build/outputs/apk/debug/app-debug.apk
+          name: sahamban-android-pilot-dual-store-debug-COMPILE-ONLY-NOT-STORE-READY
+          path: android-pilot/app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
           retention-days: 7

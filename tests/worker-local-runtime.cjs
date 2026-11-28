@@ -34,8 +34,8 @@ async function main(){
  cli('--command',"INSERT OR REPLACE INTO billing_access(user_id,expires_at,auto_renewing,updated_at) VALUES ('local-runtime-u1','2099-12-01T00:00:00.000Z',0,'"+stamp+"')");
  const token=issuePilotToken({subject:ID,secret:SECRET,nowMs:NOW});
  const app=spawn('npx',['--no-install','wrangler','dev','--local','--config',CONFIG,'--ip','127.0.0.1','--port',String(PORT),
-  '--var','AUTH_HMAC_SECRET:'+SECRET,
-  ...(enableBillingV2?['--var','BILLING_V2_ENABLED:true']:[])],{
+  '--var','AUTH_HMAC_SECRET:'+SECRET,'--var','PILOT_AUTH_ENABLED:true',
+  ...(enableBillingV2?['--var','BILLING_V2_ENABLED:true','--var','BAZAAR_SKU_MAP:{\"SAHAMBAN_PRO_30D\":\"local30\",\"SAHAMBAN_PRO_60D\":\"local60\",\"SAHAMBAN_PRO_90D\":\"local90\",\"SAHAMBAN_PRO_180D\":\"local180\",\"SAHAMBAN_PRO_365D\":\"local365\"}']:[])],{
   cwd:process.cwd(),env:{...process.env,WRANGLER_SEND_METRICS:'false',NO_COLOR:'1'},
   stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'
  });
@@ -69,14 +69,15 @@ async function main(){
    assert.match(disabled.data.order.id,/^ord_[a-f0-9]{32}$/);
    assert.equal(disabled.data.order.planId,'SAHAMBAN_PRO_30D');
    assert.equal(disabled.data.order.days,30);
+   assert.equal(disabled.data.order.priceRial,1500000);
    const forged=await json('/api/v2/billing/orders',{token,method:'POST',body:{planId:'SAHAMBAN_PRO_30D',amountRial:1,userId:'victim'}});
    assert.equal(forged.status,400);
    const noSku=await json('/api/v2/billing/verify',{token,method:'POST',body:{
     orderId:disabled.data.order.id,sku:'unknown',token:'synthetic-purchase-token',
     originalJson:'{}',dataSignature:'AAAAAAAAAAAAAAAA'
    }});
-   assert.equal(noSku.status,503);
-   assert.deepEqual(noSku.data,{error:'BAZAAR_SKU_MAP_NOT_CONFIGURED'});
+   assert.equal(noSku.status,400);
+   assert.deepEqual(noSku.data,{error:'UNKNOWN_PRODUCT_SKU'});
   }
   assert.equal((await json('/api/v1/checkout',{method:'POST'})).status,404);
   const preflight=await fetch(BASE+'/api/v1/me/entitlement',{method:'OPTIONS',headers:{Origin:ORIGIN},signal:AbortSignal.timeout(5000)});

@@ -1,0 +1,33 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {createMyketOrder,parseStoreSkuMap}=require('../server/billing/orders.cjs');
+const map=JSON.stringify({SAHAMBAN_PRO_30D:'myket_30d',SAHAMBAN_PRO_60D:'myket_60d',SAHAMBAN_PRO_90D:'myket_90d',SAHAMBAN_PRO_180D:'myket_180d',SAHAMBAN_PRO_365D:'myket_365d'});
+test('Myket SKU map requires all five unique product IDs',()=>{
+ assert.ok(parseStoreSkuMap(map));assert.equal(parseStoreSkuMap('{}'),null);
+ assert.equal(parseStoreSkuMap(JSON.stringify({...JSON.parse(map),SAHAMBAN_PRO_30D:'REPLACE_MYKET_SKU_30D'})),null);
+ assert.equal(parseStoreSkuMap(JSON.stringify({SAHAMBAN_PRO_30D:'same',SAHAMBAN_PRO_60D:'same',SAHAMBAN_PRO_90D:'x',SAHAMBAN_PRO_180D:'y',SAHAMBAN_PRO_365D:'z'})),null);
+});
+test('Myket order persists trusted store, SKU and approved server IRR amount',async()=>{
+ let sql='',values=[];
+ const db={prepare(q){sql=q;return {bind(...v){values=v;return {async run(){return {success:true,meta:{changes:1}};}};}};}};
+ const result=await createMyketOrder(db,{subject:'user-1',planId:'SAHAMBAN_PRO_90D',now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'b'.repeat(32),skuMap:map});
+ assert.equal(result.status,201);
+ assert.deepEqual(result.order,{id:'ord_'+'b'.repeat(32),planId:'SAHAMBAN_PRO_90D',days:90,priceRial:4050000,store:'MYKET'});
+ assert.match(sql,/store,store_product_id,amount_irr,created_at/);
+ assert.deepEqual(values,['ord_'+'b'.repeat(32),'SAHAMBAN_PRO_90D','myket_90d',4050000,'2026-01-01T00:00:00.000Z','user-1']);
+});
+test('Myket order creation accepts migrated legacy account IDs',async()=>{
+ let sql='',values=[];
+ const db={prepare(q){sql=q;return {bind(...v){values=v;return {async run(){return {success:true,meta:{changes:1}};}};}};}};
+ const result=await createMyketOrder(db,{userId:'legacy-user-42',planId:'SAHAMBAN_PRO_30D',
+  now:'2026-01-01T00:00:00.000Z',makeId:()=> 'ord_'+'d'.repeat(32),skuMap:map});
+ assert.equal(result.status,201);
+ assert.ok(sql.includes("WHERE id=? AND status='ACTIVE'"));
+ assert.equal(values[5],'legacy-user-42');
+});
+
+test('Myket order fails closed without SKU map or authentication',async()=>{
+ assert.equal((await createMyketOrder({},{subject:'user',planId:'SAHAMBAN_PRO_30D',skuMap:null})).status,503);
+ assert.equal((await createMyketOrder({},{planId:'SAHAMBAN_PRO_30D',skuMap:map})).status,401);
+});
