@@ -2,7 +2,7 @@
 // Settlement primitive for a trusted payment-provider adapter only.
 // Call ONLY after independently verifying the provider transaction server-to-server.
 // D1 batch executes these statements transactionally. No browser callback is trusted.
-const {plan,addCalendarMonths}=require('./prepaid-plans.cjs');
+const {plan,addPlanDays}=require('./prepaid-plans.cjs');
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const ORDER=/^ord_[a-f0-9]{32}$/;
 function validUTC(v){
@@ -28,12 +28,7 @@ const ENTITLEMENT_UPSERT_SQL=`WITH base AS (
  WHERE o.id=? AND o.state='SETTLED' AND o.provider_name=? AND o.provider_payment_id=?
 )
 INSERT INTO prepaid_subscription_entitlements(user_id,paid_until,updated_at)
-SELECT user_id,
- strftime('%Y-%m-%dT%H:%M:%fZ',
-  date(base_date,'start of month','+'||?||' months',
-   printf('+%d days',min(CAST(strftime('%d',base_date) AS INTEGER)-1,
-    CAST(strftime('%d',date(base_date,'start of month','+'||?||' months','+1 month','-1 day')) AS INTEGER)-1)))
-  || ' ' || strftime('%H:%M:%f',base_date)), ?
+SELECT user_id, strftime('%Y-%m-%dT%H:%M:%fZ',base_date,'+'||?||' days'), ?
 FROM base WHERE 1
 ON CONFLICT(user_id) DO UPDATE SET paid_until=excluded.paid_until,updated_at=excluded.updated_at`;
 async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
@@ -46,9 +41,6 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
  if(selected.priceRial!==amountRial)return {ok:false,reason:'AMOUNT_MISMATCH'};
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function')return {ok:false,reason:'DATABASE_UNAVAILABLE'};
  try{
-  // Preflight the order, then recalculate the entitlement base date inside
-  // the atomic D1 batch. Pending-state and unique provider-event constraints
-  // prevent replay and concurrent settlement of the same order.
   const lookup=await db.prepare(`SELECT o.user_id,o.plan_id,o.amount_rial,o.currency,o.state,
    e.paid_until FROM prepaid_subscription_orders o
    LEFT JOIN prepaid_subscription_entitlements e ON e.user_id=o.user_id WHERE o.id=? LIMIT 1`).bind(orderId).first();
@@ -57,11 +49,11 @@ async function settleVerifiedPrepaidPayment(db,verified,{now}={}){
   if(lookup.plan_id!==planId||lookup.amount_rial!==amountRial||lookup.currency!=='IRR')
    return {ok:false,reason:'ORDER_MISMATCH'};
   const base=lookup.paid_until&&validUTC(lookup.paid_until)&&lookup.paid_until>now?lookup.paid_until:now;
-  const expectedPaidUntil=addCalendarMonths(base,selected.months);
+  const expectedPaidUntil=addPlanDays(base,selected.days);
   const statements=[
    db.prepare(EVENT_SQL).bind(providerName,providerEventId,providerPaymentId,now,orderId,planId,amountRial),
    db.prepare(ORDER_SQL).bind(now,providerName,providerPaymentId,orderId,planId,amountRial,providerName,providerEventId,providerPaymentId),
-   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(now,now,orderId,providerName,providerPaymentId,selected.months,selected.months,now)
+   db.prepare(ENTITLEMENT_UPSERT_SQL).bind(now,now,orderId,providerName,providerPaymentId,selected.days,now)
   ];
   const results=await db.batch(statements);
   if(!Array.isArray(results)||results.length!==3||results.some(x=>x?.success!==true))return {ok:false,reason:'SETTLEMENT_FAILED'};

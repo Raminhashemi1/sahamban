@@ -1,5 +1,5 @@
 'use strict';
-// Trusted-server-only order creation for the four prepaid Pro plans.
+// Trusted-server-only order creation for the five fixed-day prepaid Pro plans.
 // No checkout URL, payment instructions, or entitlement grant is produced.
 // authenticatedSubject must be derived from a separately verified identity token.
 const {plan}=require('./prepaid-plans.cjs');
