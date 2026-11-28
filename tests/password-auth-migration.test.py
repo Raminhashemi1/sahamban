@@ -116,4 +116,59 @@ assert db.execute("""
  FROM sahamban_users WHERE id='usr_existing'
 """).fetchone()==(1,)
 
-print('username/password migration and provisioning tests passed')
+
+# Reproduce the observed legacy-pilot upgrade path: old annual ledger exists,
+# but Billing V2 and username/password tables do not. This test is fully local.
+legacy=sqlite3.connect(':memory:')
+legacy.execute('PRAGMA foreign_keys=ON')
+legacy.executescript((root/'server/d1-schema.sql').read_text())
+legacy.execute("""
+ INSERT INTO sahamban_users(id,created_at,status)
+ VALUES('legacy-user','2026-01-01T00:00:00.000Z','ACTIVE')
+""")
+legacy.execute("""
+ INSERT INTO subscription_orders
+ (id,user_id,plan_id,amount_rial,currency,state,created_at)
+ VALUES('legacy-order','legacy-user','SAHAMBAN_PRO_ANNUAL',12000000,'IRR','PENDING',
+        '2026-01-01T00:00:00.000Z')
+""")
+legacy.commit()
+legacy.executescript((root/'server/billing/schema.sql').read_text())
+legacy.executescript((root/'server/d1-sahmino-sms-otp.sql').read_text())
+legacy.executescript((root/'server/migrations/0004-username-password-auth.sql').read_text())
+legacy.executescript((root/'server/migrations/0005-password-recovery-codes.sql').read_text())
+legacy_tables={row[0] for row in legacy.execute(
+ "SELECT name FROM sqlite_master WHERE type='table'")}
+assert {'subscription_orders','subscription_entitlements','payment_event_ledger',
+        'billing_orders','billing_access','billing_events',
+        'sahmino_phone_identities','sahmino_shared_sessions',
+        'sahmino_auth_rate_limits','sahmino_recovery_codes'} <= legacy_tables
+legacy_order=legacy.execute("""
+ SELECT user_id,plan_id,amount_rial,currency,state FROM subscription_orders
+ WHERE id='legacy-order'
+""").fetchone()
+assert legacy_order==('legacy-user','SAHAMBAN_PRO_ANNUAL',12000000,'IRR','PENDING')
+legacy_auth=legacy.execute("""
+ SELECT username_normalized,password_salt,password_hash,password_iterations
+ FROM sahamban_users WHERE id='legacy-user'
+""").fetchone()
+assert legacy_auth==(None,None,None,None),legacy_auth
+legacy.execute("""
+ INSERT INTO billing_orders
+ (id,user_id,plan_id,status,store,store_product_id,amount_irr,created_at)
+ VALUES('new-billing-order','legacy-user','SAHAMBAN_PRO_30D','CREATED',
+        'BAZAAR','bazaar-30d',1500000,'2026-01-02T00:00:00.000Z')
+""")
+try:
+ legacy.execute("""
+  INSERT INTO billing_orders
+  (id,user_id,plan_id,status,store,store_product_id,amount_irr,created_at)
+  VALUES('bad-new-order','legacy-user','SAHAMBAN_PRO_30D','CREATED',
+         'BAZAAR','bad-price',1,'2026-01-02T00:00:00.000Z')
+ """)
+ raise AssertionError('legacy upgrade accepted a wrong Billing V2 price')
+except sqlite3.IntegrityError:
+ pass
+
+
+print('username/password migration, provisioning, and legacy-pilot additive upgrade tests passed')
